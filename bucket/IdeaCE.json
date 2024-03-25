@@ -1,0 +1,55 @@
+{
+    "version": "2023.3.6",
+    "description": "社区版 - 由 JetBrains 开发的适用于 Java 和 Kotlin 开发的 IDE。Community Edition - Cross-Platform IDE for Java and Kotlin by JetBrains.",
+    "homepage": "https://www.jetbrains.com/idea/",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://www.jetbrains.com/store/license.html"
+    },
+    "url": "https://download.jetbrains.com/idea/ideaIC-2023.3.6.exe#/_installer_.exe",
+    "hash": "f91c2cf0bd762c3d656ccd8d2118b2425a1139801c8bef6fa0c1022a7d3d2df0",
+    "bin": [
+        [
+            "IDE\\bin\\idea64.exe",
+            "IdeaCE"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "IDE\\bin\\idea64.exe",
+            "IntelliJ IDEA Community Edition"
+        ]
+    ],
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$verPart = $version -split '\\.'",
+        "$verRes = \"$($verPart[0]).$($verPart[1])\"",
+        "persist -dir @(\"$user_AppData\\JetBrains\\IdeaIC$($verRes)\",\"$user_LocalAppData\\JetBrains\\IdeaIC$($verRes)\") @(\"$persist_dir\\IdeaIC\",\"$persist_dir\\IdeaIC_LocalAppData\")",
+        "$path_exe=\"$dir\\_installer_.exe\"",
+        "& $path_exe /S /D=\"$dir\\IDE\"",
+        "sleep_install \"$dir\\IDE\\bin\\idea.properties\"",
+        "clean_redundant_files @($path_exe,\"$admin_apps_lnk\\JetBrains\\IntelliJ IDEA Community Edition $($version).lnk\")",
+        "create_app_lnk \"$dir\\IDE\\bin\\idea64.exe\" \"$desktop\\IntelliJ IDEA Community Edition.lnk\""
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process $false",
+        "$verPart = $version -split '\\.'",
+        "$verRes = \"$($verPart[0]).$($verPart[1])\"",
+        "remove_files @(\"$user_AppData\\JetBrains\\IdeaIC$($verRes)\",\"$user_LocalAppData\\JetBrains\\IdeaIC$($verRes)\")",
+        "$ui_exe=\"$dir\\IDE\\bin\\Uninstall.exe\"",
+        "try{ & $ui_exe /S }catch{}",
+        "sleep_uninstall $ui_exe"
+    ],
+    "checkver": {
+        "url": "https://data.services.jetbrains.com/products/releases?code=IIC&latest=true",
+        "jsonpath": "$.IIC[0].version"
+    },
+    "autoupdate": {
+        "url": "https://download.jetbrains.com/idea/ideaIC-$version.exe#/_installer_.exe",
+        "hash": {
+            "url": "$url.sha256"
+        }
+    }
+}

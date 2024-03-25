@@ -1,39 +1,41 @@
 {
-    "version": "0.2.48",
-    "description": "Cursor 是一个集成了 GPT-4 的代码编辑器，可以让你快速地编写、修改和讨论代码 1。Cursor 还提供了 API SDK，可以用于调用 Cursor 的接口",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://www.cursor.so/"
-    },
-    "homepage": "https://www.cursor.so",
-    "pre_install": [
-        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse"
-    ],
-    "url": "https://dl.todesktop.com/230313mzl4w4u92/windows/nsis/x64#/dl.7z",
-    "hash": "sha512:dcb2251a1787bed560eb7f177be106e93769dd7074d68a359331faf1322d95a806e9aae19f1894c971f18feee019bd34c77c2171bc91f473ec65f989e7840e54",
+    "version": "0.30",
+    "description": "人工智能优先的代码编辑器。The AI-first Code Editor.",
+    "homepage": "https://cursor.sh/",
+    "license": "Unknown",
+    "url": "https://download.cursor.sh/windows/nsis/x64#/_installer_.exe",
+    "hash": "db4d7f6821e7e83e9d640ccab748e5561448ab5dacb936c7f4127230ca89a6b2",
     "shortcuts": [
         [
             "Cursor.exe",
             "Cursor"
         ]
     ],
-    "persist": "resources/lsp",
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$path_exe=\"$dir\\_installer_.exe\"",
+        "& $path_exe /S /D=$dir",
+        "$core_exe=\"$dir\\Cursor.exe\"",
+        "sleep_install $core_exe",
+        "persist -dir @(\"$user_AppData\\Cursor\") @(\"$persist_dir\\Cursor\")",
+        "clean_redundant_files @($path_exe,\"$apps_lnk\\Cursor.lnk\")",
+        "remove_app_lnk @(\"Cursor.lnk\")"
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process $false",
+        "remove_files @(\"$user_AppData\\Cursor\")",
+        "$ui_exe=\"$dir\\Uninstall Cursor.exe\"",
+        "& $ui_exe /S",
+        "sleep_uninstall $ui_exe",
+        "remove_files @(\"$user_LocalAppData\\cursor-updater\")"
+    ],
     "checkver": {
-        "script": [
-            "$response = Invoke-WebRequest -Uri 'https://www.cursor.so/'",
-            "$downloadUrl = $response.Links | Where-Object href -match 'windows/nsis/x64' | Select-Object -first 1 -expand href",
-            "$res = Invoke-WebRequest -Uri $downloadUrl -MaximumRedirection 0 -UseBasicParsing",
-            "$filePath = Join-Path $cachedir $res.Headers['Content-Disposition'].Split('=')[1].TrimStart(\"`\"\").TrimEnd(\"`\"\")",
-            "$version = [regex]::Match($filePath, '([\\d.]+)').Groups[1].Value",
-            "Write-Output $version $downloadUrl"
-        ],
-        "regex": "^([\\d.]+)\\s+https://dl.todesktop.com/(?<dlquerypath>.+)$"
+        "url": "https://changelog.cursor.sh/?",
+        "regex": "h2.+?>([\\d\\.]+) -"
     },
     "autoupdate": {
-        "url": "https://dl.todesktop.com/$matchDlquerypath#/dl.7z",
-        "hash": {
-            "mode": "download"
-        }
+        "url": "https://download.cursor.sh/windows/nsis/x64#/_installer_.exe"
     }
 }

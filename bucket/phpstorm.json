@@ -1,58 +1,53 @@
 {
-    "version": "2023.3.5-233.14808.18",
-    "description": "Cross-Platform IDE for PHP by JetBrains.",
+    "version": "2023.3.6",
+    "description": "由 JetBrains 开发的适用于 PHP 的跨平台集成开发环境。Cross-Platform IDE for PHP by JetBrains.",
     "homepage": "https://www.jetbrains.com/phpstorm/",
     "license": {
-        "identifier": "Proprietary",
+        "identifier": "Shareware",
         "url": "https://www.jetbrains.com/store/license.html"
     },
-    "url": "https://download.jetbrains.com/webide/PhpStorm-2023.3.5.exe#/dl.7z",
-    "hash": "cdbe5f9fb0b4a10c53800e7db938ff87863d7beae53784bf59480f563c366a4d",
-    "extract_to": "IDE",
-    "installer": {
-        "script": [
-            "& \"$bucketsdir\\extras\\scripts\\jetbrains\\portable.ps1\" $dir $persist_dir",
-            "Remove-Item \"$dir\\IDE\\`$*\" -Force -Recurse"
+    "url": "https://download.jetbrains.com/webide/PhpStorm-2023.3.6.exe#/_installer_.exe",
+    "hash": "36456cbe0c0b1ab74ed6a39dac12e6fd5ea74673838cceac42c54566bb96ce3a",
+    "bin": [
+        [
+            "IDE\\bin\\phpstorm64.exe",
+            "PhpStorm"
         ]
-    },
-    "architecture": {
-        "64bit": {
-            "bin": [
-                [
-                    "IDE\\bin\\phpstorm64.exe",
-                    "phpstorm"
-                ]
-            ],
-            "shortcuts": [
-                [
-                    "IDE\\bin\\phpstorm64.exe",
-                    "JetBrains\\PhpStorm"
-                ]
-            ]
-        },
-        "32bit": {
-            "bin": "IDE\\bin\\phpstorm.exe",
-            "shortcuts": [
-                [
-                    "IDE\\bin\\phpstorm.exe",
-                    "JetBrains\\PhpStorm"
-                ]
-            ]
-        }
-    },
-    "persist": [
-        "IDE\\bin\\idea.properties",
-        "IDE\\bin\\phpstorm.exe.vmoptions",
-        "IDE\\bin\\phpstorm64.exe.vmoptions",
-        "profile"
+    ],
+    "shortcuts": [
+        [
+            "IDE\\bin\\phpstorm64.exe",
+            "PhpStorm"
+        ]
+    ],
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$verPart = $version -split '\\.'",
+        "$verRes = \"$($verPart[0]).$($verPart[1])\"",
+        "persist -dir @(\"$user_AppData\\JetBrains\\PhpStorm$($verRes)\",\"$user_LocalAppData\\JetBrains\\PhpStorm$($verRes)\") @(\"$persist_dir\\PhpStorm\",\"$persist_dir\\PhpStorm_LocalAppData\")",
+        "$path_exe=\"$dir\\_installer_.exe\"",
+        "& $path_exe /S /D=\"$dir\\IDE\"",
+        "sleep_install \"$dir\\IDE\\bin\\idea.properties\"",
+        "clean_redundant_files @($path_exe,\"$admin_apps_lnk\\JetBrains\\PhpStorm $($version).lnk\")",
+        "create_app_lnk \"$dir\\IDE\\bin\\phpstorm64.exe\" \"$desktop\\PhpStorm.lnk\""
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process $false",
+        "$verPart = $version -split '\\.'",
+        "$verRes = \"$($verPart[0]).$($verPart[1])\"",
+        "remove_files @(\"$user_AppData\\JetBrains\\PhpStorm$($verRes)\",\"$user_LocalAppData\\JetBrains\\PhpStorm$($verRes)\")",
+        "$ui_exe=\"$dir\\IDE\\bin\\Uninstall.exe\"",
+        "try{ & $ui_exe /S }catch{}",
+        "sleep_uninstall $ui_exe"
     ],
     "checkver": {
-        "url": "https://data.services.jetbrains.com/products/releases?code=PS&latest=true&platform=zip&type=release",
-        "regex": "version\":\"(?<ver>[\\d.]+)\".*\"build\":\"(?<build>[\\d.]+)\"",
-        "replace": "${ver}-${build}"
+        "url": "https://data.services.jetbrains.com/products/releases?code=ps&latest=true",
+        "jsonpath": "$.PS[0].version"
     },
     "autoupdate": {
-        "url": "https://download.jetbrains.com/webide/PhpStorm-$matchHead.exe#/dl.7z",
+        "url": "https://download.jetbrains.com/webide/PhpStorm-$version.exe#/_installer_.exe",
         "hash": {
             "url": "$url.sha256"
         }
