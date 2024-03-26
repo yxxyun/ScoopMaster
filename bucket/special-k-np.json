@@ -6,8 +6,12 @@
     "url": "https://sk-data.special-k.info/repository/SpecialK_23.9.10.5.exe",
     "hash": "ef1ec047af4623ada6682e4fc289c960bc9422a826ef7a034294238ddfdee5f4",
     "pre_install": [
+        "$special_k_dir = \"$env:LOCALAPPDATA\\Programs\\Special K\"",
         "New-Item \"$dir\\SKIF.exe\" -Type SymbolicLink `",
-        "  -Target \"$env:LOCALAPPDATA\\Programs\\Special K\\SKIF.exe\" -Force | Out-Null"
+        "  -Target \"$special_k_dir\\SKIF.exe\" -Force | Out-Null",
+        "if (Test-Path \"$persist_dir\\Profiles\") {",
+        "    Copy-Item \"$persist_dir\\Profiles\" \"$special_k_dir\\Profiles\" -Recurse -Force",
+        "}"
     ],
     "installer": {
         "args": [
@@ -17,22 +21,23 @@
             "/CURRENTUSER"
         ]
     },
+    "env_add_path": ".",
     "uninstaller": {
         "script": [
+            "$special_k_dir = \"$env:LOCALAPPDATA\\Programs\\Special K\"",
             "if ($cmd -eq 'uninstall') {",
-            "    Start-Process \"$env:LOCALAPPDATA\\Programs\\Special K\\Servlet\\unins000.exe\" -Wait `",
-            "      -Args @('/VERYSILENT', '/SP-', '/NORESTART', '/CURRENTUSER')",
             "    if (!$purge) {",
             "        ensure \"$persist_dir\" | Out-Null",
             "        Write-Host 'Backing up Special K profiles...' -F 'Yellow'",
-            "        Copy-Item \"$env:LOCALAPPDATA\\Programs\\Special K\\Profiles\" \"$persist_dir\\Profiles\" -Recurse -Force",
+            "        Copy-Item \"$special_k_dir\\Profiles\" \"$persist_dir\\Profiles\" -Recurse -Force",
             "        Write-Host 'Done! Special K profiles were successfully backed up' -F 'Green'",
             "        Write-Output \"You can find a backup of your Special K profiles in '$persist_dir\\Profiles'\"",
             "    }",
+            "    Start-Process \"$special_k_dir\\Servlet\\unins000.exe\" -Wait `",
+            "      -Args @('/VERYSILENT', '/SP-', '/NORESTART', '/CURRENTUSER')",
             "}"
         ]
     },
-    "env_add_path": ".",
     "checkver": {
         "script": [
             "$jsonContent = Invoke-RestMethod 'https://sk-data.special-k.info/repository.json'",
