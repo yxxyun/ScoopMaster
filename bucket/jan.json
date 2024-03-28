@@ -1,44 +1,40 @@
 {
     "version": "0.4.9",
-    "description": "ChatGPT 的开源替代品，可在计算机上百分百脱机运行。An open source alternative to ChatGPT that runs 100% offline on your computer.",
-    "homepage": "https://jan.ai",
-    "license": {
-        "identifier": "GNU Affero General Public License v3.0",
-        "url": "https://github.com/janhq/jan/blob/main/LICENSE"
+    "description": "An open source alternative to ChatGPT that runs 100% offline on your computer",
+    "homepage": "https://jan.ai/",
+    "license": "AGPL-3.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/janhq/jan/releases/download/v0.4.9/jan-win-x64-0.4.9.exe",
+            "hash": "sha512:22b2bcc0ec8c188f06673e43d346dbd30d7e5539c472e3dfdffde90e8f2444f03142070e01835c6bca32f85c72ce1f6f421fc8923d5fdbef3bf8b69252034df3"
+        }
     },
-    "url": "https://github.com/janhq/jan/releases/download/v0.4.9/jan-win-x64-0.4.9.exe",
-    "hash": "544e9e339130fa7cb6205dd31e87cd69711d51684ebaa32edf03e8a5c75b2345",
-    "bin": "jan.exe",
+    "installer": {
+        "script": [
+            "$file = (Get-ChildItem \"$dir\" 'jan-*.exe' | Select-Object -First 1).FullName",
+            "Expand-7ZipArchive \"$file\" \"$dir\\\" -Removal",
+            "Expand-7ZipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
+            "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\`$R0\"  -Force -Recurse"
+        ]
+    },
     "shortcuts": [
         [
-            "jan.exe",
+            "Jan.exe",
             "Jan"
         ]
-    ],
-    "pre_install": [
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "$path_exe=\"$dir\\jan-win-x64-$($version).exe\"",
-        "& $path_exe /S /D=$dir",
-        "$core_exe=\"$dir\\jan.exe\"",
-        "sleep_install $core_exe",
-        "persist -dir @(\"$user_AppData\\jan\",\"$env:UserProfile\\jan\") @(\"$persist_dir\\jan\",\"$persist_dir\\jan_user\")",
-        "clean_redundant_files @($path_exe,\"$apps_lnk\\jan.lnk\")",
-        "remove_app_lnk @(\"Jan.lnk\")"
-    ],
-    "pre_uninstall": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "stop_process $false",
-        "remove_files @(\"$user_AppData\\jan\",\"$env:UserProfile\\jan\")",
-        "$ui_exe=\"$dir\\Uninstall jan.exe\"",
-        "try{ & $ui_exe /S }catch{}",
-        "sleep_uninstall $ui_exe",
-        "remove_files @(\"$user_LocalAppData\\jan-updater\")"
     ],
     "checkver": {
         "github": "https://github.com/janhq/jan"
     },
     "autoupdate": {
-        "url": "https://github.com/janhq/jan/releases/download/v$version/jan-win-x64-$version.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/janhq/jan/releases/download/v$version/jan-win-x64-$version.exe",
+                "hash": {
+                    "url": "https://github.com/janhq/jan/releases/download/v$version/latest.yml",
+                    "regex": "sha512: $base64"
+                }
+            }
+        }
     }
 }
