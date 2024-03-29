@@ -1,0 +1,55 @@
+{
+    "version": "1.0",
+    "description": "AutoHotKey script to map right Ctrl as AppsKey",
+    "homepage": "https://github.com/ZhangTianrong/scoop-bucket",
+    "url": "https://github.com/ZhangTianrong/scoop-bucket/raw/8f1fa55696798994d726f40e8e428e518ade1a07/bucket/rctrl2apps.json",
+    "hash": "812D37E3F85B22B780E2517B95098CD88D63AC6BBCCD98295047EAD844F093EF",
+    "license": "Unknown",
+    "depends": ["autohotkey", "imagemagick"],
+    "installer": {
+        "script": [
+            "$script = @\"",
+            "~RCtrl up::",
+            "If (A_priorKey = \"RControl\")",
+            "   Send {AppsKey}",
+            "Return",
+            "\"@",
+            "$scriptPath = (Join-Path -Path \"$dir\" -ChildPath \"RCtrl2Apps.ahk\")",
+            "New-Item -Type File -Path $scriptPath -Force | Out-Null",
+            "Set-Content -Path $scriptPath -Value $script -Force | Out-Null",
+            "$svg = @\"",
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">",
+            "   <g>",
+            "       <path fill=\"none\" d=\"M0 0H24V24H0z\"/>",
+            "       <path d=\"M21 18v2H3v-2h18zM17.404 3.904L22 8.5l-4.596 4.596-1.414-1.414L19.172 8.5 15.99 5.318l1.414-1.414zM12 11v2H3v-2h9zm0-7v2H3V4h9z\" fill=\"#ffffff\"/>",
+            "   </g>",
+            "</svg>",
+            "\"@",
+            "$svgPath = (Join-Path -Path \"$dir\" -ChildPath \"RCtrl2Apps.svg\")",
+            "New-Item -Type File -Path $svgPath -Force | Out-Null",
+            "Set-Content -Path $svgPath -Value $svg -Force | Out-Null",
+            "$iconPath = (Join-Path -Path \"$dir\" -ChildPath \"RCtrl2Apps.ico\")",
+            "magick convert -background none -density 256 \"$svgPath\" \"$iconPath\"",
+            "$ahkRoot = $(scoop prefix autohotkey)",
+            "$ahkV1Root = (Get-ChildItem -Directory $ahkRoot | Where-Object { $_.Name -match '^v1' } | Select-Object -First 1).FullName",
+            "$ahkV1ANSIBase = (Join-Path -Path $ahkV1Root -ChildPath \"ANSI 32-bit.bin\")",
+            "$ahk2exe = (Join-Path -Path $(scoop prefix autohotkey) -ChildPath \"Compiler\\Ahk2Exe.exe\")",
+            "$exePath = (Join-Path -Path $(Resolve-Path -Path \"$dir\") -ChildPath \"RCtrl2Apps.exe\")",
+            "& $ahk2exe /in \"$scriptPath\" /icon \"$iconPath\" /bin \"$ahkV1ANSIBase\" /out \"$exePath\"",
+            "$timeout = 5",
+            "$stopwatch = [System.Diagnostics.Stopwatch]::StartNew()",
+            "while (-not (Test-Path $exePath) -and $stopwatch.Elapsed.TotalSeconds -lt $timeout) {",
+            "   Start-Sleep -Milliseconds 100",
+            "}",
+            "if (-not (Test-Path $exePath)) {",
+            "   error \"AutoHotKey failed to compile RCtrl2Apps.ahk\"",
+            "}"
+        ]
+    },
+    "shortcuts": [
+        [
+            "RCtrl2Apps.exe",
+            "RCtrl2Apps"
+        ]
+    ]
+}
