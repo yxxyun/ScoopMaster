@@ -1,56 +1,44 @@
 {
-    "version": "124.0.1",
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+    "version": "124.0.2",
     "description": "Popular open source web browser.",
     "homepage": "https://www.mozilla.org/firefox/",
-    "license": "MPL-2.0",
-    "notes": [
-        "To set profile 'Scoop' as *DEFAULT*, or profiles/settings was lost after update:",
-        "  - Run 'Firefox Profile Manager', choose 'Scoop' then click 'Start Firefox'.",
-        "  - Visit 'about:profiles' page in Firefox to check *DEFAULT* profile.",
-        "For details: https://support.mozilla.org/en-US/kb/profile-manager-create-remove-switch-firefox-profiles"
-    ],
+    "license": {
+        "identifier": "MPL-2.0",
+        "url": "https://www.mozilla.org/en-US/MPL/2.0/"
+    },
+    "notes": "For details about switching Firefox profiles, refer to https://support.mozilla.org/en-US/kb/profile-manager-create-remove-switch-firefox-profiles",
     "architecture": {
         "64bit": {
-            "url": "https://archive.mozilla.org/pub/firefox/releases/124.0.1/win64/en-US/Firefox%20Setup%20124.0.1.exe#/dl.7z",
-            "hash": "sha512:19ddea61245e6c5e6ebb6d7a6d0900ad6e39dd11cc3519d956eba9d0ec5889399658cc36f2c03217749bb6d8da99660106dcb0dc1cb87cb503a25ba02d86c63e"
+            "url": "https://archive.mozilla.org/pub/firefox/releases/124.0.2/win64/en-US/Firefox%20Setup%20124.0.2.exe#/dl.7z",
+            "hash": "sha512:fc7a5940a0a32ac9fc45771f57e709c3180f3985d59b639b330d458cbccf829b03c3fdeb0015f43ce52605002498a76dbef2e97001b113d6651e779d653f9ea5"
         },
         "32bit": {
-            "url": "https://archive.mozilla.org/pub/firefox/releases/124.0.1/win32/en-US/Firefox%20Setup%20124.0.1.exe#/dl.7z",
-            "hash": "sha512:eb8e837f62b9f82b57db47922a5a088539a84636e12118bf1c345886a03493feb7ad92cfbf57f2442de41040e246b4c445d074e804f0b918bd6abed057c80d59"
-        },
-        "arm64": {
-            "url": "https://archive.mozilla.org/pub/firefox/releases/124.0.1/win64-aarch64/en-US/Firefox%20Setup%20124.0.1.exe#/dl.7z",
-            "hash": "sha512:49710a4e910d301f64aea0c6256e2e0a3869b34881e6ce96e73d604fb3ae887d0f1fb4da6ff25aacaa5b277afcc501a226aac948127be7ff37ae6b06aa91be38"
+            "url": "https://archive.mozilla.org/pub/firefox/releases/124.0.2/win32/en-US/Firefox%20Setup%20124.0.2.exe#/dl.7z",
+            "hash": "sha512:bce358d57a36bc1d9326f944b7aa3b3f59c3174b8a5d4c7e2ee7b4fe90b1ac3cfb49e79ffb68564359680f6920cf32ac889252aff2a13424bc252d412504f40e"
         }
     },
     "extract_dir": "core",
-    "post_install": [
-        "firefox -CreateProfile \"Scoop $persist_dir\\profile\"",
-        "$Addition = \"$persist_dir\\addition\"",
-        "if (Test-Path $Addition) {",
-        "  info 'Copying additional items...'",
-        "  Copy-Item -Path $Addition\\* -Destination $dir -Force -Recurse -ErrorAction SilentlyContinue",
-        "}"
-    ],
-    "bin": "firefox.exe",
     "shortcuts": [
         [
             "firefox.exe",
             "Firefox"
-        ],
-        [
-            "firefox.exe",
-            "Firefox Profile Manager",
-            "-P"
         ]
     ],
+    "pre_install": [
+        "if (!(Test-Path \"$persist_dir\\defaults\\pref\\channel-prefs.js\")) {",
+        "  Set-Content -Encoding Ascii -Path \"$dir\\defaults\\pref\\channel-prefs.js\" -Value 'pref(\"app.update.channel\", \"default\");'",
+        "  Write-Host -ForegroundColor Green \"The auto-update will be disabled. You can change the update channel in '$persist_dir\\defaults\\pref\\channel-prefs.js'.\"",
+        "}"
+    ],
     "persist": [
+        "defaults\\pref\\channel-prefs.js",
         "distribution",
         "profile"
     ],
     "checkver": {
-        "url": "https://product-details.mozilla.org/1.0/firefox_versions.json",
-        "jsonpath": "$.LATEST_FIREFOX_VERSION"
+        "url": "https://www.mozilla.org/en-US/firefox/notes/",
+        "regex": "class=\"c-release-version\">([\\d.]+)</"
     },
     "autoupdate": {
         "architecture": {
@@ -66,13 +54,6 @@
                 "hash": {
                     "url": "https://archive.mozilla.org/pub/firefox/releases/$version/SHA512SUMS",
                     "regex": "$sha512\\s+win32/en-US/$basename"
-                }
-            },
-            "arm64": {
-                "url": "https://archive.mozilla.org/pub/firefox/releases/$version/win64-aarch64/en-US/Firefox%20Setup%20$version.exe#/dl.7z",
-                "hash": {
-                    "url": "https://archive.mozilla.org/pub/firefox/releases/$version/SHA512SUMS",
-                    "regex": "$sha512\\s+win64-aarch64/en-US/$basename"
                 }
             }
         }
