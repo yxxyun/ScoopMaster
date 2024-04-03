@@ -1,10 +1,18 @@
 {
     "version": "1.42.24.0",
-    "description": "您的指尖工具箱",
-    "homepage": "https://getquicker.net/",
-    "license": "Proprietary",
-    "url": "https://files.getquicker.net/_productfiles/202403/Quicker.x64.1.42.24.0.msi",
-    "hash": "509bb5f82d63d6ad6ba7ca79f5be5bbeb94d92bac718629e219f17faa57a14a4",
+    "description": "指尖工具箱, Windows 效率工具",
+    "homepage": "https://getquicker.net",
+    "license": "Shareware",
+    "architecture": {
+        "64bit": {
+            "url": "https://getquicker.net/download/item/fast_x64#/quiker.msi",
+            "hash": "23e443fb191dc99256d5a8dca08126f3c1bd017bbecfca74968082e535df7003"
+        },
+        "32bit": {
+            "url": "https://getquicker.net/download/item/fast_x86#/quiker.msi",
+            "hash": "6f5bd9f8260b11ea839f6176ece82a808fedc4307ec30ca13b79a9113ff3fff5"
+        }
+    },
     "extract_dir": "Quicker",
     "shortcuts": [
         [
@@ -12,18 +20,29 @@
             "Quicker"
         ]
     ],
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "persist -dir @(\"$user_LocalAppData\\Quicker\",\"$user_Documents\\Quicker\") @(\"$persist_dir\\Quicker\",\"$persist_dir\\Quicker_Documents\")",
+        "create_app_lnk \"$dir\\Quicker.exe\" \"$desktop\\Quicker.lnk\""
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process",
+        "remove_files @(\"$desktop\\Quicker.lnk\",\"$user_Documents\\Quicker\",\"$user_LocalAppData\\Quicker\")"
+    ],
     "checkver": {
-        "script": [
-            "$url = 'https://getquicker.net/Download'",
-            "$cont = $(Invoke-WebRequest $url).Content",
-            "$version = (Select-String -InputObject $cont 'version=([\\d.]+)' -AllMatches).Matches[1].Groups[1].Value",
-            "$releaseDate = (Select-String -InputObject $cont '发布时间：(\\d{4})-(\\d+)' -AllMatches).Matches[1].Groups",
-            "Write-Output ('{0}-{1}{2}' -f $version, $releaseDate[1].value, $releaseDate[2].value)"
-        ],
-        "re": "([\\d.]+)-(\\d+)",
-        "replace": "$1"
+        "url": "https://getquicker.net/open/api/quicker/versionhistory",
+        "jsonpath": "$[0].version"
     },
     "autoupdate": {
-        "url": "https://files.getquicker.net/_productfiles/$match2/Quicker.x64.$version.msi"
+        "architecture": {
+            "64bit": {
+                "url": "https://getquicker.net/download/item/fast_x64#/quiker.msi"
+            },
+            "32bit": {
+                "url": "https://getquicker.net/download/item/fast_x86#/quiker.msi"
+            }
+        }
     }
 }
