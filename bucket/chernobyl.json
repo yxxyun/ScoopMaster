@@ -11,10 +11,21 @@
         }
     },
     "installer": {
-        "args": "/S /D=$dir"
+        "script": [
+            "Move-Item \"$dir\\$fname\" \"$dir\\..\\$fname\"",
+            "Start-Process -Wait \"$dir\\..\\$fname\" -ArgumentList @('/S', \"/D=$dir\")",
+            "Remove-Item \"$dir\\..\\$fname\""
+        ]
     },
+    "post_install": [
+        "$tgt=\"$dir\\Chrnobyl.ini\"",
+        "(Get-Content $tgt) -replace 'C:\\\\CHRNOBYL',$dir | Set-Content $tgt"
+    ],
+
     "uninstaller": {
-        "file": "$dir\\uninstall.exe",
-        "args": "/S"
-    }
+        "script": [
+            "Start-Process -Wait \"$dir\\uninstall.exe\" -ArgumentList('/S')"
+        ]
+    },
+    "persist": "FILES\\SAVED"
 }
