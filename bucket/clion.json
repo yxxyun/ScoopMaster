@@ -1,49 +1,55 @@
 {
-    "version": "2024.1-241.14494.288",
-    "description": "Cross-Platform IDE for C and C++ by JetBrains.",
-    "homepage": "https://www.jetbrains.com/cpp/",
+    "version": "2024.1",
+    "description": "由 JetBrains 开发的适用于 C 和 C++ 的跨平台集成开发环境。Cross-Platform IDE for C and C++ by JetBrains.",
+    "homepage": "https://www.jetbrains.com/clion/",
     "license": {
-        "identifier": "Proprietary",
+        "identifier": "Shareware",
         "url": "https://www.jetbrains.com/store/license.html"
     },
-    "architecture": {
-        "64bit": {
-            "url": "https://download.jetbrains.com/cpp/CLion-2024.1.win.zip",
-            "hash": "5a4732124646f48bd7f4a258a69ce760325f053abe8a274337b366f65662c7fd",
-            "bin": [
-                [
-                    "IDE\\bin\\clion64.exe",
-                    "clion"
-                ]
-            ],
-            "shortcuts": [
-                [
-                    "IDE\\bin\\clion64.exe",
-                    "JetBrains\\CLion"
-                ]
-            ]
-        }
-    },
-    "extract_to": "IDE",
-    "installer": {
-        "script": "& \"$bucketsdir\\extras\\scripts\\jetbrains\\portable.ps1\" $dir $persist_dir"
-    },
-    "persist": [
-        "IDE\\bin\\idea.properties",
-        "IDE\\bin\\clion64.exe.vmoptions",
-        "profile"
+    "url": "https://download.jetbrains.com/cpp/CLion-2024.1.exe#/_installer_.exe",
+    "hash": "9a75ccff6f34c326432bc379efd62d6297d1b498c83d10067915cb0aa36b3fe6",
+    "bin": [
+        [
+            "IDE\\bin\\clion64.exe",
+            "CLion"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "IDE\\bin\\clion64.exe",
+            "CLion"
+        ]
+    ],
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$verPart = $version -split '\\.'",
+        "$verRes = \"$($verPart[0]).$($verPart[1])\"",
+        "persist -dir @(\"$user_AppData\\JetBrains\\CLion$($verRes)\",\"$user_LocalAppData\\JetBrains\\CLion$($verRes)\") @(\"$persist_dir\\CLion\",\"$persist_dir\\CLion_LocalAppData\")",
+        "$path_exe=\"$dir\\_installer_.exe\"",
+        "& $path_exe /S /D=\"$dir\\IDE\"",
+        "sleep_install \"$dir\\IDE\\bin\\idea.properties\"",
+        "clean_redundant_files @($path_exe,\"$admin_apps_lnk\\JetBrains\\CLion $($version).lnk\")",
+        "create_app_lnk \"$dir\\IDE\\bin\\clion64.exe\" \"$desktop\\CLion.lnk\""
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process $false",
+        "$preName = \"CLion\"",
+        "$remove_list = @(\"$user_AppData\\JetBrains\", \"$user_LocalAppData\\JetBrains\") | ForEach-Object {",
+        "   Get-ChildItem $_ | Where-Object { $_.Name -match \"$preName[\\d\\.]+\" } | ForEach-Object { $_.FullName }",
+        "}",
+        "remove_files $remove_list",
+        "$ui_exe=\"$dir\\IDE\\bin\\Uninstall.exe\"",
+        "try{ & $ui_exe /S }catch{}",
+        "sleep_uninstall $ui_exe"
     ],
     "checkver": {
-        "url": "https://data.services.jetbrains.com/products/releases?code=CL&latest=true&platform=zip&type=release",
-        "regex": "version\":\"(?<ver>[\\d.]+)\".*\"build\":\"(?<build>[\\d.]+)\"",
-        "replace": "${ver}-${build}"
+        "url": "https://data.services.jetbrains.com/products/releases?code=cl&latest=true",
+        "jsonpath": "$.CL[0].version"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://download.jetbrains.com/cpp/CLion-$matchHead.win.zip"
-            }
-        },
+        "url": "https://download.jetbrains.com/cpp/CLion-$version.exe#/_installer_.exe",
         "hash": {
             "url": "$url.sha256"
         }
