@@ -1,39 +1,34 @@
 {
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
     "version": "2024",
+    "description": "A cross-platform, free software distribution for the TeX typesetting system that includes major TeX-related programs, macro packages, and fonts.",
     "homepage": "https://tug.org/texlive/",
-    "description": "TeX Live is a cross-platform, free software distribution for the TeX typesetting system",
-    "license": "LPPL,GPL2",
-    "architecture": {
-        "64bit": {
-            "url": "https://mirrors4.tuna.tsinghua.edu.cn/ctan/systems/texlive/tlnet/install-tl.zip",
-            "hash": "sha512:dbe17969e8705cb1c664aca393300d2907aa3f36966b12700d03045c0ed68ff6a3c7c394b6a45f15f2e76dbd1158c773f2de20edabc56ff507429d5a4dc3a9db"
-        }
+    "license": {
+        "identifier": "LPPL-1.3c,GPL-2.0-only",
+        "url": "https://tug.org/texlive/LICENSE.TL"
     },
+    "url": "https://mirrors.tuna.tsinghua.edu.cn/CTAN/systems/texlive/Images/texlive2024.iso",
+    "hash": "sha512:6e3c3470ee5ca903bb5c31f436b018cd2cfbc526c4ca563ccb15959802f8b1a6c0475c58566c1afaba19dc780fd192ac5511818ef5a89828d935c66c62cfcb2a",
+    "extract_to": "installer",
     "installer": {
         "script": [
-            "Write-Host 'Invoking TeX Live installer...' -ForegroundColor DarkCyan",
-            "Write-Host 'This can take a few minutes to to a long time...' -ForegroundColor DarkYellow",
-            "Get-ChildItem \"$dir\\install-tl-*\" | Rename-Item -NewName \"$dir\\installer\"",
             "$env:TEXLIVE_INSTALL_PAPER='a4'",
             "$env:TEXLIVE_INSTALL_PREFIX=\"$dir\"",
             "$env:TEXLIVE_INSTALL_NO_CONTEXT_CACHE=1",
             "$env:TEXLIVE_INSTALL_NO_RESUME=1",
             "$env:TEXLIVE_INSTALL_ENV_NOCHECK=1",
             "$installProfile = \"$dir\\installer\\default.profile\"",
-            "Write-Output \"selected_scheme scheme-small\" | Out-File $installProfile -Encoding ASCII",
-            "$installArgs = \"-no-gui -portable -non-admin -profile=$installProfile\"",
-            "Write-Output 'Downloading and installing TeX Live packages...'",
-            "Invoke-ExternalCommand -Path \"$dir\\installer\\install-tl-windows.bat\" -ArgumentList $installArgs",
+            "\"selected_scheme scheme-full\" | Out-File $installProfile -Encoding ascii",
+            "Write-Host -ForegroundColor DarkCyan 'Running TeX Live installer...'",
+            "Write-Host -ForegroundColor DarkYellow 'This can take a few minutes or longer...'",
+            "Invoke-ExternalCommand \"$dir\\installer\\install-tl-windows.bat\" -Args @('-no-gui', '-portable', '-non-admin', \"-profile=$installProfile\") | Out-Null",
             "Remove-Item \"$dir\\installer\" -Recurse -Force | Out-Null",
-            "if (!(Test-Path \"$dir\\bin\\win64\")) {",
-            "    New-Item -Type Directory -Path \"$dir\\bin\\win64\" | Out-Null",
-            "}",
-            "# Unset install envs",
-            "$env:TEXLIVE_INSTALL_PAPER=''",
-            "$env:TEXLIVE_INSTALL_PREFIX=''",
-            "$env:TEXLIVE_INSTALL_NO_CONTEXT_CACHE=''",
-            "$env:TEXLIVE_INSTALL_NO_RESUME=''",
-            "$env:TEXLIVE_INSTALL_ENV_NOCHECK=''"
+            "if (!(Test-Path \"$dir\\bin\\win64\")) { New-Item -Type Directory -Path \"$dir\\bin\\win64\" | Out-Null }",
+            "$env:TEXLIVE_INSTALL_PAPER=$null",
+            "$env:TEXLIVE_INSTALL_PREFIX=$null",
+            "$env:TEXLIVE_INSTALL_NO_CONTEXT_CACHE=$null",
+            "$env:TEXLIVE_INSTALL_NO_RESUME=$null",
+            "$env:TEXLIVE_INSTALL_ENV_NOCHECK=$null"
         ]
     },
     "env_add_path": [
@@ -44,20 +39,21 @@
         [
             "tl-tray-menu.exe",
             "Tex Live Manager"
+        ],
+        [
+            "bin\\win32\\texworks.exe",
+            "TeXworks"
         ]
     ],
     "persist": "texmf-config",
     "checkver": {
-        "regex": "TeX Live ([\\d]+) is available"
+        "url": "https://mirrors.tuna.tsinghua.edu.cn/CTAN/systems/texlive/Images/",
+        "regex": "texlive([\\d]+).iso"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://mirrors4.tuna.tsinghua.edu.cn/ctan/systems/texlive/tlnet/install-tl.zip",
-                "hash": {
-                    "url": "$url.sha512"
-                }
-            }
+        "url": "https://mirrors.tuna.tsinghua.edu.cn/CTAN/systems/texlive/Images/texlive$version.iso",
+        "hash": {
+            "url": "$url.sha512"
         }
     }
 }
