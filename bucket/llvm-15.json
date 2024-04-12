@@ -17,11 +17,10 @@
     "env_add_path": "bin",
     "checkver": {
         "script": [
-            "$requestResponse = Invoke-WebRequest -Headers @{'Accept' = 'application/vnd.github+json'; 'X-Github-Api-Version' = '2022-11-28' } -Uri 'https://api.github.com/repos/llvm/llvm-project/releases'",
-            "$responseContent = $requestResponse.Content | ConvertFrom-Json",
-            "$tags = $responseContent | Select-Object -Property tag_name",
-            "$versionList = $tags | ForEach-Object { $_.tag_name -match '^llvmorg-([\\d.]+)$' ? [System.Version]$Matches.1 : $false } | Where-Object { $_ -ne $false }",
-            "$latest15 = ($versionList | Where-Object { $_.Major -eq 15 } | Measure-Object -Maximum).Maximum",
+            "$responseContent = (Invoke-WebRequest -Headers @{'Accept' = 'application/vnd.github+json'; 'X-Github-Api-Version' = '2022-11-28' } -Uri 'https://api.github.com/repos/llvm/llvm-project/releases').Content | ConvertFrom-Json",
+            "$tags = $responseContent |select -Property tag_name",
+            "$versionList = $tags |foreach { if ($_.tag_name -match '^llvmorg-([\\d.]+)$') {[System.Version]$Matches.1}}",
+            "$latest15 = ($versionList |where { $_.Major -eq 15 } |measure -Maximum).Maximum",
             "Write-Output $latest15.ToString()"
         ],
         "regex": "^([\\d.]+)$"
