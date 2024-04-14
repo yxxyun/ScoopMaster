@@ -1,66 +1,34 @@
 {
-    "description": "Chatbox is a desktop app for GPT-4 / GPT-3.5 (OpenAI API)",
+    "version": "1.3.4",
+    "description": "A desktop app for GPT/LLM that supports Windows, Mac, Linux & Web Online",
     "homepage": "https://github.com/Bin-Huang/chatbox",
     "license": "GPL-3.0-only",
-    "version": "1.3.3",
-    "checkver": {
-        "url": "https://chatboxai.app/help-center/changelog",
-        "regex": "<h2>Changelog</h2>\\s*<a(?:(?!<a|</a>).)*</a>\\s*<h3>v(?<Version>\\d+(\\.\\d+)*)</h3>",
-        "replace": "${Version}"
-    },
-    "autoupdate": {
-        "url": "https://chatboxai.app/install_chatbox/win64#/setup.7z",
-        "hash": {
-            "mode": "download"
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Bin-Huang/chatbox/releases/download/v1.3.4/Chatbox-1.3.4-Setup.exe#/dl.7z",
+            "hash": "sha512:9eaa3de893f72470c1921e4635493244ffb57a87ab30372b2f73cb8d70bbb07b4fc2389821cd658b93468267b188759ad59024cafe22e70d62f618e0d187c91d"
         }
     },
-    "url": "https://chatboxai.app/install_chatbox/win64#/setup.7z",
-    "hash": "54dfe2fb22549587683210038010baa59d8da9dfc222bd62a1d6db35748d5b2d",
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
+        "Remove-Item \"$dir\\`$*\" -Recurse"
+    ],
     "shortcuts": [
         [
-            "Chatbox.exe",
-            "ChatGPT"
+            "chatbox.exe",
+            "ChatBox"
         ]
     ],
-    "installer": {
-        "script": [
-            "Move-Item -Path \"$dir\\`$PLUGINSDIR\\*\" -Destination $dir\\ -Force",
-            "Move-Item -Path \"$dir\\`$R0\\*\" -Destination $dir\\ -Force",
-            "Remove-Item -Path \"$dir\\`$PLUGINSDIR\" -Recurse -Force",
-            "Remove-Item -Path \"$dir\\`$R0\" -Recurse -Force",
-            "7z x -o\"$dir\" \"$dir\\app-64.7z\" -y | Out-Null",
-            "Remove-Item -Path \"$dir\\app-64.7z\" -Force"
-        ]
-    },
-    "post_install": [
-        "if (Test-Path -Path \"$persist_dir\\.use_original_icon\") {return}",
-        "if (Get-Command magick -ErrorAction SilentlyContinue) {",
-        "   Push-Location $dir",
-        "   Invoke-WebRequest https://cdn.openai.com/brand/openai-logos.zip -OutFile openai-logos.zip",
-        "   Expand-Archive openai-logos.zip -DestinationPath logos",
-        "   Move-Item -Path logos\\openai-logos\\SVGs\\openai-logomark.svg -Destination logo.svg",
-        "   Remove-Item -Path openai-logos.zip",
-        "   Remove-Item -Path logos -Recurse",
-        "   magick -size 256x256 xc:none -fill \"#1ea078\" -draw \"circle 128,128 128,0\" logo_circle.png",
-        "   magick convert -density 128x128 -background transparent logo.svg -define icon:auto-resize -colors 256 logo.png",
-        null,
-        "   magick logo.png -resize 150x150 logo_resized.png",
-        "   magick composite -gravity center logo_resized.png logo_circle.png OpenAI.ico",
-        "   Remove-Item logo*",
-        "   $shortcutPath = Join-Path -Path (Convert-Path([System.IO.Path]::Combine([Environment]::GetFolderPath($global ? 'CommonStartMenu':'StartMenu'), 'Programs', 'Scoop Apps'))) -ChildPath 'ChatGPT.lnk'",
-        "   Copy-Item -Path $shortcutPath -Destination OriginalShortcut.lnk",
-        "   $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutPath)",
-        "   $shortcut.IconLocation = (Join-Path -Path $dir -ChildPath 'OpenAI.ico')",
-        "   $shortcut.Save()",
-        "   Pop-Location",
-        "   Write-Host 'A custom icon has been set for the shortcut. The original shortcut is saved as OriginalShortcut.lnk in the app folder.'",
-        "} else {",
-        "   Write-Host 'Falling back to the original icon as ImageMagick is not installed.'",
-        "}"
-    ],
-    "notes": [
-        "By default, if ImageMagick is installed, the installer will set the icon of the shortcut to the OpenAI logo.",
-        "Follow the instructions in the post instalaltion log to revert to the original icon if needed.",
-        "To always prefer the original icon, create a file named .use_original_icon in the persist direcotory, which usually defaults to $HOME\\scoop\\persist\\chatbox"
-    ]
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Bin-Huang/chatbox/releases/download/v$version/Chatbox-$version-Setup.exe#/dl.7z"
+            }
+        },
+        "hash": {
+            "url": "$baseurl/latest.yml",
+            "regex": "$basename\\s+sha512:\\s+$base64"
+        }
+    }
 }
