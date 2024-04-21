@@ -1,38 +1,42 @@
 {
     "version": "1.3.2-sp1",
-    "description": "Cyber Security ALL-IN-ONE Platform",
-    "homepage": "https://www.yaklang.io/",
+    "description": "交互式应用安全测试平台 - Cyber Security ALL-IN-ONE Platform",
+    "homepage": "https://www.yaklang.io",
     "license": "AGPL-3.0",
     "architecture": {
         "64bit": {
             "url": "https://yaklang.oss-cn-beijing.aliyuncs.com/yak/1.3.2-sp1/Yakit-1.3.2-sp1-windows-amd64.exe#/dl.7z",
+            "hash": "8b023e4ee4540cc40ca29fab66e39cacabdd83baa58d70dfa6c6ef5d09c1af9c",
             "extract_dir": "$PLUGINSDIR"
         }
     },
-    "checkver": {
-        "url": "https://yaklang.oss-cn-beijing.aliyuncs.com/yak/latest/yakit-version.txt",
-        "regex": "(.*)"
-    },
-    "persist":[
-        "yakit-projects"
-    ],
-    "pre_install":[
+    "pre_install": [
         "taskkill /f /im Yakit.exe",
         "Remove-Item \"$dir\\*\" -Exclude 'app-64.7z' -Force -Recurse",
         "Expand-7zipArchive \"$dir\\app-64.7z\" \"$dir\" -Removal"
     ],
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://yaklang.oss-cn-beijing.aliyuncs.com/yak/$version/Yakit-$version-windows-amd64.exe#/dl.7z"
-            }
-        }
-    },
+    "post_install": [
+        "ensure \"$persist_dir\" | Out-Null",
+        "$filesToDelete = Get-ChildItem -Path \"$persist_dir\\yakit-projects\\yak-engine\" -Recurse | Where-Object { $_.Name -match '^yak-v\\d'}",
+        "foreach ($file in $filesToDelete) { Remove-Item $file.FullName -Force;  Write-Host \"已删除旧版本yak.exe文件: $($file.FullName)\"; }"
+    ],
     "bin": "Yakit.exe",
     "shortcuts": [
         [
             "Yakit.exe",
             "Yakit"
         ]
-    ]
+    ],
+    "persist": "yakit-projects",
+    "checkver": {
+        "url": "https://yaklang.oss-cn-beijing.aliyuncs.com/yak/latest/yakit-version.txt",
+        "regex": "(.*)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://yaklang.oss-cn-beijing.aliyuncs.com/yak/$version/Yakit-$version-windows-amd64.exe#/dl.7z"
+            }
+        }
+    }
 }
