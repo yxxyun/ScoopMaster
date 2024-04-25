@@ -1,41 +1,41 @@
 {
-    "version": "2.10.9",
-    "description": "Upscayl. Free and Open Source AI Image Upscaler for Linux, MacOS and Windows built with Linux-First philosophy.",
+    "version": "2.11.0",
+    "description": "适用于 Linux、MacOS 和 Windows 的免费开源 AI 图像升级程序，秉承 Linux 优先的理念。Free and Open Source AI Image Upscaler for Linux, MacOS and Windows built with Linux-First philosophy.",
     "homepage": "https://github.com/upscayl/upscayl",
     "license": {
-        "identifier": "AGPL-3.0-or-later",
-        "url": "https://github.com/upscayl/upscayl/raw/main/LICENSE"
+        "identifier": "GNU Affero General Public License v3.0",
+        "url": "https://github.com/upscayl/upscayl/blob/main/LICENSE"
     },
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/upscayl/upscayl/releases/download/v2.10.9/upscayl-2.10.9-win.exe#/dl.7z",
-            "hash": "sha512:f3045b83fb3e0059f48a47d425e1cccc4f9c0b7d0e79ce8cf19ef8de0c9921e8948b24e84962e9fcf26f3ff99d4fcd656b3d9ba614a72e80efa31b8a93014796",
-            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal"
-        }
-    },
-    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\"  -ErrorAction 'SilentlyContinue' -Force -Recurse",
+    "url": "https://github.com/upscayl/upscayl/releases/download/v2.11.0/upscayl-2.11.0-win.exe",
+    "hash": "f526239d7121a41bec97e8fd7da89362b8f33d09f4e087afe63cc4164da94af1",
     "shortcuts": [
         [
             "Upscayl.exe",
-            "Upscayl",
-            "--user-data-dir=\"$dir\\User Data\""
+            "Upscayl"
         ]
     ],
-    "persist": "User Data",
-    "checkver": {
-        "url": "https://api.github.com/repos/upscayl/upscayl/releases",
-        "regex": "(?sm)browser_download_url.*?releases/download/v([\\w.-]+)/upscayl-([\\w.-]+)-win\\.exe"
-    },
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$path_exe= \"$dir\\upscayl-$($version)-win.exe\"",
+        "& $path_exe /S /D=$dir",
+        "$core_exe=\"$dir\\Upscayl.exe\"",
+        "sleep_install $core_exe",
+        "persist -dir @(\"$user_AppData\\Upscayl\") @(\"$persist_dir\\Upscayl\")",
+        "clean_redundant_files @($path_exe,\"$apps_lnk\\Upscayl.lnk\")",
+        "remove_app_lnk @(\"Upscayl.lnk\")"
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process $false",
+        "remove_files @(\"$user_AppData\\Upscayl\")",
+        "$ui_exe=\"$dir\\Uninstall Upscayl.exe\"",
+        "try{ & $ui_exe /S }catch{}",
+        "sleep_uninstall $ui_exe",
+        "remove_files @(\"$user_LocalAppData\\upscayl-updater\")"
+    ],
+    "checkver": "github",
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/upscayl/upscayl/releases/download/v$version/upscayl-$version-win.exe#/dl.7z",
-                "hash": {
-                    "url": "$baseurl/latest.yml",
-                    "mode": "extract",
-                    "regex": "(?sm)$basename.*?sha512:\\s*?$base64"
-                }
-            }
-        }
+        "url": "https://github.com/upscayl/upscayl/releases/download/v$version/upscayl-$version-win.exe"
     }
 }
