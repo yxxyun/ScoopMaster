@@ -1,66 +1,41 @@
 {
     "version": "4.2.2",
-    "description": "🔧 Electron based open source toolbox, free integration of rich plug-ins. 基于 electron 的开源工具箱，自由集成丰富插件。",
-    "homepage": "https://rubickcenter.github.io/docs",
+    "description": "基于 electron 的开源工具箱，自由集成丰富插件。Electron based open source toolbox, free integration of rich plug-ins.",
+    "homepage": "https://github.com/rubickCenter/rubick",
     "license": {
-        "identifier": "MIT license",
-        "url": "https://github.com/rubickCenter/rubick#MIT-1-ov-file"
+        "identifier": "MIT",
+        "url": "https://github.com/rubickCenter/rubick/blob/master/LICENSE"
     },
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/rubickCenter/rubick/releases/download/v4.2.2/rubick-Setup-4.2.2-x64.exe#/dl.7z",
-            "hash": "sha512:697a13aa88a46c69bb96ce2a87ef39b802f1d3a23ccf74992e34e9af5612dcf054cf00c95c29ccfd8f6a93363cc987a778f076ab037e04de4e5557190cfbd117",
-            "pre_install": [
-                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\" -Force -Recurse"
-            ]
-        },
-        "32bit": {
-            "url": "https://github.com/rubickCenter/rubick/releases/download/v4.2.2/rubick-Setup-4.2.2-ia32.exe#/dl.7z",
-            "hash": "sha512:f548821952a4efe32b9fff356cfd87c16ec07aec0fc03098c0c9d2777ac375cb808bda33385b462fdcbd07de358b154e98294ab3acb3870c57b67dc3ab4136f1",
-            "pre_install": [
-                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-32.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\" -Force -Recurse"
-            ]
-        }
-    },
-    "installer": {
-        "script": [
-            "ensure \"$persist_dir\" | Out-Null",
-            "New-Item \"$env:APPDATA\\rubick\" -ItemType Junction -Target \"$persist_dir\" | Out-Null"
-        ]
-    },
-    "uninstaller": {
-        "script": "Remove-Item \"$env:APPDATA\\rubick\" -Recurse -Force -ErrorAction 'SilentlyContinue'"
-    },
+    "url": "https://github.com/rubickCenter/rubick/releases/download/v4.2.2/rubick-Setup-4.2.2-x64.exe",
+    "hash": "cb003ce20f98993e92b58fbbf53e9b622d5e6d66361f16c41f377582e5b666df",
     "shortcuts": [
         [
             "rubick.exe",
-            "rubick"
+            "Rubick"
         ]
     ],
-    "checkver": {
-        "url": "https://api.github.com/repos/rubickCenter/rubick/releases",
-        "regex": "/releases/tag/v([\\d.]+)"
-    },
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$path_exe=\"$dir\\rubick-Setup-$($version)-x64.exe\"",
+        "& $path_exe /S /D=$dir",
+        "$core_exe=\"$dir\\rubick.exe\"",
+        "sleep_install $core_exe",
+        "persist -dir @(\"$user_AppData\\rubick\") @(\"$persist_dir\\rubick\")",
+        "clean_redundant_files @($path_exe,\"$apps_lnk\\rubick.lnk\")",
+        "remove_app_lnk @(\"rubick.lnk\")"
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process $false",
+        "remove_files @(\"$user_AppData\\rubick\")",
+        "$ui_exe=\"$dir\\Uninstall rubick.exe\"",
+        "try{ & $ui_exe /S }catch{}",
+        "sleep_uninstall $ui_exe",
+        "remove_files @(\"$user_LocalAppData\\Programs\\rubick\",\"$user_LocalAppData\\rubick-updater\")"
+    ],
+    "checkver": "github",
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/rubickCenter/rubick/releases/download/v$version/rubick-Setup-$version-x64.exe#/dl.7z",
-                "hash": {
-                    "url": "$baseurl/latest.yml",
-                    "mode": "extract",
-                    "regex": "(?sm)$basename.*?sha512:\\s*?$base64"
-                }
-            },
-            "32bit": {
-                "url": "https://github.com/rubickCenter/rubick/releases/download/v$version/rubick-Setup-$version-ia32.exe#/dl.7z",
-                "hash": {
-                    "url": "$baseurl/latest.yml",
-                    "mode": "extract",
-                    "regex": "(?sm)$basename.*?sha512:\\s*?$base64"
-                }
-            }
-        }
+        "url": "https://github.com/rubickCenter/rubick/releases/download/v$version/rubick-Setup-$version-x64.exe"
     }
 }
