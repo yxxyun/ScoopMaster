@@ -26,16 +26,47 @@
     "installer": {
         "script": [
             "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
-            "Start-Process \"$dir\\setup.exe\" -ArgumentList @('--silent', '--ignore-reboot') -Wait -Verb RunAs",
-            "Start-Process \"C:\\Program Files\\Oracle\\VirtualBox\\VBoxManage.exe\" -ArgumentList @('extpack', 'install', '--replace \"$dir\\vbox.vbox-extpack\"') -Wait -Verb RunAs"
+            "Invoke-ExternalCommand \"$dir\\setup.exe\" -ArgumentList @('--extract', '-path', \"$dir\", '--silent') | Out-Null",
+            "Get-ChildItem \"$dir\\VirtualBox*.msi\" | Rename-Item -NewName 'setup.msi'",
+            "Start-Process msiexec -ArgumentList @('/i', \"`\"$dir\\setup.msi`\"\", '/qn', '/norestart', \"INSTALLDIR=`\"$dir`\"\") -Wait -Verb RunAs | Out-Null",
+            "Start-Process icacls -ArgumentList @(\"`\"$dir`\"\", '/grant', 'Everyone:F', '/T') -Wait -Verb RunAs | Out-Null",
+            "Remove-Item \"$dir\\setup.exe\", \"$dir\\setup.msi\"",
+            "Remove-Item \"$env:PUBLIC\\Desktop\\Oracle VM VirtualBox.lnk\"",
+            "Remove-Item -Recurse \"$([Environment]::GetFolderPath('commonstartmenu'))\\Programs\\Oracle VM VirtualBox\""
         ]
     },
     "uninstaller": {
         "script": [
             "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
-            "Start-Process \"msiexec.exe\" -ArgumentList @('/x {E27272CF-9DE3-4EC1-84E9-EFBDD7AD6271}', '/qn') -Wait -Verb RunAs"
+            "$id_array = wmic product where \"name like 'Oracle VM VirtualBox%'\" get IdentifyingNumber",
+            "if (!($id_array[2] -match '({[0-9A-F-]+})')) { error 'Could not find product ID'; break }",
+            "$id = $matches[1]",
+            "Invoke-ExternalCommand msiexec -ArgumentList @('/x', \"$id\", '/qn', '/norestart') -RunAs | Out-Null"
         ]
     },
+    "bin": [
+        "VBoxBalloonCtrl.exe",
+        "VBoxBugReport.exe",
+        "VBoxDTrace.exe",
+        "VBoxExtPackHelperApp.exe",
+        "VBoxHeadless.exe",
+        "vbox-img.exe",
+        "VBoxManage.exe",
+        "VBoxNetDHCP.exe",
+        "VBoxNetNAT.exe",
+        "VBoxSDS.exe",
+        "VBoxSVC.exe",
+        "VBoxTestOGL.exe",
+        "VBoxWebSrv.exe",
+        "VirtualBox.exe",
+        "VirtualBoxVM.exe"
+    ],
+    "shortcuts": [
+        [
+            "VirtualBox.exe",
+            "VirtualBox"
+        ]
+    ],
     "checkver": {
         "url": "https://www.virtualbox.org/wiki/Downloads",
         "regex": "VirtualBox-(?<version>[\\d\\w.]+)-(?<revision>[\\d]+)-Win.exe"
