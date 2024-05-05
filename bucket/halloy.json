@@ -10,21 +10,35 @@
         }
     },
     "extract_dir": "PFiles/Halloy",
-    "pre_install": [
-        "if (!(Test-Path \"$persist_dir\\config.toml\")) {New-Item \"$dir\\config.toml\" -ItemType File | Out-Null}",
-        "if (!(Test-Path \"$persist_dir\\dashboard.json.gz\")) {New-Item \"$dir\\dashboard.json.gz\" -ItemType File | Out-Null}"
-    ],
+    "installer": {
+        "script": [
+            "if (!(Test-Path \"$persist_dir\\halloy.toml\")) {",
+            "    $randomNumber = Get-Random -Minimum 1000 -Maximum 9999",
+            "    Set-Content \"$dir\\halloy.toml\" @(@'
+            # Halloy config.
+            #
+            # For a complete list of available options,
+            # please visit https://halloy.squidowl.org/configuration/index.html
+
+            [servers.liberachat]
+            nickname = \"halloy$randomNumber\"
+            server = \"irc.libera.chat\"
+            channels = [\"#halloy\"]
+            '@) -Encoding ASCII -Force",
+            "    if (Test-Path \"$env:AppData\\halloy\") {",
+            "        Copy-Item \"$env:AppData\\halloy\\*\" \"$dir\" -Recurse -Exclude '*halloy.toml' -ErrorAction SilentlyContinue",
+            "    }",
+            "} else { Move-Item \"$persist_dir\\*\" \"$dir\" -Include '*.toml', '*.log', '*.gz' }"
+        ]
+    },
+    "uninstaller": {
+        "script": "Move-Item \"$dir\\*\" \"$persist_dir\" -Include '*.toml', '*.log', '*.gz'"
+    },
     "shortcuts": [
         [
             "halloy.exe",
             "Halloy"
         ]
-    ],
-    "persist": [
-        "themes",
-        "history",
-        "config.toml",
-        "dashboard.json.gz"
     ],
     "checkver": {
         "github": "https://github.com/squidowl/halloy"
