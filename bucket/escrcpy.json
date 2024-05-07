@@ -1,35 +1,45 @@
 {
     "version": "1.18.4",
-    "description": "使用图形化的 Scrcpy 显示和控制您的 Android 设备",
+    "description": "使用图形化的 Scrcpy 显示和控制您的 Android 设备，由 Electron 驱动。Graphical Scrcpy to display and control Android, devices powered by Electron.",
     "homepage": "https://github.com/viarotel-org/escrcpy",
-    "license": "MIT",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/viarotel-org/escrcpy/releases/download/v1.18.4/Escrcpy-1.18.4-win-x64.zip",
-            "hash": "0c5c27a0201c162aa09f7624dbcc4fa3d88e7a6929a241325ba5d3f2aada076e"
-        },
-        "arm64": {
-            "url": "https://github.com/viarotel-org/escrcpy/releases/download/v1.18.4/Escrcpy-1.18.4-win-arm64.zip",
-            "hash": "51e8297f789f2c5e2937a6531a02db21a25f9ecdf7dad803d2eb9c626e0421f5"
-        }
+    "license": {
+        "identifier": "Apache License 2.0",
+        "url": "https://github.com/viarotel-org/escrcpy/blob/main/LICENSE"
     },
+    "url": "https://github.com/viarotel-org/escrcpy/releases/download/v1.18.4/Escrcpy-1.18.4-win-setup.exe#/_installer_.exe",
+    "hash": "sha512:cf54aa46586f6630d1541cd00d9d56c602ed24d86d9a6c246032c1c2c8b43dc0532f7f64add8e88cdf2cb9f2bab4703f7b67ef7fef54b02f387834667ea08e4d",
     "shortcuts": [
         [
             "Escrcpy.exe",
-            "Escrcpy",
-            "--user-data-dir=\"$dir\\User Data\""
+            "Escrcpy"
         ]
     ],
-    "persist": "User Data",
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$path_exe=\"$dir\\_installer_.exe\"",
+        "& $path_exe /S /D=$dir",
+        "$core_exe=\"$dir\\Escrcpy.exe\"",
+        "sleep_install $core_exe",
+        "persist -dir @(\"$user_AppData\\escrcpy\") @(\"$persist_dir\\escrcpy\")",
+        "clean_redundant_files @($path_exe,\"$apps_lnk\\Escrcpy.lnk\")",
+        "remove_app_lnk @(\"Escrcpy.lnk\")"
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process $false",
+        "remove_files @(\"$user_AppData\\escrcpy\")",
+        "$ui_exe=\"$dir\\Uninstall Escrcpy.exe\"",
+        "try{ & $ui_exe /S }catch{}",
+        "sleep_uninstall $ui_exe",
+        "remove_files @(\"$user_LocalAppData\\escrcpy-updater\")"
+    ],
     "checkver": "github",
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/viarotel-org/escrcpy/releases/download/v$version/Escrcpy-$version-win-x64.zip"
-            },
-            "arm64": {
-                "url": "https://github.com/viarotel-org/escrcpy/releases/download/v$version/Escrcpy-$version-win-arm64.zip"
-            }
+        "url": "https://github.com/viarotel-org/escrcpy/releases/download/v$version/Escrcpy-$version-win-setup.exe#/_installer_.exe",
+        "hash": {
+            "url": "$baseurl/latest.yml",
+            "regex": "sha512:\\s+$base64"
         }
     }
 }
