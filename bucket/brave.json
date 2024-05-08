@@ -1,61 +1,65 @@
 {
-    "version": "1.65.126",
-    "description": "Secure, Fast & Private Web Browser with Adblocker",
-    "homepage": "https://brave.com",
+    "version": "1.65.130",
+    "description": "Brave. Secure, Fast & Private Web Browser with Adblocker",
+    "homepage": "https://brave.com/",
     "license": {
         "identifier": "Freeware,BSD-3-Clause,GPL-3.0-only,...",
         "url": "https://github.com/brave/brave-browser/blob/master/LICENSE"
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/brave/brave-browser/releases/download/v1.65.126/brave-v1.65.126-win32-x64.zip",
-            "hash": "7479f5283d61c2c4fc440c1869ff29563881883270cf5b0e37e072cd75968bd0"
+            "url": "https://github.com/brave/brave-browser/releases/download/v1.65.130/BraveBrowserStandaloneSilentSetup.exe#/setup.exe",
+            "hash": "4ec3977202115047e034f39661fe6b3a6c506050b2179c578cd06175e254903b"
         },
         "32bit": {
-            "url": "https://github.com/brave/brave-browser/releases/download/v1.65.126/brave-v1.65.126-win32-ia32.zip",
-            "hash": "bf535daa0598f7201ab008e5b5dda43f14dc87d8a84d27625939d93edd411a1d"
+            "url": "https://github.com/brave/brave-browser/releases/download/v1.65.130/BraveBrowserStandaloneSilentSetup32.exe#/setup.exe",
+            "hash": "99fe05c4ac058f5ef0e2b57bb03125dfd2442e1eb5dc0b6f94c4daea2d7d95a3"
         }
     },
-    "bin": [
-        [
-            "brave.exe",
-            "brave",
-            "--user-data-dir=\"$dir\\User Data\""
-        ]
-    ],
-    "shortcuts": [
-        [
-            "brave.exe",
-            "Brave",
-            "--user-data-dir=\"$dir\\User Data\""
-        ]
-    ],
-    "post_install": [
-        "if (!(Test-Path \"$dir\\User Data\\*\") -and (Test-Path \"$persist_dir\\data\")) {",
-        "    info '[Portable Mode]: Copying user data from portapps data directory . . .'",
-        "    Copy-Item \"$persist_dir\\data\\*\" \"$dir\\User Data\" -Recurse",
-        "}",
-        "if (!(Test-Path \"$dir\\User Data\\*\") -and (Test-Path \"$env:LocalAppData\\BraveSoftware\\Brave-Browser\\User Data\")) {",
-        "    info '[Portable Mode]: Copying user data from local application data directory . . .'",
-        "    Copy-Item \"$env:LocalAppData\\BraveSoftware\\Brave-Browser\\User Data\\*\" \"$dir\\User Data\" -Recurse",
+    "pre_install": [
+        "$processname = \"Brave\"",
+        "$process = Get-Process $processname -ErrorAction SilentlyContinue",
+        "if ($process) {",
+        "   $process.CloseMainWindow()",
+        "   Start-Sleep -Seconds 5",
+        "   if (!$process.HasExited) {",
+        "       Start-Sleep -Seconds 25",
+        "       $process | Stop-Process -Force",
+        "   }",
         "}"
     ],
-    "persist": "User Data",
+    "installer": {
+        "script": [
+            "$LocalApplicationData = [Environment]::GetFolderPath(\"LocalApplicationData\")",
+            "$filepath = \"$LocalApplicationData\\BraveSoftware\\Brave-Browser\\Application\\brave.exe\"",
+            "if(((Test-Path -Path $filepath -PathType Leaf) -eq $false) -or ((Get-Command $filepath).Version.ToString().Substring(3) -lt [System.Version]\"$version\"))",
+            "{",
+            "   &\"$dir\\setup.exe\" | Out-Null",
+            "   if(((Test-Path -Path $filepath -PathType Leaf) -eq $false) -or ((Get-Command $filepath).Version.ToString().Substring(3) -lt [System.Version]\"$version\"))",
+            "   {",
+            "       exit 1",
+            "   }",
+            "}",
+            "if (Test-Path -Path \"$dir\\setup.exe\") { Remove-Item \"$dir\\setup.exe\" -Force }"
+        ]
+    },
+    "post_install": [
+        "$programname = \"Brave\"",
+        "$DesktopPath = [Environment]::GetFolderPath(\"DesktopDirectory\")",
+        "if (Test-Path \"$DesktopPath\\$programname.lnk\") {Remove-Item \"$DesktopPath\\$programname.lnk\" -Force}"
+    ],
     "checkver": {
-        "url": "https://brave-browser-downloads.s3.brave.com/latest/release-windows-x64.version",
-        "regex": "([\\d.]+)"
+        "url": "https://github.com/brave/brave-browser/blob/master/CHANGELOG_DESKTOP.md",
+        "regex": "releases/tag/v([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/brave/brave-browser/releases/download/v$version/brave-v$version-win32-x64.zip"
+                "url": "https://github.com/brave/brave-browser/releases/download/v$version/BraveBrowserStandaloneSilentSetup.exe#/setup.exe"
             },
             "32bit": {
-                "url": "https://github.com/brave/brave-browser/releases/download/v$version/brave-v$version-win32-ia32.zip"
+                "url": "https://github.com/brave/brave-browser/releases/download/v$version/BraveBrowserStandaloneSilentSetup32.exe#/setup.exe"
             }
-        },
-        "hash": {
-            "url": "$url.sha256"
         }
     }
 }
