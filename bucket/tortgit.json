@@ -1,0 +1,53 @@
+{
+    "version": "2.16.0.0",
+    "homepage": "https://tortoisegit.org/",
+    "license": "https://www.gnu.org/licenses/gpl-2.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://download.tortoisegit.org/tgit/2.16.0.0/TortoiseGit-2.16.0.0-64bit.msi",
+            "hash": "md5:6c4f86fac60a9ef581dbc9bd7f4d05bc"
+        },
+        "32bit": {
+            "url": "https://download.tortoisegit.org/tgit/2.16.0.0/TortoiseGit-2.16.0.0-32bit.msi",
+            "hash": "md5:a13b4c40f1eaca16dfacb69853e942a0"
+        }
+    },
+    "extract_dir": [
+        "Program Files\\TortoiseGit",
+        "Program Files\\TortoiseGit"
+    ],
+    "env_add_path": "bin",
+    "pre_install": [
+    "$installDir = \"$env:ProgramData\\scoop\\apps\\tortoisegit-np\\current\"",
+    "$url = \"https://download.tortoisegit.org/tgit/2.16.0.0/TortoiseGit-2.16.0.0-64bit.msi\"",
+    "$msiFile = Join-Path $env:TEMP 'TortoiseGit.msi'",
+    "Invoke-WebRequest -Uri $url -OutFile $msiFile",
+    "Start-Process msiexec.exe -ArgumentList \"/i $msiFile /quiet /norestart\"",
+    "Remove-Item $msiFile"
+    ],
+    "post_install": [
+    "$installDir = \"$dir\"",
+    "$installRoot = $installDir.Replace('\\', '\\\\')",
+    "'install-context.reg', 'uninstall-context.reg' | ForEach-Object {",
+    "    $content = Get-Content \"$bucketsdir\\dso-scoop-repo\\scripts\\tortoisegit\\$_\"",
+    "    $content = $content.Replace('$tortoisegit_root', $installRoot)",
+    "    if ($global) {",
+    "       $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+    "    }",
+    "    Set-Content \"$installDir\\$_\" $content -Encoding Ascii",
+    "}"
+    ],
+    "checkver": {
+        "url": "https://scoop-packages.itsmtaxud.priv/packages/tortoisegit/"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://download.tortoisegit.org/tgit/2.16.0.0/TortoiseGit-$version-64bit.msi"
+            },
+            "32bit": {
+                "url": "https://download.tortoisegit.org/tgit/2.16.0.0/TortoiseGit-$version-32bit.msi"
+            }
+        }
+    }
+}
