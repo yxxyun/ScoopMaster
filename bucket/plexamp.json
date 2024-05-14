@@ -6,24 +6,31 @@
     "license": "Proprietary",
     "architecture": {
         "64bit": {
-            "url": "https://plexamp.plex.tv/plexamp.plex.tv/desktop/Plexamp%20Setup%204.10.1.exe",
+            "url": "https://plexamp.plex.tv/plexamp.plex.tv/desktop/Plexamp%20Setup%204.10.1.exe#/dl.7z",
             "hash": "sha512:0e56572ce6ec176279ff17b758022582bb4ecb6a2a3e94b96dbfa6eaf5bee40d842cc5b1b1532da9d6dc892dcf03f6f0efc823edf8b44d31b2726d4ad30cb0d0"
         }
     },
-    "installer": {
-        "script": [
-            "Start-Process -Wait -FilePath \"$dir\\$fname\" -ArgumentList '/S', \"/D=$dir\"",
-            "# Disable auto-update",
-            "Remove-Item -ErrorAction Ignore -Recurse \"$env:LOCALAPPDATA\\plexamp-updater\" | Out-Null",
-            "$updateFile = New-Item -ItemType File -Path \"$env:LOCALAPPDATA\\plexamp-updater\" -Name \"installer.exe\" -Value \"Disabled by Scoop\" -Force",
-            "$updateFile.Attributes = 'ReadOnly', 'System'",
-            "Remove-Item \"$env:UserProfile\\Desktop\\Plexamp.lnk\" -ErrorAction Ignore",
-            "Remove-Item \"$dir\\$fname\" -ErrorAction Ignore"
+    "pre_install": [
+        "# Disable auto-update",
+        "Remove-Item -ErrorAction Ignore -Recurse \"$env:LOCALAPPDATA\\plexamp-updater\" | Out-Null",
+        "$updateFile = New-Item -ItemType File -Path \"$env:LOCALAPPDATA\\plexamp-updater\" -Name \"installer.exe\" -Value \"Disabled by Scoop\" -Force",
+        "$updateFile.Attributes = 'ReadOnly', 'System'",
+        "Remove-Item \"$env:UserProfile\\Desktop\\Plexamp.lnk\" -ErrorAction Ignore",
+        "Remove-Item \"$dir\\$fname\" -ErrorAction Ignore",
+        "# Extract app",
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal"
+    ],
+    "post_install": [
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
+        "Remove-Item \"$dir\\Uninstall Plexamp.exe\" -Force"
+    ],
+    "bin": "Plexamp.exe",
+    "shortcuts": [
+        [
+            "Plexamp.exe",
+            "Plexamp"
         ]
-    },
-    "uninstaller": {
-        "script": "Start-Process -Wait -FilePath \"$dir\\Uninstall Plexamp.exe\" -ArgumentList '/S'"
-    },
+    ],
     "checkver": {
         "url": "https://plexamp.plex.tv/plexamp.plex.tv/desktop/latest.yml",
         "regex": "version:\\s+(?<version>\\d+\\.\\d+\\.\\d+)"
@@ -31,7 +38,7 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://plexamp.plex.tv/plexamp.plex.tv/desktop/Plexamp%20Setup%20$version.exe",
+                "url": "https://plexamp.plex.tv/plexamp.plex.tv/desktop/Plexamp%20Setup%20$version.exe#/dl.7z",
                 "hash": {
                     "url": "https://plexamp.plex.tv/plexamp.plex.tv/desktop/latest.yml",
                     "regex": "sha512:\\s+$base64"
