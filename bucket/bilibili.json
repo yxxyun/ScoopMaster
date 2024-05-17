@@ -1,50 +1,55 @@
 {
     "version": "1.13.4",
-    "description": "哔哩哔哩 Windows 客户端",
+    "description": "哔哩哔哩客户端",
     "homepage": "https://app.bilibili.com/",
-    "license": "Unknown",
-    "url": "https://dl.hdslb.com/mobile/pack/bili_win/14841669/public/bilibili-setup-v1.13.4.exe#/_installer_.exe",
-    "hash": "7d6a328d87e912e8c10d49eb543c0585d30035cc7e1ab4a3b5cfb20bb4064c2d",
+    "license": "Proprietary",
+    "url": "https://dl.hdslb.com/mobile/fixed/bili_win/bili_win-install.exe#/dl.7z",
+    "hash": "sha512:79916a728f5ecb915c7b97f1a0991a9b8233decc0b31bcbf03461f61e671d98fb418164d9f32b78033146ee053a0cb78d9d82c532b3463b72be62725a3fa1e86",
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse"
+    ],
+    "installer": {
+        "script": [
+            "if (!(Test-Path \"$persist_dir\\Cache\")) {",
+            "    New-Item \"$persist_dir\\Cache\" -Type Directory -Force | Out-Null",
+            "}",
+            "$runtimeCache = \"$env:APPDATA\\bilibili\"",
+            "$runtimeCachePersist = \"$persist_dir\\Cache\"",
+            "if (Test-Path $runtimeCachePersist) {",
+            "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+            "    New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
+            "} else {",
+            "    if (Test-Path $runtimeCache) {",
+            "        Move-Item $runtimeCache $runtimeCachePersist -Force",
+            "        New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
+            "    }",
+            "}"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$runtimeCache = \"$env:APPDATA\\bilibili\"",
+            "$runtimeCachePersist = \"$persist_dir\"",
+            "Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+            "Remove-Item $runtimeCachePersist -Force -Recurse -ErrorAction SilentlyContinue"
+        ]
+    },
     "shortcuts": [
         [
-            "bilibili\\哔哩哔哩.exe",
-            "哔哩哔哩"
+            "哔哩哔哩.exe",
+            "bilibili"
         ]
     ],
-    "pre_install": [
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "$path_exe=\"$dir\\_installer_.exe\"",
-        "& $path_exe /S /D=$dir",
-        "$core_exe=\"$dir\\bilibili\\哔哩哔哩.exe\"",
-        "sleep_install $core_exe",
-        "persist -dir @(\"$user_AppData\\bilibili\") @(\"$persist_dir\\bilibili\")",
-        "clean_redundant_files @($path_exe,\"$public_Programs\\哔哩哔哩\",\"$public_Programs\\哔哩哔哩.lnk\")",
-        "remove_app_lnk @(\"哔哩哔哩.lnk\")"
-    ],
-    "pre_uninstall": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "stop_process $false",
-        "remove_files @(\"$user_AppData\\bilibili\")",
-        "$ui_exe=\"$dir\\bilibili\\卸载哔哩哔哩.exe\"",
-        "& $ui_exe /S",
-        "sleep_uninstall $ui_exe",
-        "remove_files @(\"$user_LocalAppData\\bilibili-updater\")"
-    ],
     "checkver": {
-        "script": [
-            ". \"$pwd\\bin\\utils.ps1\"",
-            "$dl_info = get_installer_info \"Bilibili/Bilibili\"",
-            "\"ver:$($dl_info.PackageVersion);\"",
-            "\"x64:$($dl_info.x64_exe.InstallerUrl);\""
-        ],
-        "regex": "ver:(?<version>.+?); x64:(?<x64>.+?);"
+        "url": "http://api.bilibili.com/x/elec-frontend/update/latest.yml",
+        "regex": "bilibili-setup-v([\\d\\.]+)\\.exe"
     },
     "autoupdate": {
-        "url": "$matchX64#/_installer_.exe",
+        "url": "https://dl.hdslb.com/mobile/fixed/bili_win/bili_win-install.exe#/dl.7z",
         "hash": {
-            "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/b/Bilibili/Bilibili/$version/Bilibili.Bilibili.installer.yaml",
-            "regex": "x64[\\s\\S]*InstallerSha256:\\s?(.+)"
+            "url": "http://api.bilibili.com/x/elec-frontend/update/latest.yml",
+            "regex": "sha512: ([\\w\\d+\\/=]{24,88})"
         }
     }
 }
