@@ -1,0 +1,91 @@
+{
+    "version": "3.12.3",
+    "description": "A programming language that lets you work quickly and integrate systems more effectively.",
+    "homepage": "https://www.python.org/",
+    "license": "Python-2.0",
+    "notes": [
+        "This is an unpacked version of the Python 3.12.3 msi installer for amd64",
+        "-> To be Noted : other architecture version to be added later.",
+        "",
+        "It can be installed nearly side-by-side with other python versions.",
+        "To switch between versions, you can use the following example :",
+        "`scoop reset python`  OR  `scoop reset python-unpacked`"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": [
+                "https://github.com/delivering-apps/windows-apps/raw/main/python-3.12.3-amd64-unpacked.7z?download=#/python-unpacked.7z",
+                "https://raw.githubusercontent.com/ScoopInstaller/Main/master/scripts/python/install-pep-514.reg",
+                "https://raw.githubusercontent.com/ScoopInstaller/Main/master/scripts/python/uninstall-pep-514.reg"
+            ],
+            "hash": [
+                "aac03a31c1d58f4d62c796f7fab90627d97e8cd71abc542e3dec5d2f80381b68",
+                "27c2d7e74442f356d54d29000379afd55078fb4ede00455fc012f81745e4bcac",
+                "65a46d5a9fec455b6fbc5d75f8a57cd5ee958d31873ef438766866a53759e9f6"
+            ]
+        }
+    },
+    "pre_install": [
+        "$py_root = \"$dir\".Replace('\\', '\\\\')",
+        "$py_archLabel = '64-bit'",
+        "$bit = '64'",
+        "if ($architecture -eq '32bit') {",
+        "    $py_archLabel = '32-bit'",
+        "    $bit = '32'",
+        "}",
+        "if ($architecture -eq 'arm64') { $py_archLabel = 'ARM64' }",
+        "'install-pep-514.reg', 'uninstall-pep-514.reg' | ForEach-Object {",
+        "    $py_version = ($version -split '\\.')[0..1] -join '.'",
+        "    $content = Get-Content \"$dir\\$_\"",
+        "    $content = $content.Replace('$py_root', $py_root)",
+        "    $content = $content.Replace('$py_version', $py_version)",
+        "    $content = $content.Replace('$py_fullversion', $version)",
+        "    $content = $content.Replace('$py_cleanVersion', $version -replace '\\.')",
+        "    $content = $content.Replace('$py_archLabel', $py_archLabel)",
+        "    $content = $content.Replace('$py_arch', \"$bit\")",
+        "    if ($global) {",
+        "       $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    Set-Content \"$dir\\$_\" $content -Encoding Ascii",
+        "}"
+    ],
+    "post_install": [
+        "python -E -s -m ensurepip -U --default-pip | Out-Null",
+        "Write-Output \"$([char]0x1b)[0m\" # Reset ansi to prevent color leak from installer",
+        "Write-Host Registering the app with : \"$dir\\install-pep-514.reg\"",
+        "reg import \"$dir\\install-pep-514.reg\""
+    ],
+    "pre_uninstall": [
+        "Write-Host UnRegistering the app with : \"$dir\\uninstall-pep-514.reg\"",
+        "reg import \"$dir\\uninstall-pep-514.reg\""
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($global) {",
+            "    $pathext = (env 'PATHEXT' $true) -replace ';.PYW?', ''",
+            "    env 'PATHEXT' $true \"$pathext\"",
+            "}"
+        ]
+    },
+    "bin": [
+        "python.exe",
+        "pythonw.exe",
+        [
+            "python.exe",
+            "python3"
+        ],
+        "Lib\\idlelib\\idle.bat",
+        [
+            "Lib\\idlelib\\idle.bat",
+            "idle3"
+        ]
+    ],
+    "env_add_path": [
+        "Lib\\site-packages",
+        "Scripts",
+        "."
+    ],
+    "persist": [
+        "Lib\\site-packages"
+    ]
+}
