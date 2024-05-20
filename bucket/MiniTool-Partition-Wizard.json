@@ -1,33 +1,47 @@
 {
-    "version": "12.7",
-    "description": "All-in-one Disk Partition Manager",
-    "homepage": "https://www.partitionwizard.com/",
-    "license": "Freeware",
-    "innosetup": true,
+    "version": "12.8",
+    "description": "All-in-one Disk Partition Manager. It helps create/resize/format partition flexibly, convert disk between MBR and GPT disks, convert partition between NTFS and FAT32, and convert dynamic disk to basic without data loss in a few clicks.",
+    "homepage": "https://www.partitionwizard.com",
+    "license": "Proprietary",
+    "depends": "innounp",
     "architecture": {
         "64bit": {
-            "url": "https://cdn2.minitool.com/download-center/release/products/pw/current-release/pwfree1207-64bit-online.exe",
-            "hash": "58e6d8ccd3cf43cb91bd8641ff3d6d7bf32e37335b9836101e3a7df6f79a1f37"
-        },
-        "32bit": {
-            "url": "https://cdn2.minitool.com/download-center/release/products/pw/current-release/pwfree1207-32bit-online.exe",
-            "hash": "e693ea5d160754dd953ce8d9c5146dd4b8d87d43ca53bfa0868b581a9ae61cf7"
+            "url": "https://cdn2.minitool.com/?p=pw&e=pw-free-offline#/dl.exe",
+            "hash": "0c98cb6b2351f023f08b5b6633da0fc7c8a2588396e0d2c54e4b17509f8ba22e"
         }
     },
+    "installer": {
+        "script": [
+            "innounp -x \"-d$dir\" (Join-Path $dir dl.exe) | Out-Null",
+            "",
+            "$regex64 = '^Source:(?!.*not Is64BitInstallMode).+'",
+            "$regex32 = '^Source:(?!.*\"Is64BitInstallMode).+'",
+            "$pattern = if ($architecture -eq '64bit') { $regex64 } else { $regex32 }",
+            "$regex = '^Source: .(.+?).; DestDir: ..app.(.*?).; (?:DestName: .(.+?).; )?.*'",
+            "",
+            "Get-Content (Join-Path $dir install_script.iss) | Select-String -Pattern $pattern | ForEach-Object {",
+            "    $pair = $_ -replace $regex, '$1:$2\\\\$3' -replace '([^\\\\]+):(.*\\\\)$', '$1:$2$1' -split ':'",
+            "    New-Item (Join-Path $dir (Split-Path $pair[1])) -Type Directory -Force | Out-Null",
+            "    Copy-Item (Join-Path $dir $pair[0]) (Join-Path $dir $pair[1])",
+            "}",
+            "'{app}', 'dl.exe', 'install_script.iss' | ForEach-Object { Remove-Item (Join-Path $dir $_) -Recurse }"
+        ]
+    },
+    "bin": "partitionwizard.exe",
     "shortcuts": [
         [
             "partitionwizard.exe",
-            "MiniTool Partition Wizard"
+            "Minitool Partition Wizard Free"
         ]
     ],
-    "checkver": "MiniTool Partition Wizard <span class=\"big\">([\\d.]+)",
+    "checkver": {
+        "url": "https://www.partitionwizard.com/upgrade-history.html",
+        "regex": "<h2>V([0-9.]+)\\s*<span class=\"upgrade-history-date\">"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://cdn2.minitool.com/download-center/release/products/pw/current-release/pwfree$majorVersion0$minorVersion-64bit-online.exe"
-            },
-            "32bit": {
-                "url": "https://cdn2.minitool.com/download-center/release/products/pw/current-release/pwfree$majorVersion0$minorVersion-32bit-online.exe"
+                "url": "https://cdn2.minitool.com/?p=pw&e=pw-free-offline#/dl.exe"
             }
         }
     }
