@@ -7,21 +7,11 @@
     "hash": "3807cf2ee4bbdd4df4dfc8bef027f25bde523dcaf8119720f677ed95ebba66a4",
     "extract_dir": "awscli-local-0.22.0",
     "depends": "main/python",
-    "installer": {
-        "script": [
-            "Push-Location $dir",
-            "python setup.py install --user --record \"$dir\\installed_files.txt\"",
-            "Pop-Location"
-        ]
-    },
-    "uninstaller": {
-        "script": [
-            "(Get-Content -ErrorAction Ignore \"$directory\\installed_files.txt\") -match \".*$name.*\" | Remove-Item -ErrorAction Ignore -Force",
-            "$site_packages = python -m site --user-site",
-            "Get-ChildItem -ErrorAction Ignore \"$site_packages\\$name-*-py*.egg\" | ForEach-Object { Remove-Item -ErrorAction Ignore -Force -Recurse $_ }"
-        ]
-    },
-    "bin": "bin\\awslocal.bat",
+    "pre_install": [
+        "$bucketpath = if ($app.LocalPath) { $app.LocalPath.Directory.Parent.FullName } else { \"$bucketsdir\\$bucket\" }",
+        "& (Join-Path \"$bucketpath\" \"scripts\\Install-WithVirtualEnv.ps1\")"
+    ],
+    "bin": "venv\\scripts\\awslocal.bat",
     "checkver": {
         "url": "https://pypi.org/project/awscli-local/",
         "regex": "awscli-local ([\\d.]+)"

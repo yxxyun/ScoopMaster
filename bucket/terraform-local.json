@@ -7,21 +7,11 @@
     "hash": "771fe73edb37a1b4db53ad641cf4354ea6fe7ac7849eb6b47a69f33c9909df35",
     "extract_dir": "terraform-local-0.18.1",
     "depends": "main/python",
-    "installer": {
-        "script": [
-            "Push-Location $dir",
-            "python setup.py install --user --record \"$dir\\installed_files.txt\"",
-            "Pop-Location"
-        ]
-    },
-    "uninstaller": {
-        "script": [
-            "(Get-Content -ErrorAction Ignore \"$directory\\installed_files.txt\") -match \".*$name.*\" | Remove-Item -ErrorAction Ignore -Force",
-            "$site_packages = python -m site --user-site",
-            "Get-ChildItem -ErrorAction Ignore \"$site_packages\\$name-*-py*.egg\" | ForEach-Object { Remove-Item -ErrorAction Ignore -Force -Recurse $_ }"
-        ]
-    },
-    "bin": "bin\\tflocal.bat",
+    "pre_install": [
+        "$bucketpath = if ($app.LocalPath) { $app.LocalPath.Directory.Parent.FullName } else { \"$bucketsdir\\$bucket\" }",
+        "& (Join-Path \"$bucketpath\" \"scripts\\Install-WithVirtualEnv.ps1\")"
+    ],
+    "bin": "venv\\scripts\\tflocal.bat",
     "checkver": {
         "url": "https://pypi.org/project/terraform-local/",
         "regex": "terraform-local ([\\d.]+)"
