@@ -1,33 +1,21 @@
 {
-    "version": "115.11.0",
-    "description": "A free email application that’s easy to set up and customize.",
+    "version": "115.11.1",
+    "description": "一款易于设置和定制的免费电子邮件应用程序。A free email application that’s easy to set up and customize.",
     "homepage": "https://www.thunderbird.net",
-    "license": "MPL-2.0",
-    "notes": [
-        "To set profile 'Scoop' as *DEFAULT*, or profiles/settings was lost after update:",
-        "  - Run 'Thunderbird Profile Manager', choose 'Scoop' then click 'Start Thunderbird'.",
-        "  - Visit 'about:profiles' page in Thunderbird to check *DEFAULT* profile.",
-        "For details: https://support.mozilla.org/en-US/kb/profile-manager-create-and-remove-thunderbird-profiles"
-    ],
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://www.mozilla.org/en-US/foundation/licensing/"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://archive.mozilla.org/pub/thunderbird/releases/115.11.0/win64/en-US/Thunderbird%20Setup%20115.11.0.exe#/dl.7z",
-            "hash": "sha512:71de52b5bb605e28fd2f1f9c1cc79aa0b0dd503d959e09d77fa668749bd0fafca3a0d11bf64cc9f033fd957361d25aaf54a7d3f76edc6fdc4c8327f07ec95eb2"
+            "url": "https://archive.mozilla.org/pub/thunderbird/releases/115.11.1/win64/en-US/Thunderbird%20Setup%20115.11.1.exe#/_installer_.exe",
+            "hash": "sha512:8c5d7786e4cee3e9d5a9ee3ea13e1708f52d0f67673c749f5f738f668aac4ddd52b3d22bfb92fe78213c7ec35290ae584f5fcc789d783d3c4e6f38688f0ee455"
         },
         "32bit": {
-            "url": "https://archive.mozilla.org/pub/thunderbird/releases/115.11.0/win32/en-US/Thunderbird%20Setup%20115.11.0.exe#/dl.7z",
-            "hash": "sha512:41a19bacdb1fe0b06c008304b1c95c7c2deb067539728400a9c3a935a5e793ec40b42fbb44c547a0efd35af661d48c4d83a445b3f38f5c545a374ca7375e6e0c"
+            "url": "https://archive.mozilla.org/pub/thunderbird/releases/115.11.1/win32/en-US/Thunderbird%20Setup%20115.11.1.exe#/_installer_.exe",
+            "hash": "sha512:1c8f68f1ad859852e65c892ead6079dbc12aac0c7922f6a996d311c8e456fef0556476cf4485badd3a40aeaa2da62b68dcf95b713d65387a25d270751d9b0798"
         }
     },
-    "extract_dir": "core",
-    "post_install": [
-        "thunderbird -CreateProfile \"Scoop $persist_dir\\profile\"",
-        "$Addition = \"$persist_dir\\addition\"",
-        "if (Test-Path $Addition) {",
-        "  info 'Copying additional items...'",
-        "  Copy-Item -Path $Addition\\* -Destination $dir -Force -Recurse -ErrorAction SilentlyContinue",
-        "}"
-    ],
     "bin": "thunderbird.exe",
     "shortcuts": [
         [
@@ -40,9 +28,25 @@
             "-P"
         ]
     ],
-    "persist": [
-        "distribution",
-        "profile"
+    "pre_install": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$path_exe=\"$dir\\_installer_.exe\"",
+        "& $path_exe /S /D=$dir",
+        "$core_exe=\"$dir\\thunderbird.exe\"",
+        "sleep_install $core_exe",
+        "persist -dir @(\"$user_AppData\\Thunderbird\",\"$user_LocalAppData\\Thunderbird\") @(\"$persist_dir\\Thunderbird\",\"$persist_dir\\Thunderbird_LocalAppData\")",
+        "clean_redundant_files @($path_exe)",
+        "remove_app_lnk @(\"Thunderbird.lnk\")"
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process $false",
+        "remove_files @(\"$user_AppData\\Thunderbird\",\"$user_LocalAppData\\Thunderbird\")",
+        "$ui_exe=\"$dir\\uninstall\\helper.exe\"",
+        "& $ui_exe /S",
+        "sleep_uninstall $ui_exe"
     ],
     "checkver": {
         "url": "https://www.thunderbird.net/thunderbird/all/",
@@ -51,14 +55,14 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://archive.mozilla.org/pub/thunderbird/releases/$version/win64/en-US/Thunderbird%20Setup%20$version.exe#/dl.7z",
+                "url": "https://archive.mozilla.org/pub/thunderbird/releases/$version/win64/en-US/Thunderbird%20Setup%20$version.exe#/_installer_.exe",
                 "hash": {
                     "url": "https://archive.mozilla.org/pub/thunderbird/releases/$version/SHA512SUMS",
                     "regex": "$sha512\\s+win64/en-US/$basename"
                 }
             },
             "32bit": {
-                "url": "https://archive.mozilla.org/pub/thunderbird/releases/$version/win32/en-US/Thunderbird%20Setup%20$version.exe#/dl.7z",
+                "url": "https://archive.mozilla.org/pub/thunderbird/releases/$version/win32/en-US/Thunderbird%20Setup%20$version.exe#/_installer_.exe",
                 "hash": {
                     "url": "https://archive.mozilla.org/pub/thunderbird/releases/$version/SHA512SUMS",
                     "regex": "$sha512\\s+win32/en-US/$basename"
