@@ -1,6 +1,6 @@
 {
     "version": "v0.3.2",
-    "description": "阿里云盘命令行客户端，支持JavaScript插件，支持同步备份功能。",
+    "description": "阿里云盘命令行客户端，支持 JavaScript 插件，支持同步备份功能。",
     "homepage": "https://github.com/tickstep/aliyunpan",
     "license": "Apache-2.0",
     "architecture": {
@@ -20,6 +20,30 @@
             "extract_dir": "aliyunpan-v0.3.2-windows-arm64"
         }
     },
+    "persist":[
+        "plugin",
+        "sync_drive",
+        "Downloads"
+    ],
+    "post_install": [
+        "if (!(Test-Path -Path $persist_dir -PathType Container)) {",
+        "    New-Item -Path $persist_dir -ItemType Directory -Force | Out-Null",
+        "}",
+        "$persists = @('aliyunpan_command_history.txt', 'aliyunpan_config.json')",
+        "foreach ($file in $persists) {",
+        "    $src = Join-Path -Path $dir -ChildPath $file",
+        "    $target = Join-Path -Path $persist_dir -ChildPath $file",
+        "    if (!(Test-Path -Path $target -PathType Leaf)) {",
+        "        if (Test-Path -Path $src -PathType Leaf) {",
+        "            Move-Item -Path $src -Destination $target -Force",
+        "        } else {",
+        "           New-Item -Path $target -ItemType File",
+        "        }",
+        "    }",
+        "    Remove-Item -Path $src -Force -ErrorAction SilentlyContinue",
+        "    New-Item -ItemType SymbolicLink -Path $src -Target $target",
+        "}"
+    ],
     "bin": "aliyunpan.exe",
     "checkver": "github",
     "autoupdate": {
