@@ -1,0 +1,90 @@
+{
+    "version": "2.45.1",
+    "description": "Distributed version control system",
+    "homepage": "https://gitforwindows.org",
+    "license": "GPL-2.0-only",
+    "notes": [
+        "Set Git Credential Manager Core by running: \"git config --global credential.helper manager\"",
+        "",
+        "To add context menu entries, run '$dir\\install-context.reg'",
+        "",
+        "To create file-associations for .git* and .sh files, run '$dir\\install-file-associations.reg'"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/git-for-windows/git/releases/download/v2.45.1.windows.1/Git-2.45.1-64-bit.tar.bz2#/gitforwindows.tar.bz2",
+            "hash": "3314914e47c080e80ddcbc543e374890bdfe4d60e9cd7d0faa996d3d0a174a05"
+        },
+        "32bit": {
+            "url": "https://github.com/git-for-windows/git/releases/download/v2.45.1.windows.1/Git-2.45.1-32-bit.tar.bz2#/gitforwindows.tar.bz2",
+            "hash": "e5d04b0228fda44f50f9d52730b72c2ad5773faebe12b54b009e3952f5b19f2b"
+        }
+    },
+    "installer": {
+        "script": [
+            "$Array = @(\"dev\\fd\", \"dev\\stderr\", \"dev\\stdin\", \"dev\\stdout\", \"etc\\mtab\")",
+            "$Array | Out-File \"$dir\\excludefile\"",
+            "$TAR_File = (Split-Path \"$dir\\$fname\" -LeafBase)",
+            "7z x -y -bd \"$dir\\$fname\" -o\"$dir\" | Out-Null -ErrorAction SilentlyContinue",
+            "7z x -y -bd -x@\"$dir\\excludefile\" \"$TAR_File\" | Out-Null -ErrorAction SilentlyContinue"
+        ]
+    },
+    "post_install": [
+        "'install-context', 'uninstall-context', 'install-file-associations', 'uninstall-file-associations' | ForEach-Object {",
+        "    $reg_file_in  = \"$bucketsdir\\main\\scripts\\git\\$_.reg\"",
+        "    $reg_file_out = \"$dir\\$_.reg\"",
+        "    $git_root     = \"$dir\".Replace('\\', '\\\\')",
+        "    if (Test-Path $reg_file_in) {",
+        "        $content = Get-Content $reg_file_in",
+        "        $content = $content.Replace('$git_root', $git_root)",
+        "        if ($global) {",
+        "            $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "        }",
+        "        Set-Content -Path $reg_file_out -Value $content -Encoding Ascii",
+        "    }",
+        "}"
+    ],
+    "bin": [
+        "bin\\sh.exe",
+        "bin\\bash.exe",
+        "bin\\git.exe",
+        "cmd\\gitk.exe",
+        "cmd\\git-gui.exe",
+        "cmd\\scalar.exe",
+        "cmd\\tig.exe",
+        "git-bash.exe"
+    ],
+    "shortcuts": [
+        [
+            "git-bash.exe",
+            "Git Bash",
+            "--cd-to-home"
+        ],
+        [
+            "cmd\\git-gui.exe",
+            "Git GUI"
+        ]
+    ],
+    "env_set": {
+        "GIT_INSTALL_ROOT": "$dir"
+    },
+    "checkver": {
+        "url": "https://api.github.com/repositories/23216272/releases/latest",
+        "jsonpath": "$..browser_download_url",
+        "regex": "download/v(?<tag>[\\d.]+windows\\.\\d)/PortableGit-([\\d.]+)-64"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/git-for-windows/git/releases/download/v$version.windows.1/Git-$version-64-bit.tar.bz2#/gitforwindows.tar.bz2"
+            },
+            "32bit": {
+                "url": "https://github.com/git-for-windows/git/releases/download/v$version.windows.1/Git-$version-32-bit.tar.bz2#/gitforwindows.tar.bz2"
+            }
+        },
+        "hash": {
+            "url": "https://github.com/git-for-windows/git/releases/tag/v$matchTag",
+            "regex": "(?s)$basename.*?$sha256"
+        }
+    }
+}
