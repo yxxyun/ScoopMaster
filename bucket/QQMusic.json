@@ -1,43 +1,40 @@
 {
-  "homepage": "https://y.qq.com/",
-  "description": "The official QQ Music client",
-  "version": "1933",
-  "license": "Proprietary",
-  "url": "https://dldir1.qq.com/music/clntupate/QQMusic_Setup_1933.exe#/dl.7z",
-  "hash": "md5:c18dd6703fb8d62ee565b8a677ba377a",
-  "installer": {
-    "script": [
-      "# simulate instok check",
-      "$helperScript = $(Join-Path $(Find-BucketDirectory -Root -Name dorado) scripts/qqmusic/instok)",
-      "Copy-Item -Path $helperScript -Destination $dir",
-      "# handle runtime cache",
-      "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name dorado) scripts/DoradoUtils.psm1)",
-      "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:APPDATA\\Tencent\\QQMusic\"",
-      "Remove-Module -Name DoradoUtils"
-    ]
-  },
-  "uninstaller": {
-    "script": [
-      "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name dorado) scripts/DoradoUtils.psm1)",
-      "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\Tencent\\QQMusic\"",
-      "Remove-Module -Name DoradoUtils"
-    ]
-  },
-  "shortcuts": [
-    [
-      "QQMusic.exe",
-      "QQ音乐"
-    ]
-  ],
-  "checkver": {
-    "url": "https://c.y.qq.com/pcupdate/fcgi-bin/fcg_update_player.fcg?cmd=QueryModuleUpdate&module_type=QQ&MusicNew&update_strategy=0",
-    "regex": "QQMusic_Setup_(\\d+).exe"
-  },
-  "autoupdate": {
-    "url": "https://dldir1.qq.com/music/clntupate/QQMusic_Setup_$version.exe#/dl.7z",
-    "hash": {
-      "url": "https://c.y.qq.com/pcupdate/fcgi-bin/fcg_update_player.fcg?cmd=QueryModuleUpdate&module_type=QQ&MusicNew&update_strategy=0",
-      "regex": "module_hash>$md5"
+    "version": "2022.2680",
+    "description": "音乐播放器 QQMusic",
+    "homepage": "https://y.qq.com",
+    "url": "https://webcdn.m.qq.com/spcmgr/download/QQMusic_Setup_2022.2680_QMgr.exe#/dl.7z",
+    "hash": "fcf1c55c70b264df5be247bb20e766e3925d2385da1ea933a05b7f139b791658",
+    "installer": {
+        "script": [
+            "Import-Module $bucketsdir\\rainte\\scripts\\qqmusic\\AppsUtils.psm1",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:APPDATA\\Tencent\\QQMusic\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "bin": "QQMusic.exe",
+    "shortcuts": [
+        [
+            "QQMusic.exe",
+            "QQMusic"
+        ]
+    ],
+    "post_install": "Copy-Item \"$dir\\QQMusic.tpc\" \"$dir\\instok\"",
+    "uninstaller": {
+        "script": [
+            "Import-Module $bucketsdir\\rainte\\scripts\\qqmusic\\AppsUtils.psm1",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\Tencent\\QQMusic\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "checkver": {
+        "script": [
+            "$res = Invoke-WebRequest -UseBasicParsing -Uri 'https://luban.m.qq.com/api/public/software-manager/softwareProxy' -Body 'cmdid=3318&jprxReq%5Breq%5D%5Bsoft_id_list%5D%5B%5D=10' -Method 'POST'",
+            "Write-Output $res.Content"
+        ],
+        "jsonpath": "$..file_name",
+        "regex": "QQMusic_Setup_(?<version>.*?)_QMgr.exe"
+    },
+    "autoupdate": {
+        "url": "https://webcdn.m.qq.com/spcmgr/download/QQMusic_Setup_$version_QMgr.exe#/dl.7z"
     }
-  }
 }
