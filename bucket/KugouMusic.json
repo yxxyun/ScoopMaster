@@ -1,48 +1,55 @@
 {
-    "version": "11.0.82.26573",
-    "description": "酷狗音乐",
+    "version": "11.0.82",
+    "description": "Hello, KuGou!",
     "homepage": "https://www.kugou.com/",
     "license": "Unknown",
-    "url": "https://download.kugou.com/download/kugou_pc#/_installer_.exe",
+    "url": "http://download.kugou.com/download/kugou_pc#/dl.7z",
     "hash": "be54e0935d0daf1b37f840eff7553a4111eaebd982204b3b480b6e4135b42607",
+    "installer": {
+        "script": [
+            "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\KuGou.7z\" \"$dir\"",
+            "Remove-Item -Recurse -Force \"$dir\\`$PLUGINSDIR\"",
+            "New-Item -ItemType Junction -Path \"$dir\\$([System.Diagnostics.FileVersionInfo]::GetVersionInfo(\"$dir\\KuGou.exe\").FileVersion)\" -Target \"$dir\"",
+            "$runtimeCache = \"$env:APPDATA\\KuGou8\"",
+            "$runtimeCachePersist = \"$persist_dir\\data\"",
+            "if (Test-Path $runtimeCachePersist) {",
+            "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+            "    New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
+            "} else {",
+            "    if (Test-Path $runtimeCache) {",
+            "        Move-Item $runtimeCache $runtimeCachePersist -Force",
+            "        New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
+            "    }",
+            "}"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$runtimeCache = \"$env:APPDATA\\KuGou8\"",
+            "$runtimeCachePersist = \"$persist_dir\\data\"",
+            "if (!(Test-Path $runtimeCachePersist)) {",
+            "    Move-Item $runtimeCache $runtimeCachePersist -Force",
+            "} else {",
+            "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+            "}"
+        ]
+    },
     "shortcuts": [
         [
             "KuGou.exe",
             "酷狗音乐"
         ]
     ],
-    "pre_install": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "$path_exe=\"$dir\\_installer_.exe\"",
-        "& $path_exe /S /D=$dir",
-        "$core_exe=\"$dir\\KuGou.exe\"",
-        "sleep_install $core_exe",
-        "persist -dir @(\"$user_AppData\\KuGou8\") @(\"$persist_dir\\KuGou8\")",
-        "clean_redundant_files @($path_exe)",
-        "remove_app_lnk @(\"酷狗音乐.lnk\") @(\"酷狗音乐\")"
-    ],
-    "pre_uninstall": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "stop_process $false",
-        "remove_files @(\"$user_AppData\\KuGou8\")",
-        "$ui_exe=\"$dir\\uninst.exe\"",
-        "try{ & $ui_exe /S }catch{}",
-        "sleep_uninstall $ui_exe",
-        "remove_file \"$user_AppData\\KuGou8\""
-    ],
+    "bin": "KuGou.exe",
+    "persist": "data",
     "checkver": {
-        "script": [
-            "$dl_url='https://download.kugou.com/download/kugou_pc'",
-            "$out_path='KuGou-' + (New-Guid).Guid + '.exe'",
-            "Invoke-WebRequest -Uri $dl_url -OutFile $out_path",
-            "(Get-Item $out_path).VersionInfo.FileVersion",
-            "Remove-Item $out_path -Force"
-        ],
-        "regex": "([\\d\\.]+)"
+        "url": "https://download.kugou.com/",
+        "regex": "V (\\d+(\\.\\d+)+)"
     },
     "autoupdate": {
-        "url": "https://download.kugou.com/download/kugou_pc#/_installer_.exe"
+        "url": "http://download.kugou.com/download/kugou_pc#/dl.7z",
+        "hash": {
+            "mode": "download"
+        }
     }
 }
