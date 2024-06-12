@@ -1,6 +1,6 @@
 {
     "homepage": "https://www.swift.org/",
-    "description": "The Swift Programming Language",
+    "description": "The Swift Programming Language (Snapshot build)",
     "license": "Apache-2.0",
     "version": "snapshot-2024-06-03-a",
     "architecture": {
@@ -9,21 +9,48 @@
             "hash": "04a870da9b0b9d0169a41f86092d290316200c2a124890bcf5e8246eb2840d94"
         }
     },
-    "depends": "dark",
+    "depends": "main/wixtoolset",
+    "suggest": {
+        "python39": "versions/python39",
+        "vcredist": "extras/vcredist2022"
+    },
     "installer": {
         "script": [
-            "Expand-DarkArchive \"$dir\\$fname\" \"$dir\\extracted\" -Removal",
-            "Get-ChildItem \"$dir\\extracted\\AttachedContainer\\*.msi\" | ForEach-Object { Expand-MsiArchive $_ \"$dir\" }",
-            "@('extracted') | ForEach-Object { Remove-Item \"$dir\\$_\" -Recurse }"
+            "wix.exe burn extract \"$dir\\$fname\" -o \"$dir\\extracted\" -oba \"$dir\\extracted\"",
+            "$productVersion = ([xml](Get-Content -Raw \"$dir\\extracted\\manifest.xml\" -Encoding utf8)).BurnManifest.Registration.Version",
+            "Get-ChildItem \"$dir\\extracted\\WixAttachedContainer\\*.msi\" | ForEach-Object {",
+            "    if ($_.Name -match 'rtl.msi') {",
+            "        Expand-MsiArchive $_ \"$dir\\Runtimes\\usr\\bin\"",
+            "    } else {",
+            "        Expand-MsiArchive $_ \"$dir\"",
+            "    }",
+            "}",
+            "if (Test-Path \"$dir\\LocalApp\\Programs\\Swift\\Tools\") {",
+            "    Get-ChildItem \"$dir\\LocalApp\\Programs\\Swift\\Tools\\$productVersion\" | ForEach-Object {",
+            "        Move-Item -Path $_ -Destination \"$dir\\LocalApp\\Programs\\Swift\\Toolchains\\$($productVersion)+Asserts\\usr\\bin\" -Force",
+            "    }",
+            "    Remove-Item \"$dir\\LocalApp\\Programs\\Swift\\Tools\" -Recurse | Out-Null",
+            "}",
+            "Move-Item -Path \"$dir\\LocalApp\\Programs\\Swift\\Platforms\\$productVersion\\Windows.platform\" -Destination \"$dir\\LocalApp\\Programs\\Swift\\Platforms\"",
+            "Move-Item -Path \"$dir\\LocalApp\\Programs\\Swift\\Toolchains\\$($productVersion)+Asserts\\usr\" -Destination \"$dir\\LocalApp\\Programs\\Swift\\Toolchains\"",
+            "Move-Item -Path \"$dir\\LocalApp\\Programs\\Swift\\Redistributables\\$productVersion\\*\" -Destination \"$dir\\LocalApp\\Programs\\Swift\\Redistributables\"",
+            "Get-ChildItem \"$dir\\LocalApp\\Programs\\Swift\" | ForEach-Object {",
+            "    Move-Item -Path $_ -Destination \"$dir\\\" -Force",
+            "}",
+            "Remove-Item \"$dir\\Platforms\\$productVersion\" | Out-Null",
+            "Remove-Item \"$dir\\Toolchains\\$($productVersion)+Asserts\" | Out-Null",
+            "Remove-Item \"$dir\\Redistributables\\$productVersion\" | Out-Null",
+            "@(\"$fname\", 'extracted', 'LocalApp', 'SourceDir') | ForEach-Object {",
+            "    Remove-Item \"$dir\\$_\" -Recurse -ErrorAction SilentlyContinue | Out-Null",
+            "}"
         ]
     },
     "env_add_path": [
-        "Developer\\Toolchains\\unknown-Asserts-development.xctoolchain\\usr\\bin",
-        "runtime-development\\bin"
+        "Toolchains\\usr\\bin",
+        "Runtimes\\usr\\bin"
     ],
     "env_set": {
-        "SDKROOT": "$dir\\Developer\\Platforms\\Windows.platform\\Developer\\SDKs\\Windows.sdk",
-        "DEVELOPER_DIR": "$dir\\Developer"
+        "SDKROOT": "$dir\\Platforms\\Windows.platform\\Developer\\SDKs\\Windows.sdk"
     },
     "checkver": {
         "url": "https://dorado-api.deno.dev/swift-tmp",
@@ -38,7 +65,7 @@
         }
     },
     "notes": [
-        "To make swift toolchain work, you must have Visual Studio and Windows SDK components installed.",
-        "Please read https://www.swift.org/getting-started/#support-files for Supporting Files installation guide."
+        "Swift Toolchain does not bundle Python39 which is a requirement for LLDB to work.",
+        "Please install Python39 from versions/python39 if you want to use the LLDB debugger."
     ]
 }
