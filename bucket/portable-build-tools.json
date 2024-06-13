@@ -9,7 +9,38 @@
             "hash": "3aacb52c1bc590512aa250173abaf63c97a39c65b3255163359d6d8dcd32957b"
         }
     },
-    "bin": "PortableBuildTools.exe",
+    "bin": [
+        "PortableBuildTools.exe",
+        "pbtdevenv.ps1"
+    ],
+    "pre_install": [
+        "@'",
+        "# Folder where PortableDevTools were installed.",
+        "param([Parameter(Position = 0,Mandatory)] [string]$InstallPath)",
+        "",
+        "# Folder name under Windows Kits\\10\\bin",
+        "$env:WindowsSDKVersion = '10.0.26100.0'",
+        "# Folder name under VC\\Tools\\MSVC",
+        "$env:VCToolsInstallDir = (Join-Path $InstallPath '\\VC\\Tools\\MSVC\\14.40.33807')",
+        "",
+        "$env:WindowsSDKDir = (Join-Path $InstallPath '\\Windows Kits\\10')",
+        "$env:VSCMD_ARG_TGT_ARCH = 'x64'",
+        "",
+        "'VCToolsInstallDir = {0}' -f $env:VCToolsInstallDir",
+        "'WindowsSDKDir = {0}' -f $env:WindowsSDKDir",
+        "",
+        "$env:MSVC_BIN = \"$env:VCToolsInstallDir\\bin\\Hostx64\\$env:VSCMD_ARG_TGT_ARCH\"",
+        "$env:SDK_BIN = \"$env:WindowsSDKDir\\bin\\$env:WindowsSDKVersion\\$env:VSCMD_ARG_TGT_ARCH;$env:WindowsSDKDir\\bin\\$env:WindowsSDKVersion\\$env:VSCMD_ARG_TGT_ARCH\\ucrt\"",
+        "",
+        "$env:PATH = \"$env:MSVC_BIN;$env:SDK_BIN;$env:PATH\"",
+        "$env:INCLUDE = \"$env:VCToolsInstallDir\\include;$env:WindowsSDKDir\\Include\\$env:WindowsSDKVersion\\ucrt;$env:WindowsSDKDir\\Include\\$env:WindowsSDKVersion\\shared;$env:WindowsSDKDir\\Include\\$env:WindowsSDKVersion\\um;$env:WindowsSDKDir\\Include\\$env:WindowsSDKVersion\\winrt;$env:WindowsSDKDir\\Include\\$env:WindowsSDKVersion\\cppwinrt\"",
+        "$env:LIB = \"$env:VCToolsInstallDir\\lib\\$env:VSCMD_ARG_TGT_ARCH;$env:WindowsSDKDir\\Lib\\$env:WindowsSDKVersion\\ucrt\\$env:VSCMD_ARG_TGT_ARCH;$env:WindowsSDKDir\\Lib\\$env:WindowsSDKVersion\\um\\$env:VSCMD_ARG_TGT_ARCH\"",
+        "'@ | Out-File (Join-Path $dir 'pbtdevenv.ps1') -Encoding ascii"
+    ],
+    "notes": [
+        "To initialize build environment, first run PortableBuildTools.exe to install, then:",
+        "pbtdevenv.ps1 -InstallPath C:\\BuildTools"
+    ],
     "checkver": "github",
     "autoupdate": {
         "architecture": {
