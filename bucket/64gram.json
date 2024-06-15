@@ -1,19 +1,34 @@
 {
-    "version": "1.1.28",
-    "description": "Unofficial Telegram Desktop with some enhancements.",
-    "homepage": "https://64gr.am",
+    "version": "1.1.29",
+    "description": "64Gram (unofficial Telegram Desktop)",
+    "homepage": "https://github.com/TDesktop-x64/tdesktop",
     "license": {
         "identifier": "GPL-3.0-openssl-exception",
         "url": "https://github.com/TDesktop-x64/tdesktop/blob/dev/LICENSE"
     },
+    "notes": "Register 'URL:Telegram Link' via `reg import \"$dir\\install-context.reg\"`",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/TDesktop-x64/tdesktop/releases/download/v1.1.28/64Gram_1.1.28_x64.zip",
-            "hash": "c82b29bd4f6e87bec6df11f20b1fe17effbd22abbdb339daf6503314bc2227ea"
+            "url": "https://github.com/TDesktop-x64/tdesktop/releases/download/v1.1.29/64Gram_1.1.29_x64.zip",
+            "hash": "4a371baec27e60d7c378db40aa5a42495e058b36864e74c65be1159a2cfddd5f"
         }
     },
     "pre_install": "if (Test-Path \"$persist_dir\\log.txt\") { Copy-Item \"$persist_dir\\log.txt\" \"$dir\\\" }",
-    "pre_uninstall": "if (Test-Path \"$dir\\log.txt\") { Copy-Item \"$dir\\log.txt\" \"$persist_dir\\\" }",
+    "post_install": [
+        "'install-context', 'uninstall-context' | ForEach-Object {",
+        "    if (Test-Path \"$bucketsdir\\cyk\\scripts\\telegram\\$_.reg\") {",
+        "        $sPath = \"$dir\\Telegram.exe\".Replace('\\', '\\\\')",
+        "        $content = (Get-Content \"$bucketsdir\\cyk\\scripts\\telegram\\$_.reg\").Replace('$telegramexe', $sPath)",
+        "        if ($global) { $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE') }",
+        "        Set-Content \"$dir\\$_.reg\" $content -Encoding Ascii -Force",
+        "    }",
+        "}"
+    ],
+    "pre_uninstall": [
+        "Stop-Process -Name 'stremio.exe' -ErrorAction SilentlyContinue",
+        "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-context.reg\" }",
+        "if (Test-Path \"$dir\\log.txt\") { Copy-Item \"$dir\\log.txt\" \"$persist_dir\\\" }"
+    ],
     "bin": [
         [
             "Telegram.exe",
@@ -28,7 +43,9 @@
     ],
     "persist": "tdata",
     "checkver": {
-        "github": "https://github.com/TDesktop-x64/tdesktop"
+        "url": "https://api.github.com/repos/TDesktop-x64/tdesktop/releases",
+        "jsonpath": "$..tag_name",
+        "regex": "v([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
