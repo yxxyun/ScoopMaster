@@ -1,65 +1,64 @@
 {
     "version": "1.90.2",
-    "description": "一个轻量级、功能强大，插件生态丰富的文件编辑器。Lightweight but powerful source code editor.",
+    "description": "Lightweight but powerful source code editor",
     "homepage": "https://code.visualstudio.com/",
     "license": {
         "identifier": "Freeware",
         "url": "https://code.visualstudio.com/License/"
     },
+    "notes": "Add Visual Studio Code as a context menu option by running: \"$dir\\install-context.reg\"",
     "architecture": {
         "64bit": {
-            "url": "https://update.code.visualstudio.com/1.90.2/win32-x64-user/stable#/abgo_bucket_installer.exe",
-            "hash": "379b7fb7207acfc42c2eca391a3a991063f6efbccf5190f0a7988e127cf91f25"
-        },
-        "arm64": {
-            "url": "https://update.code.visualstudio.com/1.90.2/win32-arm64-user/stable#/abgo_bucket_installer.exe",
-            "hash": "3337bcda1eeda3d855d07d98bf11466a2e32d90fefa3d3deee224732a097fb72"
+            "url": [
+                "https://vscode.download.prss.microsoft.com/dbazure/download/stable/5437499feb04f7a586f677b155b039bc2b3669eb/VSCode-win32-x64-1.90.2.zip",
+                "https://raw.githubusercontent.com/ScoopInstaller/Extras/master/scripts/vscode/install-context.reg",
+                "https://raw.githubusercontent.com/ScoopInstaller/Extras/master/scripts/vscode/uninstall-context.reg"
+            ],
+            "hash": [
+                "81b01ac4d9579d82833ed8bcada0d54496b89833117142d764b1fd141714b54b",
+                "8ef94c82319b69754bdae0099af266d184d179a37af8b8beb11334c6ab639752",
+                "df2a5162e72e2518e2b75b4337c8e7b46c136554872af90fa0de1cf6ebef376f"
+            ]
         }
     },
+    "env_add_path": "bin",
     "shortcuts": [
         [
-            "Code.exe",
+            "code.exe",
             "Visual Studio Code"
         ]
     ],
-    "pre_install": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "$path_installer=\"$dir\\abgo_bucket_installer.exe\"",
-        "& $path_installer /VerySilent /Dir=\"$dir\"",
-        "$core_exe=\"$dir\\Code.exe\"",
-        "persist_file -dir @(\"$user_AppData\\Code\",\"$env:UserProfile\\.vscode\") @(\"$persist_dir\\Code\",\"$persist_dir\\.vscode\")",
-        "sleep_install $core_exe",
-        "handle_app_lnk",
-        "do_some_things"
-    ],
-    "pre_uninstall": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "stop_process $false",
-        "remove_files @(\"$desktop\\VS Code.lnk\",\"$user_AppData\\Code\",\"$env:UserProfile\\.vscode\")",
-        "$ui_exe=\"$dir\\unins000.exe\"",
-        "try{ & $ui_exe /VerySilent }catch{}",
-        "sleep_uninstall $ui_exe"
+    "post_install": [
+        "if (Test-Path \"$dir\\install-context.reg\") {",
+        "  $codepath = \"$dir\\Code.exe\".Replace('\\', '\\\\')",
+        "  $content = Get-Content \"$dir\\install-context.reg\"",
+        "  $content = $content.Replace('$code', $codepath)",
+        "  if ($global) {",
+        "    $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "  }",
+        "  $content | Set-Content -Path \"$dir\\install-context.reg\"",
+        "}",
+        "if (Test-Path \"$dir\\uninstall-context.reg\") {",
+        "  $content = Get-Content \"$dir\\uninstall-context.reg\"",
+        "  if ($global) {",
+        "    $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "  }",
+        "  $content | Set-Content -Path \"$dir\\uninstall-context.reg\"",
+        "}"
     ],
     "checkver": {
         "url": "https://code.visualstudio.com/sha?build=stable",
-        "jsonpath": "$.products[?(@.platform.os == 'win32-x64-user')].name"
+        "jsonpath": "$.products[?(@.platform.os == 'win32-x64-archive')].url",
+        "regex": "^https?://(?<domain>.*)/stable/(?<release>\\w+)/VSCode-win32-x64-(?<version>[\\d.]+).zip",
+        "replace": "${3}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://update.code.visualstudio.com/$version/win32-x64-user/stable#/abgo_bucket_installer.exe",
+                "url": "https://$matchDomain/stable/$matchRelease/VSCode-win32-x64-$matchVersion.zip",
                 "hash": {
                     "url": "https://code.visualstudio.com/sha?build=stable",
-                    "jsonpath": "$.products[?(@.platform.os == 'win32-x64-user')].sha256hash"
-                }
-            },
-            "arm64": {
-                "url": "https://update.code.visualstudio.com/$version/win32-arm64-user/stable#/abgo_bucket_installer.exe",
-                "hash": {
-                    "url": "https://code.visualstudio.com/sha?build=stable",
-                    "jsonpath": "$.products[?(@.platform.os == 'win32-arm64-user')].sha256hash"
+                    "jsonpath": "$.products[?(@.platform.os == 'win32-x64-archive')].sha256hash"
                 }
             }
         }
