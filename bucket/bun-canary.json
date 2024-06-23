@@ -8,11 +8,11 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/oven-sh/bun/releases/download/canary/bun-windows-x64.zip",
-            "hash": "bb716f860135b3a48b859a3ebc877dfa525b6aaaa4f1bfcca5ee2b3ea7f88eb5"
+            "url": "https://nightly.link/oven-sh/bun/suites/9631879113/artifacts/1628764884#/dl.zip",
+            "hash": "0a06e8a3d5ae6debd2960ff339e0366c6828174ff9ecca85f44c02a97ef5e3ba",
+            "pre_install": "Expand-7zipArchive \"$dir\\bun-windows-x64.zip\" -ExtractDir 'bun-windows-x64' -Removal"
         }
     },
-    "extract_dir": "bun-windows-x64",
     "bin": [
         "bun.exe",
         [
@@ -23,22 +23,28 @@
     ],
     "checkver": {
         "script": [
-            "$dl_url = 'https://github.com/oven-sh/bun/releases/download/canary/bun-windows-x64.zip'",
-            "$dl = cache_path 'bun-canary' 'unknown' $dl_url",
+            "$runs = (irm 'https://api.github.com/repos/oven-sh/bun/actions/workflows/ci.yml/runs?status=success&per_page=1')",
+            "$buildId = $runs.workflow_runs[0].id",
+            "$artifacts = (irm \"https://api.github.com/repos/oven-sh/bun/actions/runs/$buildId/artifacts\")",
+            "$artifactId = $artifacts.artifacts | Where-Object { $_.name -eq 'bun-windows-x64' } | Select-Object -ExpandProperty 'id'",
+            "$dl_url = \"https://nightly.link/oven-sh/bun/suites/$buildId/artifacts/$artifactId\"",
+            "$dl = cache_path 'bun-canary' 'unknown' \"$dl_url#/dl.zip\"",
             "$dl_dir = strip_ext $dl",
-            "Invoke-WebRequest $dl_url -OutFile $dl",
-            "Expand-Archive $dl $dl_dir",
+            "Invoke-RestMethod $dl_url -OutFile $dl",
+            "Expand-Archive $dl $dl_dir -Force",
+            "Expand-Archive \"$dl_dir\\bun-windows-x64.zip\" $dl_dir -Force",
             "$ver = & \"$dl_dir\\bun-windows-x64\\bun.exe\" --revision",
-            "Move-Item -Force $dl (cache_path 'bun-canary' $ver $dl_url)",
-            "Remove-Item $dl_dir -Recurse",
-            "$ver"
+            "Rename-Item $dl $($dl -replace 'unknown', $ver) -Force",
+            "Remove-Item $dl_dir -Recurse -Force",
+            "$ret = \"$ver#$buildId#$artifactId\"",
+            "$ret"
         ],
-        "regex": "(\\S+)"
+        "regex": "(?<version>\\S+)#(?<buildid>\\d+)#(?<artifactid>\\d+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/oven-sh/bun/releases/download/canary/bun-windows-x64.zip"
+                "url": "https://nightly.link/oven-sh/bun/suites/$matchBuildid/artifacts/$matchArtifactid#/dl.zip"
             }
         }
     }

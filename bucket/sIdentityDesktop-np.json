@@ -7,13 +7,20 @@
     "hash": "808a1f18021bc1138db4bacc10c6e02601807621a178874cad17ffc8d5a5e685",
     "pre_install": [
         "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
-        "Start-Process 'msiexec' -Wait -Verb 'RunAs' -WindowStyle 'Hidden' -Args @('/i', \"$dir\\setup.exe\", '/qn', '/norestart')"
+        "Start-Process \"$dir\\setup.exe\" -Wait"
+    ],
+    "##":[
+        "Uninstall only deletes the content of the directory $env:LocalAppData\\ErsteBankundSparkasse\\sIdentityDesktop.",
+        "A complete uninstallation must be done manually."
     ],
     "pre_uninstall": [
-        "if ($cmd -eq 'uninstall') {",
-        "    if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
-        "    Start-Process 'msiexec' -Wait -Verb 'RunAs' -WindowStyle 'Hidden' -Args @('/x', \"$dir\\setup.exe\", '/qn', '/norestart')",
-        "}"
+        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+        "$maintenanceToolPath = Join-Path $env:LocalAppData ErsteBankundSparkasse\\sIdentityDesktop",
+        "$maintenanceToolExePath = Join-Path $maintenanceToolPath maintenancetool.exe",
+        "Write-Output \"maintenanceToolExePath=$maintenanceToolExePath\"",
+        "Rename-Item \"$maintenanceToolPath\\maintenancetool.dat.new\" \"$maintenanceToolPath\\maintenancetool.dat\"",
+        "Rename-Item \"$maintenanceToolPath\\maintenancetool.exe.new\" $maintenanceToolExePath",
+        "Start-Process $maintenanceToolExePath -Wait"
     ],
     "checkver": {
         "url": "https://www.sparkasse.at/sgruppe/privatkunden/digitales-banking/alternative-login-methoden#voraussetzungen",
