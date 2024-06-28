@@ -1,0 +1,40 @@
+{
+    "version": "2.5.6",
+    "description": "SKK server for Windows with SKK proxy server and Google CGI API for Japanese Input",
+    "homepage": "https://github.com/nathancorvussolis/crvskkserv",
+    "license": "MIT",
+    "url": "https://github.com/nathancorvussolis/crvskkserv/releases/download/2.5.6/crvskkserv-2.5.6-x64.zip",
+    "hash": "8e36c5f9b43f951b011f7faabe93aac465c1ac84a4c71eae8f30bdd7ff9f65a1",
+    "bin": "crvskkserv.exe",
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/nathancorvussolis/crvskkserv/releases/download/$version/crvskkserv-$version-x64.zip"
+    },
+    "pre_install": [
+        "if ($cmd -eq \"update\") {",
+        "write-host 'Stopping crvskkserv task...'",
+        "Stop-ScheduledTask -TaskName crvskkserv",
+        "}"
+    ],
+    "post_install": [
+        "if(!(Get-ScheduledTask -TaskName crvskkserv 2>$null)) {",
+        "$Action = New-ScheduledTaskAction -Execute \"$env:userprofile\\scoop\\shims\\crvskkserv.exe\"",
+        "$Trigger = New-ScheduledTaskTrigger -AtLogon -User $env:USERNAME",
+        "$Settings = New-ScheduledTaskSettingsSet -DontStopIfGoingOnBatteries -RunOnlyIfNetworkAvailable -AllowStartIfOnBatteries",
+        "$Settings.ExecutionTimeLimit = 'PT0S'",
+        "Register-ScheduledTask crvskkserv -Action $Action -Trigger $Trigger -Settings $Settings",
+        "Write-Host 'Starting crvskkserv task...'",
+        "Start-ScheduledTask -TaskName crvskkserv",
+        "}",
+        "if ($cmd -eq \"update\") {",
+        "Write-Host 'Starting crvskkserv task...'",
+        "Start-ScheduledTask -TaskName crvskkserv",
+        "}"
+    ],
+    "post_uninstall": [
+        "write-host 'Stopping crvskkserv task...'",
+        "Stop-ScheduledTask -TaskName crvskkserv",
+        "Write-Host 'Unregistering crvskkserv task...'",
+        "Unregister-ScheduledTask -TaskName 'crvskkserv' -Confirm:$false"
+    ]
+}
