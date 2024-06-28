@@ -1,0 +1,62 @@
+{
+    "version": "1.8.5760",
+    "description": "A supplementary Han font based on Source Han Sans.",
+    "homepage": "https://github.com/Fitzgerald-Porthmouth-Koenigsegg/Plangothic-Project",
+    "license": "OFL-1.1",
+    "url": [
+        "https://github.com/Fitzgerald-Porthmouth-Koenigsegg/Plangothic-Project/releases/download/V1.8.5760/PlangothicP1-Regular.fallback.ttf",
+        "https://github.com/Fitzgerald-Porthmouth-Koenigsegg/Plangothic-Project/releases/download/V1.8.5760/PlangothicP2-Regular.ttf"
+    ],
+    "hash": [
+        "84b4276fdffe1b21b831a83d72a5b63b393072d9ebe266d450f5aa2523d8d77b",
+        "ce65bda79ad048a225bc2e8c0d77c7dc0b972c3472a0b3e46c6a3e0cf25318e8"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": [
+            "https://github.com/Fitzgerald-Porthmouth-Koenigsegg/Plangothic-Project/releases/download/V$version/PlangothicP1-Regular.fallback.ttf",
+            "https://github.com/Fitzgerald-Porthmouth-Koenigsegg/Plangothic-Project/releases/download/V$version/PlangothicP2-Regular.ttf"
+        ]
+    },
+    "installer": {
+        "script": [
+            "$currentBuildNumber = [int] (Get-ItemProperty \"HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\").CurrentBuildNumber",
+            "$windows1809BuildNumber = 17763",
+            "$isPerUserFontInstallationSupported = $currentBuildNumber -ge $windows1809BuildNumber",
+            "$isFontInstallationForAllUsers = $global -or !$isPerUserFontInstallationSupported",
+            "if ($isFontInstallationForAllUsers -and !(is_admin)) {",
+            "    error \"Administrator rights are required to install $app.\"",
+            "    exit 1",
+            "}",
+            "$fontInstallDir = if ($isFontInstallationForAllUsers) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
+            "$registryRoot = if ($isFontInstallationForAllUsers) { \"HKLM\" } else { \"HKCU\" }",
+            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
+            "New-Item $fontInstallDir -ItemType Directory -ErrorAction SilentlyContinue | Out-Null",
+            "Get-ChildItem $dir -Filter '*.ttf' -Recurse | ForEach-Object {",
+            "    $value = if ($isFontInstallationForAllUsers) { $_.Name } else { \"$fontInstallDir\\$($_.Name)\" }",
+            "    New-ItemProperty -Path $registryKey -Name $_.Name.Replace($_.Extension, ' (TrueType)') -Value $value -Force | Out-Null",
+            "    Copy-Item $_.FullName -Destination $fontInstallDir",
+            "}"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$currentBuildNumber = [int] (Get-ItemProperty \"HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\").CurrentBuildNumber",
+            "$windows1809BuildNumber = 17763",
+            "$isPerUserFontInstallationSupported = $currentBuildNumber -ge $windows1809BuildNumber",
+            "$isFontInstallationForAllUsers = $global -or !$isPerUserFontInstallationSupported",
+            "if ($isFontInstallationForAllUsers -and !(is_admin)) {",
+            "    error \"Administrator rights are required to uninstall $app.\"",
+            "    exit 1",
+            "}",
+            "$fontInstallDir = if ($isFontInstallationForAllUsers) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
+            "$registryRoot = if ($isFontInstallationForAllUsers) { \"HKLM\" } else { \"HKCU\" }",
+            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
+            "Get-ChildItem $dir -Filter '*.ttf' -Recurse | ForEach-Object {",
+            "    Remove-ItemProperty -Path $registryKey -Name $_.Name.Replace($_.Extension, ' (TrueType)') -Force -ErrorAction SilentlyContinue",
+            "    Remove-Item \"$fontInstallDir\\$($_.Name)\" -Force -ErrorAction SilentlyContinue",
+            "}",
+            "Write-Host \"The 'Plangothic' Font family has been uninstalled and will not be present after restarting your computer.\" -Foreground Magenta"
+        ]
+    }
+}
