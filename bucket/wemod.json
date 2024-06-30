@@ -1,44 +1,30 @@
 {
     "version": "9.5.0",
-    "description": "Thousands of free mods and trainers for your favorite single-player PC games — all in one place",
+    "description": "Thousands of free mods and trainers for your favorite single-player PC games - all in one place.",
+    "homepage": "https://www.wemod.com",
     "license": {
-        "identifier": "Freeware",
+        "identifier": "Proprietary",
         "url": "https://www.wemod.com/terms"
     },
-    "homepage": "https://www.wemod.com",
-    "architecture": {
-        "64bit": {
-            "url": "https://storage-cdn.wemod.com/app/releases/stable/WeMod-9.5.0-full.nupkg",
-            "hash": "707152ac2ed9c4acd31a1e25c6e89ab27b23bbb338330410bca2d6faac283947",
-            "shortcuts": [
-                [
-                    "WeMod.exe",
-                    "WeMod"
-                ]
-            ]
-        }
-    },
+    "url": "https://storage-cdn.wemod.com/app/releases/stable/WeMod-9.5.0.exe#/dl.7z",
+    "hash": "76ee622fac373f45b4b5e8dbb0b5c0734ae0ecab5cfd6aa0ca9224b30229a12f",
     "pre_install": [
-        "Get-ChildItem -Path \"$original_dir\" -Exclude lib | Remove-Item -Recurse -Force",
-        "$unzip_dir = (Get-ChildItem -Path \"$original_dir\\lib\" -Directory)[0].FullName",
-        "Move-Item -Path \"${unzip_dir}\\*\" -Destination \"$original_dir\" -Force",
-        "Remove-Item -Path \"$original_dir\\lib\" -Recurse -Force"
+        "$nupkg=(Get-ChildItem $dir\\*full.nupkg).Name",
+        "Get-ChildItem \"$dir\" -Exclude \"$nupkg\" | Remove-Item -ErrorAction SilentlyContinue -Force -Recurse",
+        "Expand-7zipArchive \"$dir\\$nupkg\" -ExtractDir 'lib\\net45' -Removal"
     ],
+    "shortcuts": [
+        [
+            "WeMod.exe",
+            "WeMod"
+        ]
+    ],
+    "post_uninstall": "If ($cmd -eq 'uninstall') { Remove-Item ${env:APPDATA}\\wemod\\* -Force -Recurse }",
     "checkver": {
-        "script": [
-            "$resp = Invoke-WebRequest -Uri 'https://api.wemod.com/client/channels/stable/RELEASES'",
-            "$body = $resp.Content -replace '^\\xEF\\xBB\\xBF', ''",
-            "$download_url = $body -split '\\s' -match '^http(s?)://'",
-            "$version = $download_url -split '-' -match '\\d(\\.\\d+)+'",
-            "Write-Output $version"
-        ],
-        "regex": "(?<version>[\\d\\.]+)"
+        "regex": "WeMod-([\\d.]+)",
+        "script": "(Invoke-WebRequest 'https://api.wemod.com/client/channels/stable/RELEASES').Content"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://storage-cdn.wemod.com/app/releases/stable/WeMod-$version-full.nupkg"
-            }
-        }
+        "url": "https://storage-cdn.wemod.com/app/releases/stable/WeMod-$version.exe#/dl.7z"
     }
 }
