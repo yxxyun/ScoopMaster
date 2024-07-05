@@ -1,0 +1,54 @@
+{
+    "##": "'rootfs' must be a 'real' directory (at least on Windows 10 RS4)",
+    "version": "r20240613-1",
+    "description": "Install ChimeraWSL as a WSL Instance",
+    "homepage": "https://github.com/tranzystorekk/ChimeraWSL",
+    "license": "MIT",
+    "notes": "Even when you are logging in as 'root', some operations (like service command) require Windows administrator privileges",
+    "url": "https://github.com/tranzystorekk/ChimeraWSL/releases/download/r20240613-1/Chimera.zip",
+    "hash": "8f64ed830e77cd7dd34f00f9d433adb1554d5f8a9e94173a23997540c8dd955e",
+    "post_install": [
+        "$installable = $true",
+        "if ($null -eq (Get-Command 'wslconfig' -ErrorAction SilentlyContinue)) {",
+        "    warn 'WSL appears not to be enabled!'",
+        "    warn 'Run ''Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux'''",
+        "    warn 'from an elevated PowerShell. Restart your computer when prompted and reinstall AlpineWSL.'",
+        "    $installable = $false",
+        "}",
+        "& \"$dir\\chimera.exe\" 'isregd'",
+        "if ($?) {",
+        "    warn 'ChimeraWSL is already registered'",
+        "    $installable = $false",
+        "}",
+        "if ($installable) {",
+        "    Copy-Item \"$dir\\chimera.exe\" \"$persist_dir\\data\\chimera.exe\"",
+        "    $res = Invoke-ExternalCommand \"$persist_dir\\data\\chimera.exe\" 'install', \"$dir\\rootfs.tar.gz\"",
+        "    Remove-Item \"$persist_dir\\data\\chimera.exe\" -Force",
+        "    if(!$res) { error 'AlpineWSL installation failed!'; return }",
+        "}",
+        "Remove-Item \"$dir\\rootfs.tar.gz\" -Force"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -ne 'uninstall') { return }",
+            "$res = Invoke-ExternalCommand \"$dir\\chimera.exe\" 'isregd'",
+            "if(!$res) { error 'AlpineWSL is not registered!'; return }",
+            "Invoke-ExternalCommand \"$dir\\chimera.exe\" 'clean', '-y' | Out-Null"
+        ]
+    },
+    "bin": "chimera.exe",
+    "shortcuts": [
+        [
+            "chimera.exe",
+            "Chimera Linux"
+        ]
+    ],
+    "persist": "data",
+    "checkver": {
+        "url": "https://github.com/tranzystorekk/ChimeraWSL/releases/latest",
+        "regex": "/releases/tag/(?:v|V)?([\\d.]+(-\\d+)?)"
+    },
+    "autoupdate": {
+        "url": "https://github.com/tranzystorekk/ChimeraWSL/releases/download/$version/Chimera.zip"
+    }
+}
