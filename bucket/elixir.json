@@ -1,22 +1,29 @@
 {
-    "version": "1.17.1",
-    "description": "A dynamic and functional programming language designed for building scalable and maintainable applications.",
+    "version": "1.17.2",
+    "description": "A dynamic and functional programming language designed for building scalable and maintainable applications. Built on latest OTP",
     "homepage": "https://elixir-lang.org/",
     "license": "Apache-2.0",
-    "suggest": {
-        "Erlang compiler": "erlang"
-    },
-    "url": "https://builds.hex.pm/builds/elixir/v1.17.1.zip",
-    "hash": "b0f474673c1e536c8b3c952e4aeb04bf9b2e94f3d67b44e16eed05811e2084e4",
+    "url": "https://github.com/elixir-lang/elixir/releases/download/v1.17.2/elixir-otp-27.zip",
+    "hash": "3161e6ad958f64c449f85d0c44377aa15de0cade787f9358bd2c3810b2ed949c",
     "env_add_path": "bin",
+    "suggest": {
+        "Erlang": "erlang"
+    },
     "checkver": {
-        "github": "https://github.com/elixir-lang/elixir"
+        "script": [
+            "$responseRelease = (iwr -Headers @{'Accept'='applications/vnd.github+json';'X-Github-Api-Version'='2022-11-28'} -Uri 'https://api.github.com/repos/elixir-lang/elixir/releases/latest').Content | ConvertFrom-Json",
+            "$responseRelease.tag_name -match '^v(?<version>[\\d.]+)$'",
+            "$version = $Matches.version",
+            "$responseAssets = (iwr -Headers  @{'Accept'='applications/vnd.github+json';'X-Github-Api-Version'='2022-11-28'} -Uri $responseRelease.assets_url).Content | ConvertFrom-Json",
+            "$otpVersion = ($responseAssets |foreach{if($_.name -match '^elixir-otp-(?<otpversion>\\d+).zip$') {$Matches.otpversion}} |measure -Maximum).Maximum",
+            "Write-Output $version $otpVersion"
+        ],
+        "regex": "(?<version>[\\d.]+)\\s(?<otpversion>.+)"
     },
     "autoupdate": {
-        "url": "https://builds.hex.pm/builds/elixir/v$version.zip",
+        "url": "https://github.com/elixir-lang/elixir/releases/download/v$version/elixir-otp-$matchOtpversion.zip",
         "hash": {
-            "url": "https://builds.hex.pm/builds/elixir/builds.txt",
-            "regex": "$version [a-zA-Z0-9]+ \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z $sha256"
+            "url": "https://github.com/elixir-lang/elixir/releases/download/v$version/elixir-otp-$matchOtpversion.zip.sha256sum"
         }
     }
 }
