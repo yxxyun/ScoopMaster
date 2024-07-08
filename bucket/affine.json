@@ -1,36 +1,46 @@
 {
     "version": "0.15.3",
-    "description": "A privacy-focussed, local-first, open-source, and ready-to-use alternative for Notion & Miro.",
-    "homepage": "https://affine.pro/",
-    "license": "MPL-2.0",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.15.3/affine-0.15.3-stable-windows-x64.exe#/dl.7z",
-            "hash": "sha512:9d055e4d246d25d52c3aab9599fec11a2770e86fdb5e36ee6a17c3f4b05907baec53c0a5bd8af693ce6f01cfd0c05b4fa860f2ec4d56ac59fbec0f0e8a45a64d"
-        }
+    "description": "下一代知识库，集规划、分类和创建于一体。隐私第一、开源、可定制、随时可用。A next-gen knowledge base that brings planning, sorting and creating all together. Privacy first, open-source, customizable and ready to use.",
+    "homepage": "https://affine.pro",
+    "license": {
+        "identifier": "Unknown",
+        "url": "https://github.com/toeverything/AFFiNE/blob/canary/LICENSE"
     },
-    "pre_install": [
-        "Expand-7zipArchive \"$dir\\AFFiNE-*-full.nupkg\" -ExtractDir 'lib\\net45' -Removal",
-        "Remove-Item \"$dir\\lib\""
-    ],
+    "url": "https://github.com/toeverything/AFFiNE/releases/download/v0.15.3/affine-0.15.3-stable-windows-x64.exe#/dl.7z",
+    "hash": "sha512:9d055e4d246d25d52c3aab9599fec11a2770e86fdb5e36ee6a17c3f4b05907baec53c0a5bd8af693ce6f01cfd0c05b4fa860f2ec4d56ac59fbec0f0e8a45a64d",
     "shortcuts": [
         [
-            "AFFiNE.exe",
+            "app\\AFFiNE.exe",
             "AFFiNE"
         ]
+    ],
+    "pre_install": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$filter=(Get-ChildItem $dir | Where-Object {$_.Name -like \"*.nupkg\" })[0]",
+        "Rename-Item $filter.FullName \"affine_installer.zip\" -Force",
+        "Expand-Archive \"$dir\\affine_installer.zip\" \"$dir\\temp\"",
+        "Copy-Item \"$dir\\temp\\lib\\net45\" \"$dir\\app\" -Recurse -Force",
+        "remove_file \"$dir\\temp\"",
+        "remove_file \"$dir\\affine_installer.zip\"",
+        "persist_file -dir @(\"$user_AppData\\AFFiNE\") @(\"$persist_dir\\AFFiNE\")",
+        "handle_app_lnk",
+        "do_some_things"
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process",
+        "remove_files @(\"$user_AppData\\AFFiNE\")"
     ],
     "checkver": {
         "github": "https://github.com/toeverything/AFFiNE"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/toeverything/AFFiNE/releases/download/v$version/affine-$version-stable-windows-x64.exe#/dl.7z",
-                "hash": {
-                    "url": "$baseurl/latest.yml",
-                    "regex": "sha512:\\s+$base64"
-                }
-            }
+        "url": "https://github.com/toeverything/AFFiNE/releases/download/v$version/affine-$version-stable-windows-x64.exe#/dl.7z",
+        "hash": {
+            "url": "$baseurl/latest.yml",
+            "regex": "sha512:\\s+$base64"
         }
     }
 }
