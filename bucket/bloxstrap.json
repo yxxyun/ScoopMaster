@@ -1,23 +1,36 @@
 {
-    "version": "2.6.1",
+    "version": "2.7.0",
     "homepage": "https://github.com/pizzaboxer/bloxstrap",
     "description": "Open-source, feature-packed alternative bootstrapper for Roblox",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/pizzaboxer/bloxstrap/releases/download/v2.6.1/Bloxstrap-v2.6.1.exe#/setup.exe",
-            "hash": "f5a04c5d6ddcb4cc3925656919c37a9ca18f20f3623c722dc45499cf1e4de8a8"
+            "url": "https://github.com/pizzaboxer/bloxstrap/releases/download/v2.7.0/Bloxstrap-v2.7.0.exe#/setup.exe",
+            "hash": "891846bf656253ca1cdd28584a28681e9604e2a03d74cd6b99313e3bff11daf8"
         }
     },
     "pre_install": [
-        "if ($cmd -eq 'update') { Start-Process \"$dir\\setup.exe\" -Wait -Args @('-quiet', '-nolaunch', '-upgrade'); Remove-Item \"$dir\\setup.exe\" }",
-        "else { Start-Process \"$dir\\setup.exe\" -Wait -Args @('-quiet', '-nolaunch'); Remove-Item \"$dir\\setup.exe\" }"
+        "'Configuring Registry key'",
+        "New-Item HKCU:/Software/Bloxstrap -Force | Out-Null",
+        "Set-ItemProperty -Path HKCU:/Software/Bloxstrap -Name InstallLocation -Value $dir -Force | Out-Null",
+        "'Installing, please wait...'",
+        "if ($cmd -eq 'update') {",
+        "   Start-Process $dir/setup.exe -Wait -Args @('-quiet', '-nolaunch', '-upgrade'); Remove-Item $dir/setup.exe",
+        "} else {",
+        "   Start-Process $dir/setup.exe -Wait -Args @('-quiet', '-nolaunch'); Remove-Item $dir/setup.exe",
+        "}"
     ],
     "pre_uninstall": [
         "if ($cmd -eq 'uninstall') {",
-        "   Start-Process \"$env:LOCALAPPDATA\\Bloxstrap\\Bloxstrap.exe\" -Wait -Args @('-quiet','-uninstall')",
-        "   Remove-Item 'HKCU:\\SOFTWARE\\Classes\\roblox\\', 'HKCU:\\SOFTWARE\\Classes\\roblox-player\\', \"$env:LOCALAPPDATA\\Bloxstrap\" -Recurse -Force",
+        "   Remove-Item HKCU:/SOFTWARE/Classes/roblox, HKCU:/SOFTWARE/Classes/roblox-player, HKCU:/Software/Bloxstrap -Recurse -Force -ErrorAction Ignore",
         "}"
+    ],
+    "persist": [
+        "Logs",
+        "Modifications",
+        "Settings.json",
+        "State.json",
+        "Versions"
     ],
     "checkver": "github",
     "autoupdate": {
