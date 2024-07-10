@@ -1,40 +1,45 @@
 {
     "version": "0.5.1",
-    "description": "An open source alternative to ChatGPT that runs 100% offline on your computer",
-    "homepage": "https://jan.ai/",
-    "license": "AGPL-3.0",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/janhq/jan/releases/download/v0.5.1/jan-win-x64-0.5.1.exe",
-            "hash": "sha512:e7394b14010ead83f3f2a2eea2f45799c56602821a7fb0e108df7188096725c1a5d4533efb1ce78507a7b66156c5b2d20cd8fc560489b5b04612f10cd581933c"
-        }
+    "description": "ChatGPT 的开源替代品，可在计算机上百分百脱机运行。An open source alternative to ChatGPT that runs 100% offline on your computer.",
+    "homepage": "https://jan.ai",
+    "license": {
+        "identifier": "GNU Affero General Public License v3.0",
+        "url": "https://github.com/janhq/jan/blob/main/LICENSE"
     },
-    "installer": {
-        "script": [
-            "$file = (Get-ChildItem \"$dir\" 'jan-*.exe' | Select-Object -First 1).FullName",
-            "Expand-7ZipArchive \"$file\" \"$dir\\\" -Removal",
-            "Expand-7ZipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
-            "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\`$R0\"  -Force -Recurse"
-        ]
-    },
+    "url": "https://github.com/janhq/jan/releases/download/v0.5.1/jan-win-x64-0.5.1.exe",
+    "hash": "f6a23c13e7ec44195263ec55448718e8a33176d9efae3944779687788253c787",
+    "bin": "jan.exe",
     "shortcuts": [
         [
-            "Jan.exe",
+            "jan.exe",
             "Jan"
         ]
+    ],
+    "pre_install": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$path_installer=\"$dir\\jan-win-x64-$($version).exe\"",
+        "& $path_installer /S /D=$dir",
+        "$core_exe=\"$dir\\jan.exe\"",
+        "sleep_install $core_exe",
+        "persist_file -dir @(\"$user_AppData\\jan\",\"$env:UserProfile\\jan\") @(\"$persist_dir\\jan\",\"$persist_dir\\jan_user\")",
+        "handle_app_lnk",
+        "do_some_things"
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process $false",
+        "remove_files @(\"$user_AppData\\jan\",\"$env:UserProfile\\jan\")",
+        "$ui_exe=\"$dir\\Uninstall jan.exe\"",
+        "try{ & $ui_exe /S }catch{}",
+        "sleep_uninstall $ui_exe",
+        "remove_files @(\"$user_LocalAppData\\jan-updater\")"
     ],
     "checkver": {
         "github": "https://github.com/janhq/jan"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/janhq/jan/releases/download/v$version/jan-win-x64-$version.exe",
-                "hash": {
-                    "url": "https://github.com/janhq/jan/releases/download/v$version/latest.yml",
-                    "regex": "sha512: $base64"
-                }
-            }
-        }
+        "url": "https://github.com/janhq/jan/releases/download/v$version/jan-win-x64-$version.exe"
     }
 }
