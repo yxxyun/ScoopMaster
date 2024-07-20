@@ -1,58 +1,42 @@
 {
     "version": "2.6.3",
-    "description": "API 文档、API 调试、API Mock、API 自动化测试",
-    "homepage": "https://www.apifox.cn",
-    "license": "Unknown",
-    "url": "http://cdn.apifox.cn/download/2.6.3/Apifox-2.6.3.exe#/dl.7z",
-    "hash": "sha512:ca10b5277e6fe8048df4be3e544f66043de44b66ce5ef8d3b51d2d4fb655176bf175799d62c669d73ca03e499a7f49895d376eab3b2a82bea65b3e07d106e73c",
+    "description": "All-in-one collaboration platform for API documentation, API debugging, API Mock and API test automation.",
+    "homepage": "https://apifox.com",
+    "license": "Freeware",
+    "architecture": {
+        "64bit": {
+            "url": "https://file-assets.apifox.com/download/Apifox-windows-latest.zip",
+            "hash": "20b0265080dacc0723e0c04b9cb4d415ea420a8250a183d16844e1819468031e"
+        }
+    },
+    "pre_uninstall": "Stop-Process -Name 'ApifoxAppAgent' -Force",
     "installer": {
         "script": [
-            "# Expand-7zipArchive",
-            "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
-            "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
-            "# handle runtime cache",
-            "if (!(Test-Path $persist_dir)) {",
-            "    New-Item $persist_dir -Type Directory -Force | Out-Null",
-            "}",
-            "$runtimeCache = \"$env:APPDATA\\apifox\"",
-            "$runtimeCachePersist = \"$persist_dir\\appdata\"",
-            "if (Test-Path $runtimeCachePersist) {",
-            "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
-            "    New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
-            "} else {",
-            "    if (Test-Path $runtimeCache) {",
-            "        Move-Item $runtimeCache $runtimeCachePersist -Force",
-            "        New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
-            "    }",
-            "}"
+            "Expand-7zipArchive -Path \"$dir\\Apifox-$version.exe\" -Removal",
+            "Expand-7zipArchive -Path \"$dir\\`$PLUGINSDIR\\app-64.7z\" -DestinationPath $dir"
         ]
     },
-    "uninstaller": {
-        "script": [
-            "$runtimeCache = \"$env:APPDATA\\apifox\"",
-            "$runtimeCachePersist = \"$persist_dir\\appdata\"",
-            "if (!(Test-Path $runtimeCachePersist)) {",
-            "    Move-Item $runtimeCache $runtimeCachePersist -Force",
-            "} else {",
-            "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
-            "}"
-        ]
-    },
+    "post_install": [
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
+        "Remove-Item \"$dir\\`$R0\" -Force -Recurse"
+    ],
     "shortcuts": [
         [
             "Apifox.exe",
-            "Apifox"
+            "Apifox",
+            "--user-data-dir=\"$dir\\UserData\""
         ]
     ],
+    "persist": "UserData",
     "checkver": {
         "url": "https://apifox.com/help/app/changelog",
         "regex": ">([\\d.]+)<"
     },
     "autoupdate": {
-        "url": "http://cdn.apifox.cn/download/$version/Apifox-$version.exe#/dl.7z",
-        "hash": {
-            "url": "http://cdn.apifox.cn/download/latest.yml",
-            "regex": "sha512.*?$base64"
+        "architecture": {
+            "64bit": {
+                "url": "https://file-assets.apifox.com/download/Apifox-windows-latest.zip"
+            }
         }
     }
 }
