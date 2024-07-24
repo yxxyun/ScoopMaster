@@ -1,55 +1,46 @@
 {
-    "version": "1.14.0",
-    "description": "哔哩哔哩客户端",
-    "homepage": "https://app.bilibili.com/",
-    "license": "Proprietary",
-    "url": "https://dl.hdslb.com/mobile/fixed/bili_win/bili_win-install.exe#/dl.7z",
-    "hash": "sha512:37080887b6d3e5b99489ee59c3e0f688706aea0f018ff395c61d940bd1c207c4fd996c7a4149842d855839690e9a8b6c21c5a39fdcb8e10b0c3123623c69005a",
-    "pre_install": [
-        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse"
+  "version": "1.14.0",
+  "description": "哔哩哔哩 Windows 客户端",
+  "homepage": "https://app.bilibili.com/",
+  "license": "Unknown",
+  "url": "https://dl.hdslb.com/mobile/pack/bili_win/15145830/public/bilibili-setup-v1.14.0.exe#/abgo_bucket_installer.exe",
+  "hash": "ca1dc7bd2da7d870ea21f916ab12adb1a8b3dbb78ed89d3757a7d7bdab8cbc46",
+  "shortcuts": [["bilibili\\哔哩哔哩.exe", "哔哩哔哩"]],
+  "pre_install": [
+    "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+    ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+    "$path_installer=\"$dir\\abgo_bucket_installer.exe\"",
+    "& $path_installer /S /D=$dir",
+    "$core_exe=\"$dir\\bilibili\\哔哩哔哩.exe\"",
+    "sleep_install $core_exe",
+    "persist_file -dir @(\"$user_AppData\\bilibili\") @(\"$persist_dir\\bilibili\")",
+    "handle_app_lnk",
+    "do_some_things"
+  ],
+  "pre_uninstall": [
+    "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+    ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+    "stop_process $false",
+    "remove_files @(\"$user_AppData\\bilibili\")",
+    "$ui_exe=\"$dir\\bilibili\\卸载哔哩哔哩.exe\"",
+    "& $ui_exe /S",
+    "sleep_uninstall $ui_exe",
+    "remove_files @(\"$user_LocalAppData\\bilibili-updater\")"
+  ],
+  "checkver": {
+    "script": [
+      ". \"$pwd\\bin\\utils.ps1\"",
+      "$dl_info = get_installer_info \"Bilibili/Bilibili\"",
+      "\"ver:$($dl_info.PackageVersion);\"",
+      "\"x64:$($dl_info.x64_exe.InstallerUrl);\""
     ],
-    "installer": {
-        "script": [
-            "if (!(Test-Path \"$persist_dir\\Cache\")) {",
-            "    New-Item \"$persist_dir\\Cache\" -Type Directory -Force | Out-Null",
-            "}",
-            "$runtimeCache = \"$env:APPDATA\\bilibili\"",
-            "$runtimeCachePersist = \"$persist_dir\\Cache\"",
-            "if (Test-Path $runtimeCachePersist) {",
-            "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
-            "    New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
-            "} else {",
-            "    if (Test-Path $runtimeCache) {",
-            "        Move-Item $runtimeCache $runtimeCachePersist -Force",
-            "        New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
-            "    }",
-            "}"
-        ]
-    },
-    "uninstaller": {
-        "script": [
-            "$runtimeCache = \"$env:APPDATA\\bilibili\"",
-            "$runtimeCachePersist = \"$persist_dir\"",
-            "Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
-            "Remove-Item $runtimeCachePersist -Force -Recurse -ErrorAction SilentlyContinue"
-        ]
-    },
-    "shortcuts": [
-        [
-            "哔哩哔哩.exe",
-            "bilibili"
-        ]
-    ],
-    "checkver": {
-        "url": "http://api.bilibili.com/x/elec-frontend/update/latest.yml",
-        "regex": "bilibili-setup-v([\\d\\.]+)\\.exe"
-    },
-    "autoupdate": {
-        "url": "https://dl.hdslb.com/mobile/fixed/bili_win/bili_win-install.exe#/dl.7z",
-        "hash": {
-            "url": "http://api.bilibili.com/x/elec-frontend/update/latest.yml",
-            "regex": "sha512: ([\\w\\d+\\/=]{24,88})"
-        }
+    "regex": "ver:(?<version>.+?); x64:(?<x64>.+?);"
+  },
+  "autoupdate": {
+    "url": "$matchX64#/abgo_bucket_installer.exe",
+    "hash": {
+      "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/b/Bilibili/Bilibili/$version/Bilibili.Bilibili.installer.yaml",
+      "regex": "x64[\\s\\S]*InstallerSha256:\\s?(.+)"
     }
+  }
 }
