@@ -1,33 +1,50 @@
 {
     "version": "0.12.0",
-    "description": "Game Launcher for miHoYo - 米家游戏启动器",
+    "description": "Game Launcher for miHoYo/hoyoverse.",
     "homepage": "https://github.com/Scighost/Starward",
-    "license": "Unknown",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/Scighost/Starward/blob/main/LICENSE"
+    },
     "architecture": {
         "64bit": {
             "url": "https://github.com/Scighost/Starward/releases/download/0.12.0/Starward_Portable_0.12.0_x64.7z",
-            "hash": "42d371a3033baded74158e8b10ed8a7196ccfda40df4f7acfd3f0c5f77d61dba",
-            "extract_dir": "Starward"
+            "hash": "42d371a3033baded74158e8b10ed8a7196ccfda40df4f7acfd3f0c5f77d61dba"
+        },
+        "arm64": {
+            "url": "https://github.com/Scighost/Starward/releases/download/0.12.0/Starward_Portable_0.12.0_arm64.7z",
+            "hash": "b43bdc0d48551cc347ba06804b6b13a9fb404d965248639735b35967d2a8cbbb"
         }
     },
-    "bin": "Starward.exe",
+    "checkver": {
+        "script": [
+            "$rel_info = Invoke-RestMethod -Uri 'https://api.github.com/repos/Scighost/Starward/releases'",
+            "$latest = $rel_info | Sort-Object {$_.published_at} | Select-Object -last 1",
+            "Write-Output $latest.tag_name"
+        ],
+        "regex": "(?<version>[\\d.]+(?:-[\\w\\-\\d\\.]+)?)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Scighost/Starward/releases/download/$version/Starward_Portable_$version_x64.7z"
+            },
+            "arm64": {
+                "url": "https://github.com/Scighost/Starward/releases/download/$version/Starward_Portable_$version_arm64.7z"
+            }
+        }
+    },
+    "extract_dir": "Starward",
     "shortcuts": [
         [
             "Starward.exe",
             "Starward"
         ]
     ],
+    "pre_install": "If (-not (Test-Path $dir\\config.ini)) {\"UserDataFolder=$dir\\data\" | Out-File $dir\\config.ini}",
     "persist": [
-        "config.ini",
-        "data"
+        "data",
+        "config.ini"
     ],
-    "checkver": {
-        "github": "https://github.com/Scighost/Starward"
-    },
-    "autoupdate": {
-        "url": "https://github.com/Scighost/Starward/releases/download/$version/Starward_Portable_$version_x64.7z",
-        "hash": {
-            "mode": "download"
-        }
-    }
+    "notes": "Setup wizard would be skipped because of preset value of user data by pre-install scripts."
 }
