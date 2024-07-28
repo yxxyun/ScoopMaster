@@ -1,37 +1,54 @@
 {
-    "##": "extract_dir is unstable",
-    "version": "0.0.3",
-    "description": "suyu is the continuation of the world's most popular, open-source, Nintendo Switch emulator, yuzu.",
-    "homepage": "https://suyuemulator.com/",
-    "license": "GPL-3.0-only",
-    "architecture": {
-        "64bit": {
-            "url": "https://git.suyu.dev/suyu/suyu/releases/download/v0.0.3/Suyu-Windows_x86_64.tar.xz",
-            "extract_dir": "suyu-windows-mingw-20240410-0de49070e4_",
-            "hash": "80d21e26b7fb09b6e8095af1251045ca8542ff7f08f62736611ee2d5e0f575e1"
-        }
-    },
-    "bin": "suyu-cmd.exe",
-    "shortcuts": [
-        [
-            "suyu.exe",
-            "suyu"
-        ]
-    ],
-    "persist": [
-        "user",
-        "plugins"
-    ],
-    "notes": "Data directory is $dir\\user\\",
-    "checkver": {
-        "url": "https://git.suyu.dev/api/v1/repos/suyu/suyu/releases/latest",
-        "regex": "/releases/download/v([^/]+?)/Suyu-Windows"
-    },
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://git.suyu.dev/suyu/suyu/releases/download/v$version/Suyu-Windows_x86_64.tar.xz"
-            }
-        }
+  "version": "v0.0.3",
+  "description": "Nintendo Switch emulator",
+  "homepage": "https://git.suyu.dev/suyu/suyu",
+  "license": "GPL-3.0",
+  "architecture": {
+    "64bit": {
+      "url": "https://git.suyu.dev/suyu/suyu/releases/download/v0.0.3/Suyu-Windows_x86_64.tar.xz",
+      "hash": "80d21e26b7fb09b6e8095af1251045ca8542ff7f08f62736611ee2d5e0f575e1"
     }
+  },
+  "pre_install": [
+    "$suyuFolder = Get-ChildItem -Path $dir -Directory | Where-Object { $_.Name -like 'suyu-*' } | Select-Object -First 1",
+    "if ($suyuFolder) {",
+    "   $sourcePath = Join-Path -Path $dir -ChildPath $suyuFolder.Name",
+    "   Get-ChildItem -Path $sourcePath | Move-Item -Destination $dir",
+    "   Remove-Item -Path $sourcePath -Force",
+    "}",
+    "if (!(Test-Path \"$persist_dir\")) {",
+    "   New-item \"$persist_dir\" -ItemType Directory | Out-Null",
+    "   New-item \"$persist_dir\\user\" -ItemType Directory | Out-Null",
+    "   if (Test-Path \"$env:APPDATA\\suyu\") {",
+    "       Write-host \"Migrating AppData...\" -ForegroundColor yellow",
+    "       Copy-Item -Path \"$env:APPDATA\\suyu\\*\" -Destination \"$persist_dir\\user\" -Recurse",
+    "       Remove-Item -Path \"$env:APPDATA\\suyu\" -Recurse",
+    "   }",
+    "}"
+  ],
+  "bin": [
+    "suyu.exe",
+    "suyu-cmd.exe"
+  ],
+  "shortcuts": [
+    [
+      "suyu.exe",
+      "suyu"
+    ]
+  ],
+  "persist": [
+    "user",
+    "plugins"
+  ],
+  "checkver": {
+    "url": "https://git.suyu.dev/api/v1/repos/suyu/suyu/releases?per_page=1",
+    "jsonpath": "$[?(@.prerelease == false)].tag_name"
+  },
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://git.suyu.dev/suyu/suyu/releases/download/$version/Suyu-Windows_x86_64.tar.xz"
+      }
+    }
+  }
 }
