@@ -6,18 +6,18 @@
     "architecture": {
         "64bit": {
             "url": "https://alist.khigh.top/d/Download/rms-startup/rms.zip",
-            "hash": "3e2afb93420b5f6ad4d9251daea55b11e48b9d978baa517dbd5878f99185b672",
+            "hash": "3a1519daf41e4931ea9b3d4f2dcbfdc00d6f396dd99902814e91d9c9c5f51882",
             "extract_dir": "rms"
         }
     },
     "depends": [
         "openjdk21",
         "caddy",
-        "mysql",
+        "mysql-lts",
         "redis",
-        "winsw"
+        "shawl"
     ],
-    "post_install": [
+    "pre_install": [
         "# Generate Caddyfile and place it in the correct directory",
         "echo \":8080 {\" >> \"$dir\\Caddyfile\"",
         "echo     \"root * $dir\\dist\" >> \"$dir\\Caddyfile\"",
@@ -35,63 +35,22 @@
         "echo \"}\" >> \"$dir\\Caddyfile\"",
         "Move-Item -Path \"$dir/Caddyfile\" -Destination \"$dir/../../caddy/current/Caddyfile\" -Force",
 
-
-
-        "# Generate and register Caddy service",
-        "echo     \"<service>\"    >> \"$dir\\caddy.xml\"",
-        "echo     \"<id>Caddy</id>\" >> \"$dir\\caddy.xml\"",
-        "echo     \"<name>Caddy Web Server</name>\" >> \"$dir\\caddy.xml\"",
-        "echo     \"<description>Caddy Web Server Service</description>\" >> \"$dir\\caddy.xml\"",
-        "echo     \"<executable>$dir\\..\\scoop\\apps\\caddy\\current\\caddy.exe</executable>\" >> \"$dir\\caddy.xml\"",
-        "echo     \"<logmode>rotate</logmode>\" >> \"$dir\\caddy.xml\"",
-        "echo     \"<stdout>stdout.log</stdout>\" >> \"$dir\\caddy.xml\"",
-        "echo     \"<stderr>stderr.log</stderr>\" >> \"$dir\\caddy.xml\"",
-        "echo     \"</service>\" >> \"$dir\\caddy.xml\"",
-        "winsw install \"$dir\\caddy.xml\"",
-        
-        "# Generate and register MySQL service",
-        "echo \"<service>\" >> \"$dir\\mysql.xml\"",
-        "echo \"    <id>MySQL</id>\" >> \"$dir\\mysql.xml\"",
-        "echo \"    <name>MySQL Server</name>\" >> \"$dir\\mysql.xml\"",
-        "echo \"    <description>MySQL Database Server</description>\" >> \"$dir\\mysql.xml\"",
-        "echo \"    <executable>$dir\\..\\scoop\\apps\\mysql\\current\\bin\\mysqld.exe</executable>\" >> \"$dir\\mysql.xml\"",
-        "echo \"    <logmode>rotate</logmode>\" >> \"$dir\\mysql.xml\"",
-        "echo \"    <stdout>stdout.log</stdout>\" >> \"$dir\\mysql.xml\"",
-        "echo \"    <stderr>stderr.log</stderr>\" >> \"$dir\\mysql.xml\"",
-        "echo \"</service>\" >> \"$dir\\mysql.xml\"",
-        "winsw install \"$dir\\mysql.xml\"",
-        
-        "# Generate and register Redis service",
-        "echo \"<service>\" >> \"$dir\\redis.xml\"",
-        "echo     \"<id>Redis</id>\" >> \"$dir\\redis.xml\"",
-        "echo     \"<name>Redis Server</name>\" >> \"$dir\\redis.xml\"",
-        "echo     \"<description>Redis Database Server</description>\" >> \"$dir\\redis.xml\"",
-        "echo     \"<executable>$dir\\..\\scoop\\apps\\redis\\current\\redis-server.exe</executable>\" >> \"$dir\\redis.xml\"",
-        "echo     \"<logmode>rotate</logmode>\" >> \"$dir\\redis.xml\"",
-        "echo     \"<stdout>stdout.log</stdout>\" >> \"$dir\\redis.xml\"",
-        "echo     \"<stderr>stderr.log</stderr>\" >> \"$dir\\redis.xml\"",
-        "echo \"</service>\" >> \"$dir\\redis.xml\"",
-        "winsw install \"$dir\\redis.xml\"",
-        
-        "# Generate and register RMS Java service",
-        "echo \"<service>\" >> \"$dir\\rms.xml\"",
-        "echo     \"<id>RMS</id>\" >> \"$dir\\rms.xml\"",
-        "echo     \"<name>RMS Java Service</name>\" >> \"$dir\\rms.xml\"",
-        "echo     \"<description> RMS Java application running with Spring profiles active 'prod'</description>\" >> \"$dir\\rms.xml\"",
-        "echo     \"<executable>java</executable>\" >> \"$dir\\rms.xml\"",
-        "echo     \"<arguments>-jar $dir\\rms.jar --spring.profiles.active=prod</arguments>\" >> \"$dir\\rms.xml\"",
-        "echo     \"<logmode>rotate</logmode>\" >> \"$dir\\rms.xml\"",
-        "echo     \"<stdout>stdout.log</stdout>\" >> \"$dir\\rms.xml\"",
-        "echo     \"<stderr>stderr.log</stderr>\" >> \"$dir\\rms.xml\"",
-        "echo \"</service>\" >> \"$dir\\rms.xml\"",
-        "winsw install \"$dir\\rms.xml\""
+        "shawl add --name caddy -- \"caddy run \"",
+        "mysqld --install MySQL --defaults-file=\"$dir\\..\\..\\mysql-lts\\current\\my.ini\"",
+        "Move-Item -Path \"$dir\\redis.conf\" -Destination \"$dir\\..\\..\\redis\\current\\redis.conf\" -Force",
+        "shawl add --name redis -- \"redis-server \"",
+        "shawl add --name rms -- \"java -jar $dir\\rms-admin-1.0.jar --spring.profiles.active=prod\""
     ],
     "uninstaller": {
         "script": [
-            "winsw uninstall \"$dir\\caddy.xml\"",
-            "winsw uninstall \"$dir\\mysql.xml\"",
-            "winsw uninstall \"$dir\\redis.xml\"",
-            "winsw uninstall \"$dir\\rms.xml\""
+            "sc stop rms ",
+            "sc stop redis",
+            "sc stop mysql",
+            "sc stop caddy",
+            "sc delete rms ",
+            "sc delete redis",
+            "sc delete mysql",
+            "sc delete caddy"
         ]
     }
 }
