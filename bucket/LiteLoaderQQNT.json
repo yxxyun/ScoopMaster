@@ -1,21 +1,54 @@
 {
-    "version": "1.1.2",
-    "description": "QQNT插件加载器: 轻量 简洁 开源",
+    "version": "1.2.0",
+    "description": "Lightweight, simple and open source QQNT plugin loader.",
     "homepage": "https://github.com/LiteLoaderQQNT/LiteLoaderQQNT",
     "license": "MIT",
     "depends": [
-        "lesscode/qqnt",
-        "lesscode/qqntfileverifypatch"
+        "qq-nt",
+        "QQNTPatcher-DllHijack"
     ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/LiteLoaderQQNT/LiteLoaderQQNT/releases/download/1.1.2/LiteLoaderQQNT.zip",
-            "hash": "6833511aa62228538be92d6346488a42197f138050ec5f0d84b98d519b8d5fbe"
+            "url": "https://github.com/LiteLoaderQQNT/LiteLoaderQQNT/releases/download/1.2.0/LiteLoaderQQNT.zip",
+            "hash": "93c8520eb7cf26d2b8e06df70dc1c0d831734498dc9fd3767c099b4fbd89f5c0"
         }
     },
     "env_set": {
         "LITELOADERQQNT_PROFILE": "$persist_dir"
     },
+    "post_install": [
+        "if (!(Test-Path \"$persist_dir\")) { New-Item -Path $persist_dir -Type Directory | Out-Null}",
+        "$envfilePath = \"$(appdir qq-nt $global)\\current\\Files\\resources\\app\\app_launcher\\index.js\"",
+        "if (Test-Path \"$envfilePath\") {",
+        "    $firstLine = Get-Content \"$envfilePath\" -TotalCount 1;",
+        "    $newcontent = 'require(String.raw`' + $dir + '`);'",
+        "    if ($firstLine -notlike '*LiteLoaderQQNT*') {",
+        "        $filecontent = Get-Content \"$envfilePath\";",
+        "        $filecontent = $newcontent + \"`r`n\" + $filecontent;",
+        "        $filecontent | Set-Content \"$envfilePath\";",
+        "    } else {",
+        "        info '文件 $envfilePath 的第一行已包含 LiteLoaderQQNT'",
+        "        $content = Get-Content $envfilePath",
+        "        info \"$firstLine -> $newcontent\"",
+        "        $content[0] = $newcontent",
+        "        $content | Set-Content $envfilePath",
+        "    }",
+        "} else {",
+        "    info '文件 $envfilePath 不存在'",
+        "}"
+    ],
+    "post_uninstall": [
+        "$envfilePath = \"$(appdir qq-nt $global)\\current\\Files\\resources\\app\\app_launcher\\index.js\"",
+        "if (Test-Path \"$envfilePath\") {",
+        "    $firstLine = Get-Content \"$envfilePath\" -TotalCount 1;",
+        "    if ($firstLine -like '*LiteLoaderQQNT\\current*') {",
+        "        $filecontent = Get-Content \"$envfilePath\";",
+        "        info \"delete $firstLine from $envfilePath\"",
+        "        $filecontent = $filecontent[1..($filecontent.Count - 1)];",
+        "        $filecontent | Set-Content \"$envfilePath\";",
+        "    }",
+        "}"
+    ],
     "checkver": "github",
     "autoupdate": {
         "architecture": {
