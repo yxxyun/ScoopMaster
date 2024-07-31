@@ -3,24 +3,42 @@
     "description": "System utilities to maximize productivity.",
     "homepage": "https://github.com/microsoft/PowerToys",
     "license": "MIT",
-    "depends": "dotnet-sdk",
+    "suggest": {
+        ".NET Desktop Runtime": "extras/windowsdesktop-runtime-lts"
+    },
     "architecture": {
         "64bit": {
             "url": "https://github.com/microsoft/PowerToys/releases/download/v0.83.0/PowerToysSetup-0.83.0-x64.exe#/setup.exe",
-            "hash": "7ec435a10849187d21a383e56a69213c1ff110b7feca65900d9319d2f8162f35"
+            "hash": "c78e24f21c611f2bd774d8460add4b9ac8519085ca1253941cb46129331ab8c8"
         }
     },
     "installer": {
-        "args": "--silent"
+        "args": [
+            "/silent",
+            "/norestart"
+        ],
+        "keep": true
     },
     "uninstaller": {
-        "script": "cmd /c ((Get-ItemProperty -Path HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Where-Object {$_.DisplayName -eq \"PowerToys (Preview)\"} | Select-Object -Expand UninstallString) -replace '/I','/x')"
+        "file": "setup.exe",
+        "args": [
+            "/silent",
+            "/uninstall"
+        ]
     },
-    "checkver": "github",
+    "checkver": {
+        "url": "https://api.github.com/repos/microsoft/PowerToys/releases",
+        "jsonpath": "$[0].assets[*].browser_download_url",
+        "regex": "/releases/download/(?<tag>[\\w.]+)/PowerToysSetup-([\\d.]+)-x64\\.exe"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/microsoft/PowerToys/releases/download/v$version/PowerToysSetup-$version-x64.exe#/setup.exe"
+                "url": "https://github.com/microsoft/PowerToys/releases/download/$matchTag/PowerToysSetup-$version-x64.exe#/setup.exe",
+                "hash": {
+                    "url": "https://github.com/microsoft/PowerToys/releases/tag/$matchTag",
+                    "regex": ">$sha256<"
+                }
             }
         }
     }
