@@ -1,7 +1,7 @@
 {
     "version": "3.108.3",
     "homepage": "https://www.beeper.com/",
-    "description": "A universal chat application that unifies all your chat applications into one.",
+    "description": "An universal chat application that unifies all your chat applications into one.",
     "license": {
         "identifier": "Freeware",
         "url": "https://www.beeper.com/terms"
@@ -12,16 +12,26 @@
             "hash": "9315be77bb2073d13fd790dfed7485802290ecc17da32a906c693c8ea570c4bf"
         }
     },
-    "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" $dir; Remove-Item \"$dir\\`$*\" -Recurse",
+    "extract_dir": "$PLUGINSDIR",
+    "pre_install": "Expand-7zipArchive \"$dir\\app-64.7z\" \"$dir\" -Removal",
     "shortcuts": [
         [
             "Beeper.exe",
-            "Beeper"
+            "Beeper",
+            "--user-data-dir=\"$dir\\userdata\""
         ]
     ],
+    "persist": "userdata",
     "checkver": {
-        "script": "(Invoke-WebRequest 'https://download.beeper.com/windows/nsis/x64' -MaximumRedirection 1).Headers.'Content-Disposition'",
-        "regex": "Beeper\\sSetup\\s([\\d.]+)\\s-\\sx64\\.exe"
+        "script": [
+            "$dl_url = 'https://download.beeper.com/windows/nsis/x64'",
+            "$dl = cache_path 'beeper' 'unknown' $dl_url",
+            "Invoke-WebRequest $dl_url -OutFile $dl",
+            "$ver = (Get-Item $dl).VersionInfo.ProductVersion",
+            "Move-Item -Force $dl (cache_path 'beeper' $ver $dl_url)",
+            "$ver"
+        ],
+        "regex": "(\\S+)"
     },
     "autoupdate": {
         "architecture": {
