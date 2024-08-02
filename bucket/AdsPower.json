@@ -20,8 +20,24 @@
         ]
     ],
     "pre_install": [
-        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\Uninstall*\" -Force -Recurse"
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$path_exe=\"$dir\\_installer_.exe\"",
+        "& $path_exe /S /D=$dir",
+        "$core_exe=\"$dir\\AdsPower Global.exe\"",
+        "sleep_install $core_exe",
+        "persist -dir @(\"$user_AppData\\adspower_global\") @(\"$persist_dir\\adspower_global\")",
+        "clean_redundant_files @($path_exe,\"$admin_apps_lnk\\AdsPower Browser.lnk\")",
+        "remove_app_lnk @(\"AdsPower Browser.lnk\")"
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process $false",
+        "remove_files @(\"$user_AppData\\adspower_global\")",
+        "$ui_exe=\"$dir\\Uninstall AdsPower Global.exe\"",
+        "try{ & $ui_exe /S }catch{}",
+        "sleep_uninstall $ui_exe",
+        "remove_files @(\"$user_LocalAppData\\adspower_global-updater\")"
     ],
     "checkver": {
         "url": "https://www.adspower.net/download",

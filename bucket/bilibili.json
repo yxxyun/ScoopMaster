@@ -1,51 +1,67 @@
 {
     "version": "1.14.0",
-    "description": "哔哩哔哩 Windows 客户端",
-    "homepage": "https://app.bilibili.com/",
-    "license": "Unknown",
-    "url": "https://dl.hdslb.com/mobile/pack/bili_win/15145830/public/bilibili-setup-v1.14.0.exe#/abgo_bucket_installer.exe",
-    "hash": "ca1dc7bd2da7d870ea21f916ab12adb1a8b3dbb78ed89d3757a7d7bdab8cbc46",
+    "description": "Bilibili Windows client.",
+    "homepage": "https://www.bilibili.com",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.bilibili.com/protocal/licence.html"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://dl.hdslb.com/mobile/pack/bili_win/15145830/public/bilibili-setup-v1.14.0.exe#/dl.7z",
+            "hash": "sha512:37080887b6d3e5b99489ee59c3e0f688706aea0f018ff395c61d940bd1c207c4fd996c7a4149842d855839690e9a8b6c21c5a39fdcb8e10b0c3123623c69005a",
+            "extract_dir": "$PLUGINSDIR"
+        }
+    },
+    "installer": {
+        "script": [
+            "Remove-Item \"$dir\\*\" -Exclude 'app-64.7z' -Force -Recurse",
+            "Expand-7zipArchive \"$dir\\app-64.7z\" \"$dir\" -Removal",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name dorado) scripts/DoradoUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\UserData\" -Target \"$env:APPDATA\\bilibili\"",
+            "Remove-Module -Name DoradoUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name dorado) scripts/DoradoUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\bilibili\"",
+            "Remove-Module -Name DoradoUtils"
+        ]
+    },
     "shortcuts": [
         [
-            "bilibili\\哔哩哔哩.exe",
+            "哔哩哔哩.exe",
             "哔哩哔哩"
         ]
     ],
-    "pre_install": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "$path_installer=\"$dir\\abgo_bucket_installer.exe\"",
-        "& $path_installer /S /D=$dir",
-        "$core_exe=\"$dir\\bilibili\\哔哩哔哩.exe\"",
-        "sleep_install $core_exe",
-        "persist_file -dir @(\"$user_AppData\\bilibili\") @(\"$persist_dir\\bilibili\")",
-        "handle_app_lnk",
-        "do_some_things"
-    ],
-    "pre_uninstall": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "stop_process $false",
-        "remove_files @(\"$user_AppData\\bilibili\")",
-        "$ui_exe=\"$dir\\bilibili\\卸载哔哩哔哩.exe\"",
-        "& $ui_exe /S",
-        "sleep_uninstall $ui_exe",
-        "remove_files @(\"$user_LocalAppData\\bilibili-updater\")"
-    ],
     "checkver": {
         "script": [
-            ". \"$pwd\\bin\\utils.ps1\"",
-            "$dl_info = get_installer_info \"Bilibili/Bilibili\"",
-            "\"ver:$($dl_info.PackageVersion);\"",
-            "\"x64:$($dl_info.x64_exe.InstallerUrl);\""
+            "$url = 'https://api.bilibili.com/x/elec-frontend/update/latest.yml'",
+            "$cont = Invoke-RestMethod $url",
+            "$r = 'version:\\s*([\\d.]+)'",
+            "if (!($cont -match $r)) { Write-Error \"Could not match $r in $url\"; continue }",
+            "$ver = $matches[1]",
+            "$assetUrl = \"https://api.bilibili.com/x/elec-frontend/update/bilibili-setup-v$ver.exe.blockmap\"",
+            "$assetReq = [System.Net.HttpWebRequest]::Create($assetUrl)",
+            "$assetReq.Headers.Add('appversion', '0.0.0')",
+            "$assetCont = $assetReq.GetResponse().ResponseUri.AbsoluteUri",
+            "$r = 'win/([\\d]+)/public'",
+            "if (!($assetCont -match $r)) { Write-Error \"Could not match $r in $url\"; continue }",
+            "$code = $matches[1]",
+            "Write-Output $ver $code"
         ],
-        "regex": "ver:(?<version>.+?); x64:(?<x64>.+?);"
+        "regex": "([\\d.]+) (?<code>[\\w.]+)"
     },
     "autoupdate": {
-        "url": "$matchX64#/abgo_bucket_installer.exe",
-        "hash": {
-            "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/b/Bilibili/Bilibili/$version/Bilibili.Bilibili.installer.yaml",
-            "regex": "x64[\\s\\S]*InstallerSha256:\\s?(.+)"
+        "architecture": {
+            "64bit": {
+                "url": "https://dl.hdslb.com/mobile/pack/bili_win/$matchCode/public/bilibili-setup-v$version.exe#/dl.7z",
+                "hash": {
+                    "url": "https://dl.hdslb.com/mobile/pack/bili_win/$matchCode/public/latest.yml",
+                    "regex": "sha512:\\s+$base64"
+                }
+            }
         }
     }
 }
