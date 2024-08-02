@@ -1,6 +1,6 @@
 {
     "version": "4.0.0.3179",
-    "description": "MuMu模拟器12 大屏超级炫 手游不受限 安卓12 | 标签拖动分屏 | 自定义应用保活 | 自由多开",
+    "description": "MuMu模拟器12 大屏超级炫 手游不受限 安卓12 | 标签拖动分屏 | 自定义应用保活 | 自由多开。\n安装路径在Scoop的app目录，卸载后数据可保留。",
     "homepage": "https://mumu.163.com",
     "license": {
         "identifier": "Freeware",
@@ -44,13 +44,15 @@
     "uninstaller": {
         "script": [
             "if (!(is_admin)) { \"$app requires admin rights to $cmd\"; break }",
-            "$uninstaller = (Get-ItemProperty -ErrorAction Ignore \"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MuMuPlayer-12.0\" -Name UninstallString).UninstallString",
-            "if (!$uninstaller) { $uninstaller = (Get-ItemProperty -ErrorAction Ignore \"HKLM:\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MuMuPlayer-12.0\" -Name UninstallString).UninstallString }",
-            "if (!$uninstaller) { warn 'Could not find app info in registry' }",
-            "$uninstaller = $uninstaller.Substring(1, $uninstaller.Length - 2)",
-            "if (-not (Test-Path -Path $uninstaller -PathType Leaf)) { $uninstaller = \"$(appdir $app $global)\\current\\uninstall.exe\" }",
-            "if (Test-Path -Path $uninstaller -PathType Leaf) { Start-Process -Wait \"$uninstaller\" \"/S\" -Verb RunAs}",
-            "persist_data $manifest $installdir $persist_dir"
+            "elseif ($cmd -eq \"uninstall\") {",
+            "    $uninstaller = (Get-ItemProperty -ErrorAction Ignore \"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MuMuPlayer-12.0\" -Name UninstallString).UninstallString",
+            "    if (!$uninstaller) { $uninstaller = (Get-ItemProperty -ErrorAction Ignore \"HKLM:\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MuMuPlayer-12.0\" -Name UninstallString).UninstallString }",
+            "    if (!$uninstaller) { warn 'Could not find app info in registry' }",
+            "    $uninstaller = $uninstaller.Substring(1, $uninstaller.Length - 2)",
+            "    if (-not (Test-Path -Path $uninstaller -PathType Leaf)) { $uninstaller = \"$(appdir $app $global)\\current\\uninstall.exe\" }",
+            "    if (Test-Path -Path $uninstaller -PathType Leaf) { Start-Process -Wait \"$uninstaller\" \"/S\" -Verb RunAs}",
+            "    persist_data $manifest $installdir $persist_dir",
+            "}"
         ]
     },
     "checkver": {
@@ -59,14 +61,14 @@
             "$response = Invoke-RestMethod -Uri $url -Method Post",
             "Write-Output $response.data.mumu.version $response.data.mumu.checksum $response.data.mumu.link"
         ],
-        "regex": "(?<version>[\\d.]+)\\s(?<filemd5>[A-Z\\d]{32})\\s.*a11.gdl.netease.com/(?<filename>.+)"
+        "regex": "([\\d.]+)\\s([A-Z\\d]{32})\\s(.*)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "http://a11.gdl.netease.com/$matchFilename#/setup.exe",
+                "url": "$match3#/setup.exe",
                 "hash": {
-                    "url": "http://httpbin.org/get?md5=$matchFilemd5",
+                    "url": "http://httpbin.org/get?md5=$match2",
                     "regex": "md5=.*?$md5"
                 }
             }

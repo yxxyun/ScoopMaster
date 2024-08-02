@@ -1,6 +1,6 @@
 {
-    "version": "3.8.3.2696",
-    "description": "MuMu Player 12 Large Screen, Unlimited Games Android 12 | Customize keep-alive apps | Multi-Instance",
+    "version": "3.8.18.2845",
+    "description": "MuMu Player 12 Large Screen, Unlimited Games Android 12 | Customize keep-alive apps | Multi-Instance.\nThe installation path is in the app directory of Scoop, and the uninstall data can be retained. ",
     "homepage": "https://mumuglobal.com",
     "license": {
         "identifier": "Freeware",
@@ -8,8 +8,8 @@
     },
     "architecture": {
         "64bit": {
-            "url": "http://a11.gdl.netease.com/MuMuNG-setup-V3.8.3.2696-overseas-0221213808.exe#/setup.exe",
-            "hash": "md5:0F81941EFFD3BCDD3D198E0FBFDACB9A"
+            "url": "http://a11.gdl.netease.com/MuMuNG-setup-V3.8.18.2845-overseas-0417125205.exe#/setup.exe",
+            "hash": "md5:435c893e9e93441dd0aba3174de3b9d6"
         }
     },
     "installer": {
@@ -43,30 +43,32 @@
     "uninstaller": {
         "script": [
             "if (!(is_admin)) { \"$app requires admin rights to $cmd\"; break }",
-            "$uninstaller = (Get-ItemProperty -ErrorAction Ignore \"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MuMuPlayerGlobal-12.0\" -Name UninstallString).UninstallString",
-            "if (!$uninstaller) { $uninstaller = (Get-ItemProperty -ErrorAction Ignore \"HKLM:\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MuMuPlayerGlobal-12.0\" -Name UninstallString).UninstallString }",
-            "if (!$uninstaller) { warn 'Could not find app info in registry' }",
-            "$uninstaller = $uninstaller.Substring(1, $uninstaller.Length - 2)",
-            "if (-not (Test-Path -Path $uninstaller -PathType Leaf)) { $uninstaller = \"$(appdir $app $global)\\current\\uninstall.exe\" }",
-            "if (Test-Path -Path $uninstaller -PathType Leaf) { Start-Process -Wait \"$uninstaller\" \"/S /no_browser /auto_start=false /fchannel=gw-overseas12 /U=$dir\" -Verb RunAs}",
-            "persist_data $manifest $installdir $persist_dir"
+            "elseif ($cmd -eq \"uninstall\") {",
+            "    $uninstaller = (Get-ItemProperty -ErrorAction Ignore \"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MuMuPlayerGlobal-12.0\" -Name UninstallString).UninstallString",
+            "    if (!$uninstaller) { $uninstaller = (Get-ItemProperty -ErrorAction Ignore \"HKLM:\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MuMuPlayerGlobal-12.0\" -Name UninstallString).UninstallString }",
+            "    if (!$uninstaller) { warn 'Could not find app info in registry' }",
+            "    $uninstaller = $uninstaller.Substring(1, $uninstaller.Length - 2)",
+            "    if (-not (Test-Path -Path $uninstaller -PathType Leaf)) { $uninstaller = \"$(appdir $app $global)\\current\\uninstall.exe\" }",
+            "    if (Test-Path -Path $uninstaller -PathType Leaf) { Start-Process -Wait \"$uninstaller\" \"/S /no_browser /auto_start=false /fchannel=gw-overseas12 /U=$dir\" -Verb RunAs}",
+            "    persist_data $manifest $installdir $persist_dir",
+            "}"
         ]
     },
     "persist": "vms",
     "checkver": {
         "script": [
-            "$url = \"https://api.mumuglobal.com/api/v1/download/nemux?architecture=x86_64&machine=%22%22\"",
+            "$url = \"https://api.mumuglobal.com/api/v1/download/nemux?architecture=x86_64&machine=%22%22&usage=1\"",
             "$response = Invoke-RestMethod -Uri $url -Method Post",
             "Write-Output $response.data.mumu.version $response.data.mumu.checksum $response.data.mumu.link"
         ],
-        "regex": "(?<version>[\\d.]+)\\s(?<filemd5>[A-Z\\d]{32})\\s.*a11.gdl.netease.com/(?<filename>.+)"
+        "regex": "([\\d.]+)\\s([A-Z\\d]{32})\\s(.*)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "http://a11.gdl.netease.com/$matchFilename#/setup.exe",
+                "url": "$match3#/setup.exe",
                 "hash": {
-                    "url": "http://httpbin.org/get?md5=$matchFilemd5",
+                    "url": "http://httpbin.org/get?md5=$match2",
                     "regex": "md5=.*?$md5"
                 }
             }

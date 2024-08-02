@@ -1,0 +1,54 @@
+{
+    "version": "3.8.18.2845",
+    "description": "MuMu Player 12 Large Screen, Unlimited Games Android 12 | Customize keep-alive apps | Multi-Instance",
+    "homepage": "https://mumuglobal.com",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://www.mumuplayer.com/news/update/20190906/30607_831430.html"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "http://a11.gdl.netease.com/MuMuNG-setup-V3.8.18.2845-overseas-0417125205.exe#/setup.exe",
+            "hash": "md5:435c893e9e93441dd0aba3174de3b9d6"
+        }
+    },
+    "installer": {
+        "script": [
+            "if (!(is_admin)) { \"$app requires admin rights to $cmd\"; break }",
+            "Start-Process -Wait \"$dir\\setup.exe\" \"/S /auto_start=false /fchannel=gw-overseas12 /D=C:\\Program Files\\Netease\\MuMuPlayerGlobal-12.0\" -Verb RunAs",
+            "Remove-Item \"$Env:USERPROFILE\\Desktop\\MuMu *Player 12.lnk\""
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if (!(is_admin)) { \"$app requires admin rights to $cmd\"; break }",
+            "elseif ($cmd -eq \"uninstall\") {",
+            "    $uninstaller = (Get-ItemProperty -ErrorAction Ignore \"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MuMuPlayerGlobal-12.0\" -Name UninstallString).UninstallString",
+            "    if (!$uninstaller) { $uninstaller = (Get-ItemProperty -ErrorAction Ignore \"HKLM:\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MuMuPlayerGlobal-12.0\" -Name UninstallString).UninstallString }",
+            "    if (!$uninstaller) { warn 'Could not find app info in registry' }",
+            "    # Remove the quotation on both sides",
+            "    $uninstaller = $uninstaller.Substring(1, $uninstaller.Length - 2)",
+            "    Start-Process -Wait \"$uninstaller\" \"/S \" -Verb RunAs",
+            "}"
+        ]
+    },
+    "checkver": {
+        "script": [
+            "$url = \"https://api.mumuglobal.com/api/v1/download/nemux?architecture=x86_64&machine=%22%22&usage=1\"",
+            "$response = Invoke-RestMethod -Uri $url -Method Post",
+            "Write-Output $response.data.mumu.version $response.data.mumu.checksum $response.data.mumu.link"
+        ],
+        "regex": "([\\d.]+)\\s([A-Z\\d]{32})\\s(.*)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "$match3#/setup.exe",
+                "hash": {
+                    "url": "http://httpbin.org/get?md5=$match2",
+                    "regex": "md5=.*?$md5"
+                }
+            }
+        }
+    }
+}
