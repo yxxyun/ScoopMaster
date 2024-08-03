@@ -1,44 +1,30 @@
 {
     "version": "9.8.0",
-    "description": "Thousands of free mods and trainers for your favorite single-player PC games — all in one place",
+    "description": "Thousands of free mods and trainers for your favorite single-player PC games - all in one place.",
     "homepage": "https://www.wemod.com",
     "license": {
-        "identifier": "Freeware",
+        "identifier": "Proprietary",
         "url": "https://www.wemod.com/terms"
     },
-    "architecture": {
-        "64bit": {
-            "url": "https://storage-cdn.wemod.com/app/releases/stable/WeMod-9.8.0-full.nupkg",
-            "hash": "6b72840aee71f5a853667b2476be91febf61b918b8a5134d5c60028ed683bd1b",
-            "shortcuts": [
-                [
-                    "WeMod.exe",
-                    "WeMod"
-                ]
-            ]
-        }
-    },
+    "url": "https://storage-cdn.wemod.com/app/releases/stable/WeMod-9.8.0.exe#/dl.7z",
+    "hash": "fb00b9330247838e969ab60ea67a7d69f1e0854ffc330c8533c17f69a4f38521",
     "pre_install": [
-        "Get-ChildItem -Path \"$original_dir\" -Exclude lib | Remove-Item -Recurse -Force",
-        "$unzip_dir = (Get-ChildItem -Path \"$original_dir\\lib\" -Directory)[0].FullName",
-        "Move-Item -Path \"${unzip_dir}\\*\" -Destination \"$original_dir\" -Force",
-        "Remove-Item -Path \"$original_dir\\lib\" -Recurse -Force"
+        "$nupkg=(Get-ChildItem $dir\\*full.nupkg).Name",
+        "Get-ChildItem \"$dir\" -Exclude \"$nupkg\" | Remove-Item -ErrorAction SilentlyContinue -Force -Recurse",
+        "Expand-7zipArchive \"$dir\\$nupkg\" -ExtractDir 'lib\\net45' -Removal"
     ],
-    "checkver": {
-        "regex": "(?<version>[\\d\\.]+)",
-        "script": [
-            "$resp = Invoke-WebRequest -Uri 'https://api.wemod.com/client/channels/stable/RELEASES'",
-            "$body = $resp.Content -replace '^\\xEF\\xBB\\xBF', ''",
-            "$download_url = $body -split '\\s' -match '^http(s?)://'",
-            "$version = $download_url -split '-' -match '\\d(\\.\\d+)+'",
-            "Write-Output $version"
+    "shortcuts": [
+        [
+            "WeMod.exe",
+            "WeMod"
         ]
+    ],
+    "post_uninstall": "If ($cmd -eq 'uninstall') { Remove-Item ${env:APPDATA}\\wemod\\* -Force -Recurse }",
+    "checkver": {
+        "regex": "WeMod-([\\d.]+)",
+        "script": "(Invoke-WebRequest 'https://api.wemod.com/client/channels/stable/RELEASES').Content"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://storage-cdn.wemod.com/app/releases/stable/WeMod-$version-full.nupkg"
-            }
-        }
+        "url": "https://storage-cdn.wemod.com/app/releases/stable/WeMod-$version.exe#/dl.7z"
     }
 }
