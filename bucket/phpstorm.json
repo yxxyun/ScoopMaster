@@ -1,56 +1,58 @@
 {
-    "version": "2024.1.4",
-    "description": "由 JetBrains 开发的适用于 PHP 的跨平台集成开发环境。Cross-Platform IDE for PHP by JetBrains.",
+    "version": "2024.1.5-241.18968.24",
+    "description": "Cross-Platform IDE for PHP by JetBrains.",
     "homepage": "https://www.jetbrains.com/phpstorm/",
     "license": {
-        "identifier": "Shareware",
+        "identifier": "Proprietary",
         "url": "https://www.jetbrains.com/store/license.html"
     },
-    "url": "https://download.jetbrains.com/webide/PhpStorm-2024.1.4.exe#/abgo_bucket_installer.exe",
-    "hash": "303b206407458efe548033de1d1d253dca0bb189b31b92ee9832754eb4aa1e93",
-    "bin": [
-        [
-            "IDE\\bin\\phpstorm64.exe",
-            "PhpStorm"
+    "url": "https://download.jetbrains.com/webide/PhpStorm-2024.1.5.exe#/dl.7z",
+    "hash": "1173365cfac94766c43a0eb9a425a56b2e3ac4e38a0acf7aed9edc747f38d52b",
+    "extract_to": "IDE",
+    "installer": {
+        "script": [
+            "& \"$bucketsdir\\extras\\scripts\\jetbrains\\portable.ps1\" $dir $persist_dir",
+            "Remove-Item \"$dir\\IDE\\`$*\" -Force -Recurse"
         ]
-    ],
-    "shortcuts": [
-        [
-            "IDE\\bin\\phpstorm64.exe",
-            "PhpStorm"
-        ]
-    ],
-    "pre_install": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "$verPart = $version -split '\\.'",
-        "$verRes = \"$($verPart[0]).$($verPart[1])\"",
-        "persist_file -dir @(\"$user_AppData\\JetBrains\\PhpStorm$($verRes)\",\"$user_LocalAppData\\JetBrains\\PhpStorm$($verRes)\") @(\"$persist_dir\\PhpStorm\",\"$persist_dir\\PhpStorm_LocalAppData\")",
-        "$path_installer=\"$dir\\abgo_bucket_installer.exe\"",
-        "& $path_installer /S /D=\"$dir\\IDE\"",
-        "sleep_install \"$dir\\IDE\\bin\\idea.properties\"",
-        "handle_app_lnk",
-        "do_some_things"
-    ],
-    "pre_uninstall": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "stop_process $false",
-        "$preName = \"PhpStorm\"",
-        "$remove_list = @(\"$user_AppData\\JetBrains\", \"$user_LocalAppData\\JetBrains\") | ForEach-Object {",
-        "   Get-ChildItem $_ | Where-Object { $_.Name -match \"$preName[\\d\\.]+\" } | ForEach-Object { $_.FullName }",
-        "}",
-        "remove_files $remove_list",
-        "$ui_exe=\"$dir\\IDE\\bin\\Uninstall.exe\"",
-        "try{ & $ui_exe /S }catch{}",
-        "sleep_uninstall $ui_exe"
+    },
+    "architecture": {
+        "64bit": {
+            "bin": [
+                [
+                    "IDE\\bin\\phpstorm64.exe",
+                    "phpstorm"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "IDE\\bin\\phpstorm64.exe",
+                    "JetBrains\\PhpStorm"
+                ]
+            ]
+        },
+        "32bit": {
+            "bin": "IDE\\bin\\phpstorm.exe",
+            "shortcuts": [
+                [
+                    "IDE\\bin\\phpstorm.exe",
+                    "JetBrains\\PhpStorm"
+                ]
+            ]
+        }
+    },
+    "persist": [
+        "IDE\\bin\\idea.properties",
+        "IDE\\bin\\phpstorm.exe.vmoptions",
+        "IDE\\bin\\phpstorm64.exe.vmoptions",
+        "profile"
     ],
     "checkver": {
-        "url": "https://data.services.jetbrains.com/products/releases?code=ps&latest=true",
-        "jsonpath": "$.PS[0].version"
+        "url": "https://data.services.jetbrains.com/products/releases?code=PS&latest=true&platform=zip&type=release",
+        "regex": "version\":\"(?<ver>[\\d.]+)\".*\"build\":\"(?<build>[\\d.]+)\"",
+        "replace": "${ver}-${build}"
     },
     "autoupdate": {
-        "url": "https://download.jetbrains.com/webide/PhpStorm-$version.exe#/abgo_bucket_installer.exe",
+        "url": "https://download.jetbrains.com/webide/PhpStorm-$matchHead.exe#/dl.7z",
         "hash": {
             "url": "$url.sha256"
         }
