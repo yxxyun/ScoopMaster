@@ -1,56 +1,58 @@
 {
-    "version": "2024.1.4",
-    "description": "由 JetBrains 开发的 Go 语言的跨平台集成开发环境。Cross-Platform IDE for Golang by JetBrains.",
+    "version": "2024.1.5-241.18968.32",
+    "description": "Cross-Platform IDE for Go by JetBrains.",
     "homepage": "https://www.jetbrains.com/goland/",
     "license": {
-        "identifier": "Shareware",
+        "identifier": "Proprietary",
         "url": "https://www.jetbrains.com/store/license.html"
     },
-    "url": "https://download.jetbrains.com/go/goland-2024.1.4.exe#/abgo_bucket_installer.exe",
-    "hash": "fe791fc173c7eec822b0610032961a8da93d94b65186e5edc8286470c98835bd",
-    "bin": [
-        [
-            "IDE\\bin\\goland64.exe",
-            "GoLand"
+    "url": "https://download.jetbrains.com/go/goland-2024.1.5.exe#/dl.7z",
+    "hash": "01da2070e8c4a9ddeb236f57b2ad683be39c8c4f67f035c5b2c9fd33836bb7c1",
+    "extract_to": "IDE",
+    "installer": {
+        "script": [
+            "& \"$bucketsdir\\extras\\scripts\\jetbrains\\portable.ps1\" $dir $persist_dir",
+            "Remove-Item \"$dir\\IDE\\`$*\" -Force -Recurse"
         ]
-    ],
-    "shortcuts": [
-        [
-            "IDE\\bin\\goland64.exe",
-            "GoLand"
-        ]
-    ],
-    "pre_install": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "$verPart = $version -split '\\.'",
-        "$verRes = \"$($verPart[0]).$($verPart[1])\"",
-        "persist_file -dir @(\"$user_AppData\\JetBrains\\GoLand$($verRes)\",\"$user_LocalAppData\\JetBrains\\GoLand$($verRes)\") @(\"$persist_dir\\GoLand\",\"$persist_dir\\GoLand_LocalAppData\")",
-        "$path_installer=\"$dir\\abgo_bucket_installer.exe\"",
-        "& $path_installer /S /D=\"$dir\\IDE\"",
-        "sleep_install \"$dir\\IDE\\bin\\idea.properties\"",
-        "handle_app_lnk",
-        "do_some_things"
-    ],
-    "pre_uninstall": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "stop_process $false",
-        "$preName = \"GoLand\"",
-        "$remove_list = @(\"$user_AppData\\JetBrains\", \"$user_LocalAppData\\JetBrains\") | ForEach-Object {",
-        "   Get-ChildItem $_ | Where-Object { $_.Name -match \"$preName[\\d\\.]+\" } | ForEach-Object { $_.FullName }",
-        "}",
-        "remove_files $remove_list",
-        "$ui_exe=\"$dir\\IDE\\bin\\Uninstall.exe\"",
-        "try{ & $ui_exe /S }catch{}",
-        "sleep_uninstall $ui_exe"
+    },
+    "architecture": {
+        "64bit": {
+            "bin": [
+                [
+                    "IDE\\bin\\goland64.exe",
+                    "goland"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "IDE\\bin\\goland64.exe",
+                    "JetBrains\\GoLand"
+                ]
+            ]
+        },
+        "32bit": {
+            "bin": "IDE\\bin\\goland.exe",
+            "shortcuts": [
+                [
+                    "IDE\\bin\\goland.exe",
+                    "JetBrains\\GoLand"
+                ]
+            ]
+        }
+    },
+    "persist": [
+        "IDE\\bin\\idea.properties",
+        "IDE\\bin\\goland.exe.vmoptions",
+        "IDE\\bin\\goland64.exe.vmoptions",
+        "profile"
     ],
     "checkver": {
-        "url": "https://data.services.jetbrains.com/products/releases?code=go&latest=true",
-        "jsonpath": "$.GO[0].version"
+        "url": "https://data.services.jetbrains.com/products/releases?code=GO&latest=true&platform=zip&type=release",
+        "regex": "version\":\"(?<ver>[\\d.]+)\".*\"build\":\"(?<build>[\\d.]+)\"",
+        "replace": "${ver}-${build}"
     },
     "autoupdate": {
-        "url": "https://download.jetbrains.com/go/goland-$version.exe#/abgo_bucket_installer.exe",
+        "url": "https://download.jetbrains.com/go/goland-$matchHead.exe#/dl.7z",
         "hash": {
             "url": "$url.sha256"
         }

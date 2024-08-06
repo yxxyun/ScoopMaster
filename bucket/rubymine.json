@@ -1,56 +1,58 @@
 {
-    "version": "2024.1.4",
-    "description": "由 JetBrains 开发的适用于 Ruby 和 Rails 的跨平台集成开发环境。Cross-Platform IDE for Ruby and Rails by JetBrains.",
-    "homepage": "https://www.jetbrains.com/rubymine/",
+    "version": "2024.1.5-241.18968.11",
+    "description": "Cross-Platform IDE for Ruby on Rails by JetBrains.",
+    "homepage": "https://www.jetbrains.com/ruby/",
     "license": {
-        "identifier": "Shareware",
+        "identifier": "Proprietary",
         "url": "https://www.jetbrains.com/store/license.html"
     },
-    "url": "https://download.jetbrains.com/ruby/RubyMine-2024.1.4.exe#/abgo_bucket_installer.exe",
-    "hash": "9301fe18fd16522bf2500787b7cb608a771f8784978a41fc1d1f4b2be8af9947",
-    "bin": [
-        [
-            "IDE\\bin\\rubymine64.exe",
-            "RubyMine"
+    "url": "https://download.jetbrains.com/ruby/RubyMine-2024.1.5.exe#/dl.7z",
+    "hash": "368b73b1737f8c4a68bbec5384ce797c744f83f9ead8570f2f774b1e5b593d04",
+    "extract_to": "IDE",
+    "installer": {
+        "script": [
+            "& \"$bucketsdir\\extras\\scripts\\jetbrains\\portable.ps1\" $dir $persist_dir",
+            "Remove-Item \"$dir\\IDE\\`$*\" -Force -Recurse"
         ]
-    ],
-    "shortcuts": [
-        [
-            "IDE\\bin\\rubymine64.exe",
-            "RubyMine"
-        ]
-    ],
-    "pre_install": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "$verPart = $version -split '\\.'",
-        "$verRes = \"$($verPart[0]).$($verPart[1])\"",
-        "persist_file -dir @(\"$user_AppData\\JetBrains\\RubyMine$($verRes)\",\"$user_LocalAppData\\JetBrains\\RubyMine$($verRes)\") @(\"$persist_dir\\RubyMine\",\"$persist_dir\\RubyMine_LocalAppData\")",
-        "$path_installer=\"$dir\\abgo_bucket_installer.exe\"",
-        "& $path_installer /S /D=\"$dir\\IDE\"",
-        "sleep_install \"$dir\\IDE\\bin\\idea.properties\"",
-        "handle_app_lnk",
-        "do_some_things"
-    ],
-    "pre_uninstall": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "stop_process $false",
-        "$preName = \"RubyMine\"",
-        "$remove_list = @(\"$user_AppData\\JetBrains\", \"$user_LocalAppData\\JetBrains\") | ForEach-Object {",
-        "   Get-ChildItem $_ | Where-Object { $_.Name -match \"$preName[\\d\\.]+\" } | ForEach-Object { $_.FullName }",
-        "}",
-        "remove_files $remove_list",
-        "$ui_exe=\"$dir\\IDE\\bin\\Uninstall.exe\"",
-        "try{ & $ui_exe /S }catch{}",
-        "sleep_uninstall $ui_exe"
+    },
+    "architecture": {
+        "64bit": {
+            "bin": [
+                [
+                    "IDE\\bin\\rubymine64.exe",
+                    "rubymine"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "IDE\\bin\\rubymine64.exe",
+                    "JetBrains\\RubyMine"
+                ]
+            ]
+        },
+        "32bit": {
+            "bin": "IDE\\bin\\rubymine.exe",
+            "shortcuts": [
+                [
+                    "IDE\\bin\\rubymine.exe",
+                    "JetBrains\\RubyMine"
+                ]
+            ]
+        }
+    },
+    "persist": [
+        "IDE\\bin\\idea.properties",
+        "IDE\\bin\\rubymine.exe.vmoptions",
+        "IDE\\bin\\rubymine64.exe.vmoptions",
+        "profile"
     ],
     "checkver": {
-        "url": "https://data.services.jetbrains.com/products/releases?code=RM&latest=true",
-        "jsonpath": "$.RM[0].version"
+        "url": "https://data.services.jetbrains.com/products/releases?code=RM&latest=true&platform=zip&type=release",
+        "regex": "version\":\"(?<ver>[\\d.]+)\".*\"build\":\"(?<build>[\\d.]+)\"",
+        "replace": "${ver}-${build}"
     },
     "autoupdate": {
-        "url": "https://download.jetbrains.com/ruby/RubyMine-$version.exe#/abgo_bucket_installer.exe",
+        "url": "https://download.jetbrains.com/ruby/RubyMine-$matchHead.exe#/dl.7z",
         "hash": {
             "url": "$url.sha256"
         }
