@@ -1,0 +1,62 @@
+{
+    "version": "3.6.16667",
+    "description": "PDF and eBook reader",
+    "homepage": "https://www.sumatrapdfreader.org/free-pdf-reader",
+    "license": "GPL-3.0-only,BSD-2-Clause",
+    "architecture": {
+        "64bit": {
+            "url": "https://www.sumatrapdfreader.org/dl/prerel/16667/SumatraPDF-prerel-64-install.exe",
+            "hash": "005785F68E6774BB6A41F6172190C2ABF3B34E11192CBEF1F9DF02D55B3F86E1"
+        }
+    },
+    "installer":{
+        "script": [
+            "Start-Process -Wait \"$dir\\$fname\" -ArgumentList '-d', \"`\"$dir`\"\",  '-with-preview' -ErrorAction SilentlyContinue",
+            "Remove-Item \"$dir\\$fname\"  -ErrorAction SilentlyContinue",
+            "#Write-Host 'File' $dir\\$fname"
+        ]
+    },
+    "pre_install": [
+        "$file = 'SumatraPDF-settings.txt'",
+        "if (!(Test-Path \"$persist_dir\\$file\")) {",
+            "    Write-Host 'File' $file 'does not exists. Creating.' -f Yellow",
+            "    Set-Content \"$dir\\$file\" 'CheckForUpdates = false' -Encoding Ascii",
+            "}",
+            "#Get-ChildItem \"$dir\\SumatraPDF-*.exe\" | Rename-Item -NewName 'SumatraPDF.exe'"
+    ],
+    "bin": "SumatraPDF.exe",
+    "shortcuts": [
+        [
+            "SumatraPDF.exe",
+            "SumatraPDF"
+        ]
+    ],
+    "persist": [
+        "SumatraPDF-settings.txt",
+        "sumatrapdfcache"
+    ],
+    "checkver": {
+        "script": [
+            "$response = Invoke-WebRequest 'https://www.sumatrapdfreader.org/free-pdf-reader.html'",
+            "$matches = [regex]::Match($response.Content, '/prerelease\">([\\d.]+)<span')",
+            "if ($matches.Success) {",
+                "$verHead = $matches.groups[1].Value",
+                "$js = (Invoke-WebRequest 'https://files2.sumatrapdfreader.org/software/sumatrapdf/sumatralatest.js')",
+                "$jsContent = $js.content",
+                "$verMatch = [regex]::Match($jsContent, 'sumLatestVer=(\\d+);')",
+                "if ($vermatch.success) {",
+                    "$verTail = $verMatch.groups[1].Value",
+                    "\"$verHead.$verTail\"",
+                    "}",
+                    "}"
+        ],
+        "regex": "(\\S+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://www.sumatrapdfreader.org/dl/prerel/$patchVersion/SumatraPDF-prerel-64.zip"
+            }
+        }
+    }
+}
