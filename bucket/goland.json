@@ -1,58 +1,56 @@
 {
-    "version": "2024.2-242.20224.306",
-    "description": "Cross-Platform IDE for Go by JetBrains.",
+    "version": "2024.2",
+    "description": "由 JetBrains 开发的 Go 语言的跨平台集成开发环境。Cross-Platform IDE for Golang by JetBrains.",
     "homepage": "https://www.jetbrains.com/goland/",
     "license": {
-        "identifier": "Proprietary",
+        "identifier": "Shareware",
         "url": "https://www.jetbrains.com/store/license.html"
     },
-    "url": "https://download.jetbrains.com/go/goland-2024.2.exe#/dl.7z",
+    "url": "https://download.jetbrains.com/go/goland-2024.2.exe#/abgo_bucket_installer.exe",
     "hash": "c045fe2cd0cdfb8331b4c6e21dd61317106410e2d02088cb4f03662e9bc3ae1e",
-    "extract_to": "IDE",
-    "installer": {
-        "script": [
-            "& \"$bucketsdir\\extras\\scripts\\jetbrains\\portable.ps1\" $dir $persist_dir",
-            "Remove-Item \"$dir\\IDE\\`$*\" -Force -Recurse"
+    "bin": [
+        [
+            "IDE\\bin\\goland64.exe",
+            "GoLand"
         ]
-    },
-    "architecture": {
-        "64bit": {
-            "bin": [
-                [
-                    "IDE\\bin\\goland64.exe",
-                    "goland"
-                ]
-            ],
-            "shortcuts": [
-                [
-                    "IDE\\bin\\goland64.exe",
-                    "JetBrains\\GoLand"
-                ]
-            ]
-        },
-        "32bit": {
-            "bin": "IDE\\bin\\goland.exe",
-            "shortcuts": [
-                [
-                    "IDE\\bin\\goland.exe",
-                    "JetBrains\\GoLand"
-                ]
-            ]
-        }
-    },
-    "persist": [
-        "IDE\\bin\\idea.properties",
-        "IDE\\bin\\goland.exe.vmoptions",
-        "IDE\\bin\\goland64.exe.vmoptions",
-        "profile"
+    ],
+    "shortcuts": [
+        [
+            "IDE\\bin\\goland64.exe",
+            "GoLand"
+        ]
+    ],
+    "pre_install": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$verPart = $version -split '\\.'",
+        "$verRes = \"$($verPart[0]).$($verPart[1])\"",
+        "persist_file -dir @(\"$user_AppData\\JetBrains\\GoLand$($verRes)\",\"$user_LocalAppData\\JetBrains\\GoLand$($verRes)\") @(\"$persist_dir\\GoLand\",\"$persist_dir\\GoLand_LocalAppData\")",
+        "$path_installer=\"$dir\\abgo_bucket_installer.exe\"",
+        "& $path_installer /S /D=\"$dir\\IDE\"",
+        "sleep_install \"$dir\\IDE\\bin\\idea.properties\"",
+        "handle_app_lnk",
+        "do_some_things"
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process $false",
+        "$preName = \"GoLand\"",
+        "$remove_list = @(\"$user_AppData\\JetBrains\", \"$user_LocalAppData\\JetBrains\") | ForEach-Object {",
+        "   Get-ChildItem $_ | Where-Object { $_.Name -match \"$preName[\\d\\.]+\" } | ForEach-Object { $_.FullName }",
+        "}",
+        "remove_files $remove_list",
+        "$ui_exe=\"$dir\\IDE\\bin\\Uninstall.exe\"",
+        "try{ & $ui_exe /S }catch{}",
+        "sleep_uninstall $ui_exe"
     ],
     "checkver": {
-        "url": "https://data.services.jetbrains.com/products/releases?code=GO&latest=true&platform=zip&type=release",
-        "regex": "version\":\"(?<ver>[\\d.]+)\".*\"build\":\"(?<build>[\\d.]+)\"",
-        "replace": "${ver}-${build}"
+        "url": "https://data.services.jetbrains.com/products/releases?code=go&latest=true",
+        "jsonpath": "$.GO[0].version"
     },
     "autoupdate": {
-        "url": "https://download.jetbrains.com/go/goland-$matchHead.exe#/dl.7z",
+        "url": "https://download.jetbrains.com/go/goland-$version.exe#/abgo_bucket_installer.exe",
         "hash": {
             "url": "$url.sha256"
         }
