@@ -1,56 +1,48 @@
 {
     "version": "2.4",
-    "description": "Portable, simple and fast installer for Visual Studio Build Tools.",
     "homepage": "https://github.com/Data-Oriented-House/PortableBuildTools",
-    "license": "Freeware",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/Data-Oriented-House/PortableBuildTools/releases/download/v2.4/PortableBuildTools.exe",
-            "hash": "e8008f6c8910354010f29ddd0a7473eb48dfbc228654fb1903bd3096b6288a1a"
-        }
-    },
-    "post_install": [
-        "portablebuildtools.exe accept_license target=x64 host=x64 env=user path='C:\\BuildTools'",
-        "if (!$?) { Write-Warning 'Running PortableBuildTools failed. Installation incomplete.' }",
-        "",
-        "@'",
-        "# Folder where PortableDevTools were installed.",
-        "param([string]$InstallPath = $PSScriptRoot)",
-        "",
-        "$env:BUILD_TOOLS_ROOT = $InstallPath",
-        "",
-        "$env:WindowsSDKDir = (Join-Path $InstallPath '\\Windows Kits\\10')",
-        "$env:WindowsSDKVersion = (Get-ChildItem -Directory (Join-Path $env:WindowsSDKDir 'bin') -ErrorAction SilentlyContinue | Sort-Object -Descending LastWriteTime | Select-Object -First 1).Name",
-        "if (!$env:WindowsSDKVersion ) { throw 'WindowsSDKVersion cannot be determined.' }",
-        "",
-        "$VCToolsVersion = (Get-ChildItem -Directory (Join-Path $InstallPath '\\VC\\Tools\\MSVC' | Sort-Object -Descending LastWriteTime | Select-Object -First 1) -ErrorAction SilentlyContinue).Name",
-        "if (!$VCToolsVersion) { throw 'VCToolsVersion cannot be determined.' }",
-        "$env:VCToolsInstallDir = Join-Path $InstallPath '\\VC\\Tools\\MSVC' $VCToolsVersion",
-        "",
-        "$env:VSCMD_ARG_TGT_ARCH = 'x64'",
-        "$env:VSCMD_ARG_HOST_ARCH = 'x64'",
-        "",
-        "'Portable Build Tools environment started.'",
-        "'* BUILD_TOOLS_ROOT   : {0}' -f $env:BUILD_TOOLS_ROOT",
-        "'* WindowsSDKDir      : {0}' -f $env:WindowsSDKDir",
-        "'* WindowsSDKVersion  : {0}' -f $env:WindowsSDKVersion",
-        "'* VCToolsInstallDir  : {0}' -f $env:VCToolsInstallDir",
-        "'* VSCMD_ARG_TGT_ARCH : {0}' -f $env:VSCMD_ARG_TGT_ARCH",
-        "'* VSCMD_ARG_HOST_ARCH: {0}' -f $env:VSCMD_ARG_HOST_ARCH",
-        "",
-        "$env:INCLUDE = \"$env:VCToolsInstallDir\\include;$env:WindowsSDKDir\\Include\\$env:WindowsSDKVersion\\ucrt;$env:WindowsSDKDir\\Include\\$env:WindowsSDKVersion\\shared;$env:WindowsSDKDir\\Include\\$env:WindowsSDKVersion\\um;$env:WindowsSDKDir\\Include\\$env:WindowsSDKVersion\\winrt;$env:WindowsSDKDir\\Include\\$env:WindowsSDKVersion\\cppwinrt\"",
-        "$env:LIB = \"$env:VCToolsInstallDir\\lib\\$env:VSCMD_ARG_TGT_ARCH;$env:WindowsSDKDir\\Lib\\$env:WindowsSDKVersion\\ucrt\\$env:VSCMD_ARG_TGT_ARCH;$env:WindowsSDKDir\\Lib\\$env:WindowsSDKVersion\\um\\$env:VSCMD_ARG_TGT_ARCH\"",
-        "$env:BUILD_TOOLS_BIN = \"$env:VCToolsInstallDir\\bin\\Hostx64\\$env:VSCMD_ARG_TGT_ARCH;$env:WindowsSDKDir\\bin\\$env:WindowsSDKVersion\\$env:VSCMD_ARG_TGT_ARCH;$env:WindowsSDKDir\\bin\\$env:WindowsSDKVersion\\$env:VSCMD_ARG_TGT_ARCH\\ucrt\"",
-        "$env:PATH = \"$env:BUILD_TOOLS_BIN;$env:PATH\"",
-        "'@ | Out-File (Join-Path 'c:\\BuildTools' 'devcmd.ps1') -Encoding ascii"
+    "description": "Portable VS Build Tools installer",
+    "license": "https://go.microsoft.com/fwlink/?LinkId=2179911",
+    "notes": [
+        "This package defaults to download and install the latest MSVC toolchain in new installs and persist it in $persist_dir\\BuildTools.",
+        " - You can use GUI application to download and install other versions of MSVC toolchains.",
+        " - You can use `scoop uninstall portable-build-tools -p` to uninstall PortableBuildTools and MSVC toolchains.",
+        " - Read license https://go.microsoft.com/fwlink/?LinkId=2179911."
     ],
-    "notes": "To initialize build environment, run C:\\BuildTools\\devcmd.ps1",
+    "url": "https://github.com/Data-Oriented-House/PortableBuildTools/releases/download/v2.4/PortableBuildTools.exe",
+    "hash": "e8008f6c8910354010f29ddd0a7473eb48dfbc228654fb1903bd3096b6288a1a",
+    "installer": {
+        "script": [
+            "if (!(Test-Path -Path $persist_dir\\BuildTools)) {",
+            "   warn 'Downloading and installing the latest MSVC toolchain. This may take up minutes.'",
+            "   if ($architecture -eq '64bit') {",
+            "       Invoke-ExternalCommand -Path \"$dir\\PortableBuildTools.exe\" -Args @('accept_license', \"install_path=$persist_dir\\BuildTools\") | Out-Null",
+            "   } else {",
+            "       Invoke-ExternalCommand -Path \"$dir\\PortableBuildTools.exe\" -Args @('accept_license', \"install_path=$persist_dir\\BuildTools\", 'target=x86', 'host=x86') | Out-Null",
+            "   }",
+            "} else {",
+            "   warn 'Persisted MSVC toolchain found. Skip downloading and installing.'",
+            "}"
+        ]
+    },
+    "post_install": "startmenu_shortcut \"$env:comspec\" 'Developer Command Prompt for PortableBuildTools' \"/K $persist_dir\\BuildTools\\devcmd.bat\"",
+    "post_uninstall": [
+        "$shortcut = \"$(shortcut_folder $global)\\Developer Command Prompt for PortableBuildTools.lnk\"",
+        "write \"Removing shortcut $(friendly_path $shortcut)\"",
+        "if (Test-Path -Path $shortcut) {",
+        "Remove-Item $shortcut",
+        "}"
+    ],
+    "bin": "PortableBuildTools.exe",
+    "shortcuts": [
+        [
+            "PortableBuildTools.exe",
+            "PortableBuildTools"
+        ]
+    ],
+    "persist": "BuildTools",
     "checkver": "github",
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/Data-Oriented-House/PortableBuildTools/releases/download/v$version/PortableBuildTools.exe"
-            }
-        }
+        "url": "https://github.com/Data-Oriented-House/PortableBuildTools/releases/download/v$version/PortableBuildTools.exe"
     }
 }
