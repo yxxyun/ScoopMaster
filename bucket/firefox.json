@@ -24,18 +24,13 @@
     ],
     "pre_install": [
         "$config_js = \"$dir\\config.js\"",
-        "if (!(Test-Path \"$config_js\")) { New-Item -ItemType File -Path \"$config_js\" | Out-Null }",
+        "if (!(Test-Path $config_js)) { New-Item -ItemType File -Path $config_js | Out-Null }",
         "$lib_dir = \"$(appdir LibPortable $global)\\current\"",
         "$portable_ini = \"$dir\\portable.ini\"",
         "if (!(Test-Path \"$portable_ini\")) {",
         "    $content = Get-Content \"$lib_dir\\portable(example).ini\"",
         "    $content = $content -replace '^Update=1$', 'Update=0' -replace '^PortableDataPath=../Profiles$', 'PortableDataPath=./profiles'",
-        "    New-Item -Path \"$portable_ini\" -ItemType File -Value $content -Force | Out-Null",
-        "}",
-        "$arch = if ($architecture -eq '64bit') { '64' } else { '32' }",
-        "$portable_dll = \"portable$arch.dll\"",
-        "if (!(Test-Path \"$dir\\$portable_dll\")) {",
-        "    Copy-Item \"$lib_dir\\$portable_dll\" \"$dir\\$portable_dll\" -Force",
+        "    Set-Content -Path $portable_ini -Value $content -Force -Encoding UTF8",
         "}"
     ],
     "persist": [
@@ -50,6 +45,9 @@
         "$lib_dir = \"$(appdir LibPortable $global)\\current\"",
         "$arch = if ($architecture -eq '64bit') { '64' } else { '32' }",
         "$portable_dll = \"portable$arch.dll\"",
+        "if (!(Test-Path \"$dir\\$portable_dll\")) {",
+        "    Copy-Item \"$lib_dir\\$portable_dll\" \"$dir\" -Force",
+        "}",
         "$setdll_exe = \"setdll$arch.exe\"",
         "Invoke-ExternalCommand \"$lib_dir\\$setdll_exe\" -ArgumentList @(\"/d:$dir\\$portable_dll\", \"$dir\\mozglue.dll\") -Activity \"`nApplying LibPortable patch`n\""
     ],
