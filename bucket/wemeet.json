@@ -1,36 +1,73 @@
 {
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
     "version": "3.28.11.477",
-    "description": "Tencent Meeting provides one-stop audio and video conferencing solutions.",
+    "description": "An efficient and reliable video conferencing service powered by Tencent that is built for collaboration.",
     "homepage": "https://meeting.tencent.com/",
     "license": {
         "identifier": "Proprietary",
         "url": "https://meeting.tencent.com/declare.html"
     },
-    "notes": "We don't persist your Tencent Meeting data, they are still storaged in \"$env:APPDATA\\Tencent\\WeMeet\".",
-    "url": "https://updatecdn.meeting.qq.com/cos/27e141c19f4165f422142ef2ac1ce35c/TencentMeeting_0300000000_3.28.11.477.publish.officialwebsite.exe#/dl.7z",
-    "hash": "d5ea622c6269d7286e292078881d7700ffecb2c88d7cae0b074b76c4ffdad963",
+    "architecture": {
+        "64bit": {
+            "url": "https://updatecdn.meeting.qq.com/cos/8540892d128eed1291af792e831bb42a/TencentMeeting_0300000000_3.28.11.477_x86_64.publish.exe#/dl.7z",
+            "hash": "fff526969712863de1656927ce5706d4fcb590c1bc726d12e6e593ebd38b7d6f"
+        },
+        "32bit": {
+            "url": "https://updatecdn.meeting.qq.com/cos/27e141c19f4165f422142ef2ac1ce35c/TencentMeeting_0300000000_3.28.11.477.publish.exe#/dl.7z",
+            "hash": "d5ea622c6269d7286e292078881d7700ffecb2c88d7cae0b074b76c4ffdad963"
+        }
+    },
     "post_install": [
-        "Rename-Item \"$dir\\`$_22_\" \"$dir\\$version\"",
+        "Rename-Item \"$dir\\`$_*_\" \"$dir\\$version\"",
         "Remove-Item \"$dir\\$*\" -Recurse -Force -ErrorAction SilentlyContinue",
-        "Remove-Item \"$dir\\wemeetapp_new.exe\" -Force -ErrorAction SilentlyContinue"
-    ],
-    "bin": [
-        [
-            "wemeetapp.exe",
-            "wemeet"
-        ]
+        "Remove-Item \"$dir\\WeMeetApp_new.exe\", \"$dir\\$version\\WeMeetUninstall.exe\" -Force -ErrorAction SilentlyContinue"
     ],
     "shortcuts": [
         [
-            "wemeetapp.exe",
-            "腾讯会议"
+            "WeMeetApp.exe",
+            "WeMeet"
         ]
     ],
     "checkver": {
-        "url": "https://meeting.tencent.com/web-service/query-download-info?q=[{\"package-type\":\"app\",\"channel\":\"0300000000\",\"platform\":\"windows\"}]&nonce=AAAAAAAAAAAAAAAA",
-        "regex": "(?<Commitid>[0-9a-f]+)/TencentMeeting_0300000000_(?<Version>\\d+.\\d+.\\d+.\\d+).publish.officialwebsite.exe"
+        "script": [
+            "$uri = 'https://api.github.com/repos/microsoft/winget-pkgs/contents/manifests/t/Tencent/TencentMeeting'",
+            "$prevProgressPreference = $global:ProgressPreference",
+            "$global:ProgressPreference = 'SilentlyContinue'",
+            "$latestVersion = ((Invoke-WebRequest -Uri $uri).Content |",
+            "  ConvertFrom-Json |",
+            "  ForEach-Object { $_.name } |",
+            "  Where-Object { $_ -notmatch '^\\.' } |",
+            "  Sort-Object -Descending { try { [version]$_ } catch {} })[0]",
+            "\"version:$latestVersion\"",
+            "$uri = \"https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/t/Tencent/TencentMeeting/$latestVersion/Tencent.TencentMeeting.installer.yaml\"",
+            "$installerInfo = (Invoke-WebRequest -Uri $uri).Content",
+            "$global:ProgressPreference = $prevProgressPreference",
+            "$installerInfo -split '[\\r\\n]+' | ForEach-Object {",
+            "  if ($_ -cmatch '^\\s+InstallerUrl:\\s*https://(.+_x86_64.+)$') {",
+            "    \"url_x64:$($Matches[1])\"",
+            "  } elseif ($_ -cmatch '^\\s+InstallerUrl:\\s*https://(.+)$') {",
+            "    \"url_x86:$($Matches[1])\"",
+            "  }",
+            "}"
+        ],
+        "regex": "^version:(?<version>\\S+)\\s+url_x86:(?<URLX86>\\S+)\\s+url_x64:(?<URLX64>\\S+)$"
     },
     "autoupdate": {
-        "url": "https://updatecdn.meeting.qq.com/cos/$matchCommitid/TencentMeeting_0300000000_$matchVersion.publish.officialwebsite.exe#/dl.7z"
+        "architecture": {
+            "64bit": {
+                "url": "https://$matchURLX64#/dl.7z",
+                "hash": {
+                    "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/t/Tencent/TencentMeeting/$version/Tencent.TencentMeeting.installer.yaml",
+                    "regex": "- Architecture:\\s*x64[\\s\\S]+?InstallerSha256:\\s*$sha256"
+                }
+            },
+            "32bit": {
+                "url": "https://$matchURLX86#/dl.7z",
+                "hash": {
+                    "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/t/Tencent/TencentMeeting/$version/Tencent.TencentMeeting.installer.yaml",
+                    "regex": "- Architecture:\\s*x86[\\s\\S]+?InstallerSha256:\\s*$sha256"
+                }
+            }
+        }
     }
 }
