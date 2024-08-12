@@ -1,8 +1,46 @@
 {
-    "version": "1.4.1",
-    "description": "Everything",
-    "homepage": "https://www.voidtools.com/",
+    "version": "1.5.0.1383a",
+    "description": "(Alpha Version) Locate files and folders by name instantly.",
+    "homepage": "https://www.voidtools.com",
     "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://www.voidtools.com/Everything-1.5.0.1383a.x64.zip",
+            "hash": "4be2468cfc245fc20266f887838b38eeab7f6edb069d244538370c7b2f3a8d97"
+        },
+        "32bit": {
+            "url": "https://www.voidtools.com/Everything-1.5.0.1383a.x86.zip",
+            "hash": "1285924fcb0da992b75fdba0c4107cffc4bf9ec644d3e8cc14a8ac9cb675652f"
+        }
+    },
+    "pre_install": [
+        "# Rename Everything.exe",
+        "if (Test-Path \"$dir\\Everything64.exe\") { Rename-Item \"$dir\\Everything64.exe\" 'Everything.exe' }",
+        "# Copy AppData",
+        "if (Test-Path \"$persist_dir\") {",
+        "    Copy-Item \"$persist_dir\\*\" $dir -Recurse -Force",
+        "} else {",
+        "    New-Item -Path \"$persist_dir\" -Type Directory | Out-Null",
+        "}",
+        "# Remove instance prefix",
+        "if (!(Test-Path \"$persist_dir\\NO_ALPHA_INSTANCE\")) { New-Item -ItemType File -Path \"$dir\\NO_ALPHA_INSTANCE\" | Out-Null }",
+        "# Add mutil language",
+        "if (!(Test-Path \"$persist_dir\\Everything.lng\")) {",
+        "    $lng_url = 'https://www.voidtools.com/Everything.lng.zip'",
+        "    $lng_zip = \"$dir\\Everything.lng.zip\"",
+        "    Invoke-WebRequest -Uri $lng_url -OutFile $lng_zip",
+        "    Expand-Archive $lng_zip -DestinationPath \"$dir\" -Force",
+        "    Remove-Item $lng_zip -Force",
+        "}",
+        "# Configure Everything.ini",
+        "if (!(Test-Path \"$persist_dir\\Everything.ini\")) {",
+        "    $ini_content = \"[Everything]\r\napp_data=0\r\nalpha_instance=0\r\ncheck_for_updates_on_startup=0\"",
+        "    Set-Content -Path \"$dir\\Everything.ini\" -Value $ini_content -Force -Encoding UTF8;",
+        "}"
+    ],
+    "pre_uninstall": [
+        "Get-ChildItem \"$dir\" -Exclude 'Everything.exe' | Copy-Item -Destination \"$persist_dir\" -Recurse -Force"
+    ],
     "bin": "Everything.exe",
     "shortcuts": [
         [
@@ -10,24 +48,19 @@
             "Everything"
         ]
     ],
-    "pre_install": [
-        "echo Updating...",
-        "scoop update",
-        "echo Installing..."
-    ],
-    "post_install": "echo Installed!",
-    "pre_uninstall": "echo Uninstalled!",
-    "url": "https://www.voidtools.com/Everything-1.4.1.1024.x86.zip",
-    "hash": "febbdf9ffefd122e046163d23b3ce995b35bbee05964886d1db8c81b7fb5c34f",
     "checkver": {
-        "url": "https://www.voidtools.com/downloads/",
-        "regex": "Everything-([\\d.]+)\\.1024.x86.zip"
+        "url": "https://www.voidtools.com/Everything-1.5a-update.ini",
+        "regex": "(?sm)^major=(?<major>\\d+).*?^minor=(?<minor>\\d+).*?^revision=(?<revision>\\d+).*?^build=(?<build>\\d+)",
+        "replace": "${major}.${minor}.${revision}.${build}a"
     },
     "autoupdate": {
-        "url": "https://www.voidtools.com/Everything-$version.1024.x86.zip",
-        "hash": {
-            "url": "$url.sha256"
+        "architecture": {
+            "64bit": {
+                "url": "https://www.voidtools.com/Everything-$version.x64.zip"
+            },
+            "32bit": {
+                "url": "https://www.voidtools.com/Everything-$version.x86.zip"
+            }
         }
-    },
-    "notes": "Thank you for installing Everything in the Sectly bucket!"
+    }
 }
