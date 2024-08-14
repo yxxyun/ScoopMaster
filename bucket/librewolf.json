@@ -1,9 +1,8 @@
 {
     "version": "129.0.1-1",
-    "description": "A fork of Firefox, focused on privacy, security and freedom. This variant does not use the portable launcher and makes sure the Scoop profile is used by default.",
+    "description": "A fork of Firefox, focused on privacy, security and freedom.",
     "homepage": "https://librewolf.net/",
     "license": "MPL-2.0",
-    "notes": "After installation, the profile manager will be run to choose the right default profile.",
     "architecture": {
         "64bit": {
             "url": "https://gitlab.com/api/v4/projects/44042130/packages/generic/librewolf/129.0.1-1/librewolf-129.0.1-1-windows-x86_64-portable.zip",
@@ -14,31 +13,38 @@
             "hash": "b21c02e1f71d320ae86b524bd337599dce8497439882392aadc3c03d2be8af95"
         }
     },
-    "extract_dir": "librewolf-129.0.1-1\\LibreWolf",
-    "post_install": [
-        "$Addition = \"$persist_dir\\addition\"",
-        "if (Test-Path $Addition) {",
-        "  info 'Copying additional items...'",
-        "  Copy-Item -Path $Addition\\* -Destination $dir -Force -Recurse -ErrorAction SilentlyContinue",
-        "}",
-        "librewolf -CreateProfile \"Scoop $persist_dir\\profile\"",
-        "start -NoNewWindow librewolf -ArgumentList '-P'"
+    "extract_dir": "librewolf-129.0.1-1",
+    "pre_install": [
+        "Remove-Item \"$dir\\LibreWolf-WinUpdater.exe\"",
+        "Remove-Item \"$dir\\ScheduledTask-Create.ps1\"",
+        "Remove-Item \"$dir\\ScheduledTask-Remove.ps1\"",
+        "# Customizing LibreWolf Using AutoConfig",
+        "# https://support.mozilla.org/en-US/kb/customizing-firefox-using-autoconfig",
+        "ensure \"$persist_dir\\LibreWolf\\defaults\\pref\" | Out-Null",
+        "Copy-Item \"$persist_dir\\LibreWolf\\defaults\\pref\\*\" \"$dir\\LibreWolf\\defaults\\pref\" -Exclude 'channel-prefs.js'",
+        "Copy-Item \"$persist_dir\\LibreWolf\\*.js\", \"$persist_dir\\LibreWolf\\*.cfg\" \"$dir\\LibreWolf\"",
+        "# Customizing LibreWolf Using policies.json",
+        "# https://support.mozilla.org/en-US/kb/customizing-firefox-using-policiesjson",
+        "# Used to override the default policies.json of LibreWolf, if you want",
+        "ensure \"$persist_dir\\LibreWolf\\distribution\" | Out-Null",
+        "Copy-Item \"$persist_dir\\LibreWolf\\distribution\\policies.json\" \"$dir\\LibreWolf\\distribution\" -ErrorAction SilentlyContinue"
     ],
     "bin": [
         [
-            "librewolf.exe",
+            "LibreWolf-Portable.exe",
             "librewolf"
         ]
     ],
     "shortcuts": [
         [
-            "librewolf.exe",
+            "LibreWolf-Portable.exe",
             "LibreWolf"
         ]
     ],
-    "persist": [
-        "distribution",
-        "profile"
+    "persist": "Profiles",
+    "pre_uninstall": [
+        "Copy-Item \"$dir\\LibreWolf\\defaults\\pref\\*\" \"$persist_dir\\LibreWolf\\defaults\\pref\" -Exclude 'channel-prefs.js'",
+        "Copy-Item \"$dir\\LibreWolf\\*.js\", \"$dir\\LibreWolf\\*.cfg\" \"$persist_dir\\LibreWolf\" -Exclude 'librewolf.cfg'"
     ],
     "checkver": {
         "url": "https://gitlab.com/api/v4/projects/44042130/releases/permalink/latest",
@@ -56,6 +62,6 @@
         "hash": {
             "url": "$url.sha256sum"
         },
-        "extract_dir": "librewolf-$version\\LibreWolf"
+        "extract_dir": "librewolf-$version"
     }
 }
