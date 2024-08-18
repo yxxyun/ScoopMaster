@@ -23,15 +23,16 @@
         ]
     ],
     "pre_install": [
-        "$config_js = \"$dir\\config.js\"",
-        "if (!(Test-Path $config_js)) { New-Item -ItemType File -Path $config_js | Out-Null }",
+        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name air) scripts/AirUtils.psm1)",
+        "EnsureFile \"$persist_dir\\config.js\"",
         "$lib_dir = \"$(appdir LibPortable $global)\\current\"",
-        "$portable_ini = \"$dir\\portable.ini\"",
-        "if (!(Test-Path \"$portable_ini\")) {",
-        "    $content = Get-Content \"$lib_dir\\portable(example).ini\"",
-        "    $content = $content -replace '^Update=1$', 'Update=0' -replace '^PortableDataPath=../Profiles$', 'PortableDataPath=./profiles'",
-        "    Set-Content -Path $portable_ini -Value $content -Force -Encoding UTF8",
-        "}"
+        "$portable_ini = \"$persist_dir\\portable.ini\"",
+        "$example_ini = \"$lib_dir\\portable(example).ini\"",
+        "if (!(Test-Path $portable_ini)) {",
+        "    $content = Get-Content $example_ini -replace '^Update=1$', 'Update=0' -replace '^PortableDataPath=../Profiles$', 'PortableDataPath=./profiles'",
+        "    WriteFile $portable_ini $content",
+        "}",
+        "Remove-Module -Name AirUtils"
     ],
     "persist": [
         "defaults",
