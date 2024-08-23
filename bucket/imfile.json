@@ -1,16 +1,59 @@
 {
-    "homepage": "https://github.com/imfile-io/imfile-desktop",
-    "description": "A full-featured download manager.",
     "version": "1.1.0",
+    "description": "A full-featured download manager.",
+    "homepage": "https://github.com/imfile-io/imfile-desktop",
     "license": "MIT",
-    "url": "https://github.com/imfile-io/imfile-desktop/releases/download/v1.0.5/imFile-1.0.5-win.zip",
-    "hash": "",
+    "suggest": {
+        "aria2": "main/aria2"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/imfile-io/imfile-desktop/releases/download/v1.1.0/imFile-1.1.0-win.zip",
+            "hash": "8fcb8426a699c7bc62e5e89e128e6962c75dc1da63178619177daaa30a13dc61"
+        }
+    },
     "shortcuts": [
         [
             "imFile.exe",
             "imFile"
         ]
     ],
+    "persist": [
+        [
+            "resources\\engine\\aria2.conf",
+            "aria2.conf"
+        ]
+    ],
+    "pre_install": [
+        "if (-not (Test-Path \"$persist_dir\\APPDATA\")) {",
+        "   New-item \"$persist_dir\" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null",
+        "   New-item \"$persist_dir\\APPDATA\" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null",
+        "   Move-Item -Path \"$env:APPDATA\\imFile\" -Destination \"$persist_dir\\APPDATA\" -ErrorAction SilentlyContinue",
+        "} else {",
+        "   Remove-Item -Path \"$env:APPDATA\\imFile\" -Recurse -ErrorAction SilentlyContinue",
+        "}",
+        "",
+        "if (-not (Test-Path \"$persist_dir\\aria2.conf\")) {",
+        "   Copy-Item \"$dir\\resources\\engine\\aria2.conf\" \"$persist_dir\\aria2.conf\" | Out-Null",
+        "}"
+    ],
+    "post_install": [
+        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name muxinxy) scripts/DoradoUtils.psm1)",
+        "Mount-ExternalRuntimeData -Source \"$persist_dir\\APPDATA\" -Target \"$env:APPDATA\\imFile\"",
+        "Remove-Module -Name DoradoUtils",
+        "",
+        "if (Test-Path \"$scoopdir\\apps\\aria2\\current\\aria2c.exe\") {",
+        "    Rename-Item \"$dir\\resources\\engine\\aria2c.exe\" 'aria2c_exe_bac'",
+        "    Copy-Item \"$scoopdir\\apps\\aria2\\current\\aria2c.exe\" \"$dir\\resources\\engine\\aria2c.exe\" | Out-Null",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name muxinxy) scripts/DoradoUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\imFile\"",
+            "Remove-Module -Name DoradoUtils"
+        ]
+    },
     "checkver": "github",
     "autoupdate": {
         "architecture": {
