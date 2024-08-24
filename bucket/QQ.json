@@ -1,85 +1,50 @@
 {
-    "version": "9.9.15.27333",
-    "description": "(NT版本) 一款能让你与你的朋友和家人保持联系的即时通讯工具。(NT version) An instant messaging tool that gives you the best way to keep in touch with your friends and family.",
-    "homepage": "https://im.qq.com/",
-    "license": "Unknown",
+    "version": "9.9.15",
+    "description": "A new version of Tencent QQ based on Electron.",
+    "homepage": "https://im.qq.com",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://ti.qq.com/agreement/index.html"
+    },
+    "notes": [
+        "Scoop doesn't persist your QQ data, by default they are stored in:",
+        "'%UserProfile%\\Documents\\Tencent Files'.",
+        "Files produced at runtime are left in '%AppData%\\Tencent'."
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_9.9.15_240822_x64_01.exe#/dl.7z",
-            "hash": "af604fca48757a5c9269498f30f0dc7fa9fd1bf7566bfdf9923db02f0330cf6c"
+            "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_9.9.15_240822_x64_01.exe#/dl.7z",
+            "hash": "AF604FCA48757A5C9269498F30F0DC7FA9FD1BF7566BFDF9923DB02F0330CF6C"
         },
         "32bit": {
-            "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_9.9.15_240822_x86_01.exe#/dl.7z",
-            "hash": "a62fbba62d80ef8fce690322a41652d848d991fc98b02ba0241bc10b5c14b5fc"
+            "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_9.9.15_240808_x86_01.exe#/dl.7z",
+            "hash": "A62FBBA62D80EF8FCE690322A41652D848D991FC98B02BA0241BC10B5C14B5FC"
         }
     },
-    "shortcuts": [
-        [
-            "Files\\QQ.exe",
-            "QQ"
-        ]
-    ],
-    "pre_install": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "$tencent_path=\"$user_Documents\\Tencent Files\"",
-        "$accountList=[array](Get-ChildItem $tencent_path | Where-Object { $_.BaseName -match \"\\d+\" -and (Test-Path \"$($_.FullName)\\nt_qq\") })",
-        "$persist_accountList=[array](Get-ChildItem \"$persist_dir\" | Where-Object { $_.BaseName -match \"\\d+\" -and (Test-Path \"$($_.FullName)\\nt_qq\") })",
-        "if($accountList){",
-        "   $account_dir=$accountList.FullName | ForEach-Object { \"$($_)\\nt_qq\" }",
-        "   $persist_account_dir=$accountList.BaseName | ForEach-Object { \"$($persist_dir)\\$($_)\\nt_qq\" }",
-        "}else{",
-        "   $account_dir=@()",
-        "   $persist_account_dir=@()",
-        "}",
-        "if($persist_accountList){",
-        "   $account_dir2=[array]($persist_accountList.BaseName | ForEach-Object { \"$($tencent_path)\\$($_)\\nt_qq\" })",
-        "   $persist_account_dir2=[array]($persist_accountList.FullName | ForEach-Object { \"$($_)\\nt_qq\" })",
-        "}else{",
-        "   $account_dir2=@()",
-        "   $persist_account_dir2=@()",
-        "}",
-        "$data_list=@(\"$user_Documents\\Tencent Files\\nt_qq\",\"$user_AppData\\QQ\") + $account_dir + $account_dir2",
-        "$persist_list= @(\"$persist_dir\\nt_qq\",\"$persist_dir\\QQ\") + $persist_account_dir + $persist_account_dir2",
-        "persist_file -dir $data_list $persist_list",
-        "handle_app_lnk",
-        "do_some_things"
-    ],
-    "pre_uninstall": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "stop_process",
-        "$tencent_path=\"$user_Documents\\Tencent Files\"",
-        "$accountList=Get-ChildItem $tencent_path | Where-Object { $_.BaseName -match \"\\d+\" -and (Test-Path \"$($_.FullName)\\nt_qq\") -and (Test-Path \"$persist_dir\\$($_.BaseName)\\nt_qq\") }",
-        "$account_dir=if($accountList){$accountList.FullName | ForEach-Object { \"$($_)\\nt_qq\" } }else{ @() }",
-        "$need_remove_files=@(\"$user_Documents\\Tencent Files\\nt_qq\",\"$user_AppData\\QQ\") + $account_dir",
-        "remove_files $need_remove_files"
-    ],
-    "checkver": {
+    "installer": {
         "script": [
-            ". \"$pwd\\bin\\utils.ps1\"",
-            "$dl_info = get_installer_info 'Tencent/QQ/NT'",
-            "\"ver:$($dl_info.PackageVersion);\"",
-            "\"x64:$($dl_info.x64_exe.InstallerUrl);\"",
-            "\"x86:$($dl_info.x86_exe.InstallerUrl);\""
-        ],
-        "regex": "ver:(?<version>.+?); x64:(?<x64>.+?); x86:(?<x86>.+?);"
+            "$configpath = \"$env:PUBLIC\\Documents\\Tencent\\QQ\"",
+            "if (!(Test-Path \"$configpath\")) {",
+            "    New-Item -Path \"$configpath\" -Type Directory -Force | Out-Null",
+            "}",
+            "Set-Content -NoNewline -Path \"$configpath\\UserDataInfo.ini\" -Value \"[UserDataSet]`nUserDataSavePathType=2`nUserDataSavePath=$persist_dir\\QQ Files\""
+        ]
+    },
+    "shortcuts": [["Files\\QQ.exe", "QQ-NT"]],
+    "uninstaller": {
+        "script": "Remove-Item -Path \"$env:PUBLIC\\Documents\\Tencent\" -Recurse -Force | Out-Null"
+    },
+    "checkver": {
+        "url": "https://im.qq.com/pcqq/index.shtml",
+        "regex": "v ([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "$matchX64#/dl.7z",
-                "hash": {
-                    "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/t/Tencent/QQ/NT/$version/Tencent.QQ.NT.installer.yaml",
-                    "regex": "Architecture: x64[\\s\\S]+?InstallerSha256:\\s?(.+)"
-                }
+                "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_$version_x64_01.exe#/dl.7z"
             },
             "32bit": {
-                "url": "$matchX86#/dl.7z",
-                "hash": {
-                    "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/t/Tencent/QQ/NT/$version/Tencent.QQ.NT.installer.yaml",
-                    "regex": "Architecture: x86[\\s\\S]+?InstallerSha256:\\s?(.+)"
-                }
+                "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_$version_x86_01.exe#/dl.7z"
             }
         }
     }
