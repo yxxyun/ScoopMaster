@@ -35,16 +35,24 @@
         "script": "Remove-Item -Path \"$env:PUBLIC\\Documents\\Tencent\" -Recurse -Force | Out-Null"
     },
     "checkver": {
-        "url": "https://im.qq.com/pcqq/index.shtml",
-        "regex": "v ([\\d.]+)"
+        "script": [
+            "$url = 'https://im.qq.com/pcqq/index.shtml'",
+            "$resp = Invoke-WebRequest -Uri $url",
+            "$cont = $resp.Content",
+            "$pattern = 'https://qq-web.cdn-go.cn.*windowsDownloadUrl.js'",
+            "$jsUrl = [regex]::Match($cont, $pattern).Value",
+            "Invoke-WebRequest -Uri $jsUrl"
+        ],
+        "regex": "QQNT/Windows/QQ_([\\d\\.]+)_([\\d]+)_x86_01.exe",
+        "replace": "${1}.${2}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_$version_x64_01.exe#/dl.7z"
+                "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_$match1_$match2_x64_01.exe#/dl.7z"
             },
             "32bit": {
-                "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_$version_x86_01.exe#/dl.7z"
+                "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_$match1_$match2_x86_01.exe#/dl.7z"
             }
         }
     }
