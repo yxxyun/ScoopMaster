@@ -3,13 +3,8 @@
     "description": "(Beta version) A complete replacement for Explorer, with far more functionality than any other file manager available today.",
     "homepage": "https://www.gpsoft.com.au/",
     "license": "Shareware",
-    "notes": [
-        "If the resource manager replacement function is enabled,",
-        "it must be disabled before uninstalling to avoid system problems after uninstalling."
-    ],
     "url": "https://cdn.gpsoft.com.au/files/Opus13/Beta/DOpusInstall-13.9.8.Beta.exe",
     "hash": "14151d3b0be37880321c80194946a1abe72b0acad6168502603f1ec37061d54d",
-    "innosetup": true,
     "bin": "dopusrt.exe",
     "shortcuts": [
         [
@@ -17,6 +12,14 @@
             "Directory Opus"
         ]
     ],
+    "installer": {
+        "args": [
+            "/VERYSILENT",
+            "/FORCECLOSEAPPLICATIONS",
+            "/TASKS=\"\"",
+            "/DIR=\"$dir\""
+        ]
+    },
     "pre_install": [
         "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name air) scripts/AirUtils.psm1)",
         "RedirectDirectory \"$env:PROGRAMDATA\\GPSoftware\" \"$persist_dir\\PROGRAMDATA\\GPSoftware\"",
@@ -24,13 +27,18 @@
         "RedirectDirectory \"$env:LOCALAPPDATA\\GPSoftware\" \"$persist_dir\\LOCALAPPDATA\\GPSoftware\"",
         "Remove-Module -Name AirUtils"
     ],
-    "pre_uninstall": [
-        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name air) scripts/AirUtils.psm1)",
-        "RemoveJunction \"$env:PROGRAMDATA\\GPSoftware\"",
-        "RemoveJunction \"$env:APPDATA\\GPSoftware\"",
-        "RemoveJunction \"$env:LOCALAPPDATA\\GPSoftware\"",
-        "Remove-Module -Name AirUtils"
-    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name air) scripts/AirUtils.psm1)",
+            "    RemoveJunction \"$env:PROGRAMDATA\\GPSoftware\"",
+            "    RemoveJunction \"$env:APPDATA\\GPSoftware\"",
+            "RemoveJunction \"$env:LOCALAPPDATA\\GPSoftware\"",
+            "    Remove-Module -Name AirUtils",
+            "    Invoke-ExternalCommand \"$dir\\unins000.exe\" -ArgumentList @('/SILENT', '/FORCECLOSEAPPLICATIONS') -Quiet",
+            "}"
+        ]
+    },
     "checkver": {
         "url": "https://resource.dopus.com/tag/beta-release.rss",
         "regex": "<title>Directory Opus ([\\d.]+) \\(Beta\\)</title>"
