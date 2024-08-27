@@ -1,10 +1,10 @@
 {
-    "version": "13.9.8",
+    "version": "13.10",
     "description": "(Beta version) A complete replacement for Explorer, with far more functionality than any other file manager available today.",
     "homepage": "https://www.gpsoft.com.au/",
     "license": "Shareware",
-    "url": "https://cdn.gpsoft.com.au/files/Opus13/Beta/DOpusInstall-13.9.8.Beta.exe",
-    "hash": "14151d3b0be37880321c80194946a1abe72b0acad6168502603f1ec37061d54d",
+    "url": "https://cdn.gpsoft.com.au/files/Opus13/DOpusInstall-13.10.exe",
+    "hash": "8ee05def1c4112216d0de0d6cde0789b0d17c3696ddef4b6dbc9dea9c07c6a4a",
     "bin": "dopusrt.exe",
     "shortcuts": [
         [
@@ -36,14 +36,29 @@
             "RemoveJunction \"$env:LOCALAPPDATA\\GPSoftware\"",
             "    Remove-Module -Name AirUtils",
             "    Invoke-ExternalCommand \"$dir\\unins000.exe\" -ArgumentList @('/SILENT', '/FORCECLOSEAPPLICATIONS') -Quiet",
+            "    Start-Sleep 2",
             "}"
         ]
     },
     "checkver": {
-        "url": "https://resource.dopus.com/tag/beta-release.rss",
-        "regex": "<title>Directory Opus ([\\d.]+) \\(Beta\\)</title>"
+        "script": [
+            "$rssUrl = 'https://resource.dopus.com/c/new-releases/28.rss'",
+            "$webContent = Invoke-WebRequest -Uri $rssUrl | Select-Object -ExpandProperty Content",
+            "$titleRegex = 'Directory Opus ([\\d.]+)(?: \\(Beta\\))?'",
+            "$titles = ([xml]$webContent).SelectNodes(\"//item/title\")",
+            "$latestRelease = $titles | Where-Object { $_.InnerText -match $titleRegex } | Select-Object -First 1",
+            "$version = [regex]::Match($latestRelease.InnerText, $titleRegex).Groups[1].Value",
+            "$majorVersion = $version.Split('.')[0]",
+            "$isBeta = $latestRelease.InnerText -match '\\(Beta\\)'",
+            "$urlTemplate = 'https://cdn.gpsoft.com.au/files/Opus{0}/{1}DOpusInstall-{2}{3}.exe'",
+            "$betaPath = if ($isBeta) { 'Beta/' } else { '' }",
+            "$betaSuffix = if ($isBeta) { '.Beta' } else { '' }",
+            "$url = $urlTemplate -f $majorVersion, $betaPath, $version, $betaSuffix",
+            "return \"$version|$url\""
+        ],
+        "regex": "^(?<version>[\\d.]+)\\|(?<url>.+)$"
     },
     "autoupdate": {
-        "url": "https://cdn.gpsoft.com.au/files/Opus$majorVersion/Beta/DOpusInstall-$version.Beta.exe"
+        "url": "$matchUrl"
     }
 }
