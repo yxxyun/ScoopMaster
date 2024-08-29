@@ -1,43 +1,46 @@
 {
     "version": "1.22.4",
-    "description": "📱 使用图形化的 Scrcpy 显示和控制您的 Android 设备，由 Electron 驱动",
+    "description": "使用图形化的 Scrcpy 显示和控制您的 Android 设备，由 Electron 驱动。Graphical Scrcpy to display and control Android, devices powered by Electron.",
     "homepage": "https://github.com/viarotel-org/escrcpy",
-    "license": "MIT",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/viarotel-org/escrcpy/releases/download/v1.22.4/Escrcpy-1.22.4-win-setup-x64.exe#/dl.7z",
-            "hash": "sha512:895b35c3e55d1e3910c0898bbf3f871f3fc8c2153267cc08cbc2a0aac15ab43b48c54ef0b88309624d3ef0abf221712e12b91169e1c091b8407600ac2edaeaf9"
-        },
-        "arm64": {
-            "url": "https://github.com/viarotel-org/escrcpy/releases/download/v1.22.4/Escrcpy-1.22.4-win-setup-arm64.exe#/dl.7z",
-            "hash": "sha512:c97bc592aa5a06a9f823b502a672a064e00dcd02e1af71f200d101836afdb098eafb5ada478b495aad980a4cee52077a9fb6a25ba998ddfaa24c5be1748df882"
-        }
+    "license": {
+        "identifier": "Apache License 2.0",
+        "url": "https://github.com/viarotel-org/escrcpy/blob/main/LICENSE"
     },
-    "pre_install": [
-        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app*.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\`$R0\", \"$dir\\`$PLUGINSDIR\" -Force -Recurse"
-    ],
+    "url": "https://github.com/viarotel-org/escrcpy/releases/download/v1.22.4/Escrcpy-1.22.4-win-setup.exe#/abgo_bucket_installer.exe",
+    "hash": "sha512:482bd23e034c384c215ab5a53cb292ef52a88da5ecd89132ddb4671efea2f6bb97d203c47023326df5f744cbb8bcbde6d28f4a5ae510e44b0886c008c6abd3c3",
     "shortcuts": [
         [
             "Escrcpy.exe",
-            "Escrcpy",
-            "--user-data-dir=\"$dir\\User Data\""
+            "Escrcpy"
         ]
     ],
-    "persist": "User Data",
+    "pre_install": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$path_installer=\"$dir\\abgo_bucket_installer.exe\"",
+        "& $path_installer /S /D=$dir",
+        "$core_exe=\"$dir\\Escrcpy.exe\"",
+        "sleep_install $core_exe",
+        "persist_file -dir @(\"$user_AppData\\escrcpy\") @(\"$persist_dir\\escrcpy\")",
+        "handle_app_lnk",
+        "do_some_things"
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process $false",
+        "remove_files @(\"$user_AppData\\escrcpy\")",
+        "$ui_exe=\"$dir\\Uninstall Escrcpy.exe\"",
+        "try{ & $ui_exe /S }catch{}",
+        "sleep_uninstall $ui_exe",
+        "remove_files @(\"$user_LocalAppData\\escrcpy-updater\")"
+    ],
     "checkver": "github",
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/viarotel-org/escrcpy/releases/download/v$version/Escrcpy-$version-win-setup-x64.exe#/dl.7z"
-            },
-            "arm64": {
-                "url": "https://github.com/viarotel-org/escrcpy/releases/download/v$version/Escrcpy-$version-win-setup-arm64.exe#/dl.7z"
-            }
-        },
+        "url": "https://github.com/viarotel-org/escrcpy/releases/download/v$version/Escrcpy-$version-win-setup.exe#/abgo_bucket_installer.exe",
         "hash": {
             "url": "$baseurl/latest.yml",
-            "regex": "$basename\\s+sha512:\\s+$base64"
+            "regex": "sha512:\\s+$base64"
         }
     }
 }
