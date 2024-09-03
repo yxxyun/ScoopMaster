@@ -10,34 +10,35 @@
         "64bit": {
             "url": "https://github.com/brave/brave-browser/releases/download/v1.69.162/brave-v1.69.162-win32-x64.zip",
             "hash": "e3d22c1feb01c78905c331aaf1f294053e989fa6a7be2c2953e6bdb2c014e075"
+        },
+        "32bit": {
+            "url": "https://github.com/brave/brave-browser/releases/download/v1.69.162/brave-v1.69.162-win32-ia32.zip",
+            "hash": "3db60283d6db41833a50a76ac0674453f44875a71124f0355680193cc7111b18"
         }
     },
     "bin": [
         [
             "brave.exe",
-            "brave"
+            "brave",
+            "--user-data-dir=\"$dir\\User Data\""
         ]
     ],
     "shortcuts": [
         [
             "brave.exe",
             "Brave",
-            "--force-device-scale-factor=1.5"
+            "--user-data-dir=\"$dir\\User Data\""
         ]
     ],
     "post_install": [
-        "$runtimeCache = \"$env:LocalAppData\\BraveSoftware\\Brave-Browser\\User Data\"",
-        "$runtimeCachePersist = \"$persist_dir\\User Data\"",
-        "if (Test-Path $runtimeCachePersist) {",
-        "    Remove-Item -Path $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
-        "} elseif (Test-Path $runtimeCache) {",
-        "    Move-Item -Path $runtimeCache -Destination $runtimeCachePersist -Force",
+        "if (!(Test-Path \"$dir\\User Data\\*\") -and (Test-Path \"$persist_dir\\data\")) {",
+        "    info '[Portable Mode]: Copying user data from portapps data directory . . .'",
+        "    Copy-Item \"$persist_dir\\data\\*\" \"$dir\\User Data\" -Recurse",
         "}",
-        "New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist -Force | Out-Null"
-    ],
-    "post_uninstall": [
-        "$runtimeCache = \"$env:LocalAppData\\BraveSoftware\\Brave-Browser\\User Data\"",
-        "Remove-Item -Path $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue"
+        "if (!(Test-Path \"$dir\\User Data\\*\") -and (Test-Path \"$env:LocalAppData\\BraveSoftware\\Brave-Browser\\User Data\")) {",
+        "    info '[Portable Mode]: Copying user data from local application data directory . . .'",
+        "    Copy-Item \"$env:LocalAppData\\BraveSoftware\\Brave-Browser\\User Data\\*\" \"$dir\\User Data\" -Recurse",
+        "}"
     ],
     "persist": "User Data",
     "checkver": {
@@ -48,6 +49,9 @@
         "architecture": {
             "64bit": {
                 "url": "https://github.com/brave/brave-browser/releases/download/v$version/brave-v$version-win32-x64.zip"
+            },
+            "32bit": {
+                "url": "https://github.com/brave/brave-browser/releases/download/v$version/brave-v$version-win32-ia32.zip"
             }
         },
         "hash": {
