@@ -1,65 +1,57 @@
 {
     "version": "1.69.168",
-    "description": "Brave. Secure, Fast & Private Web Browser with Adblocker",
-    "homepage": "https://brave.com/",
+    "description": "Secure, Fast & Private Web Browser with Adblocker",
+    "homepage": "https://brave.com",
     "license": {
         "identifier": "Freeware,BSD-3-Clause,GPL-3.0-only,...",
         "url": "https://github.com/brave/brave-browser/blob/master/LICENSE"
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/brave/brave-browser/releases/download/v1.69.168/BraveBrowserStandaloneSilentSetup.exe#/setup.exe",
-            "hash": "24b700cbfbaad769f619f8417fe97fc663890e7a4e18d24aafbdfbf00f000b64"
-        },
-        "32bit": {
-            "url": "https://github.com/brave/brave-browser/releases/download/v1.69.168/BraveBrowserStandaloneSilentSetup32.exe#/setup.exe",
-            "hash": "3abe12e6db75c867cc577e184c711331bdd9290d1b0ea9b3a1051220d7321df2"
+            "url": "https://github.com/brave/brave-browser/releases/download/v1.69.168/brave-v1.69.168-win32-x64.zip",
+            "hash": "320366f0cff2da17dfed758d179ecfcddf0b0c1433230ec3c9372f1e7837a9a0"
         }
     },
-    "pre_install": [
-        "$processname = \"Brave\"",
-        "$process = Get-Process $processname -ErrorAction SilentlyContinue",
-        "if ($process) {",
-        "   $process.CloseMainWindow()",
-        "   Start-Sleep -Seconds 5",
-        "   if (!$process.HasExited) {",
-        "       Start-Sleep -Seconds 25",
-        "       $process | Stop-Process -Force",
-        "   }",
-        "}"
-    ],
-    "installer": {
-        "script": [
-            "$LocalApplicationData = [Environment]::GetFolderPath(\"LocalApplicationData\")",
-            "$filepath = \"$LocalApplicationData\\BraveSoftware\\Brave-Browser\\Application\\brave.exe\"",
-            "if(((Test-Path -Path $filepath -PathType Leaf) -eq $false) -or ((Get-Command $filepath).Version.ToString().Substring(3) -lt [System.Version]\"$version\"))",
-            "{",
-            "   &\"$dir\\setup.exe\" | Out-Null",
-            "   if(((Test-Path -Path $filepath -PathType Leaf) -eq $false) -or ((Get-Command $filepath).Version.ToString().Substring(3) -lt [System.Version]\"$version\"))",
-            "   {",
-            "       exit 1",
-            "   }",
-            "}",
-            "if (Test-Path -Path \"$dir\\setup.exe\") { Remove-Item \"$dir\\setup.exe\" -Force }"
+    "bin": [
+        [
+            "brave.exe",
+            "brave"
         ]
-    },
-    "post_install": [
-        "$programname = \"Brave\"",
-        "$DesktopPath = [Environment]::GetFolderPath(\"DesktopDirectory\")",
-        "if (Test-Path \"$DesktopPath\\$programname.lnk\") {Remove-Item \"$DesktopPath\\$programname.lnk\" -Force}"
     ],
+    "shortcuts": [
+        [
+            "brave.exe",
+            "Brave",
+            "--force-device-scale-factor=1.5"
+        ]
+    ],
+    "post_install": [
+        "$runtimeCache = \"$env:LocalAppData\\BraveSoftware\\Brave-Browser\\User Data\"",
+        "$runtimeCachePersist = \"$persist_dir\\User Data\"",
+        "if (Test-Path $runtimeCachePersist) {",
+        "    Remove-Item -Path $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+        "} elseif (Test-Path $runtimeCache) {",
+        "    Move-Item -Path $runtimeCache -Destination $runtimeCachePersist -Force",
+        "}",
+        "New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist -Force | Out-Null"
+    ],
+    "post_uninstall": [
+        "$runtimeCache = \"$env:LocalAppData\\BraveSoftware\\Brave-Browser\\User Data\"",
+        "Remove-Item -Path $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue"
+    ],
+    "persist": "User Data",
     "checkver": {
-        "url": "https://github.com/brave/brave-browser/blob/master/CHANGELOG_DESKTOP.md",
-        "regex": "releases/tag/v([\\d.]+)"
+        "url": "https://brave-browser-downloads.s3.brave.com/latest/release-windows-x64.version",
+        "regex": "([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/brave/brave-browser/releases/download/v$version/BraveBrowserStandaloneSilentSetup.exe#/setup.exe"
-            },
-            "32bit": {
-                "url": "https://github.com/brave/brave-browser/releases/download/v$version/BraveBrowserStandaloneSilentSetup32.exe#/setup.exe"
+                "url": "https://github.com/brave/brave-browser/releases/download/v$version/brave-v$version-win32-x64.zip"
             }
+        },
+        "hash": {
+            "url": "$url.sha256"
         }
     }
 }
