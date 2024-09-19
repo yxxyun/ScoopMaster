@@ -1,0 +1,56 @@
+{
+    "version": "1.0.0",
+    "description": "RMS Java Program",
+    "homepage": "https://example.com/rms",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://alist.khigh.top/d/Download/rms-startup/rms.zip",
+            "hash": "3a1519daf41e4931ea9b3d4f2dcbfdc00d6f396dd99902814e91d9c9c5f51882",
+            "extract_dir": "rms"
+        }
+    },
+    "depends": [
+        "openjdk21",
+        "caddy",
+        "mysql-lts",
+        "redis",
+        "shawl"
+    ],
+    "pre_install": [
+        "# Generate Caddyfile and place it in the correct directory",
+        "echo \":8080 {\" >> \"$dir\\Caddyfile\"",
+        "echo     \"root * $dir\\dist\" >> \"$dir\\Caddyfile\"",
+        "echo     \"file_server \">> \"$dir\\Caddyfile\"",
+        "echo     \"handle_path /api/* {\" >> \"$dir\\Caddyfile\"",
+        "echo         \"reverse_proxy localhost:8090\" >> \"$dir\\Caddyfile\"",
+        "echo     \"} \">> \"$dir\\Caddyfile\"",
+        "echo     \"handle_path /oss/file/* {\" >> \"$dir\\Caddyfile\"",
+        "echo         \"root * $dir\\file\" >> \"$dir\\Caddyfile\"",
+        "echo         \"file_server \">> \"$dir\\Caddyfile\"",
+        "echo     \"}\" >> \"$dir\\Caddyfile\"",
+        "echo     \"handle /ws/* { \">> \"$dir\\Caddyfile\"",
+        "echo         \"reverse_proxy localhost:8090\" >> \"$dir\\Caddyfile\"",
+        "echo     \"}\" >> \"$dir\\Caddyfile\"",
+        "echo \"}\" >> \"$dir\\Caddyfile\"",
+        "Move-Item -Path \"$dir/Caddyfile\" -Destination \"$dir/../../caddy/current/Caddyfile\" -Force",
+
+        "shawl add --name caddy -- \"caddy run \"",
+        "mysqld --install MySQL --defaults-file=\"$dir\\..\\..\\mysql-lts\\current\\my.ini\"",
+        "Move-Item -Path \"$dir\\redis.conf\" -Destination \"$dir\\..\\..\\redis\\current\\redis.conf\" -Force",
+        "shawl add --name redis -- \"redis-server \"",
+        "shawl add --name rms -- \"java -jar $dir\\rms-admin-1.0.jar --spring.profiles.active=prod\""
+    ],
+    "uninstaller": {
+        "script": [
+            "sc stop rms ",
+            "sc stop redis",
+            "sc stop mysql",
+            "sc stop caddy",
+            "sc delete rms ",
+            "sc delete redis",
+            "sc delete mysql",
+            "sc delete caddy"
+        ]
+    }
+}
