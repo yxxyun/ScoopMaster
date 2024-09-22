@@ -3,47 +3,74 @@
     "description": "(LibPortable patched) Developer builds of Firefox: the popular open source web browser",
     "homepage": "https://www.mozilla.org/firefox/developer/",
     "license": "MPL-2.0",
-    "depends": "journey/libportable",
+    "depends": "LibPortable",
     "architecture": {
         "64bit": {
-            "url": "https://archive.mozilla.org/pub/devedition/releases/131.0b9/win64/en-US/Firefox%20Setup%20131.0b9.exe#/dl.7z",
-            "hash": "sha512:88abf19f02500fb89599a2ee6eb63b0a2c849ebfb2c4178f4f27e192a9db394df29d3878926bef96834e8c5be0ff0e4677142e8f1353dd6565ffc4c276d122e4"
+            "url": "https://archive.mozilla.org/pub/devedition/releases/131.0b9/win64/zh-CN/Firefox%20Setup%20131.0b9.exe#/dl.7z",
+            "hash": "sha512:d0e11a827e2231666e89698ed9f0cb0603cbebaefc70c054ca5df0220644a3f1c98513004e0f233744c660f652c298735dda1789878989de74f30e258f13c030"
+        },
+        "32bit": {
+            "url": "https://archive.mozilla.org/pub/devedition/releases/131.0b9/win32/zh-CN/Firefox%20Setup%20131.0b9.exe#/dl.7z",
+            "hash": "sha512:31c207b9728ac16043fa21552fe2a45947d89b0342fe849fef38bfd8aeef5155e56b2682f9438e5dd633c0c669f0540219b7dcbdc36a500e35c40de03d6c5fbe"
         }
     },
-    "pre_install": [
-        "if ($env:CI -eq \"true\") { return }",
-        "Remove-Item \"$dir\\setup.exe\", \"$dir\\core\\updater.*\" -Force",
-        "Copy-Item \"$(appdir libportable $global)\\current\\portable64.dll\" \"$dir\\core\\\"",
-        "if (!(installed 'libportable' $global)) { error 'Please install `libportable` first, then reinstall `libportable-floorp`.' ; Exit }",
-        "Invoke-ExternalCommand \"$(appdir libportable $global)\\current\\setdll64.exe\" -ArgumentList (\"/d:$dir\\core\\portable64.dll\", \"$dir\\core\\mozglue.dll\") -Activity \"Applying libportable patch...\" | Out-Null",
-        "if (!(Test-Path \"$persist_dir\\App\\portable.ini\" )) {",
-        "  Copy-Item \"$(appdir libportable $global)\\current\\portable(example).ini\" \"$dir\\core\\portable.ini\"",
-        "  ((Get-Content -path \"$dir\\core\\portable.ini\" -Raw) -replace 'Update=1','Update=0') | Set-Content -Path \"$dir\\core\\portable.ini\"",
-        "}"
-    ],
-    "bin": "core\\firefox.exe",
+    "extract_dir": "core",
+    "bin": "firefox.exe",
     "shortcuts": [
         [
-            "core\\firefox.exe",
+            "firefox.exe",
             "Firefox"
         ]
     ],
+    "pre_install": [
+        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name air) scripts/AirUtils.psm1)",
+        "EnsureFile \"$persist_dir\\config.js\"",
+        "$lib_dir = scoop prefix 'LibPortable'",
+        "$portable_ini = \"$persist_dir\\portable.ini\"",
+        "if (!(Test-Path $portable_ini)) {",
+        "    $example_ini = \"$lib_dir\\portable(example).ini\"",
+        "    $content = (Get-Content $example_ini -Raw) -replace 'Update=1', 'Update=0' -replace 'PortableDataPath=../Profiles', 'PortableDataPath=./data'",
+        "    EnsureSetContent $portable_ini $content",
+        "}",
+        "Remove-Module -Name AirUtils"
+    ],
     "persist": [
-        "core\\portable.ini",
-        "Profiles"
+        "data",
+        "defaults",
+        "distribution",
+        "config.js",
+        "portable.ini"
+    ],
+    "post_install": [
+        "Remove-Item \"$dir\\updater.exe\" -Force -ErrorAction Ignore",
+        "$lib_dir = scoop prefix 'LibPortable'",
+        "$arch = if ($architecture -eq '64bit') { '64' } else { '32' }",
+        "$portable_dll = \"portable$arch.dll\"",
+        "if (!(Test-Path \"$dir\\$portable_dll\")) {",
+        "    Copy-Item \"$lib_dir\\$portable_dll\" \"$dir\" -Force",
+        "}",
+        "$setdll_exe = \"setdll$arch.exe\"",
+        "Invoke-ExternalCommand \"$lib_dir\\$setdll_exe\" -ArgumentList @(\"/d:$dir\\$portable_dll\", \"$dir\\mozglue.dll\") -Activity \"`nApplying LibPortable patch`n\" -Quiet"
     ],
     "checkver": {
         "url": "https://aus5.mozilla.org/update/6/Firefox/93.0/_/WINNT_x86_64-msvc-x64/en-US/aurora/_/_/_/_/update.xml",
-        "regex": "devedition-([\\db.]+)-",
-        "xpath": "/updates/update/patch/@URL"
+        "xpath": "/updates/update/patch/@URL",
+        "regex": "devedition-([\\db.]+)-"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://archive.mozilla.org/pub/devedition/releases/$version/win64/en-US/Firefox%20Setup%20$version.exe#/dl.7z",
+                "url": "https://archive.mozilla.org/pub/devedition/releases/$version/win64/zh-CN/Firefox%20Setup%20$version.exe#/dl.7z",
                 "hash": {
                     "url": "https://archive.mozilla.org/pub/devedition/releases/$version/SHA512SUMS",
-                    "regex": "$sha512\\s+win64/en-US/$basename"
+                    "regex": "$sha512\\s+win64/zh-CN/$basename"
+                }
+            },
+            "32bit": {
+                "url": "https://archive.mozilla.org/pub/devedition/releases/$version/win32/zh-CN/Firefox%20Setup%20$version.exe#/dl.7z",
+                "hash": {
+                    "url": "https://archive.mozilla.org/pub/devedition/releases/$version/SHA512SUMS",
+                    "regex": "$sha512\\s+win32/zh-CN/$basename"
                 }
             }
         }
