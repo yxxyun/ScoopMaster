@@ -1,39 +1,49 @@
 {
     "version": "115.15.0-bb32-build2",
-    "description": "A free email application that’s easy to set up and customize.",
+    "description": "A a fine-tuned version of Mozilla Thunderbird with new features, bug fixes and telemetry turned off. This variant makes sure the Scoop profile is used by default.",
     "homepage": "https://www.betterbird.eu",
     "license": "MPL-2.0",
+    "notes": "After installation, the profile manager will be run to choose the right default profile.",
     "architecture": {
         "64bit": {
-            "url": "https://www.betterbird.eu/downloads/WindowsPortable/BetterbirdPortable-115.15.0-bb32-build2.en-US.win64.zip",
-            "hash": "6361437300e9593dd117fac3af44c871d4572401950e607e29315fe360be27ba"
+            "url": "https://www.betterbird.eu/downloads/WindowsInstaller/betterbird-115.15.0-bb32-build2.en-US.win64.installer.exe#/dl.7z",
+            "hash": "af11fcf10a8e0d8b7c50603385a4ba6001374cb26f8c6c0b826a4ebaecbb672e"
         }
     },
-    "bin": [
-        [
-            "BetterbirdLauncher.exe",
-            "Betterbird"
-        ]
+    "extract_dir": "core",
+    "post_install": [
+        "$Addition = \"$persist_dir\\addition\"",
+        "if (Test-Path $Addition) {",
+        "  info 'Copying additional items...'",
+        "  Copy-Item -Path $Addition\\* -Destination $dir -Force -Recurse -ErrorAction SilentlyContinue",
+        "}",
+        "if (!(Test-Path \"$persist_dir\\profile\\times.json\")) {",
+        "	betterbird.exe -CreateProfile \"Scoop $persist_dir\\profile\"",
+        "}",
+        "Start-Process -WorkingDirectory $dir -FilePath betterbird.exe -ArgumentList '-P'"
     ],
+    "bin": "betterbird.exe",
     "shortcuts": [
         [
-            "BetterbirdLauncher.exe",
+            "betterbird.exe",
             "Betterbird"
         ]
     ],
-    "persist": "profile",
+    "persist": [
+        "distribution",
+        "profile"
+    ],
     "checkver": {
-        "url": "https://www.betterbird.eu/downloads/index.php",
-        "regex": "BetterbirdPortable-(([\\d.]+)-([a-z\\d]){4}(-build[\\d]+)?).en-US.win64.zip",
-        "reverse": true
+        "url": "https://betterbird.eu/downloads/sha256-115.txt",
+        "regex": "betterbird-([\\d.]+-bb[^\\.]+)\\.en-US"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://www.betterbird.eu/downloads/WindowsPortable/BetterbirdPortable-$version.en-US.win64.zip",
+                "url": "https://www.betterbird.eu/downloads/WindowsInstaller/betterbird-$version.en-US.win64.installer.exe#/dl.7z",
                 "hash": {
                     "url": "https://www.betterbird.eu/downloads/sha256-115.txt",
-                    "regex": "^$sha256\\s+\\*$basename$"
+                    "regex": "$sha256 betterbird-$version.en-US.win64.installer.exe"
                 }
             }
         }
