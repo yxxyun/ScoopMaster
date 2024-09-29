@@ -1,0 +1,49 @@
+{
+    "version": "1.0.9164",
+    "description": "Free Voice and Text Chat",
+    "homepage": "https://discordapp.com/",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://discordapp.com/terms"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://stable.dl2.discordapp.net/distro/app/stable/win/x64/1.0.9164/DiscordSetup.exe#/dl.7z",
+            "hash": "4b0cb399b1deae7f9e07329de2c3ed60d4ba1a22b37ff371e9780babd343779c"
+        }
+    },
+    "extract_to": "packages",
+    "pre_install": [
+        "# Expand Archive",
+        "Expand-7zipArchive \"$dir\\packages\\Discord-*-full.nupkg\" -ExtractDir \"lib\\net45\" -DestinationPath \"$dir\\app-$version\" -Removal | Out-Null",
+        "Remove-Item \"$dir\\packages\" -Force -Recurse",
+        "# Move installer.db file",
+        "Move-Item \"$dir\\app-$version\\installer.db\" -Destination \"$dir\\installer.db\"",
+        "# Create Symlink to $dir/app-9.9.9999",
+        "New-Item \"$dir\\app-9.9.9999\" -ItemType SymbolicLink -Value \"$dir\\app-$version\" -Force | Out-Null"
+    ],
+    "shortcuts": [
+        [
+            "app-9.9.9999\\Discord.exe",
+            "Discord"
+        ]
+    ],
+    "checkver": {
+        "script": [
+            "$dl_url = \"https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=win&arch=x64\"",
+            "$dl = cache_path 'discord-stable' 'unknown' $dl_url",
+            "Invoke-WebRequest $dl_url -OutFile $dl",
+            "$ver = (Get-Item $dl).VersionInfo.ProductVersion",
+            "Move-Item -Force $dl (cache_path 'discord-stable' $ver $dl_url)",
+            "$ver"
+        ],
+        "regex": "(\\d.+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://stable.dl2.discordapp.net/distro/app/stable/win/x64/$version/DiscordSetup.exe#/dl.7z"
+            }
+        }
+    }
+}
