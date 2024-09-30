@@ -6,13 +6,24 @@
         "identifier": "Proprietary",
         "url": "https://meeting.tencent.com/declare.html"
     },
-    "notes": "We don't persist your Tencent Meeting data, they are still storaged in \"$env:APPDATA\\Tencent\\WeMeet\".",
+    "notes": "We persist your Tencent Meeting data, they are still storaged in \"$env:scoop\\presist\\wemeet\\data\".",
     "url": "https://updatecdn.meeting.qq.com/cos/914346a7f4ec2e31d5d3defd04905e75/TencentMeeting_0300000000_3.29.3.498.publish.officialwebsite.exe#/dl.7z",
     "hash": "f626b9afa23d31443744e1515ba3aa4c472717c6df4f0004c49b4593349c0a64",
     "post_install": [
         "Rename-Item \"$dir\\`$_22_\" \"$dir\\$version\"",
         "Remove-Item \"$dir\\$*\" -Recurse -Force -ErrorAction SilentlyContinue",
-        "Remove-Item \"$dir\\wemeetapp_new.exe\" -Force -ErrorAction SilentlyContinue"
+        "Remove-Item \"$dir\\wemeetapp_new.exe\" -Force -ErrorAction SilentlyContinue",
+        "if(-NOT (Test-Path \"$env:scoop\\persist\\wemeet\\data\")) {",
+        "   New-Item -ItemType Directory -Path \"$env:scoop\\apps\\wemeet\\persist\\data\"",
+        "}",
+        "if(-NOT (Test-Path \"$env:APPDATA\\Tencent\\WeMeet\")) {",
+        "   cmd /c mklink /D \"$env:APPDATA\\Tencent\\WeMeet\" \"$env:scoop\\persist\\wemeet\\data\\WeMeet\"",
+        "}"
+    ],
+    "post_uninstall": [
+        "if(Test-Path \"$env:APPDATA\\Tencent\\WeMeet\") {",
+        "   Remove-Item \"$env:APPDATA\\Tencent\\WeMeet\" -Force",
+        "}"
     ],
     "bin": [
         [
@@ -25,6 +36,9 @@
             "wemeetapp.exe",
             "腾讯会议"
         ]
+    ],
+    "persist": [
+        "data"
     ],
     "checkver": {
         "url": "https://meeting.tencent.com/web-service/query-download-info?q=[{\"package-type\":\"app\",\"channel\":\"0300000000\",\"platform\":\"windows\"}]&nonce=AAAAAAAAAAAAAAAA",
