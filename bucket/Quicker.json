@@ -1,10 +1,18 @@
 {
     "version": "1.43.29.0",
-    "description": "您的指尖工具箱",
-    "homepage": "https://getquicker.net/",
-    "license": "Proprietary",
-    "url": "https://files.getquicker.net/_productfiles/202409/Quicker.x64.1.43.29.0.msi",
-    "hash": "ce849f132f0bcf64911bf58e14b434a2957d101bc3101bfdc604e6391004d142",
+    "description": "指尖工具箱, Windows 效率工具",
+    "homepage": "https://getquicker.net",
+    "license": "Shareware",
+    "architecture": {
+        "64bit": {
+            "url": "https://getquicker.net/download/item/fast_x64#/quiker.msi",
+            "hash": "f85317ec91e6ec7075e8045d9534dc0611981e5b3b5bf61659a21a497652bdc2"
+        },
+        "32bit": {
+            "url": "https://getquicker.net/download/item/fast_x86#/quiker.msi",
+            "hash": "f37dd3cf78ae5428dad46aa080c0be123f88c5000c5bfd72c7d8ca18b4bcf32d"
+        }
+    },
     "extract_dir": "Quicker",
     "shortcuts": [
         [
@@ -12,18 +20,31 @@
             "Quicker"
         ]
     ],
+    "pre_install": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "persist_file -dir @(\"$user_LocalAppData\\Quicker\",\"$user_Documents\\Quicker\") @(\"$persist_dir\\Quicker\",\"$persist_dir\\Quicker_Documents\")",
+        "handle_app_lnk",
+        "do_some_things"
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process",
+        "remove_files @(\"$user_Documents\\Quicker\",\"$user_LocalAppData\\Quicker\")"
+    ],
     "checkver": {
-        "script": [
-            "$url = 'https://getquicker.net/Download'",
-            "$cont = $(Invoke-WebRequest $url).Content",
-            "$version = (Select-String -InputObject $cont 'version=([\\d.]+)' -AllMatches).Matches[1].Groups[1].Value",
-            "$releaseDate = (Select-String -InputObject $cont '发布时间：(\\d{4})-(\\d+)' -AllMatches).Matches[1].Groups",
-            "Write-Output ('{0}-{1}{2}' -f $version, $releaseDate[1].value, $releaseDate[2].value)"
-        ],
-        "re": "([\\d.]+)-(\\d+)",
-        "replace": "$1"
+        "url": "https://getquicker.net/open/api/quicker/versionhistory",
+        "jsonpath": "$[0].version"
     },
     "autoupdate": {
-        "url": "https://files.getquicker.net/_productfiles/$match2/Quicker.x64.$version.msi"
+        "architecture": {
+            "64bit": {
+                "url": "https://getquicker.net/download/item/fast_x64#/quiker.msi"
+            },
+            "32bit": {
+                "url": "https://getquicker.net/download/item/fast_x86#/quiker.msi"
+            }
+        }
     }
 }
