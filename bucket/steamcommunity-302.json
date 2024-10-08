@@ -17,6 +17,27 @@
             "Remove-Item \"$dir/dl\""
         ]
     },
+    "pre_install": [
+        "If ( -not (Test-Path \"$persist_dir\\S302.ini\")) {",
+        "  New-Item -ItemType File -Path \"$dir\\S302.ini\" -Force",
+        "}"
+    ],
+    "post_install": [
+        "'steamcommunity_302.caddy.json', 'S302.xml', 'steamcommunity.crt', 'steamcommunity.key', 'steamcommunity.csr', 'steamcommunityCA.key', 'steamcommunityCA.pem' | ForEach-Object {",
+        "  If (Test-Path \"$persist_dir\\$_\") {",
+        "    Move-Item -Path \"$persist_dir\\$_\" -Destination \"$dir\" -Force",
+        "  }",
+        "}"
+    ],
+    "pre_uninstall": [
+        "'steamcommunity_302.caddy.json', 'S302.ini','S302.xml', 'steamcommunity.crt', 'steamcommunity.key', 'steamcommunity.csr', 'steamcommunityCA.key', 'steamcommunityCA.pem' | ForEach-Object {",
+        "  If (Test-Path \"$dir\\$_\") {",
+        "    Write-Host \"Moving $_ back to $persist_dir\"",
+        "    Move-Item -Path \"$dir\\$_\" -Destination \"$persist_dir\" -Force",
+        "  }",
+        "}"
+    ],
+    "persist": "S302.ini",
     "shortcuts": [
         [
             "steamcommunity_302.exe",
@@ -24,8 +45,6 @@
         ]
     ],
     "depends": "main/7zip",
-    "persist": "S302.ini",
-    "pre_install": "if (-not (Test-Path \"$persist_dir\\S302.ini\")) { New-Item \"$dir\\S302.ini\" -Force -ItemType File | Out-Null }",
     "checkver": {
         "regex": "uploads/(?<date>[\\d/]+)/steamcommunity_302_V([\\d.]+)"
     },
