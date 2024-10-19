@@ -1,10 +1,11 @@
 {
-    "homepage": "http://pdm.fming.dev",
-    "version": "2.19.2",
+    "homepage": "http://pdm-project.org",
+    "version": "2.19.3",
+    "description": "Python package and dependency manager supporting the latest PEP standards",
     "license": "MIT",
-    "url": "https://files.pythonhosted.org/packages/2d/c1/63fd5fb30965818c9f24ad12c592b0c44bcd902f3729cf0249063e85def5/pdm-2.19.2-py3-none-any.whl",
+    "url": "https://files.pythonhosted.org/packages/18/b9/499480682917b4af396f30dc53da132e2c05e634a0b932c7416dbea875d4/pdm-2.19.3-py3-none-any.whl",
     "depends": "python",
-    "hash": "42af4e0897b139656e003767e99c4f77014bf36d9a7b759d3e09b49ee5979143",
+    "hash": "80594e5d6167fb17ea724df09b68cdfe9c601ad7f218f1beea2c032b61bf30e9",
     "bin": "venv\\Scripts\\pdm.exe",
     "installer": {
         "script": [
@@ -12,12 +13,25 @@
             "& \"$dir\\venv\\Scripts\\python.exe\" -m pip install \"$dir\\$fname\""
         ]
     },
-    "post_install": "& \"$dir\\venv\\Scripts\\pdm.exe\" --pep582",
+    "post_install": [
+        "if (-not (Test-Path -Path $PROFILE\\..\\Completions -PathType Container)) {",
+        "    mkdir $PROFILE\\..\\Completions",
+        "    echo @'",
+        "Get-ChildItem \"$PROFILE\\..\\Completions\\\" | ForEach-Object {",
+        "    . $_.FullName",
+        "}",
+        "'@ | Out-File -Append -Encoding utf8 $PROFILE",
+        "}",
+        "& \"$dir\\venv\\Scripts\\pdm.exe\" completion powershell | Out-File -Encoding utf8 $PROFILE\\..\\Completions\\pdm_completion.ps1"
+    ],
     "uninstaller": {
         "script": [
             "$oldPath = [Environment]::GetEnvironmentVariable(\"PYTHONPATH\", [System.EnvironmentVariableTarget]::User)",
-            "$newPath = ($oldPath.Split(';') | Where { $_ -notlike \"$dir\\venv\\*\" }) -join ';'",
-            "[Environment]::SetEnvironmentVariable(\"PYTHONPATH\", $newPath, [System.EnvironmentVariableTarget]::User)"
+            "If (-not [string]::IsNullOrWhiteSpace($oldPath)) {",
+            "    $newPath = ($oldPath.Split(';') | Where { $_ -notlike \"$dir\\venv\\*\" }) -join ';'",
+            "    [Environment]::SetEnvironmentVariable(\"PYTHONPATH\", $newPath, [System.EnvironmentVariableTarget]::User)",
+            "}",
+            "Remove-Item -Path $PROFILE\\..\\Completions\\pdm_completion.ps1 -ErrorAction SilentlyContinue"
         ]
     },
     "checkver": {
