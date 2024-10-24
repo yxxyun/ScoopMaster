@@ -1,23 +1,15 @@
 {
-    "version": "9.9.16.28971",
     "homepage": "https://im.qq.com/pcqq/index.shtml",
-    "description": "(Beta version with LiteLoaderQQNT patch) An instant messaging software service developed by Tencent, build with Electron.",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://ti.qq.com/agreement/index.html"
-    },
-    "notes": "Scoop don't persist QQNT data.",
-    "depends": [
-        "LiteLoaderQQNT",
-        "QQNTPatcher-DllHijack"
-    ],
+    "description": "An instant messaging software service developed by Tencent",
+    "license": "Freeware",
+    "version": "9.9.16.241023",
     "architecture": {
         "64bit": {
-            "url": "https://dldir1.qq.com/qqfile/qq/QQNT/a1587ed4/QQ9.9.16.28971_x64.exe#/dl.7z",
+            "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_9.9.16_241023_x64_01.exe#/dl.7z",
             "hash": "10cd203d0aacc295f5afbddf463accdddccbce89165306be21449a3b9ca9423f"
         },
         "32bit": {
-            "url": "https://dldir1.qq.com/qqfile/qq/QQNT/2e510992/QQ9.9.16.28971_x86.exe#/dl.7z",
+            "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_9.9.16_241023_x86_01.exe#/dl.7z",
             "hash": "1fedb8b88bb1f52d78a930d5188ea42a40b752e2cdf305be3bc01222cf43a7fa"
         }
     },
@@ -28,41 +20,25 @@
             "QQ"
         ]
     ],
-    "pre_install": [
-        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name air) scripts/AirUtils.psm1)",
-        "# Patch with DllHijack",
-        "$hijack_dir = scoop prefix 'QQNTPatcher-DllHijack'",
-        "$arch = switch ($architecture) {",
-        "    'arm64' { 'arm64' }",
-        "    '64bit' { 'x64' }",
-        "    default { 'x86' }",
-        "}",
-        "EnsureHardLink \"$dir\\dbghelp.dll\" \"$hijack_dir\\dbghelp_$arch.dll\"",
-        "# Import LiteLoaderQQNT",
-        "$version_text = $version -replace '(\\d+\\.\\d+\\.\\d+)\\.(\\d+)', '$1-$2'",
-        "$patch_js = \"$dir\\versions\\$version_text\\resources\\app\\app_launcher\\patch.js\"",
-        "$loader_dir = scoop prefix 'LiteLoaderQQNT'",
-        "$patch_content = 'require(String.raw`' + $loader_dir + '`)'",
-        "EnsureSetContent $patch_js $patch_content",
-        "# Import package",
-        "$package_json = \"$dir\\versions\\$version_text\\resources\\app\\package.json\"",
-        "$json_object = Get-Content -Path $package_json -Raw | ConvertFrom-Json",
-        "$json_object.main = \"./app_launcher/patch.js\"",
-        "$updated_content = $json_object | ConvertTo-Json -Depth 100",
-        "EnsureSetContent $package_json $updated_content",
-        "Remove-Module -Name AirUtils"
-    ],
     "checkver": {
-        "url": "https://telemetr.io/en/channels/1606833156-qqupdates",
-        "regex": "(?<x64>https://[a-z\\d./]+/QQNT/[\\da-z]+/QQ(?<version>[\\d.]+)_x64(?:_QQinner)?\\.exe).+(?<x86>https://[a-z\\d./]+/QQNT/[\\da-z]+/QQ\\k<version>_x86(?:_QQinner)?\\.exe).+(?<arm64>https://[a-z\\d./]+/QQNT/[\\da-z]+/QQ\\k<version>_arm64(?:_QQinner)?\\.exe)"
+        "script": [
+            "$url = 'https://im.qq.com/pcqq/index.shtml'",
+            "$resp = Invoke-WebRequest -Uri $url",
+            "$cont = $resp.Content",
+            "$pattern = 'https://qq-web.cdn-go.cn.*windowsDownloadUrl.js'",
+            "$jsUrl = [regex]::Match($cont, $pattern).Value",
+            "Invoke-WebRequest -Uri $jsUrl"
+        ],
+        "regex": "QQNT/Windows/QQ_([\\d\\.]+)_([\\d]+)_x86_01.exe",
+        "replace": "${1}.${2}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "$matchX64#/dl.7z"
+                "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_$match1_$match2_x64_01.exe#/dl.7z"
             },
             "32bit": {
-                "url": "$matchX86#/dl.7z"
+                "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_$match1_$match2_x86_01.exe#/dl.7z"
             }
         }
     }
