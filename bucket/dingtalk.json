@@ -1,33 +1,56 @@
 {
-    "version": "7.6.13.83010801",
-    "description": "Overseas version DingtTalk. An all-in-one free communication and collaboration platform",
-    "homepage": "https://www.dingtalk.com/en",
+    "version": "7.6.15.101210804",
+    "description": "An all-in-one free communication and collaboration platform",
+    "homepage": "https://www.dingtalk.com/",
     "license": {
         "identifier": "EULA",
-        "url": "https://page.dingtalk.com/wow/dingtalk/act/service-en-lite"
+        "url": "https://tms.dingtalk.com/markets/dingtalk/service-terms-zh"
     },
-    "url": "https://dtapp-pub.dingtalk.com/dingtalk-desktop/win_installer/Release/DingTalk_v7.6.13.83010801.exe#/dl.7z",
-    "hash": "883c6891c979689fb9c26c62085077ed5697cd6175ee9a8b72ddb922fe5b31c8",
-    "pre_install": [
-        "Remove-Item \"$dir\\build\\updater\", \"$dir\\setup.xml\", \"$dir\\uninst*\" -Force -Recurse"
-    ],
+    "notes": "We don't persist your DingTalk data, they are still storaged in '%APPDATA%\\DingTalk'.",
+    "url": "https://dtapp-pub.dingtalk.com/dingtalk-desktop/win_installer/Release/DingTalk_v7.6.15.101210804.exe#/dl.7z",
+    "hash": "md5:263e0654b18aed58b5be4f4d705c4f8b",
+    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse",
+    "installer": {
+        "script": [
+            "$runtimeCache = \"$env:APPDATA\\DingTalk\"",
+            "$runtimeCachePersist = \"$persist_dir\\Cache\"",
+            "if (Test-Path $runtimeCachePersist) {",
+            "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+            "    New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
+            "} else {",
+            "    if (Test-Path $runtimeCache) {",
+            "        Move-Item $runtimeCache $runtimeCachePersist -Force",
+            "        New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
+            "    }",
+            "}"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$runtimeCache = \"$env:APPDATA\\DingTalk\"",
+            "$runtimeCachePersist = \"$persist_dir\\Cache\"",
+            "if (!(Test-Path $runtimeCachePersist)) {",
+            "    Move-Item $runtimeCache $runtimeCachePersist -Force",
+            "} else {",
+            "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+            "}"
+        ]
+    },
     "shortcuts": [
         [
-            "build\\dist\\Dingtalk.exe",
+            "DingtalkLauncher.exe",
             "DingTalk"
         ]
     ],
     "checkver": {
-        "script": [
-            "$response = [System.Net.HttpWebRequest]::Create('https://www.dingtalk.com/win/d/qd=oversea?spm=a213l2.14171110.4290834532.4.63e32726MyWurc').GetResponse()",
-            "$finalUrl = $response.ResponseUri.AbsoluteUri",
-            "Write-Output $finalUrl",
-            "$response.Close()"
-        ],
-        "regex": "DingTalk_v([\\d.]+)\\.exe"
+        "url": "https://im.dingtalk.com/manifest/new/release_windows_vista_later_gray4.json",
+        "regex": "DingTalk_v([\\d.]+).exe"
     },
     "autoupdate": {
-        "url": "https://dtapp-pub.dingtalk.com/dingtalk-desktop/win_installer/Release/DingTalk_v$version.exe#/dl.7z"
-    },
-    "notes": "We don't persist your DingTalk data, they are still storaged in '%APPDATA%\\DingTalk'."
+        "url": "https://dtapp-pub.dingtalk.com/dingtalk-desktop/win_installer/Release/DingTalk_v$version.exe#/dl.7z",
+        "hash": {
+            "url": "https://im.dingtalk.com/manifest/new/release_windows_vista_later_gray4.json",
+            "jsonpath": "$.win.install.md5"
+        }
+    }
 }
