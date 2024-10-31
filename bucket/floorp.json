@@ -1,38 +1,53 @@
 {
     "version": "11.20.0",
-    "description": "(libportable patched) A new privacy-preserving Firefox-based browser developed by a community of students in Japan.",
-    "homepage": "https://floorp.app/en/",
+    "description": "A Browser build for keeping the Open, Private and Sustainable Web alive. Based on Mozilla Firefox.",
+    "homepage": "https://github.com/Floorp-Projects",
     "license": "MPL-2.0",
-    "depends": "journey/libportable",
-    "url": "https://github.com/Floorp-Projects/Floorp/releases/download/v11.20.0/floorp-win64.installer.exe#/dl.7z",
-    "hash": "516ed1b1979b4adb801dc56be65436b82a1a297af3e2220d096302bebe88f680",
-    "pre_install": [
-        "if ($env:CI -eq \"true\") { return }",
-        "Remove-Item \"$dir\\setup.exe\", \"$dir\\core\\updater.*\" -Force",
-        "Copy-Item \"$(appdir libportable $global)\\current\\portable64.dll\" \"$dir\\core\\\"",
-        "if (!(installed 'libportable' $global)) { error 'Please install `libportable` first, then reinstall `libportable-floorp`.' ; Exit }",
-        "Invoke-ExternalCommand \"$(appdir libportable $global)\\current\\setdll64.exe\" -ArgumentList (\"/d:$dir\\core\\portable64.dll\", \"$dir\\core\\mozglue.dll\") -Activity \"Applying libportable patch...\" | Out-Null",
-        "if (!(Test-Path \"$persist_dir\\App\\portable.ini\" )) {",
-        "  Copy-Item \"$(appdir libportable $global)\\current\\portable(example).ini\" \"$dir\\core\\portable.ini\"",
-        "  ((Get-Content -path \"$dir\\core\\portable.ini\" -Raw) -replace 'Update=1','Update=0') | Set-Content -Path \"$dir\\core\\portable.ini\"",
+    "notes": [
+        "To set profile 'Scoop' as *DEFAULT*, or profiles/settings was lost after update:",
+        "  - Run 'Floorp Profile Manager', choose 'Scoop' then click 'Start Floorp'.",
+        "  - Visit 'about:profiles' page in Floorp to check *DEFAULT* profile.",
+        "For details: https://support.mozilla.org/en-US/kb/profile-manager-create-remove-switch-firefox-profiles"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Floorp-Projects/Floorp-Portable/releases/download/11.20.0-portable/floorp-11.20.0-portable-windows-x86_64.zip",
+            "hash": "226a9326596a5389a2476b404a8bc96f9539d7cc765ad58c31231bb04de0b69a"
+        }
+    },
+    "extract_dir": "core",
+    "post_install": [
+        "floorp -CreateProfile \"Scoop $persist_dir\\profile\"",
+        "$Addition = \"$persist_dir\\addition\"",
+        "if (Test-Path $Addition) {",
+        "  info 'Copying additional items...'",
+        "  Copy-Item -Path $Addition\\* -Destination $dir -Force -Recurse -ErrorAction SilentlyContinue",
         "}"
     ],
-    "bin": "core\\floorp.exe",
+    "bin": "floorp.exe",
     "shortcuts": [
         [
-            "core\\floorp.exe",
+            "floorp.exe",
             "Floorp"
+        ],
+        [
+            "floorp.exe",
+            "Floorp Profile Manager",
+            "-P"
         ]
     ],
     "persist": [
-        "core\\portable.ini",
-        "Profiles",
-        "Plugins"
+        "core",
+        "profile"
     ],
     "checkver": {
-        "github": "https://github.com/Floorp-Projects/Floorp"
+        "github": "https://github.com/Floorp-Projects/Floorp-Portable"
     },
     "autoupdate": {
-        "url": "https://github.com/Floorp-Projects/Floorp/releases/download/v$version/floorp-win64.installer.exe#/dl.7z"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Floorp-Projects/Floorp-Portable/releases/download/$version-portable/floorp-$version-portable-windows-x86_64.zip"
+            }
+        }
     }
 }
