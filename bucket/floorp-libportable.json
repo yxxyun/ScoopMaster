@@ -1,0 +1,69 @@
+{
+    "version": "11.19.1",
+    "description": "Floorp is a partially free and open-source (open-core) web browser based on Firefox and developed by Japanese group Ablaze (libportable patched).",
+    "homepage": "https://floorp.app/en/",
+    "license": "MPL-2.0",
+    "notes": [
+        "Libportable's setdll64.exe writes the current PATH in mozglue.dll, and editing",
+        "it directly fails to work. A new mozglue.dll must patched everytime for portability.",
+        "Type `fport.ps1` before each use on a machine with a new path to portable64.dll."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Floorp-Projects/Floorp/releases/download/v11.19.1/floorp-win64.installer.exe#/dl.7z",
+            "hash": "945e8dd9313d96c0e3077de0408f5b025c3015b543fea0c7cb56a5b6c06bfcfb"
+        }
+    },
+    "depends": "EdenWise_scoop-apps/libportable",
+    "pre_install": [
+        "if ($env:CI -eq \"true\") { return }",
+        "  Remove-Item \"$dir\\setup.exe\", \"$dir\\core\\updater.*\" -Force",
+        "  if (!(installed 'libportable' $global))",
+        "    { error 'Please install `libportable` first, then reinstall `floorp-libportable`.' ; exit }",
+        "  if (!(Test-Path \"$persist_dir\\App\\portable.ini\" )) {",
+        "    (Get-Content -path \"$(appdir libportable $global)\\current\\portable(example).ini\" -Raw) -replace 'Update=1','Update=0' | Set-Content -Path \"$dir\\core\\portable.ini\" }",
+        "  Copy-Item \"$dir\\core\\mozglue.dll\" \"$dir\\core\\mozglue.dll.bck\"",
+        "  Copy-Item \"$(appdir libportable $global)\\current\\portable64.dll\" \"$dir\\core\\portable64.dll.bck\"",
+        "  Write-Output '",
+        "  $DIR_FLOORP = \"$env:SCOOP\\apps\\floorp-libportable\\current\\core\"",
+        "  Copy-Item -Force $DIR_FLOORP\\mozglue.dll.bck    $DIR_FLOORP\\mozglue.dll",
+        "  Copy-Item -Force $DIR_FLOORP\\portable64.dll.bck $DIR_FLOORP\\portable64.dll",
+        "  setdll64.exe /d:$DIR_FLOORP\\portable64.dll $DIR_FLOORP\\mozglue.dll",
+        "  ' | Out-File \"$dir\\core\\fport.ps1\""
+    ],
+    "bin": [
+        "core\\floorp.exe",
+        "core\\fport.ps1"
+    ],
+    // "shortcuts": [
+    //     [
+    //         "core\\floorp.exe",
+    //         "Floorp"
+    //     ]
+    // ],
+    "persist": [
+        "core\\portable.ini",
+        "Profiles",
+        "Plugins"
+    ],
+    "checkver": {
+        "github": "https://github.com/Floorp-Projects/Floorp"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Floorp-Projects/Floorp/releases/download/v$version/floorp-win64.installer.exe#/dl.7z"
+            }
+        }
+    }
+}
+// Scriptblock (in manifest) convert to plain PowerShell (remove added characters):
+//
+// ^      ,
+// ",$
+// "$
+// \,"
+// \\\\,\
+//
+
+
