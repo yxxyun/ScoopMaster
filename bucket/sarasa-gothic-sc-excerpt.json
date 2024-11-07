@@ -41,43 +41,18 @@
         ]
     },
     "post_install": [
-        "# 注册字体",
-        "$current_dir = \"$(appdir $app $global)\\current\"",
-        "$registryRoot = if ($global) { \"HKLM\" } else { \"HKCU\" }",
-        "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
-        "Add-Type -AssemblyName PresentationCore",
-        "Get-ChildItem -Path $current_dir -Filter '*.ttf' -File | ForEach-Object {",
-        "    $FontPath = $_.FullName",
-        "    $FontInfo = New-Object -TypeName Windows.Media.GlyphTypeface -ArgumentList $FontPath",
-        "    $FontFamilyNames = $FontInfo.FamilyNames.Values",
-        "    $FontFaceNames = $FontInfo.FaceNames.Values",
-        "    foreach ($FontFamilyName in $FontFamilyNames) {",
-        "        foreach ($FontFaceName in $FontFaceNames) {",
-        "            $FontName = \"$FontFamilyName $FontFaceName (TrueType)\"",
-        "            Set-ItemProperty -Path $registryKey -Name \"$FontName\" -Value $FontPath -Force",
+        "$dir_escaped = \"$dir\".Replace('\\', '\\\\')",
+        "@('install-fonts.reg', 'uninstall-fonts.reg') | ForEach-Object {",
+        "    if (Test-Path \"$bucketsdir\\$bucket\\scripts\\$app\\$_\") {",
+        "        $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\$app\\$_\" -Encoding 936",
+        "        $content = $content.Replace('$install_dir', $dir_escaped)",
+        "        if ($global) {",
+        "            $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
         "        }",
+        "        Set-Content -Path \"$dir\\$_\" $content -Encoding 936",
         "    }",
-        "}"
-    ],
-    "uninstaller": {
-        "script": [
-            "# 反注册字体",
-            "$current_dir = \"$(appdir $app $global)\\current\"",
-            "$registryRoot = if ($global) { \"HKLM\" } else { \"HKCU\" }",
-            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
-            "Add-Type -AssemblyName PresentationCore",
-            "Get-ChildItem -Path $current_dir -Filter '*.ttf' -File | ForEach-Object {",
-            "    $FontPath = $_.FullName",
-            "    $FontInfo = New-Object -TypeName Windows.Media.GlyphTypeface -ArgumentList $FontPath",
-            "    $FontFamilyNames = $FontInfo.FamilyNames.Values",
-            "    $FontFaceNames = $FontInfo.FaceNames.Values",
-            "    foreach ($FontFamilyName in $FontFamilyNames) {",
-            "        foreach ($FontFaceName in $FontFaceNames) {",
-            "            $FontName = \"$FontFamilyName $FontFaceName (TrueType)\"",
-            "            Remove-ItemProperty -Path $registryKey -Name \"$FontName\" -Force -ErrorAction SilentlyContinue",
-            "        }",
-            "    }",
-            "}"
-        ]
-    }
+        "}",
+        "reg import \"$dir\\install-fonts.reg\""
+   ],
+    "pre_uninstall": "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-fonts.reg\" }"
 }
