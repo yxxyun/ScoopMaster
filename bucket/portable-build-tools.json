@@ -1,26 +1,46 @@
 {
-    "version": "2.7",
-    "description": "Portable, simple and fast installer for Visual Studio Build Tools.",
+    "version": "2.8",
     "homepage": "https://github.com/Data-Oriented-House/PortableBuildTools",
-    "license": "Freeware",
-    "url": "https://github.com/Data-Oriented-House/PortableBuildTools/releases/download/v2.7/PortableBuildTools.exe",
-    "hash": "2f13d3abc9cd382eb6ce8839a005fa48613905f74fae7956209c4c55dad09d9c",
-    "pre_install": "New-Item -ItemType SymbolicLink -Path \"$dir\\pwsh.exe\" -Target \"$env:ProgramFiles\\PowerShell\\7\\pwsh.exe\" | Out-Null",
-    "post_install": [
-        "$install_dir = (Join-Path $original_dir 'bin')",
-        "Write-Host -ForegroundColor DarkYellow \"`nInstalling to $install_dir - please be patient.\"",
-        "& (Join-Path $dir 'PortableBuildTools.exe')  accept_license target=x64 host=x64 env=user path=\"$install_dir\"",
-        "if (!$?) { throw 'Running PortableBuildTools failed. Installation incomplete.' }"
+    "description": "Portable VS Build Tools installer",
+    "license": "https://go.microsoft.com/fwlink/?LinkId=2179911",
+    "notes": [
+        "This package defaults to download and install the latest MSVC toolchain in new installs and persist it in $persist_dir\\BuildTools.",
+        " - You can use GUI application to download and install other versions of MSVC toolchains.",
+        " - You can use `scoop uninstall portable-build-tools -p` to uninstall PortableBuildTools and MSVC toolchains.",
+        " - Read license https://go.microsoft.com/fwlink/?LinkId=2179911."
     ],
+    "url": "https://github.com/Data-Oriented-House/PortableBuildTools/releases/download/v2.8/PortableBuildTools.exe",
+    "hash": "d3a419be62856ab8896004f91af58f5928ce7c536954398d02a8b99202c4808f",
+    "installer": {
+        "script": [
+            "if (!(Test-Path -Path $persist_dir\\BuildTools)) {",
+            "   warn 'Downloading and installing the latest MSVC toolchain. This may take up minutes.'",
+            "   if ($architecture -eq '64bit') {",
+            "       Invoke-ExternalCommand -Path \"$dir\\PortableBuildTools.exe\" -Args @('accept_license', \"install_path=$persist_dir\\BuildTools\") | Out-Null",
+            "   } else {",
+            "       Invoke-ExternalCommand -Path \"$dir\\PortableBuildTools.exe\" -Args @('accept_license', \"install_path=$persist_dir\\BuildTools\", 'target=x86', 'host=x86') | Out-Null",
+            "   }",
+            "} else {",
+            "   warn 'Persisted MSVC toolchain found. Skip downloading and installing.'",
+            "}"
+        ]
+    },
+    "post_install": "startmenu_shortcut \"$env:comspec\" 'Developer Command Prompt for PortableBuildTools' \"/K $persist_dir\\BuildTools\\devcmd.bat\"",
+    "post_uninstall": [
+        "$shortcut = \"$(shortcut_folder $global)\\Developer Command Prompt for PortableBuildTools.lnk\"",
+        "write \"Removing shortcut $(friendly_path $shortcut)\"",
+        "if (Test-Path -Path $shortcut) {",
+        "Remove-Item $shortcut",
+        "}"
+    ],
+    "bin": "PortableBuildTools.exe",
     "shortcuts": [
         [
-            "pwsh.exe",
-            "Portable Build Tools Developer Environment",
-            "/NoExit $dir\\bin\\devcmd.ps1",
-            "PortableBuildTools.exe"
+            "PortableBuildTools.exe",
+            "PortableBuildTools"
         ]
     ],
-    "notes": "To initialize build environment use 'Portable Build Tools Developer Environment' shortcut or run '$dir\\bin\\devcmd.ps1'",
+    "persist": "BuildTools",
     "checkver": "github",
     "autoupdate": {
         "url": "https://github.com/Data-Oriented-House/PortableBuildTools/releases/download/v$version/PortableBuildTools.exe"
