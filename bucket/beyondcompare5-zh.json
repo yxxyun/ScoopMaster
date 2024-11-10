@@ -9,20 +9,33 @@
     "url": "https://github.com/maboloshi/scoop-private/releases/download/v1.0/BeyondCompare-v5.0.2.30045.7z",
     "hash": "08653bb1c21161f19f3ec3e711440591c48fce87a88c75e991a4269fcd5040cc",
     "post_install": [
-        "@('install-context.ps1', 'uninstall-context.ps1') | ForEach-Object {",
-        "  if (Test-Path \"$bucketsdir\\$bucket\\scripts\\$app\\$_\") {",
-        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\$app\\$_\"",
-        "    if (-not $global) {",
-        "      $content = $content.Replace('HKLM', 'HKCU')",
-        "      $content = $content.Replace('-AllUsers', '')",
+        "$dir_escaped = \"$dir\".Replace('\\', '\\\\')",
+        "@('install-context.reg', 'uninstall-context.reg') | ForEach-Object {",
+        "    if (Test-Path \"$bucketsdir\\$bucket\\scripts\\$app\\$_\") {",
+        "        $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\$app\\$_\" -Encoding Unicode",
+        "        $content = $content.Replace('$install_dir', $dir_escaped)",
+        "        if ($global) {",
+        "            $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "        }",
+        "        Set-Content -Path \"$dir\\$_\" $content -Encoding Unicode",
         "    }",
-        "    Set-Content -Path \"$dir\\$_\" -Value $content",
-        "  }",
         "}",
-        "Invoke-Expression -Command \"$dir\\install-context.ps1\""
+        "reg import \"$dir\\install-context.reg\"",
+        "if ($global) {",
+        "    Add-AppxPackage -Path \"$dir\\BCShellEx.msix\" -AllUsers | Out-Null",
+        "} else {",
+        "    Add-AppxPackage -Path \"$dir\\BCShellEx.msix\" | Out-Null",
+        "}"
     ],
     "pre_uninstall": [
-        "Invoke-Expression -Command \"$dir\\uninstall-context.ps1\""
+        "if ($cmd -eq 'uninstall') { ",
+        "    reg import \"$dir\\uninstall-context.reg\"",
+        "    if ($global) {",
+        "        Get-AppxPackage -Name 'ScooterSoftware.BeyondCompare.5.ShellExt' -AllUsers | Remove-AppxPackage -AllUsers | Out-Null",
+        "    } else {",
+        "        Get-AppxPackage -Name 'ScooterSoftware.BeyondCompare.5.ShellExt' | Remove-AppxPackage | Out-Null",
+        "    }",
+        "}"
     ],
     "bin": [
         "Bcomp.exe",
