@@ -6,7 +6,9 @@
     "notes": [
         "Libportable's setdll64.exe writes the current PATH in mozglue.dll, and editing",
         "it directly fails to work. A new mozglue.dll must patched everytime for portability.",
-        "Type `fport.ps1` before each use on a machine with a new path to portable64.dll."
+        "The script automates this behavior. To run Floorp type to run:",
+        "",
+        "floor.ps1"
     ],
     "architecture": {
         "64bit": {
@@ -25,13 +27,17 @@
         "  Copy-Item \"$dir\\core\\mozglue.dll\" \"$dir\\core\\mozglue.dll.bck\"",
         "  Copy-Item \"$(appdir libportable $global)\\current\\portable64.dll\" \"$dir\\core\\portable64.dll.bck\"",
         "  Write-Output '",
-        "  $DIR_FLOORP = \"$env:SCOOP\\apps\\floorp-libportable\\current\\core\"",
-        "  Copy-Item -Force $DIR_FLOORP\\mozglue.dll.bck    $DIR_FLOORP\\mozglue.dll",
-        "  Copy-Item -Force $DIR_FLOORP\\portable64.dll.bck $DIR_FLOORP\\portable64.dll",
-        "  setdll64.exe /d:$DIR_FLOORP\\portable64.dll $DIR_FLOORP\\mozglue.dll",
+        "$DIR_FLOORP = \"$env:SCOOP\\apps\\floorp-libportable\\current\\core\"",
+        "if ( Select-String -SimpleMatch $env:USERPROFILE $DIR_FLOORP\\mozglue.dll ) {",
+        "start $DIR_FLOORP\\floorp.exe }",
+        "else {",
+        "Copy-Item -Force $DIR_FLOORP\\mozglue.dll.bck    $DIR_FLOORP\\mozglue.dll",
+        "Copy-Item -Force $DIR_FLOORP\\portable64.dll.bck $DIR_FLOORP\\portable64.dll",
+        "setdll64.exe  /d:$DIR_FLOORP\\portable64.dll     $DIR_FLOORP\\mozglue.dll",
+        "start $DIR_FLOORP\\floorp.exe }",
         "  ' | Out-File \"$dir\\core\\floorp.ps1\""
     ],
-    "bin": "core\\floorp.exe",
+    "bin": "core\\floorp.ps1",
     "persist": [
         "core\\portable.ini",
         "Profiles",
@@ -48,29 +54,12 @@
         }
     }
 }
-// Scriptblock (in manifest) convert to plain PowerShell (remove added characters):
+// Script-block in manifest convert to plain PowerShell (remove added characters):
 //
-// "$\
-// ",$\$
-// \""
-// \\\\,\
-// ^        "\
+// "$/
+// ",$/$
+// ^        "/
+// \"/"
+// \\\\/\
 
-// $USERPROFILE = ($env:USERPROFILE) -replace "\\","\\"
-// if ( -not (Select-String -Pattern $USERPROFILE $DIR_FLOORP\mozglue.dll) ) {
-
-// if ($env:CI -eq "true") { return }
-//   Remove-Item "$dir\setup.exe", "$dir\core\updater.*" -Force
-// if (!(installed 'libportable' $global))
-//   { error 'Please install `libportable` first, then reinstall `floorp-libportable`.' ; exit }
-// if (!(Test-Path "$persist_dir\App\portable.ini" )) {
-//   (Get-Content -path "$(appdir libportable $global)\current\portable(example).ini" -Raw) -replace 'Update=1','Update=0' | Set-Content -Path "$dir\core\portable.ini" }
-// Copy-Item "$dir\core\mozglue.dll" "$dir\core\mozglue.dll.bck"
-// Copy-Item "$(appdir libportable $global)\current\portable64.dll" "$dir\core\portable64.dll.bck"
-// Write-Output '
-// $DIR_FLOORP = "$env:SCOOP\apps\floorp-libportable\current\core"
-// Copy-Item -Force $DIR_FLOORP\mozglue.dll.bck    $DIR_FLOORP\mozglue.dll
-// Copy-Item -Force $DIR_FLOORP\portable64.dll.bck $DIR_FLOORP\portable64.dll
-// setdll64.exe /d:$DIR_FLOORP\portable64.dll $DIR_FLOORP\mozglue.dll
-// ' | Out-File "$dir\core\fport.ps1"
 
