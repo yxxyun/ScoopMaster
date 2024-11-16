@@ -1,41 +1,88 @@
 {
-    "homepage": "https://github.com/zufuliu/notepad4",
-    "description": "A modified version (fork) of Notepad2-mod.",
     "version": "24.09r5472",
-    "license": "BSD 3-Clause",
+    "description": "Notepad4 (Notepad2++) is a light-weight Scintilla based text editor",
+    "license": "BSD-3-Clause",
+    "homepage": "https://github.com/zufuliu/notepad4",
+    "notes": "If you want to replace Windows Notepad UWP, please uninstall it first.",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/zufuliu/notepad4/releases/download/v24.09r5472/Notepad4_zh-Hans_x64_v24.09r5472.zip",
-            "hash": "577748b1dad7ff09ced2883d33392ba0a6579741361ca73463bc7b2d5c9d27e6"
+            "url": "https://github.com/zufuliu/notepad4/releases/download/v24.09r5472/Notepad4_HD_zh-Hans_x64_v24.09r5472.zip",
+            "hash": "12a0630411cfb12e0dffc61f92730332148c8fd27c3f21bf5a302903850c86cc"
         },
         "32bit": {
-            "url": "https://github.com/zufuliu/notepad4/releases/download/v24.09r5472/Notepad4_zh-Hans_Win32_v24.09r5472.zip",
-            "hash": "4f7c1a62e7415af2af9ea3039a34a0b3ed745145d5456bfe4946bbf1360b805d"
+            "url": "https://github.com/zufuliu/notepad4/releases/download/v24.09r5472/Notepad4_zh-Hant_Win32_v24.09r5472.zip",
+            "hash": "74daf0811c031bf7a978b092b2cac230d475538b7aabcf564e48aef12b889798"
         }
     },
-    "bin": "Notepad4.exe",
+    "bin": [
+        "Notepad4.exe",
+        "matepath.exe"
+    ],
     "shortcuts": [
         [
             "Notepad4.exe",
             "Notepad4"
+        ],
+        [
+            "matepath.exe",
+            "matepath"
         ]
     ],
     "persist": [
-        "metapath.ini",
-        "Notepad2 DarkTheme.ini",
-        "Notepad2.ini"
+        "Notepad4.ini",
+        "matepath.ini"
     ],
+    "installer": {
+        "script": [
+            "if ($global) {",
+            "    $registry_scope = \"HKEY_LOCAL_MACHINE\"",
+            "} else {",
+            "    $registry_scope = \"HKEY_CURRENT_USER\"",
+            "}",
+            "",
+            "reg.exe delete \"$registry_scope\\SOFTWARE\\Classes\\*\\shell\\Notepad2\" /f",
+            "",
+            "@\"",
+            "Windows Registry Editor Version 5.00",
+            "",
+            "[$registry_scope\\SOFTWARE\\Classes\\*\\shell\\Notepad4]",
+            "@=\"使用 Notepad4 编辑(&2)\"",
+            "\"icon\"=\"$($dir -replace '\\\\','\\\\')\\\\Notepad4.exe\"",
+            "",
+            "[$registry_scope\\SOFTWARE\\Classes\\*\\shell\\Notepad4\\command]",
+            "@=\"\\\"$($dir -replace '\\\\','\\\\')\\\\Notepad4.exe\\\" \\\"%1\\\"\"",
+            "\"@ | Set-Content -Path \"$dir\\install-notepad4.reg\" -Encoding Unicode",
+            "",
+            "reg import \"$dir\\install-notepad4.reg\""
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($global) {",
+            "    $registry_scope = \"HKLM\"",
+            "} else {",
+            "    $registry_scope = \"HKCU\"",
+            "}",
+            "reg.exe delete \"$registry_scope\\SOFTWARE\\Classes\\*\\shell\\Notepad4\" /f"
+        ]
+    },
     "checkver": {
-        "url": "https://github.com/zufuliu/notepad4/releases/latest",
-        "regex": "<title>Release v([\\d.]+r[\\d.]+)"
+        "url": "https://api.github.com/repos/zufuliu/notepad4/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "v(?<version>([\\d.]+r[\\d]+))"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/zufuliu/notepad4/releases/download/v24.09r5472/Notepad4_zh-Hans_x64_v$version.zip"
+                "url": "https://github.com/zufuliu/notepad4/releases/download/v$version/Notepad4_HD_zh-Hans_x64_v$version.zip"
             },
             "32bit": {
-                "url": "https://github.com/zufuliu/notepad4/releases/download/v24.09r5472/Notepad4_zh-Hans_Win32_v$version.zip"
+                "url": "https://github.com/zufuliu/notepad4/releases/download/v$version/Notepad4_zh-Hant_Win32_v$version.zip"
             }
         }
     }
