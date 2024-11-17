@@ -1,35 +1,48 @@
 {
-    "version": "11.1.31.26839",
-    "description": "音乐播放器 酷狗音乐",
+    "version": "11.1.31",
+    "description": "酷狗音乐，就是歌多",
     "homepage": "https://www.kugou.com/",
-    "url": "https://webcdn.m.qq.com/spcmgr/download/kugou7_1173_11.1.31.26839.exe#/dl.7z",
-    "hash": "62dbd707bf34d9612b4e56dbbe0d210e633612773f1a866382663db974b9ab1a",
-    "pre_install": [
-        "Move-Item \"$dir\\`$PLUGINSDIR\\KuGou.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
-        "Expand-7zipArchive \"$dir\\KuGou.7z\" -DestinationPath \"$dir\\kugou\" -Removal",
-        "Copy-Item \"$dir\\kugou\\KuGou.exe\" $dir -Recurse",
-        "Expand-7zipArchive \"$dir\\KuGou.exe\" -Switches \"**\\**\\version.txt\"",
-        "$match = Select-String -Path \"$dir\\.rsrc\\**\\version.txt\" -Encoding unicode -Pattern 'FileVersion.*\"(\\d+\\.\\d+\\.\\d+\\.\\d+)\"'",
-        "Rename-Item \"$dir\\kugou\" \"$dir\\$($match[0].Matches.Groups[1].Value)\" -Force",
-        "Remove-Item \"$dir\\.rsrc\" -Force -Recurse"
+    "license": "Proprietary",
+    "url": "http://download.kugou.com/download/kugou_pc#/dl.7z",
+    "hash": "a6523ca08859757b612d94a60dc36202c1038a86ed89c44fed118365bf547ffe",
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:APPDATA\\KuGou8\" \"$persist_dir\\AppData\" -Migrate",
+            "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\KuGou.7z\" \"$dir\"",
+            "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\AppData.7z\" \"$persist_dir\\AppData\" -Overwrite",
+            "Remove-Item -Recurse -Force \"$dir\\`$PLUGINSDIR\"",
+            "$appversion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo(\"$dir\\KuGou.exe\").FileVersion",
+            "New-ItemProperty -Path 'HKCU:\\SOFTWARE\\KuGou8' -Name 'AppVersion' -Value $appversion",
+            "reg.exe add \"HKCU\\SOFTWARE\\kugou\" /v \"AppDataPath\" /t REG_SZ /d \"$env:APPDATA\\Kugou8\" /f *>$null",
+            "reg.exe add \"HKCU\\SOFTWARE\\kugou\" /v \"AppPath\" /t REG_SZ /d \"$dir\" /f *>$null",
+            "reg.exe add \"HKCU\\SOFTWARE\\kugou\" /v \"KuGou8\" /t REG_SZ /d \"$dir\\KuGou.exe\" /f *>$null",
+            "reg.exe add \"HKCU\\SOFTWARE\\kugou\" /v \"Version\" /t REG_SZ /d \"$appversion\" /f *>$null",
+            "reg.exe add \"HKCU\\SOFTWARE\\kugou\\Prefetcher\" /v \"Enable\" /t REG_DWORD /d \"0\" /f *>$null",
+            "reg.exe add \"HKCU\\SOFTWARE\\kugou\\Prefetcher\" /v \"LastDetectedPath\" /t REG_SZ /d \"$dir\\KuGou.exe\" /f *>$null",
+            "reg.exe add \"HKCU\\SOFTWARE\\KuGou8\" /v \"AppVersion\" /t REG_SZ /d \"$appversion\" /f *>$null",
+            "reg.exe add \"HKCU\\SOFTWARE\\KuGou8\" /v \"AppVersionLast\" /t REG_SZ /d \"$appversion\" /f *>$null"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\KuGou8\"",
+        "reg.exe delete \"HKCU\\SOFTWARE\\kugou\" /f *>$null",
+        "reg.exe delete \"HKCU\\SOFTWARE\\KuGou8\" /f *>$null"
     ],
-    "bin": "KuGou.exe",
     "shortcuts": [
         [
             "KuGou.exe",
-            "酷狗"
+            "酷狗音乐"
         ]
     ],
     "checkver": {
-        "script": [
-            "$res = Invoke-WebRequest -UseBasicParsing -Uri 'https://luban.m.qq.com/api/public/software-manager/softwareProxy' -Body 'cmdid=3318&jprxReq%5Breq%5D%5Bsoft_id_list%5D%5B%5D=4514' -Method 'POST'",
-            "Write-Output $res.Content"
-        ],
-        "jsonpath": "$..file_name",
-        "regex": "kugou7_1173_(?<version>.*?).exe"
+        "url": "https://download.kugou.com/",
+        "regex": "V (\\d+(\\.\\d+)+)"
     },
     "autoupdate": {
-        "url": "https://webcdn.m.qq.com/spcmgr/download/kugou7_1173_$version.exe#/dl.7z"
+        "url": "http://download.kugou.com/download/kugou_pc#/dl.7z"
     }
 }
