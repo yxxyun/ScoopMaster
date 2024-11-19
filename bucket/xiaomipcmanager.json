@@ -15,7 +15,7 @@
             "Expand-7zipArchive -Path \"$dir\\installer.exe\" -DestinationPath \"$dir\\InstallerTemp\" -Removal -Switches '-t#'",
             "",
             "Get-ChildItem -Path \"$dir\\InstallerTemp\" -Filter \"*.7z\" | ForEach-Object {",
-            "    Expand-7zipArchive -Path \"$_.FullName\" -DestinationPath \"$dir\\$version\" -Overwrite 'All'",
+            "    Expand-7zipArchive -Path $_.FullName -DestinationPath \"$dir\\$version\" -Overwrite 'All'",
             "}",
             "Remove-Item -Path \"$dir\\InstallerTemp\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
             "",
@@ -135,7 +135,11 @@
             "reg.exe add \"HKCU\\SOFTWARE\\Classes\\CLSID\\{0F6603C8-3E81-452C-9C39-7312582DCDEE}\\LocalServer32\" /ve /t REG_SZ /d \"$dir\\Launch.exe -ToastActivated\" /f",
             "reg.exe add \"HKCU\\SOFTWARE\\MI\\XiaomiPCManager\" /v \"FirstOpenControlCenterFlag\" /t REG_SZ /d \"False\" /f",
             "reg.exe add \"HKCU\\SOFTWARE\\MI\\XiaomiPCManager\" /v \"TrayPath\" /t REG_SZ /d \"\" /f",
-            "reg.exe add \"HKCU\\SOFTWARE\\MI\\XiaomiPCManager\" /v \"winevent_bookmark\" /t REG_SZ /d \"<BookmarkList><Bookmark Channel='Application' RecordId='0'/> <Bookmark Channel='System' RecordId='0' IsCurrent='true'/> </BookmarkList>\" /f"
+            "reg.exe add \"HKCU\\SOFTWARE\\MI\\XiaomiPCManager\" /v \"winevent_bookmark\" /t REG_SZ /d \"<BookmarkList><Bookmark Channel='Application' RecordId='0'/> <Bookmark Channel='System' RecordId='0' IsCurrent='true'/> </BookmarkList>\" /f",
+            ". \"$dir\\$version\\Driver_Install.cmd\"",
+            "pnputil.exe /add-driver \"$dir\\$version\\RadioControl.inf\" /install",
+            ". \"$dir\\$version\\FixServiceTool.exe\"",
+            "Write-Host \"Please restart your computer to install $app properly\" -F 'Red'"
         ]
     },
     "shortcuts": [
@@ -156,6 +160,9 @@
     "uninstaller": {
         "script": [
             "if ($cmd -eq 'uninstall') {",
+            ". \"$dir\\$version\\Driver_Uninstall.cmd\"",
+            "pnputil.exe /delete-driver \"$dir\\$version\\RadioControl.inf\" /force",
+            ". \"$dir\\$version\\uninstall_dmft.bat\"",
             "reg.exe delete \"HKLM\\SOFTWARE\\Classes\\*\\shellex\\ContextMenuHandlers\\MiDropExtMenu\" /f",
             "reg.exe delete \"HKLM\\SOFTWARE\\Classes\\AppID\\{846d36ff-1cb4-4d2c-8d90-b292f8b5a1d0}\" /f",
             "reg.exe delete \"HKLM\\SOFTWARE\\Classes\\CLSID\\{1bca9901-05c3-4d01-8ad4-78da2eac9b3f}\" /f",
@@ -211,6 +218,7 @@
             "reg.exe add \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\SharedAccess\\Parameters\\FirewallPolicy\\FirewallRules\" /f",
             "reg.exe delete \"HKCU\\SOFTWARE\\Classes\\CLSID\\{0F6603C8-3E81-452C-9C39-7312582DCDEE}\" /f",
             "reg.exe delete \"HKCU\\SOFTWARE\\MI\\XiaomiPCManager\" /f",
+            "Write-Host \"Please restart your computer to uninstall $app properly\" -F 'Red'",
             "}"
         ]
     },
