@@ -1,63 +1,51 @@
 {
-    "##": "Renaming .msi to .msi_ to avoid auto extraction",
-    "version": "2.6.12-I001",
-    "description": "A flexible virtual private network (VPN) solution to secure data communications.",
+    "version": "3.5.1.3946",
+    "description": "The official OpenVPN Connect client software developed and maintained by OpenVPN Inc.",
     "homepage": "https://openvpn.net",
     "license": "GPL-2.0-only",
-    "suggest": {
-        "openssl": "openssl"
-    },
     "architecture": {
         "64bit": {
-            "url": "https://swupdate.openvpn.org/community/releases/OpenVPN-2.6.12-I001-amd64.msi#/setup.msi_",
-            "hash": "525759fe9e52a77a7d2cad99f5af1923d7d3027cab775ccfb7469ce0fd2b1758"
+            "url": "https://swupdate.openvpn.net/downloads/connect/openvpn-connect-3.5.1.3946_signed.msi#/setup.msi_",
+            "hash": "ffd922b8afbcaf62079131d663e3eefb63ef173ad6cee6877b9d4945db43a7cf"
         },
         "32bit": {
-            "url": "https://swupdate.openvpn.org/community/releases/OpenVPN-2.6.12-I001-x86.msi#/setup.msi_",
-            "hash": "bf602bc08b9231dc59c19019ee91e35b9a70e66b2a076a170950380c91e80562"
-        },
-        "arm64": {
-            "url": "https://swupdate.openvpn.org/community/releases/OpenVPN-2.6.12-I001-arm64.msi#/setup.msi_",
-            "hash": "4c37a6d855c5f63ff5988d2bc24b619f55338f98799e1497f657e5e777544c8b"
+            "url": "https://swupdate.openvpn.net/downloads/connect/openvpn-connect-3.5.1.3946_signed_x86.msi#/setup.msi_",
+            "hash": "a3ec4ae45d960b9188174cc6184f192927419469e9f828d5669ccc66bc4bb724"
         }
     },
-    "pre_install": [
-        "if ([Environment]::OSVersion.Version.Major -lt 10) { error 'Windows 10 is required since version 2.4.8. Use \"versions/openvpn-w7\" instead'; break }",
-        "if (-not (is_admin)) { error 'Administrator privileges are needed for installation'; break }",
-        "Invoke-ExternalCommand msiexec -ArgumentList @('/i', \"`\"$dir\\setup.msi_`\"\", \"PRODUCTDIR=`\"$dir`\"\", 'ADDLOCAL=OpenVPN.GUI,OpenVPN.Service,OpenVPN.Documentation,OpenVPN.SampleCfg,OpenSSL,EasyRSA,OpenVPN,OpenVPN.GUI.OnLogon,Drivers.TAPWindows6,Drivers,Drivers.Wintun', '/passive') -RunAs | Out-Null",
-        "if (Test-Path \"$persist_dir\\config\") { Copy-Item \"$persist_dir\\config\" \"$dir\\\" -Force -Recurse }",
-        "else { Copy-Item \"$dir\\sample-config\\*\" \"$dir\\config\\\" }",
-        "Remove-Item \"$Env:Public\\Desktop\\OpenVPN*.lnk\""
-    ],
-    "pre_uninstall": [
-        "# Persist manually because the uninstaller deletes the 'config' folder",
-        "if (Test-Path \"$dir\\config\") {",
-        "    ensure \"$persist_dir\" | Out-Null",
-        "    Copy-Item \"$dir\\config\" \"$persist_dir\\\" -Force -Recurse",
-        "}",
-        "Stop-Process -Name 'openvpn*' -Force -ErrorAction SilentlyContinue"
-    ],
-    "uninstaller": {
+    "installer": {
         "script": [
-            "if (-not (is_admin)) { error 'Admin privileges are needed.'; break }",
-            "Invoke-ExternalCommand msiexec -ArgumentList ('/x', \"`\"$dir\\setup.msi_`\"\", '/passive') -RunAs | Out-Null"
+            "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+            "Start-Process 'msiexec' -Wait -Verb 'RunAs' -Args @('/i', \"$dir\\setup.msi_\", '/qn')",
+            "Stop-Process -Name 'OpenVPNConnect'"
         ]
     },
-    "bin": "bin\\openvpn.exe",
+    "uninstaller": {
+        "script": [
+            "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+            "Start-Process 'msiexec' -Wait -Verb 'RunAs' -ArgumentList @('/x', \"$dir\\setup.msi_\", '/qn')"
+        ]
+    },
     "checkver": {
-        "url": "https://openvpn.net/index.php/open-source/downloads.html",
-        "regex": "OpenVPN-([\\d.]+-I[\\d]+)-amd64\\.msi"
+        "url": "https://openvpn.net/connect-docs/windows-release-notes.html",
+        "regex": "<h2 class=\"title\" style=\"clear: both\">([\\d.]+) \\(([\\d]+)\\)</h2>",
+        "replace": "$1.$2"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://swupdate.openvpn.org/community/releases/OpenVPN-$version-amd64.msi#/setup.msi_"
+                "url": "https://swupdate.openvpn.net/downloads/connect/openvpn-connect-$version_signed.msi#/setup.msi_",
+                "hash": {
+                    "url": "https://openvpn.net/client-connect-vpn-for-windows/",
+                    "regex": "(?sm)v3-windows\\.msi.*?$sha256"
+                }
             },
             "32bit": {
-                "url": "https://swupdate.openvpn.org/community/releases/OpenVPN-$version-x86.msi#/setup.msi_"
-            },
-            "arm64": {
-                "url": "https://swupdate.openvpn.org/community/releases/OpenVPN-$version-arm64.msi#/setup.msi_"
+                "url": "https://swupdate.openvpn.net/downloads/connect/openvpn-connect-$version_signed_x86.msi#/setup.msi_",
+                "hash": {
+                    "url": "https://openvpn.net/client-connect-vpn-for-windows/",
+                    "regex": "(?sm)v3-windows-x86\\.msi.*?$sha256"
+                }
             }
         }
     }
