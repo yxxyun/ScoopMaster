@@ -1,34 +1,44 @@
 {
     "version": "0.9",
-    "description": "Notepad++ 的跨平台重新实现。A cross-platform, reimplementation of Notepad++",
+    "description": "A cross-platform reimplementation of Notepad++",
     "homepage": "https://github.com/dail8859/NotepadNext",
-    "license": {
-        "identifier": "GNU General Public License v3.0",
-        "url": "https://github.com/dail8859/NotepadNext/blob/master/LICENSE"
+    "license": "GPL-3.0-only",
+    "notes": "Add NotepadNext as a context menu option by running: reg import \"$dir\\install-context.reg\"",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/dail8859/NotepadNext/releases/download/v0.9/NotepadNext-v0.9-win64.zip",
+            "hash": "a50102dde7c33667163b9b155f4665dfdfa0e1845d304054c2e4301dfaae05fd"
+        }
     },
-    "url": "https://github.com/dail8859/NotepadNext/releases/download/v0.9/NotepadNext-v0.9-win64.zip",
-    "hash": "a50102dde7c33667163b9b155f4665dfdfa0e1845d304054c2e4301dfaae05fd",
     "shortcuts": [
         [
             "NotepadNext.exe",
-            "NotepadNext"
+            "Notepad Next"
         ]
     ],
-    "pre_install": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "persist_file -dir @(\"$user_AppData\\NotepadNext\") @(\"$persist_dir\\NotepadNext\")",
-        "handle_app_lnk",
-        "do_some_things"
+    "post_install": [
+        "'install-context', 'uninstall-context' | ForEach-Object {",
+        "    if (Test-Path \"$bucketsdir\\$bucket\\scripts\\notepadnext\\$_.reg\") {",
+        "        $nnPath = \"$dir\\NotepadNext.exe\".Replace('\\', '\\\\')",
+        "        $content = (Get-Content \"$bucketsdir\\$bucket\\scripts\\notepadnext\\$_.reg\").Replace('$nn', $nnPath)",
+        "        if ($global) { $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE') }",
+        "        Set-Content \"$dir\\$_.reg\" $content -Encoding Ascii -Force",
+        "    }",
+        "}"
     ],
-    "pre_uninstall": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "stop_process $false",
-        "remove_files @(\"$user_AppData\\NotepadNext\")"
-    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    reg import \"$dir\\uninstall-context.reg\"",
+            "}"
+        ]
+    },
     "checkver": "github",
     "autoupdate": {
-        "url": "https://github.com/dail8859/NotepadNext/releases/download/v$version/NotepadNext-v$version-win64.zip"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/dail8859/NotepadNext/releases/download/v$version/NotepadNext-v$version-win64.zip"
+            }
+        }
     }
 }
