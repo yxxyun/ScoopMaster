@@ -25,14 +25,29 @@
             "\"URL Protocol\"=\"\"",
             "",
             "[HKEY_CLASSES_ROOT\\listary\\shell\\open\\command]",
-            "@=\"$dir\\Listary.exe --url-schema=%1\"",
+            "@=\"$($dir -replace '\\\\','\\\\')\\\\Listary.exe --url-schema=%1\"",
             "",
-            "\"@ | Set-Content \"$dir\\install-context.reg\" -Encoding unicode",
+            "\"@ | Set-Content \"$dir\\install-schema.reg\" -Encoding unicode",
             "",
-            "reg.exe import \"$dir\\install-context.reg\"",
+            "reg.exe import \"$dir\\install-schema.reg\"",
             "",
             ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-            "New-PersistDirectory \"$env:APPDATA\\Listary\" \"$persist_dir\\AppData\" -Migrate"
+            "New-PersistDirectory \"$env:APPDATA\\Listary\" \"$persist_dir\\AppData\" -Migrate",
+            "",
+            "if (-not (Test-Path \"$persist_dir\\AppData\\UserProfile\\Settings\\Preferences.json\")) {",
+            "New-Item -Path \"$persist_dir\\AppData\\UserProfile\\Settings\" -ItemType Directory -Force -ErrorAction SilentlyContinue | Out-Null",
+            "@\"",
+            "{",
+            "  \"AutoUpdate\": {",
+            "    \"EnableAutoUpdate\": false",
+            "  },",
+            "  \"Settings\": {",
+            "    \"General.EnableAnalytics\": false,",
+            "    \"Appearance.Theme\": 0",
+            "  }",
+            "}",
+            "\"@ | Set-Content \"$persist_dir\\AppData\\UserProfile\\Settings\\Preferences.json\" -Encoding UTF8",
+            "}"
         ]
     },
     "pre_uninstall": [
@@ -42,7 +57,10 @@
         "Remove-Junction \"$env:APPDATA\\Listary\""
     ],
     "uninstaller": {
-        "script": "reg.exe delete \"HKCR\\listary\" /f"
+        "script": [
+            "reg.exe delete HKCR\\listary /f",
+            "reg.exe delete HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Listary /f"
+        ]
     },
     "shortcuts": [
         [
