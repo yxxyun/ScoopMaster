@@ -20,30 +20,44 @@
         "RedirectDirectory \"$env:USERPROFILE\\.config\\clash-verge\" \"$persist_dir\\.config\\clash-verge\"",
         "Remove-Module -Name AirUtils"
     ],
-"uninstaller": {
-    "script": [
-        "if ($cmd -eq 'uninstall') {",
-        "    $bucket=(scoop bucket list | where-Object { $_.Source -match 'Scoop-Store'})[0].Name",
-        "    Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name $bucket) scripts/AirUtils.psm1)",
-        "    # 构建 uninstall-service.exe 的完整路径",
-        "    $uninstallServicePath = Join-Path $dir 'resources\\uninstall-service.exe'",
-        "    # 检查 uninstall-service.exe 是否存在",
-        "    if (Test-Path $uninstallServicePath) {",
-        "        # 执行 uninstall-service.exe",
-        "        & $uninstallServicePath",
-        "    } else {",
-        "        # 如果文件不存在，则输出警告",
-        "        Write-Warning 'uninstall-service.exe not found. Skipping service uninstallation.'",
-        "    }",
-        "    RemoveJunction \"$env:APPDATA\\io.github.clash-verge-rev.clash-verge-rev\"",
-        "    RemoveJunction \"$env:USERPROFILE\\.config\\clash-verge\"",
-        "    Remove-Module -Name AirUtils",
-        "}"
-    ]
-},
+    "post_install": [
+            "# 构建 install-service.exe 的完整路径",
+            "$installServicePath = Join-Path $dir 'resources\\install-service.exe'",
+            "# 检查 install-service.exe 是否存在",
+            "if (Test-Path $installServicePath) {",
+            "    # 以管理员权限执行 install-service.exe",
+            "    Start-Process $installServicePath -Verb RunAs -ArgumentList \"/quiet\" -Wait",
+            "} else {",
+            "    # 如果文件不存在，则输出警告",
+            "    Write-Warning 'install-service.exe not found. Skipping service installation.'",
+            "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    $bucket=(scoop bucket list | where-Object { $_.Source -match 'Scoop-Store'})[0].Name",
+            "    Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name $bucket) scripts/AirUtils.psm1)",
+            "    . \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+            "    \"stop_process\"",
+            "    # 构建 uninstall-service.exe 的完整路径",
+            "    $uninstallServicePath = Join-Path $dir 'resources\\uninstall-service.exe'",
+            "    # 检查 uninstall-service.exe 是否存在",
+            "    if (Test-Path $uninstallServicePath) {",
+            "        # 以管理员权限执行 uninstall-service.exe",
+            "        Start-Process $uninstallServicePath -Verb RunAs -ArgumentList \"/quiet\" -Wait",
+            "    } else {",
+            "        # 如果文件不存在，则输出警告",
+            "        Write-Warning 'uninstall-service.exe not found. Skipping service uninstallation.'",
+            "    }",
+            "    RemoveJunction \"$env:APPDATA\\io.github.clash-verge-rev.clash-verge-rev\"",
+            "    RemoveJunction \"$env:USERPROFILE\\.config\\clash-verge\"",
+            "    Remove-Module -Name AirUtils",
+            "}"
+        ]
+    },
     "shortcuts": [
         [
-            "Clash Verge.exe",
+            "Clash-Verge.exe",
             "Clash Verge"
         ]
     ],
