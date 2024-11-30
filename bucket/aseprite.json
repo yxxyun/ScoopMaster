@@ -1,15 +1,49 @@
 {
-    "autoupdate": {
-        "url": "https://github.com/aseprite/aseprite/releases/download/v$version/Aseprite-v$version-Source.zip"
+    "version": "1.3.11-beta2",
+    "description": "Animated sprite editor & pixel art tool",
+    "homepage": "https://github.com/aseprite/aseprite",
+    "license": "https://github.com/aseprite/aseprite/blob/main/EULA.txt",
+    "notes": "As per the EULA, binaries built using this scoop package cannot be distributed.",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/aseprite/aseprite/releases/download/v1.3.11-beta2/Aseprite-v1.3.11-beta2-Source.zip",
+            "hash": "c2dd1753511b85ae3b5253202d1a9e67dca291711047d2019e3bb0f9d257d520"
+        }
     },
+    "depends": [
+        "aseprite-skia",
+        "vswhere"
+    ],
+    "installer": {
+        "script": [
+            "$vspath=vswhere -version \"[17.0,18.0)\" -products * -requires Microsoft.Component.MSBuild -property installationPath",
+            "if (!$vspath) {scoop uninstall aseprite --purge; scoop uninstall aseprite-skia --purge; scoop uninstall vswhere --purge; throw \"missing dependency (visual studio 2022) please install visual studio 2022 for c++ development\"}",
+            "if ($env:SCOOP) { $skiapath=\"$env:SCOOP\\apps\\aseprite-skia\\current\" } else { $skiapath=\"$env:USERPROFILE\\scoop\\apps\\aseprite-skia\\current\" }",
+            "cmd.exe /k \"`\"$vspath\\VC\\Auxiliary\\Build\\vcvars64.bat`\" & cd /d $dir & mkdir build & cd build & cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DLAF_BACKEND=skia -DSKIA_DIR=$skiapath -DSKIA_LIBRARY_DIR=$skiapath\\out\\Release-x64 -DSKIA_LIBRARY=$skiapath\\out\\Release-x64\\skia.lib -G Ninja .. & ninja aseprite & exit\"",
+            "$currPath=pwd",
+            "cd $dir",
+            "if ($dir -eq (Get-Location).Path) { Get-ChildItem -Path . -Force | Where-Object { $_.Name -ne \"build\" } | Remove-Item -Recurse -Force } else { throw \"Path was not updated successfully to $dir, please try again\" }",
+            "mv build\\bin\\aseprite.exe .",
+            "mv build\\bin\\data .",
+            "Remove-Item -Recurse -Force build",
+            "cd $currPath"
+        ]
+    },
+    "shortcuts": [
+        [
+            "aseprite.exe",
+            "Aseprite"
+        ]
+    ],
     "checkver": {
         "github": "https://github.com/aseprite/aseprite",
-        "regex": "/releases/tag/(?:v|V)?([\\d.\\-\\w]+)"
+        "regex": "Aseprite v([\\d.]+-?[a-z0-9]*)"
     },
-    "description": "Skia for Aseprite and laf.",
-    "hash": "c2dd1753511b85ae3b5253202d1a9e67dca291711047d2019e3bb0f9d257d520",
-    "homepage": "https://github.com/aseprite/aseprite",
-    "license": "BSD-3-Clause",
-    "url": "https://github.com/aseprite/aseprite/releases/download/v1.3.11-beta2/Aseprite-v1.3.11-beta2-Source.zip",
-    "version": "1.3.11-beta2"
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/aseprite/aseprite/releases/download/v$version/Aseprite-v$version-Source.zip"
+            }
+        }
+    }
 }
