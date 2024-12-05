@@ -1,18 +1,50 @@
 {
-    "version": "3.1.1",
-    "description": "A tiling window manager for Windows inspired by i3 and Polybar.",
+    "version": "3.7.0",
+    "description": "A tiling window manager for Windows inspired by i3 and Polybar (nonportable installation with uiAccess).",
     "homepage": "https://github.com/glzr-io/glazewm",
     "license": "GPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/glzr-io/glazewm/releases/download/v3.1.1/glazewm-3.1.1.exe",
-            "hash": "18974cd2f9c8884c23edd3d13137449b233a6c67cd0a210605852302091b2374"
+            "url": "https://github.com/glzr-io/glazewm/releases/download/v3.7.0/standalone-glazewm-v3.7.0-x64.msi",
+            "hash": "733C09B3D19BF68FD5A522EE8F068F48CADE8EC7422A4AA8A0D18B2BEEBE3494",
+            "installer": {
+                "script": [
+                    "if (!(is_admin)) { error \"$app requires admin rights to install.\"; break }",
+                    "$programFilesPath = [System.Environment]::GetFolderPath('ProgramFiles');",
+                    "$destinationPath = Join-Path $programFilesPath 'GlazeWM';",
+                    "Start-Process msiexec -ArgumentList @('/i', \"$dir\\$fname\", '/quiet', '/uiAccess=1', \"INSTALLDIR=$destinationPath\") -Wait -Verb RunAs",
+                    "Start-Process powershell -ArgumentList \"-NoExit\", \"-ExecutionPolicy Bypass\", \"-Command\", \"if (!(Test-Path '$destinationPath\\glazewm.exe')) { throw 'Installation failed. glazewm.exe not found in $destinationPath' }\" -Wait -Verb RunAs",
+                    "Write-Host \"Installation successful. Files located in: $destinationPath\";"
+                ]
+            }
+        },
+        "arm64": {
+            "url": "https://github.com/glzr-io/glazewm/releases/download/v3.7.0/standalone-glazewm-v3.7.0-arm64.msi",
+            "hash": "C1C91D4E29863A9454C336101D57042A97613138F6403B1F718D018AD52BF517",
+            "installer": {
+                "script": [
+                    "if (!(is_admin)) { error \"$app requires admin rights to install.\"; break }",
+                    "$programFilesPath = [System.Environment]::GetFolderPath('ProgramFiles');",
+                    "$destinationPath = Join-Path $programFilesPath 'GlazeWM';",
+                    "Start-Process msiexec -ArgumentList @('/i', \"$dir\\$fname\", '/quiet', '/uiAccess=1', \"INSTALLDIR=$destinationPath\") -Wait -Verb RunAs",
+                    "Start-Process powershell -ArgumentList \"-NoExit\", \"-ExecutionPolicy Bypass\", \"-Command\", \"if (!(Test-Path '$destinationPath\\glazewm.exe')) { throw 'Installation failed. glazewm.exe not found in $destinationPath' }\" -Wait -Verb RunAs",
+                    "Write-Host \"Installation successful. Files located in: $destinationPath\";"
+                ]
+            }
         }
     },
-    "bin": "GlazeWM.exe",
+    "uninstaller": {
+        "script": [
+            "if (!(is_admin)) { error \"$app requires admin rights to uninstall.\"; break }",
+            "$programFilesPath = [System.Environment]::GetFolderPath('ProgramFiles');",
+            "$destinationPath = Join-Path $programFilesPath 'GlazeWM';",
+            "Start-Process powershell -ArgumentList \"-NoExit\", \"-ExecutionPolicy Bypass\", \"-Command\", \"Remove-Item -Recurse -Force '$destinationPath'\" -Wait -Verb RunAs",
+            "if (!(Test-Path $destinationPath)) { Write-Host 'GlazeWM uninstalled successfully.' } else { throw 'Uninstallation failed. Directory still exists.' }"
+        ]
+    },
     "shortcuts": [
         [
-            "GlazeWM.exe",
+            "C:\\Program Files\\GlazeWM\\glazewm.exe",
             "GlazeWM"
         ]
     ],
@@ -20,7 +52,10 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/glzr-io/glazewm/releases/download/v$version/glazewm-$version.exe"
+                "url": "https://github.com/glzr-io/glazewm/releases/download/v$version/standalone-glazewm-v$version-x64.msi"
+            },
+            "arm64": {
+                "url": "https://github.com/glzr-io/glazewm/releases/download/v$version/standalone-glazewm-v$version-arm64.msi"
             }
         }
     }
