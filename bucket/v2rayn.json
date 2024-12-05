@@ -1,29 +1,32 @@
 {
+    "##": "no juicity, hysteria1 and tuic in the main bucket. hysteria is hysteria2.",
     "version": "7.2.3",
-    "description": "A V2Ray client for Windows, support Xray & v2fly core",
+    "description": "(Auto update cores by scoop) A V2Ray client for Windows, support Xray core and others",
     "homepage": "https://github.com/2dust/v2rayN",
-    "license": "GPL-3.0-only",
-    "depends": "xray",
-    "suggest": {
-        ".NET Desktop Runtime": "windowsdesktop-runtime-lts",
-        "v2fly-core": "v2ray"
-    },
-    "pre_install": [
-        "$directoryPath=\"$dir\\bin\\Xray\"",
-        "if (-Not (Test-Path -Path $directoryPath)) {",
-        "New-Item -ItemType Directory -Path $directoryPath | Out-Null",
-        "Write-Output \"Directory created: $directoryPath\"",
-        "}",
-        "foreach ($form in @('*.exe')) {",
-        "    foreach ($_ in Get-ChildItem \"$(appdir xray $global)\\current\" -File) {",
-        "        $name = $_.Name",
-        "        if ($name -Like $form) {",
-        "            Write-Host \"Creating hardlink for $name\"",
-        "            New-Item -ItemType HardLink -Path \"$dir\\bin\\Xray\" -Name $name -Target \"$(appdir xray $global)\\current\\$name\" | Out-Null",
-        "        }",
-        "    }",
-        "}"
+    "license": "GPL-3.0-or-later",
+    "depends": [
+        "main/xray",
+        "extras/hysteria",
+        "main/mihomo",
+        "main/naiveproxy",
+        "main/sing-box",
+        "main/v2ray"
     ],
+    "suggest": {
+        ".NET 8 Desktop Runtime": "windowsdesktop-runtime-lts"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/2dust/v2rayN/releases/download/7.2.3/v2rayN-windows-64.zip",
+            "hash": "55c91299b1741435e44abf409692df1f8a8160f11a1921cac2aeb4b7e16458d5",
+            "extract_dir": "v2rayN-windows-64"
+        },
+        "arm64": {
+            "url": "https://github.com/2dust/v2rayN/releases/download/7.2.3/v2rayN-windows-arm64.zip",
+            "hash": "d259583dceb1ae3b39cb250f0acfffddbfb946d9be556f368c4125959339a049",
+            "extract_dir": "v2rayN-windows-arm64"
+        }
+    },
     "bin": "v2rayN.exe",
     "shortcuts": [
         [
@@ -32,18 +35,46 @@
         ]
     ],
     "persist": "guiConfigs",
-    "checkver": "github",
-    "architecture": {
-        "64bit": {
-            "url": "https://ghp.ci/https://github.com/2dust/v2rayN/releases/download/7.2.3/v2rayN-windows-64.zip",
-            "hash": "55c91299b1741435e44abf409692df1f8a8160f11a1921cac2aeb4b7e16458d5",
-            "extract_dir": "v2rayN-windows-64"
-        }
+    "installer": {
+        "script": [
+            "function New-AppLink {",
+            "    param(",
+            "        [string] $App,",
+            "        [string] $Target",
+            "    )",
+            "    New-Item -ItemType Directory -Path $Target -Force -ErrorAction SilentlyContinue | Out-Null",
+            "    $AppItem = scoop which xray | Get-Item",
+            "    try {",
+            "        New-Item -ItemType SymbolicLink -Target $AppItem.FullName -Path \"$Target\\$App.exe\" -Force -ErrorAction Stop | Out-Null",
+            "    } catch {",
+            "        Copy-Item -Path \"$scoopdir\\shims\\$App.exe\" -Destination \"$Target\\$App.exe\" -Force | Out-Null",
+            "        Copy-Item -Path \"$scoopdir\\shims\\$App.shim\" -Destination \"$Target\\$App.shim\" -Force | Out-Null",
+            "    }",
+            "}",
+            "",
+            "New-AppLink -App 'xray' -Target \"$dir\\bin\\xray\"",
+            "New-AppLink -App 'hysteria' -Target \"$dir\\bin\\hysteria2\"",
+            "New-AppLink -App 'mihomo' -Target \"$dir\\bin\\mihomo\"",
+            "New-AppLink -App 'sing-box' -Target \"$dir\\bin\\sing_box\"",
+            "New-AppLink -App 'v2ray' -Target \"$dir\\bin\\v2ray\""
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App"
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/2dust/v2rayN/releases?per_page=1",
+        "jsonpath": "$.tag_name"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://ghp.ci/https://github.com/2dust/v2rayN/releases/download/$version/v2rayN-windows-64.zip"
+                "url": "https://github.com/2dust/v2rayN/releases/download/$version/v2rayN-windows-64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/2dust/v2rayN/releases/download/$version/v2rayN-windows-arm64.zip"
             }
         }
     }
