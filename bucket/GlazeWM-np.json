@@ -1,18 +1,47 @@
 {
-    "version": "3.1.1",
-    "description": "A tiling window manager for Windows inspired by i3 and Polybar.",
+    "version": "3.7.0",
+    "description": "A tiling window manager for Windows inspired by i3 and Polybar (nonportable installation).",
     "homepage": "https://github.com/glzr-io/glazewm",
     "license": "GPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/glzr-io/glazewm/releases/download/v3.1.1/glazewm-3.1.1.exe",
-            "hash": "18974cd2f9c8884c23edd3d13137449b233a6c67cd0a210605852302091b2374"
+            "url": "https://github.com/glzr-io/glazewm/releases/download/v3.7.0/standalone-glazewm-v3.7.0-x64.msi",
+            "hash": "733C09B3D19BF68FD5A522EE8F068F48CADE8EC7422A4AA8A0D18B2BEEBE3494"
+        },
+        "arm64": {
+            "url": "https://github.com/glzr-io/glazewm/releases/download/v3.7.0/standalone-glazewm-v3.7.0-arm64.msi",
+            "hash": "C1C91D4E29863A9454C336101D57042A97613138F6403B1F718D018AD52BF517"
         }
     },
-    "bin": "GlazeWM.exe",
+    "installer": {
+        "script": [
+            "Start-Process msiexec -ArgumentList @('/i', \"$dir\\$fname\", '/quiet') -Wait -Verb RunAs",
+            "$sourcePath = Join-Path \"$dir\" 'PFiles64\\glzr.io\\GlazeWM';",
+            "if (!(Test-Path $sourcePath)) { throw \"Source path not found: $sourcePath\" }",
+            "Write-Host \"Resolved source path: $sourcePath\";",
+            "Write-Host 'Creating and copying files to C:\\Program Files\\GlazeWM...';",
+            "Start-Process powershell -ArgumentList \"-NoExit\", \"-Command\", \"& {",
+            "   if (-Not (Test-Path \\\"C:\\Program Files\\GlazeWM\\\")) {",
+            "       New-Item -ItemType Directory -Force -Path \\\"C:\\Program Files\\GlazeWM\\\";",
+            "   }",
+            "   Copy-Item -Recurse -Force \\\"$sourcePath\\*\\\" \\\"C:\\Program Files\\GlazeWM\\\";",
+            "   Get-ChildItem \\\"C:\\Program Files\\GlazeWM\\\" | Out-String | Write-Host",
+            "}\" -Wait -Verb RunAs",
+            "Write-Host 'Cleaning up source directory...';",
+            "Remove-Item -Recurse -Force \"$sourcePath\"",
+            "if (!(Test-Path 'C:\\Program Files\\GlazeWM\\glazewm.exe')) { throw 'Move failed. File not found in C:\\Program Files\\GlazeWM.' }"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Write-Host 'Attempting to uninstall GlazeWM...';",
+            "Start-Process powershell -ArgumentList \"-NoExit\", \"-Command\", \"& { Remove-Item -Recurse -Force 'C:\\Program Files\\GlazeWM' }\" -Wait -Verb RunAs",
+            "if (!(Test-Path 'C:\\Program Files\\GlazeWM')) { Write-Host 'GlazeWM uninstalled successfully.' } else { throw 'Uninstallation failed. Directory still exists.' }"
+        ]
+    },
     "shortcuts": [
         [
-            "GlazeWM.exe",
+            "C:\\Program Files\\GlazeWM\\glazewm.exe",
             "GlazeWM"
         ]
     ],
@@ -20,7 +49,10 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/glzr-io/glazewm/releases/download/v$version/glazewm-$version.exe"
+                "url": "https://github.com/glzr-io/glazewm/releases/download/v$version/standalone-glazewm-v$version-x64.msi"
+            },
+            "arm64": {
+                "url": "https://github.com/glzr-io/glazewm/releases/download/v$version/standalone-glazewm-v$version-arm64.msi"
             }
         }
     }
