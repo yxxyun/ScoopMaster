@@ -1,20 +1,34 @@
 {
     "version": "1.16.0",
-    "description": "Online vedio app.",
+    "description": "Bilibili Windows client.",
     "homepage": "https://www.bilibili.com",
-    "license": "Freeware",
-    "url": "https://dl.hdslb.com/mobile/fixed/bili_win/bili_win-install.exe#/dl.7z",
-    "hash": "sha512:14e56e73e8cddd381facfefc9d47f95dc6c537daf57a41ad478352c18114459bdd7d4b1c2b81c9bcd6736eb5f3889de217c84a079a97a52eba269c9dbcf900d8",
-    "installer": {
-        "script": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.bilibili.com/protocal/licence.html"
     },
-    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
-    "bin": [
-        [
-            "哔哩哔哩.exe",
-            "哔哩哔哩"
+    "architecture": {
+        "64bit": {
+            "url": "https://dl.hdslb.com/mobile/pack/bili_win/16905146/public/bilibili-setup-v1.16.0.exe#/dl.7z",
+            "hash": "sha512:14e56e73e8cddd381facfefc9d47f95dc6c537daf57a41ad478352c18114459bdd7d4b1c2b81c9bcd6736eb5f3889de217c84a079a97a52eba269c9dbcf900d8",
+            "extract_dir": "$PLUGINSDIR"
+        }
+    },
+    "installer": {
+        "script": [
+            "Remove-Item \"$dir\\*\" -Exclude 'app-64.7z' -Force -Recurse",
+            "Expand-7zipArchive \"$dir\\app-64.7z\" \"$dir\" -Removal",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name dorado) scripts/DoradoUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\UserData\" -Target \"$env:APPDATA\\bilibili\"",
+            "Remove-Module -Name DoradoUtils"
         ]
-    ],
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name dorado) scripts/DoradoUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\bilibili\"",
+            "Remove-Module -Name DoradoUtils"
+        ]
+    },
     "shortcuts": [
         [
             "哔哩哔哩.exe",
@@ -40,11 +54,14 @@
         "regex": "([\\d.]+) (?<code>[\\w.]+)"
     },
     "autoupdate": {
-        "url": "https://dl.hdslb.com/mobile/fixed/bili_win/bili_win-install.exe#/dl.7z",
-        "hash": {
-            "url": "https://api.bilibili.com/x/elec-frontend/update/latest.yml",
-            "regex": "sha512:\\s+$base64"
+        "architecture": {
+            "64bit": {
+                "url": "https://dl.hdslb.com/mobile/pack/bili_win/$matchCode/public/bilibili-setup-v$version.exe#/dl.7z",
+                "hash": {
+                    "url": "https://dl.hdslb.com/mobile/pack/bili_win/$matchCode/public/latest.yml",
+                    "regex": "sha512:\\s+$base64"
+                }
+            }
         }
-    },
-    "notes": "Check version number manually."
+    }
 }
