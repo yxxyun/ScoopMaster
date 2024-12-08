@@ -2,68 +2,44 @@
     "version": "2.4.2",
     "description": "A free Japanese text editor for Windows.",
     "homepage": "https://sakura-editor.github.io/",
-    "license": {
-        "identifier": "Zlib",
-        "url": "https://github.com/sakura-editor/sakura/blob/master/LICENSE"
-    },
+    "license": "zlib",
     "url": "https://github.com/sakura-editor/sakura/releases/download/v2.4.2/sakura-tag-v2.4.2-build4203-a3e63915b-Win32-Release-Exe.zip",
     "hash": "md5:ba11783ae05419c76817f04d7a78467d",
-    "bin": "sakura.exe",
-    "shortcuts": [
-        [
-            "sakura.exe",
-            "サクラエディタ"
-        ]
-    ],
-    "pre_install": [
-        "ensure $persist_dir | Out-Null",
-        "$target = Join-Path $persist_dir 'sakura.exe.ini'",
-        "if (-not (Test-Path $target)) {",
-        "    Set-Content $target -Value @\"",
+    "post_install": [
+        "if ($bucket) {",
+        "    $scriptsdir = \"$bucketsdir\\$bucket\\scripts\"",
+        "} else {",
+        "    $scriptsdir = \"$(Split-Path $(Split-Path $url -Parent) -Parent)\\scripts\"",
+        "}",
+        "'install-context.reg', 'uninstall-context.reg' | ForEach-Object {",
+        "    $sakurapath = \"$dir\\sakura.exe\".Replace('\\', '\\\\')",
+        "    $content = (Get-Content \"$scriptsdir\\sakura-editor\\$_\").Replace('$sakura', $sakurapath)",
+        "    if ($global) { $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE') }",
+        "    Set-Content \"$dir\\$_\" $content",
+        "}",
+        "@\"",
         "[Settings]",
         "MultiUser=1",
         "UserRootFolder=0",
         "UserSubFolder=sakura",
-        "\"@",
-        "}",
-        "",
-        "'my_appicon.ico', 'my_icons.bmp', 'my_grepicon.ico' | ForEach-Object {",
-        "    $current = Join-Path (versiondir 'sakura' $version) $_",
-        "    $target = Join-Path $persist_dir $_",
-        "    if (Test-Path $target) { New-Item -ItemType HardLink -Path $current -Target $target | Out-Null }",
-        "}",
-        "",
-        "$appdatadir = Join-Path $env:APPDATA 'sakura'",
-        "$isJunction = 'Junction' -eq (Get-ChildItem $env:APPDATA -Filter 'sakura').LinkType",
-        "if ((Test-Path $appdatadir) -and -not $isJunction) {",
-        "    $date = (Get-Date -Format \"yyyyMMdd_HHmmss\")",
-        "    Rename-Item -Path $appdatadir -NewName ($appdatadir -replace '$', \".$date.original\")",
-        "    info \"Pre-existing user settings folder '%APPDATA%\\sakura' is renamed to '%APPDATA%\\sakura.original to avoid conflict.'\"",
-        "}",
-        "if (-not (Test-Path $appdatadir)) {",
-        "    New-Item $appdatadir -ItemType Junction -Target $persist_dir | Out-Null",
-        "}"
+        "\"@ | Out-File \"$dir\\sakura.exe.ini\""
     ],
-    "persist": [
-        "sakura.exe.ini",
-        "Keywords",
-        "Macros",
-        "Migemo",
-        "Plugins"
+    "bin": "sakura.exe",
+    "shortcuts": [
+        [
+            "sakura.exe",
+            "Sakura Editor"
+        ]
     ],
     "checkver": {
         "github": "https://github.com/sakura-editor/sakura",
         "regex": "(?<file>sakura-tag-v(?<version>[\\d.]+)-[\\w-]*-Exe\\.zip)"
     },
     "autoupdate": {
-        "url": "https://github.com/sakura-editor/sakura/releases/download/v$version/$match.file",
+        "url": "https://github.com/sakura-editor/sakura/releases/download/v$version/$matchFile",
         "hash": {
             "url": "$url.md5",
-            "regex": "$md5"
+            "find": "$md5"
         }
-    },
-    "notes": [
-        "Tips: If you have 'my_appicon.ico', 'my_icons.bmp' or 'my_grepicon.ico' in 'persist\\sakura' folder, they will be used as icon images in the app.",
-        "おまけ: 'persist\\sakura' フォルダーに 'my_appicon.ico' や 'my_icons.bmp' や 'my_grepicon.ico' を置いておくと、アプリ内のアイコン画像として使えます。"
-    ]
+    }
 }
