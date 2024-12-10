@@ -1,24 +1,16 @@
 {
-    "version": "9.9.17.30366",
     "homepage": "https://im.qq.com/pcqq/index.shtml",
-    "description": "(Beta version with LiteLoaderQQNT patch) An instant messaging software service developed by Tencent, build with Electron.",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://ti.qq.com/agreement/index.html"
-    },
-    "notes": "Scoop don't persist QQNT data.",
-    "depends": [
-        "LiteLoaderQQNT",
-        "QQNTPatcher-DllHijack"
-    ],
+    "description": "An instant messaging software service developed by Tencent",
+    "license": "Freeware",
+    "version": "9.9.17.241210",
     "architecture": {
         "64bit": {
-            "url": "https://dldir1.qq.com/qqfile/qq/QQNT/2559f319/QQ9.9.17.30366_x64.exe#/dl.7z",
-            "hash": "0355f235ce459b631ca45a47ea056ea8f762c29cd8b7dde5b024d4e7c01f648d"
+            "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_9.9.17_241210_x64_01.exe#/dl.7z",
+            "hash": "3a6593bcd85a86b4dd42011f05eec2e3462654312dcc05459430c2e06e999413"
         },
         "32bit": {
-            "url": "https://dldir1.qq.com/qqfile/qq/QQNT/4852f6b7/QQ9.9.17.30366_x86.exe#/dl.7z",
-            "hash": "98fbb7e9ab7d71977d94a004e64fb47463f7fae4bc7d5202570f231e6045b9c1"
+            "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_9.9.17_241210_x86_01.exe#/dl.7z",
+            "hash": "a470c515a77d19be54844989715ec7424799474aaebee296487f142cc9453d71"
         }
     },
     "extract_dir": "Files",
@@ -28,41 +20,25 @@
             "QQ"
         ]
     ],
-    "pre_install": [
-        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name air) scripts/AirUtils.psm1)",
-        "# Patch with DllHijack",
-        "$hijack_dir = scoop prefix 'QQNTPatcher-DllHijack'",
-        "$arch = switch ($architecture) {",
-        "    'arm64' { 'arm64' }",
-        "    '64bit' { 'x64' }",
-        "    default { 'x86' }",
-        "}",
-        "EnsureHardLink \"$dir\\dbghelp.dll\" \"$hijack_dir\\dbghelp_$arch.dll\"",
-        "# Import LiteLoaderQQNT",
-        "$version_text = $version -replace '(\\d+\\.\\d+\\.\\d+)\\.(\\d+)', '$1-$2'",
-        "$patch_js = \"$dir\\versions\\$version_text\\resources\\app\\app_launcher\\patch.js\"",
-        "$loader_dir = scoop prefix 'LiteLoaderQQNT'",
-        "$patch_content = 'require(String.raw`' + $loader_dir + '`)'",
-        "EnsureSetContent $patch_js $patch_content",
-        "# Import package",
-        "$package_json = \"$dir\\versions\\$version_text\\resources\\app\\package.json\"",
-        "$json_object = Get-Content -Path $package_json -Raw | ConvertFrom-Json",
-        "$json_object.main = \"./app_launcher/patch.js\"",
-        "$updated_content = $json_object | ConvertTo-Json -Depth 100",
-        "EnsureSetContent $package_json $updated_content",
-        "Remove-Module -Name AirUtils"
-    ],
     "checkver": {
-        "url": "https://telemetr.io/en/channels/1606833156-qqupdates",
-        "regex": "(?<x64>https://[a-z\\d./]+/QQNT/[\\da-z]+/QQ(?<version>[\\d.]+)_x64(?:_QQinner)?\\.exe).+(?<x86>https://[a-z\\d./]+/QQNT/[\\da-z]+/QQ\\k<version>_x86(?:_QQinner)?\\.exe).+(?<arm64>https://[a-z\\d./]+/QQNT/[\\da-z]+/QQ\\k<version>_arm64(?:_QQinner)?\\.exe)"
+        "script": [
+            "$url = 'https://im.qq.com/pcqq/index.shtml'",
+            "$resp = Invoke-WebRequest -Uri $url",
+            "$cont = $resp.Content",
+            "$pattern = 'https://qq-web.cdn-go.cn.*windowsDownloadUrl.js'",
+            "$jsUrl = [regex]::Match($cont, $pattern).Value",
+            "Invoke-WebRequest -Uri $jsUrl"
+        ],
+        "regex": "QQNT/Windows/QQ_([\\d\\.]+)_([\\d]+)_x86_01.exe",
+        "replace": "${1}.${2}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "$matchX64#/dl.7z"
+                "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_$match1_$match2_x64_01.exe#/dl.7z"
             },
             "32bit": {
-                "url": "$matchX86#/dl.7z"
+                "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_$match1_$match2_x86_01.exe#/dl.7z"
             }
         }
     }
