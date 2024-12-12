@@ -6,12 +6,24 @@
         "identifier": "Apache-2.0 license",
         "url": "https://github.com/algerkong/AlgerMusicPlayer#Apache-2.0-1-ov-file"
     },
-    "url": "https://github.com/algerkong/AlgerMusicPlayer/releases/download/2.1.0/AlgerMusic_2.1.0_Setup_x64.exe#/dl.7z",
-    "hash": "3dbf05c479a7f64e9a2c1380114e779c4e981de68287f8a76b7185da6a8eb06e",
-    "pre_install": [
-        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\`$*\" -Force -Recurse"
-    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Tohrusky/Final2x/releases/download/2024-11-09/Final2x-windows-x64-setup.exe#/dl.7z",
+            "hash": "5877dbeafa12b4a226328f3f7f171496663b6f43ec07abba52fc4ac6790de3ff",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\" -Force -Recurse"
+            ]
+        },
+        "32bit": {
+            "url": "https://github.com/Tohrusky/Final2x/releases/download/2024-11-09/Final2x-windows-arm64-setup.exe#/dl.7z",
+            "hash": "fa4ed9533c2148a63c214810889e6dfd8f3203fbf3163f482d5ebc755e65439c",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-32.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\" -Force -Recurse"
+            ]
+        }
+    },
     "installer": {
         "script": [
             "# handle runtime cache",
@@ -35,10 +47,27 @@
         ]
     ],
     "checkver": {
-        "url": "https://api.github.com/repos/algerkong/AlgerMusicPlayer/releases/latest",
-        "regex": "/releases/tag/([\\d.]+)"
+        "script": [
+            "$url = 'https://api.github.com/repos/algerkong/AlgerMusicPlayer/releases'",
+            "$cont = (Invoke-WebRequest $url).Content",
+            "$r = 'AlgerMusic_([\\d.]+)_Setup_x64\\.' ",
+            "if (!($cont -match $r)) { error \"Could not match $r in $url\"; continue }",
+            "$version = $matches[1]",
+            "$r = 'AlgerMusic_([\\d.]+)_Setup_x86\\.' ",
+            "if (!($cont -match $r)) { error \"Could not match $r in $url\"; continue }",
+            "$ia32 = $matches[1]",
+            "Write-Output $version $ia32"
+        ],
+        "regex": "([\\d.]+) (?<ia32>[\\d.]+)"
     },
     "autoupdate": {
-        "url": "https://github.com/algerkong/AlgerMusicPlayer/releases/download/$version/AlgerMusic_$version_Setup_x64.exe#/dl.7z"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/algerkong/AlgerMusicPlayer/releases/download/$version/AlgerMusic_$version_Setup_x64.exe#/dl.7z"
+            },
+            "32bit": {
+                "url": "https://github.com/algerkong/AlgerMusicPlayer/releases/download/$matchIa32/AlgerMusic_$matchIa32_Setup_x86.exe#/dl.7z"
+            }
+        }
     }
 }
