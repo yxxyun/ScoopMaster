@@ -1,11 +1,11 @@
 {
     "version": "1.2.3",
-    "description": "QQNT插件加载器: 轻量 简洁 开源",
+    "description": "Lightweight, simple and open source QQNT plugin loader.",
     "homepage": "https://github.com/LiteLoaderQQNT/LiteLoaderQQNT",
     "license": "MIT",
     "depends": [
-        "lesscode/qqnt",
-        "lesscode/qqntfileverifypatch"
+        "qq-nt",
+        "QQNTPatcher-DllHijack"
     ],
     "architecture": {
         "64bit": {
@@ -16,6 +16,37 @@
     "env_set": {
         "LITELOADERQQNT_PROFILE": "$persist_dir"
     },
+    "post_install": [
+        "if (!(Test-Path \"$persist_dir\")) { New-Item -Path $persist_dir -Type Directory | Out-Null}",
+        "$tmpPath = \"$(appdir qq-nt $global)\\current\\Files\"",
+        "if (Test-Path \"$tmpPath\\versions\") {",
+        "    $currentVersion = (parse_json \"$tmpPath\\versions\\config.json\").curVersion",
+        "    $appPath = \"$tmpPath\\versions\\$currentVersion\\resources\\app\"",
+        "} else {",
+        "    $appPath = \"$tmpPath\\resources\\app\"",
+        "}",
+        "$jsFileName = \"liteLoaderQQNT.js\"; ",
+        "$launcherFile = \"$appPath\\app_launcher\\$jsFileName\"",
+        "Set-Content -Path \"$launcherFile\" -Value \"require(String.raw``$dir``);\"",
+        "$packageJson = Get-Content \"$appPath\\package.json\" -Raw | ConvertFrom-Json;",
+        "$packageJson.main = \"./app_launcher/$jsFileName\";",
+        "$packageJson | ConvertTo-Json | Set-Content \"$appPath\\package.json\";"
+    ],
+    "post_uninstall": [
+        "$tmpPath = \"$(appdir qq-nt $global)\\current\\Files\"",
+        "if (Test-Path \"$tmpPath\\versions\") {",
+        "    $currentVersion = (parse_json \"$tmpPath\\versions\\config.json\").curVersion",
+        "    $appPath = \"$tmpPath\\versions\\$currentVersion\\resources\\app\"",
+        "} else {",
+        "    $appPath = \"$tmpPath\\resources\\app\"",
+        "}",
+        "$jsFileName = \"liteLoaderQQNT.js\"; ",
+        "$launcherFile = \"$appPath\\app_launcher\\$jsFileName\"",
+        "Remove-Item -Path \"$launcherFile\"",
+        "$packageJson = Get-Content \"$appPath\\package.json\" -Raw | ConvertFrom-Json;",
+        "$packageJson.main = \"./application.asar/app_launcher/index.js\";",
+        "$packageJson | ConvertTo-Json | Set-Content \"$appPath\\package.json\";"
+    ],
     "checkver": "github",
     "autoupdate": {
         "architecture": {
