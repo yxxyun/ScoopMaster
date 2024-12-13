@@ -18,7 +18,6 @@
             "python.exe",
             "python2"
         ],
-        "Lib\\idlelib\\idle.bat",
         [
             "Lib\\idlelib\\idle.bat",
             "idle2"
@@ -29,19 +28,25 @@
         "."
     ],
     "post_install": [
-        "python2 -m ensurepip",
+        "python2 -m ensurepip | Out-Null",
+        "Write-Output \"$([char]0x1b)[0m\" # Reset ansi to prevent color leak from installer",
         "",
         "$create_reg = {",
         "    param($path, $value)",
         "",
-        "    $reg_base = \"Registry::HKEY_CURRENT_USER\\Software\"",
+        "    if ($global) {",
+        "        $regBase = \"Registry::HKEY_LOCAL_MACHINE\\Software\"",
+        "    } else {",
+        "        $regBase = \"Registry::HKEY_CURRENT_USER\\Software\"",
+        "    }",
         "",
-        "    new-item -path \"$reg_base\\$path\" -force | out-null",
-        "    new-itemproperty -path \"$reg_base\\$path\" `",
+        "    new-item -path \"$regBase\\$path\" -force | out-null",
+        "    new-itemproperty -path \"$regBase\\$path\" `",
         "        -name \"(Default)\" -value \"$value\" -force | out-null",
         "}",
         "",
         "$py_cleanVersion = $version -replace '\\.'",
+        "",
         "$create_reg.Invoke(\"Python\\PythonCore\\2.7\\Help\\Main Python Documentation\", `",
         "    \"$dir\\Doc\\python$py_cleanVersion.chm\")",
         "$create_reg.Invoke(\"Python\\PythonCore\\2.7\\InstallPath\", `",
@@ -52,6 +57,16 @@
         "    \"$dir;$dir\\Lib;$dir\\DLLs;$dir\\Lib\\lib-tk\")"
     ],
     "post_uninstall": [
-        "remove-item -path \"Registry::HKEY_CURRENT_USER\\Software\\Python\\PythonCore\\2.7\" -recurse"
+        "if ($global) {",
+            "$regBase = HKEY_LOCAL_MACHINE",
+        "} else {",
+        "    $regBase = HKEY_CURRENT_USER",
+        "}",
+        ",",
+        "$registryPath = \"Registry::$regBase\\Software\\Python\\PythonCore\\2.7\"",
+        ",",
+        "if (test-path $registryPath) {",
+        "    remove-item -path $registryPath -recurse",
+        "}"
     ]
 }
