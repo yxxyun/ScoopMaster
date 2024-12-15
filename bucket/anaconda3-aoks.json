@@ -17,36 +17,32 @@
             "hash": "c1cb433e23997c84ade4ff7241b61b2f9b10a616c230da34e641e9c96dada49d"
         }
     },
-    "pre_install": "Write-Host 'Installing Anaconda 3. This can take up to 30 minutes on an HDD.' -ForegroundColor Magenta",
-    "post_install": "cp $dir\\Library\\bin\\libssl-*.dll,$dir\\Library\\bin\\libcrypto-*.dll $dir\\DLLs\\",
+    "pre_install": "if ($dir -match ' ') { error 'The installation directory cannot include a space'; break}",
     "installer": {
-        "args": [
-            "/S",
-            "/InstallationType=JustMe",
-            "/RegisterPython=1",
-            "/NoRegistry=1",
-            "/AddToPath=0",
-            "/D=$dir"
+        "script": [
+            "warn 'Installing Anaconda 3. This can take up to 30 minutes on an HDD.'",
+            "# The installer will not work properly when args are quoted (e.g. \"`\"/S`\"\")",
+            "Start-Process \"$dir\\$fname\" -ArgumentList @('/S', '/InstallationType=JustMe', '/RegisterPython=1', '/AddToPath=0', '/NoRegistry=1', \"/D=$dir\\App\") -Wait"
         ]
     },
-    "uninstaller": {
-        "file": "Uninstall-Anaconda3.exe",
-        "args": "/S"
-    },
+    "post_install": "Remove-Item \"$dir\\$fname\"",
+    "env_add_path": "App\\Scripts",
     "bin": [
-        "python.exe",
-        "pythonw.exe",
+        "App\\python.exe",
+        "App\\pythonw.exe",
         [
-            "python.exe",
+            "App\\python.exe",
             "python3"
         ]
     ],
-    "env_add_path": [
-        "$dir",
-        "Scripts",
-        "Library\\bin"
-    ],
-    "persist": "envs",
+    "persist": "App\\envs",
+    "uninstaller": {
+        "script": [
+            "Start-Process \"$dir\\App\\Uninstall-Anaconda3.exe\" -ArgumentList '/S' -Wait",
+            "# Create a 'dummy' to avoid error because the uninstaller removes the symlink. The does not affect persist.",
+            "ensure \"$dir\\App\\envs\" | Out-Null"
+        ]
+    },
     "checkver": {
         "url": "https://docs.anaconda.com/free/anaconda/hashes/",
         "regex": "Anaconda3-([\\d.-]+)-Windows"
