@@ -1,0 +1,36 @@
+{
+   "$schema": "https://raw.githubusercontent.com/lukesampson/scoop/master/schema.json",
+   "version": "1.8.1",
+   "description": "A number of PowerShell modules which provides HP client management scripts.",
+   "homepage": "https://developers.hp.com/hp-client-management/doc/client-management-script-library/",
+   "license": "Proprietary",
+   "url": "https://hpia.hpcloud.hp.com/downloads/cmsl/hp-cmsl-1.8.1.exe#/dl.exe",
+   "hash": "3fda4c4200cc6ec500f5732d577ee621d9993a3946b8bb1ecedb0d83f5976f14",
+   "installer": {
+      "script": [
+         "Expand-InnoArchive -Path \"$dir\\dl.exe\" -ExtractDir '{code_getDestDir}' -Removal",
+         "Add-Member -InputObject $manifest -Name psmodule -Type NoteProperty -Value $(New-Object -Type PSObject)",
+         "Add-Member -InputObject $manifest.psmodule -Name name -Type NoteProperty -Value ''",
+         "Get-ChildItem \"$dir\\Modules\" | ForEach-Object {",
+         "   $manifest.psmodule.name = $_.Name",
+         "   install_psmodule $manifest $_.FullName $global",
+         "   [System.IO.File]::WriteAllLines(\"$dir\\$($_.Name).json\", (ConvertToPrettyJson $manifest))",
+         "}",
+         "$manifest.PSObject.Properties.Remove('psmodule')"
+      ]
+   },
+   "uninstaller": {
+      "script": [
+         "Get-ChildItem \"$dir\\Modules\" | ForEach-Object {",
+         "   uninstall_psmodule $(parse_json \"$dir\\$($_.Name).json\") $_.FullName $global",
+         "}"
+      ]
+   },
+   "checkver": {
+      "url": "https://developers.hp.com/hp-client-management/doc/changelog",
+      "regex": "<h3>\\[([\\d.]+)\\].*</h3>"
+   },
+   "autoupdate": {
+      "url": "https://hpia.hpcloud.hp.com/downloads/cmsl/hp-cmsl-$version.exe#/dl.exe"
+   }
+}
