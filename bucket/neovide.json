@@ -3,6 +3,10 @@
     "description": "A simple GUI for Neovim",
     "homepage": "https://neovide.dev",
     "license": "MIT",
+    "notes": [
+        "Add Neovide as a context menu option by running:",
+        "'reg import \"$dir\\install-context.reg\"'"
+    ],
     "suggest": {
         "neovim": "neovim"
     },
@@ -12,6 +16,24 @@
             "hash": "896ba9abfcb4729776db3f3c76229e204202a8b340745a77b5f9b85a0f602a61"
         }
     },
+    "pre_install": [
+        "if (!(Test-Path \"$persist_dir\\config.toml\")) {",
+        "   New-Item \"$dir\\config.toml\" | Out-Null",
+        "}"
+    ],
+    "post_install": [
+        "'install-context.reg', 'uninstall-context.reg' | ForEach-Object {",
+        "    $NeovidePath = \"$dir\\neovide.exe\".Replace('\\', '\\\\')",
+        "    $Content = (Get-Content \"$bucketsdir\\person\\scripts\\neovide\\$_\").Replace('$neovide', $NeovidePath)",
+        "    if ($global) { $Content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE') }",
+        "    Set-Content \"$dir\\$_\" $Content",
+        "}",
+        "$ConfigDir = \"$env:APPDATA\\neovide\"",
+        "if (!(Test-Path $ConfigDir)) {",
+        "   New-Item -ItemType Directory $ConfigDir | Out-Null",
+        "}",
+        "New-Item -ItemType HardLink -Path \"$ConfigDir\\config.toml\" -Value \"$persist_dir\\config.toml\" | Out-Null"
+    ],
     "bin": "neovide.exe",
     "shortcuts": [
         [
@@ -19,6 +41,9 @@
             "Neovide"
         ]
     ],
+    "persist": "config.toml",
+    "pre_uninstall": "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-context.reg\" }",
+    "post_uninstall": "Remove-Item -Path \"$env:APPDATA\\neovide\" -Recurse",
     "checkver": {
         "github": "https://github.com/neovide/neovide"
     },
