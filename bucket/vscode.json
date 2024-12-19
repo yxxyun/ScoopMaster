@@ -1,84 +1,65 @@
 {
-    "version": "1.96.1",
-    "description": "Lightweight but powerful source code editor",
+    "version": "1.97.0-insider",
+    "description": "一个轻量级、功能强大，插件生态丰富的文件编辑器。Lightweight but powerful source code editor.",
     "homepage": "https://code.visualstudio.com/",
     "license": {
         "identifier": "Freeware",
         "url": "https://code.visualstudio.com/License/"
     },
-    "notes": [
-        "Add Visual Studio Code as a context menu option by running:",
-        "'reg import \"$dir\\install-context.reg\"'",
-        "For file associations, run:",
-        "'reg import \"$dir\\install-associations.reg\"'"
-    ],
     "architecture": {
         "64bit": {
-            "url": "https://update.code.visualstudio.com/1.96.1/win32-x64-archive/stable#/dl.7z",
-            "hash": "e9a4af2c79c7a7c1208b5275ab7cc3709135153882a026a0418964dc9b65f387"
+            "url": "https://update.code.visualstudio.com/1.97.0-insider/win32-x64-user/stable#/abgo_bucket_installer.exe",
+            "hash": "0195fba571d0e54a59538e3ccc81971a3173d5669b6466a5df2ddd332e628662"
         },
         "arm64": {
-            "url": "https://update.code.visualstudio.com/1.96.1/win32-arm64-archive/stable#/dl.7z",
-            "hash": "3c6fd90fd8835d4f80b7e52beeda63826e5b0a02f93c4bd28604ce015af69e5d"
+            "url": "https://update.code.visualstudio.com/1.97.0-insider/win32-arm64-user/stable#/abgo_bucket_installer.exe",
+            "hash": "fe5485398fe668bc8ed6ffb149b996dd7a1e776aabc1055c79c39ed026488f5b"
         }
     },
-    "env_add_path": "bin",
     "shortcuts": [
         [
-            "code.exe",
+            "Code.exe",
             "Visual Studio Code"
         ]
     ],
-    "post_install": [
-        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
-        "$exepath = \"$dir\\Code.exe\".Replace('\\', '\\\\')",
-        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context' | ForEach-Object {",
-        "  if (Test-Path \"$bucketsdir\\extras\\scripts\\vscode\\$_.reg\") {",
-        "    $content = Get-Content \"$bucketsdir\\extras\\scripts\\vscode\\$_.reg\"",
-        "    $content = $content.Replace('$codedir', $dirpath)",
-        "    $content = $content.Replace('$code', $exepath)",
-        "    if ($global) {",
-        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
-        "    }",
-        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
-        "  }",
-        "}",
-        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.vscode\\extensions\")) {",
-        "    info '[Portable Mode] Copying extensions...'",
-        "    Copy-Item \"$env:USERPROFILE\\.vscode\\extensions\" \"$dir\\data\" -Recurse",
-        "}",
-        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Code\")) {",
-        "    info '[Portable Mode] Copying user data...'",
-        "    Copy-Item \"$env:AppData\\Code\" \"$dir\\data\\user-data\" -Recurse",
-        "}",
-        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
-        "if ((Test-Path \"$extensions_file\")) {",
-        "    info 'Adjusting path in extensions file...'",
-        "    (Get-Content \"$extensions_file\") -replace '(?<=vscode(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
-        "}"
+    "pre_install": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$path_installer=\"$dir\\abgo_bucket_installer.exe\"",
+        "& $path_installer /VerySilent /Dir=\"$dir\"",
+        "$core_exe=\"$dir\\Code.exe\"",
+        "persist_file -dir @(\"$user_AppData\\Code\",\"$env:UserProfile\\.vscode\") @(\"$persist_dir\\Code\",\"$persist_dir\\.vscode\")",
+        "sleep_install $core_exe",
+        "handle_app_lnk",
+        "do_some_things"
     ],
-    "uninstaller": {
-        "script": "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-context.reg\" }"
-    },
-    "persist": "data",
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process $false",
+        "remove_files @(\"$desktop\\VS Code.lnk\",\"$user_AppData\\Code\",\"$env:UserProfile\\.vscode\")",
+        "$ui_exe=\"$dir\\unins000.exe\"",
+        "try{ & $ui_exe /VerySilent }catch{}",
+        "sleep_uninstall $ui_exe"
+    ],
     "checkver": {
-        "url": "https://update.code.visualstudio.com/api/update/win32-x64-archive/stable/latest",
-        "jsonpath": "$.name"
+        "url": "https://code.visualstudio.com/sha?build=stable",
+        "jsonpath": "$.products[?(@.platform.os == 'win32-x64-user')].name"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://update.code.visualstudio.com/$version/win32-x64-archive/stable#/dl.7z",
+                "url": "https://update.code.visualstudio.com/$version/win32-x64-user/stable#/abgo_bucket_installer.exe",
                 "hash": {
-                    "url": "https://update.code.visualstudio.com/api/update/win32-x64-archive/stable/latest",
-                    "jsonpath": "$.sha256hash"
+                    "url": "https://code.visualstudio.com/sha?build=stable",
+                    "jsonpath": "$.products[?(@.platform.os == 'win32-x64-user')].sha256hash"
                 }
             },
             "arm64": {
-                "url": "https://update.code.visualstudio.com/$version/win32-arm64-archive/stable#/dl.7z",
+                "url": "https://update.code.visualstudio.com/$version/win32-arm64-user/stable#/abgo_bucket_installer.exe",
                 "hash": {
-                    "url": "https://update.code.visualstudio.com/api/update/win32-arm64-archive/stable/latest",
-                    "jsonpath": "$.sha256hash"
+                    "url": "https://code.visualstudio.com/sha?build=stable",
+                    "jsonpath": "$.products[?(@.platform.os == 'win32-arm64-user')].sha256hash"
                 }
             }
         }
