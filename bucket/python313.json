@@ -6,42 +6,42 @@
     "notes": "Allow applications and third-party installers to find python by running: \"$dir\\install-pep-514.reg\"",
     "architecture": {
         "64bit": {
-            "url": "https://www.python.org/ftp/python/3.13.1/python-3.13.1-amd64.exe#/setup.exe",
-            "hash": "md5:90176c0cfa29327ab08c6083dcdcc210"
+            "url": [
+                "https://www.python.org/ftp/python/3.13.1/python-3.13.1-amd64.exe#/setup.exe",
+                "https://raw.githubusercontent.com/coatl-dev/scoop-coatl-dev/coatl/scripts/python/install-pep-514.reg",
+                "https://raw.githubusercontent.com/coatl-dev/scoop-coatl-dev/coatl/scripts/python/uninstall-pep-514.reg"
+            ],
+            "hash": [
+                "md5:90176c0cfa29327ab08c6083dcdcc210",
+                "7a6287212c2feef30ca7148772fd96a348bf064c9354627449b120532d852055",
+                "65a46d5a9fec455b6fbc5d75f8a57cd5ee958d31873ef438766866a53759e9f6"
+            ]
         },
         "32bit": {
-            "url": "https://www.python.org/ftp/python/3.13.1/python-3.13.1.exe#/setup.exe",
-            "hash": "md5:12455257e0eaf8c7a3b0af6522647638"
+            "url": [
+                "https://www.python.org/ftp/python/3.13.1/python-3.13.1.exe#/setup.exe",
+                "https://raw.githubusercontent.com/coatl-dev/scoop-coatl-dev/coatl/scripts/python/install-pep-514.reg",
+                "https://raw.githubusercontent.com/coatl-dev/scoop-coatl-dev/coatl/scripts/python/uninstall-pep-514.reg"
+            ],
+            "hash": [
+                "md5:12455257e0eaf8c7a3b0af6522647638",
+                "7a6287212c2feef30ca7148772fd96a348bf064c9354627449b120532d852055",
+                "65a46d5a9fec455b6fbc5d75f8a57cd5ee958d31873ef438766866a53759e9f6"
+            ]
         },
         "arm64": {
-            "url": "https://www.python.org/ftp/python/3.13.1/python-3.13.1-arm64.exe#/setup.exe",
-            "hash": "md5:f35c98b7b0924865021e89160f208cdb"
+            "url": [
+                "https://www.python.org/ftp/python/3.13.1/python-3.13.1-arm64.exe#/setup.exe",
+                "https://raw.githubusercontent.com/coatl-dev/scoop-coatl-dev/coatl/scripts/python/install-pep-514.reg",
+                "https://raw.githubusercontent.com/coatl-dev/scoop-coatl-dev/coatl/scripts/python/uninstall-pep-514.reg"
+            ],
+            "hash": [
+                "md5:f35c98b7b0924865021e89160f208cdb",
+                "7a6287212c2feef30ca7148772fd96a348bf064c9354627449b120532d852055",
+                "65a46d5a9fec455b6fbc5d75f8a57cd5ee958d31873ef438766866a53759e9f6"
+            ]
         }
     },
-    "pre_install": [
-        "$_dir = \"$dir\".Replace('\\', '\\\\')",
-        "$py_root = \"$_dir\".Replace(\"$version\", 'current')",
-        "$py_archLabel = '64-bit'",
-        "$bit = '64'",
-        "if ($architecture -eq '32bit') {",
-        "    $py_archLabel = '32-bit'",
-        "    $bit = '32'",
-        "}",
-        "if ($architecture -eq 'arm64') { $py_archLabel = 'ARM64' }",
-        "'install-pep-514.reg', 'uninstall-pep-514.reg' | ForEach-Object {",
-        "    $py_version = ($version -split '\\.')[0..1] -join '.'",
-        "    $content = Get-Content \"$bucketsdir\\scoop-coatl-dev\\scripts\\python\\$_\"",
-        "    $content = $content.Replace('$py_root', $py_root)",
-        "    $content = $content.Replace('$py_version', $py_version)",
-        "    $content = $content.Replace('$py_fullversion', $version)",
-        "    $content = $content.Replace('$py_archLabel', $py_archLabel)",
-        "    $content = $content.Replace('$py_arch', \"$bit\")",
-        "    if ($global) {",
-        "       $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
-        "    }",
-        "    Set-Content \"$dir\\$_\" $content -Encoding Ascii",
-        "}"
-    ],
     "installer": {
         "script": [
             "Expand-DarkArchive \"$dir\\setup.exe\" \"$dir\\_tmp\"",
@@ -62,7 +62,30 @@
     },
     "post_install": [
         "python -E -s -m ensurepip -U --default-pip | Out-Null",
-        "Write-Output \"$([char]0x1b)[0m\" # Reset ansi to prevent color leak from installer"
+        "Write-Output \"$([char]0x1b)[0m\" # Reset ansi to prevent color leak from installer",
+        "",
+        "$_dir = \"$dir\".Replace('\\', '\\\\')",
+        "$py_root = \"$_dir\".Replace(\"$version\", 'current')",
+        "$py_archLabel = '64-bit'",
+        "$bit = '64'",
+        "if ($architecture -eq '32bit') {",
+        "    $py_archLabel = '32-bit'",
+        "    $bit = '32'",
+        "}",
+        "if ($architecture -eq 'arm64') { $py_archLabel = 'ARM64' }",
+        "'install-pep-514.reg', 'uninstall-pep-514.reg' | ForEach-Object {",
+        "    $py_version = ($version -split '\\.')[0..1] -join '.'",
+        "    $content = Get-Content \"$dir\\$_\"",
+        "    $content = $content.Replace('$py_root', $py_root)",
+        "    $content = $content.Replace('$py_version', $py_version)",
+        "    $content = $content.Replace('$py_fullversion', $version)",
+        "    $content = $content.Replace('$py_archLabel', $py_archLabel)",
+        "    $content = $content.Replace('$py_arch', \"$bit\")",
+        "    if ($global) {",
+        "       $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    Set-Content \"$dir\\$_\" $content -Encoding Ascii",
+        "}"
     ],
     "bin": [
         [
