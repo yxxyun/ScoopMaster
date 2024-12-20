@@ -1,0 +1,51 @@
+{
+    "version": "1.0.2-b.3",
+    "description": "Experience tranquillity while browsing the web without people tracking you (libportable patched).",
+    "homepage": "https://zen-browser.app/",
+    "license": "MPL-2.0",
+    "notes": [
+        "This program installation is an experiment. I looks like libportable can be used absent of patching the source code. I have yet to test full functionality of this method though.",
+        "",
+        "To run Zen Browser know: libportable's setdll64.exe writes the current PATH in mozglue.dll and editing it directly fails to work. Therefore a new mozglue.dll must patched every time if the path is different. I made a script that automates this behavior:",
+        "",
+        "zen.ps1 [...args]",
+        ""
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/zen-browser/desktop/releases/download/twilight/zen.win-specific.zip",
+            "hash": "58d257f8b56662e3e721d855070ab591f971972ded0e4a05897828bc555c7851"
+        }
+    },
+    "depends": "hoilc_scoop-lemon/libportable",
+    "pre_install": [
+        "if (!(installed 'libportable' $global))",
+        "  { error 'Please install `libportable` first.' ; exit }",
+        "(Get-Content -path \"$(appdir libportable $global)\\current\\portable(example).ini\" -Raw) -replace 'Update=1','Update=0' | Set-Content -Path \"$dir\\zen\\portable.ini\"",
+        "  Copy-Item \"$dir\\zen\\mozglue.dll\" \"$dir\\zen\\mozglue.dll.bck\"",
+        "  Copy-Item \"$(appdir libportable $global)\\current\\portable64.dll\" \"$dir\\zen\\portable64.dll.bck\"",
+        "  Write-Output '",
+        "$DIR_ZEN = \"$env:SCOOP\\apps\\zen-libportable\\current\\zen\"",
+        "if ( Select-String -SimpleMatch $env:USERPROFILE $DIR_ZEN\\mozglue.dll ) {",
+        "  . $DIR_ZEN\\zen.exe }",
+        "else {",
+        "  Copy-Item -Force $DIR_ZEN\\mozglue.dll.bck    $DIR_ZEN\\mozglue.dll",
+        "  Copy-Item -Force $DIR_ZEN\\portable64.dll.bck $DIR_ZEN\\portable64.dll",
+        "  setdll64.exe  /d:$DIR_ZEN\\portable64.dll     $DIR_ZEN\\mozglue.dll",
+        "  . $DIR_ZEN\\zen.exe }",
+        "  ' | Out-File \"$dir\\zen\\zen.ps1\""
+    ],
+    "post_install": "zen.ps1 -CreateProfile \"Scoop-Opt $persist_dir\\profile\"",
+    "bin": "zen\\zen.ps1",
+    "persist": [
+        "zen\\portable.ini",
+        "Profiles"
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/zen-browser/desktop/releases?per_page=1",
+        "jsonpath": "$[0].tag_name"
+    },
+    "autoupdate": {
+        "url": "https://github.com/zen-browser/desktop/releases/download/twilight/zen.win-specific.zip"
+    }
+}
