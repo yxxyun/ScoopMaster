@@ -1,35 +1,55 @@
 {
-    "version": "4186",
-    "description": "一个文本编辑器。A text editor.",
-    "homepage": "https://www.sublimetext.com/",
-    "license": "Shareware",
-    "url": "https://download.sublimetext.com/sublime_text_build_4186_x64.zip",
-    "hash": "2fcb8720665e5dea8808e0bc38e0f2aa211fa7334e05e1d7244b90a95eda3975",
-    "bin": "subl.exe",
-    "shortcuts": [
-        [
-            "sublime_text.exe",
-            "Sublime Text"
-        ]
-    ],
-    "pre_install": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "persist_file -dir @(\"$dir\\Data\") @(\"$persist_dir\\Data\")",
-        "handle_app_lnk",
-        "do_some_things"
-    ],
-    "pre_uninstall": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "stop_process",
-        "remove_files"
-    ],
-    "checkver": {
-        "url": "https://www.sublimetext.com/download",
-        "regex": "latest.+Build ([\\d]+)"
+  "version": "4186",
+  "description": "一个文本编辑器。A text editor.(Scoop bucket for Cybersecurity by whoopscs)",
+  "homepage": "https://www.sublimetext.com",
+  "license": "Shareware",
+  "notes": [
+    "Add Sublime Text as a context menu option by running:",
+    "reg import \"$dir\\install-context.reg\""
+  ],
+  "architecture": {
+    "64bit": {
+      "url": "https://download.sublimetext.com/sublime_text_build_4186_x64.zip",
+      "hash": "2fcb8720665e5dea8808e0bc38e0f2aa211fa7334e05e1d7244b90a95eda3975"
     },
-    "autoupdate": {
-        "url": "https://download.sublimetext.com/sublime_text_build_$version_x64.zip"
+    "32bit": {
+      "url": "https://download.sublimetext.com/sublime_text_build_4186.zip",
+      "hash": "d4ccd00c2596b6f756bde83b2d6f056b47e41a1e0f72a5d4ea4f5540786e633f"
     }
+  },
+  "post_install": [
+    "$sublimepath = \"$dir\\sublime_text.exe\".Replace('\\', '\\\\')",
+    "'install-context.reg', 'uninstall-context.reg' | ForEach-Object {",
+    "    if (Test-Path \"$bucketsdir\\$bucket\\scripts\\$app\\$_\") {",
+    "        $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\$app\\$_\"",
+    "        $content = $content.Replace('$sublime', $sublimepath)",
+    "        if ($global) {",
+    "            $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+    "        }",
+    "    }",
+    "    $content | Set-Content -Path \"$dir\\$_\" -Encoding ascii",
+    "}"
+  ],
+  "pre_uninstall": "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-context.reg\" }",
+  "bin": "subl.exe",
+  "shortcuts": [
+    [
+      "SublimeText.exe",
+      "Sublime Text"
+    ]
+  ],
+  "checkver": {
+    "url": "https://www.sublimetext.com/download",
+    "regex": "latest.+Build ([\\d]+)"
+  },
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://download.sublimetext.com/sublime_text_build_$preReleaseVersion_x64.zip"
+      },
+      "32bit": {
+        "url": "https://download.sublimetext.com/sublime_text_build_$preReleaseVersion.zip"
+      }
+    }
+  }
 }
