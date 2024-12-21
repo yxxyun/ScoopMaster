@@ -1,49 +1,62 @@
 {
-    "homepage": "http://filecxx.com/",
-    "description": "Cross-platform internet upload/download manager for HTTP(S), FTP(S), SSH, magnet-link, BitTorrent, m3u8, ed2k, and online videos. WebDAV client, FTP client, SSH client.",
-    "license": "Unlicense",
     "version": "2.82.0",
+    "description": "An internet file download manager",
+    "homepage": "https://filecxx.com/",
+    "license": "Freeware",
+    "notes": "If you want scoop to uninstall the service during the un-installation process, use the `-p` switch (this will also remove all persisted files)",
     "architecture": {
         "64bit": {
             "url": "https://github.com/filecxx/FileCentipede/releases/download/v2.82.0/filecxx_2.82_win_x64.zip",
-            "hash": "F0BDEF157F45AE1652EDE116EBE98D889D163E5C094E88A076E917989742FE1E"
+            "hash": "f0bdef157f45ae1652ede116ebe98d889d163e5c094e88a076e917989742fe1e"
         }
     },
-    "installer": {
-        "script": [
-            "Start-Process \"$dir\\filec.exe\" -ArgumentList @(\"-i\", \"system_service\") -Verb RunAs -WindowStyle Hidden | Out-Null"
-        ]
-    },
     "pre_install": [
-        "if (Test-Path $persist_dir\\data_windows.db) {",
-        "    Move-Item -Path $persist_dir\\data_windows.db -Destination $dir\\lib\\data_windows.db -Force | Out-Null",
+        "$array = @('libicu.dat', 'data_windows.db', 'data_windows.db-shm', 'data_windows.db-wal', 'fileu_win32.conf')",
+        "foreach ($i in $array) {",
+        "    if (!(Test-Path \"$persist_dir\\$i\")) { New-Item -Path \"$dir\\lib\\$i\" | Out-Null }",
         "}",
-        "if (Test-Path $persist_dir\\fileu_win32.conf) {",
-        "    Move-Item -Path $persist_dir\\fileu_win32.conf -Destination $dir\\lib\\fileu_win32.conf -Force | Out-Null",
+        "if ((Get-Service -Name 'filec' -ErrorAction 'SilentlyContinue') -and ($cmd -eq 'update')) {",
+        "    Write-Host 'System service detected! Attempting to update the system service...' -F 'DarkGray'",
+        "    if (!(is_admin)) { error \"$app requires admin rights to update the system service\"; break }",
+        "    Start-Process \"$dir\\lib\\filec.exe\" -Wait -NoNewWindow -Args @('-i', 'path', $dir, 'system_service')",
         "}"
     ],
-    "persist": [
-        "cache"
+    "bin": [
+        "lib\\filec.exe",
+        [
+            "lib\\filec.exe",
+            "filecentipede"
+        ]
     ],
     "shortcuts": [
         [
             "lib\\fileu.exe",
-            "FileCentipede"
+            "File Centipede"
         ]
     ],
-    "uninstaller": {
-        "script": [
-            "Start-Process \"$dir\\filec.exe\" -ArgumentList @(\"-u\") -Wait -verb RunAs | Out-Null",
-            "'data_windows.db', 'fileu_win32.conf' | ForEach-Object { Move-Item -Path $dir\\lib\\$_ -Destination $persist_dir\\$_ -Force | Out-Null }"
-        ]
-    },
+    "persist": [
+        "lib\\libicu.dat",
+        "lib\\data_windows.db",
+        "lib\\data_windows.db-shm",
+        "lib\\data_windows.db-wal",
+        "lib\\ip.mmdb",
+        "lib\\fileu_win32.conf"
+    ],
+    "pre_uninstall": [
+        "Start-Process \"$dir\\lib\\filec.exe\" -Wait -NoNewWindow -Args 'stop'",
+        "if ((Get-Service -Name 'filec' -ErrorAction 'SilentlyContinue') -and ($cmd -eq 'uninstall')) {",
+        "    Write-Host 'System service detected! Attempting to remove the system service...' -F 'DarkGray'",
+        "    if (!(is_admin)) { error \"$app requires admin rights to remove the system service\"; break }",
+        "    Start-Process \"$dir\\lib\\filec.exe\" -Wait -NoNewWindow -Args '-u'",
+        "}"
+    ],
     "checkver": {
         "github": "https://github.com/filecxx/FileCentipede"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/filecxx/FileCentipede/releases/download/$version/filecxx_$version_win_x64.zip"
+                "url": "https://github.com/filecxx/FileCentipede/releases/download/$version/filecxx_$majorVersion.$minorVersion_win_x64.zip"
             }
         }
     }

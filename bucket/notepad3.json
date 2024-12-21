@@ -1,62 +1,41 @@
 {
     "version": "6.24.1221.1",
     "description": "Notepad-like text editor based on the Scintilla source code",
-    "homepage": "https://rizonesoft.com/downloads/notepad3/",
+    "homepage": "https://www.rizonesoft.com/downloads/notepad3/",
     "license": "BSD-3-Clause",
-    "url": "https://downloads.rizonesoft.com/Notepad3/Notepad3_6.24.1221.1_Portable.zip",
-    "hash": "7562f66a7e05fb99df3b92fa0fa37461111600288a39eea92270643ba12efb97",
+    "notes": [
+        "To add Notepad3 to right-click context menu, run:",
+        "reg import \"$dir\\install-context.reg\""
+    ],
     "architecture": {
         "64bit": {
-            "installer": {
-                "script": "Expand-7zipArchive -Path \"$dir\\NotePad3_${version}_x64_Portable.zip\" -DestinationPath $dir"
-            }
+            "url": "https://github.com/rizonesoft/Notepad3/releases/download/RELEASE_6.24.1221.1/Notepad3_6.24.1221.1_x64_Portable.zip",
+            "hash": "3ab81bdf132f041a489a09ed2476886218efef8242fe5badf1c8920868c21f70"
         },
         "32bit": {
-            "installer": {
-                "script": "Expand-7zipArchive -Path \"$dir\\NotePad3_${version}_x86_Portable.zip\" -DestinationPath $dir"
-            }
+            "url": "https://github.com/rizonesoft/Notepad3/releases/download/RELEASE_6.24.1221.1/Notepad3_6.24.1221.1_x86_Portable.zip",
+            "hash": "bacda2e4617194104167b8dc7171adaac414f0f952fb59a6518f656ca0fa9c34"
         }
     },
     "post_install": [
-        "Remove-Item -Path \"$dir\\*.zip\" -Force",
-        "if ($global) {",
-        "    $registry_scope = \"HKEY_LOCAL_MACHINE\"",
-        "} else {",
-        "    $registry_scope = \"HKEY_CURRENT_USER\"",
-        "}",
-        "",
-        "@\"",
-        "Windows Registry Editor Version 5.00",
-        "",
-        "[$registry_scope\\SOFTWARE\\Classes\\*\\shell\\Notepad3]",
-        "@=\"使用 Notepad3 编辑(&3)\"",
-        "\"icon\"=\"$($dir -replace '\\\\','\\\\')\\\\Notepad3.exe\"",
-        "",
-        "[$registry_scope\\SOFTWARE\\Classes\\*\\shell\\Notepad3\\command]",
-        "@=\"\\\"$($dir -replace '\\\\','\\\\')\\\\Notepad3.exe\\\" \\\"%1\\\"\"",
-        "\"@ | Set-Content -Path \"$dir\\install-notepad3.reg\" -Encoding Unicode",
-        "",
-        "reg import \"$dir\\install-notepad3.reg\""
-    ],
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App"
+        "$appdir = \"$dir\\Notepad3.exe\".Replace('\\', '\\\\')",
+        "'install-context.reg', 'uninstall-context.reg' | ForEach-Object {",
+        "    if (Test-Path \"$bucketsdir\\extras\\scripts\\$app\\$_\") {",
+        "        $content = Get-Content \"$bucketsdir\\extras\\scripts\\$app\\$_\"",
+        "        $content = $content.Replace('$appdir', $appdir)",
+        "        if ($global) {",
+        "            $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "        }",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_\" -Encoding ascii",
+        "}"
     ],
     "uninstaller": {
-        "script": [
-            "if ($global) {",
-            "    $registry_scope = \"HKLM\"",
-            "} else {",
-            "    $registry_scope = \"HKCU\"",
-            "}",
-            "reg.exe delete \"$registry_scope\\SOFTWARE\\Classes\\*\\shell\\Notepad3\" /f"
-        ]
+        "script": "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-context.reg\" }"
     },
     "bin": [
         "Notepad3.exe",
-        "minipath.exe",
-        "grepWinNP3.exe"
+        "minipath.exe"
     ],
     "shortcuts": [
         [
@@ -66,23 +45,26 @@
         [
             "minipath.exe",
             "minipath"
-        ],
-        [
-            "grepWinNP3.exe",
-            "grepWinNP3"
         ]
     ],
     "persist": [
         "Favorites",
         "Themes",
         "minipath.ini",
-        "Notepad3.ini",
-        "grepwinNP3.ini"
+        "Notepad3.ini"
     ],
     "checkver": {
-        "regex": "Notepad3_([\\d.]+)_Portable.zip"
+        "url": "https://github.com/rizonesoft/Notepad3/releases",
+        "regex": "tag/RELEASE_([\\d.]+)"
     },
     "autoupdate": {
-        "url": "https://downloads.rizonesoft.com/Notepad3/Notepad3_$version_Portable.zip"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/rizonesoft/Notepad3/releases/download/RELEASE_$version/Notepad3_$version_x64_Portable.zip"
+            },
+            "32bit": {
+                "url": "https://github.com/rizonesoft/Notepad3/releases/download/RELEASE_$version/Notepad3_$version_x86_Portable.zip"
+            }
+        }
     }
 }
