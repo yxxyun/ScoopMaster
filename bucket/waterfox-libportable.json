@@ -1,0 +1,64 @@
+{
+    // FAILED: Binary (likely needs to be patched before setddl64.exe can be used.s)
+    "version": "6.5.2",
+    "description": "Waterfox is a free and open-source web browser and fork of Firefox. Ethical and user-centric, emphasizing performance and privacy.",
+    "homepage": "https://www.waterfox.net",
+    "license": "MPL-2.0",
+    "notes": [
+        "This program installation is an experiment. I looks like libportable can be used absent of patching the source code. I have yet to test full functionality of this method though.",
+        "",
+        "libportable's setdll64.exe writes the current PATH in mozglue.dll and editing it directly fails to work. Therefore a new mozglue.dll must patched every time if the path is different. I made a script to automate this behavior. Therefore, to run Waterfox type:",
+        "",
+        "waterfox.ps1 [...args]",
+        ""
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://cdn1.waterfox.net/waterfox/releases/6.5.2/WINNT_x86_64/Waterfox%20Setup%206.5.2.exe#/dl.7z",
+            "hash": "sha512:bb667dfc876c5051107706c92414912d4b44fa9ac8d1402701676741afa830bc799cd4617dcbb4cd544d4a33b96ce76d9b93bcd9bc03e2af59e780660cb1a9cb"
+        }
+    },
+    // "extract_dir": "core",
+    "depends": "hoilc_scoop-lemon/libportable",
+    "pre_install": [
+        "if (!(installed 'libportable' $global))",
+        "  { error 'Please install `libportable` first.' ; exit }",
+        "(Get-Content -path \"$(appdir libportable $global)\\current\\portable(example).ini\" -Raw) -replace 'Update=1','Update=0' | Set-Content -Path \"$dir\\waterfox\\portable.ini\"",
+        "  Copy-Item \"$dir\\waterfox\\mozglue.dll\" \"$dir\\waterfox\\mozglue.dll.bck\"",
+        "  Copy-Item \"$(appdir libportable $global)\\current\\portable64.dll\" \"$dir\\waterfox\\portable64.dll.bck\"",
+        "  Write-Output '",
+        "$DIR_BRW = \"$env:SCOOP\\apps\\waterfox-libportable\\current\\waterfox\"",
+        "if ( Select-String -SimpleMatch $env:USERPROFILE $DIR_BRW\\mozglue.dll ) {",
+        "  . $DIR_BRW\\waterfox.exe }",
+        "else {",
+        "  Copy-Item -Force $DIR_BRW\\mozglue.dll.bck    $DIR_BRW\\mozglue.dll",
+        "  Copy-Item -Force $DIR_BRW\\portable64.dll.bck $DIR_BRW\\portable64.dll",
+        "  setdll64.exe  /d:$DIR_BRW\\portable64.dll     $DIR_BRW\\mozglue.dll",
+        "  . $DIR_BRW\\waterfox.exe }",
+        "  ' | Out-File \"$dir\\waterfox\\waterfox.ps1\""
+    ],
+    "bin": "waterfox.exe",
+    "shortcuts": [
+        [
+            "waterfox.exe",
+            "Waterfox"
+        ]
+    ],
+    "persist": [
+        "distribution",
+        "profile"
+    ],
+    "checkver": {
+        "github": "https://github.com/BrowserWorks/Waterfox"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://cdn1.waterfox.net/waterfox/releases/$version/WINNT_x86_64/Waterfox%20Setup%20$version.exe#/dl.7z",
+                "hash": {
+                    "url": "$url.sha512"
+                }
+            }
+        }
+    }
+}
