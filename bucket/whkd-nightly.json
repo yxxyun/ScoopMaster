@@ -1,0 +1,56 @@
+{
+    "version": "12551238257",
+    "description": "A simple hotkey daemon for Windows",
+    "homepage": "https://github.com/LGUG2Z/whkd",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://nightly.link/LGUG2Z/whkd/actions/runs/12551238257/whkd-x86_64-pc-windows-msvc-1905a89f59c09d39c4bd97f7ad29db7c2807cb0c.zip",
+            "hash": "4bc97509010dc7be9fa83ca0eaed60b8bebb84540a40eb311b204e8bb484b3c4",
+            "extract_dir": "x86_64-pc-windows-msvc/release"
+        },
+        "arm64": {
+            "url": "https://nightly.link/LGUG2Z/whkd/actions/runs/12551238257/whkd-aarch64-pc-windows-msvc-1905a89f59c09d39c4bd97f7ad29db7c2807cb0c.zip",
+            "hash": "71f3aea0478861bf410a5a69c8fbeacc60980121a3b7a0529d3bb642a147b6a1",
+            "extract_dir": "aarch64-pc-windows-msvc/release"
+        }
+    },
+    "persist": "config",
+    "pre_install": [
+        "if (!(Test-Path \"$persist_dir\\config\")) {",
+        "   New-Item \"$persist_dir\\config\" -ItemType Directory | Out-Null",
+        "}",
+        "if (Get-Command komorebi -ErrorAction SilentlyContinue) {",
+        "   if (!(Test-Path \"$persist_dir\\config\\whkdrc\")) {",
+        "       Invoke-WebRequest -Uri \"https://cdn.jsdelivr.net/gh/LGUG2Z/komorebi@master/docs/whkdrc.sample\" -OutFile \"$persist_dir\\config\\whkdrc\" -UseBasicParsing | Out-Null",
+        "   }",
+        "}",
+        "if (!(Test-Path \"$env:USERPROFILE\\.config\\whkd\") -or ((Get-Item \"$env:USERPROFILE\\.config\\whkd\" -ErrorAction SilentlyContinue).Target -ne \"$persist_dir\\config\")) {",
+        "   if (Test-Path \"$env:USERPROFILE\\.config\\whkd\") {",
+        "       Remove-Item \"$env:USERPROFILE\\.config\\whkd\" -Force | Out-Null",
+        "   }",
+        "   New-Item \"$env:USERPROFILE\\.config\\whkd\" -ItemType SymbolicLink -Target \"$persist_dir\\config\" | Out-Null",
+        "}"
+    ],
+    "bin": "whkd.exe",
+    "checkver": {
+        "script": [
+            "$workflow_runs = (Invoke-WebRequest 'https://api.github.com/repositories/591491992/actions/workflows/windows.yaml/runs?status=success' -UseBasicParsing | ConvertFrom-Json).workflow_runs[0]",
+            "$sha = $workflow_runs.head_sha",
+            "$version = $workflow_runs.id",
+            "Write-Output $version-$sha"
+        ],
+        "regex": "(?<version>.+)-(?<sha>.+)",
+        "replace": "${version}"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://nightly.link/LGUG2Z/whkd/actions/runs/$matchVersion/whkd-x86_64-pc-windows-msvc-$matchSha.zip"
+            },
+            "arm64": {
+                "url": "https://nightly.link/LGUG2Z/whkd/actions/runs/$matchVersion/whkd-aarch64-pc-windows-msvc-$matchSha.zip"
+            }
+        }
+    }
+}
