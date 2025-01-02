@@ -1,0 +1,65 @@
+{
+    "version": "2.0.11",
+    "description": "Pure Writer Desktop",
+    "homepage": "https://github.com/PureWriter/desktop",
+    "license": "GPL-3.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/PureWriter/desktop/releases/download/2.0.6/PureWriter2-2.0.11-Windows-x64.exe#/purewriter.exe",
+            "hash": "36dca3ede14eda6821d721a87d1ae954f8b3631e123925b45e5f3bf16eda0d48"
+        }
+    },
+    "pre_install": [
+        "$process = Start-Process -File \"$dir\\purewriter.exe\" -ArgumentList '/extract' -PassThru",
+        "try {",
+        "    Start-Sleep 3",
+        "    $folders = Get-ChildItem -Path $env:TEMP -Directory | ",
+        "        Where-Object { $_.Name -match \"^\\d{9}\\.tmp$\" } |",
+        "        Sort-Object $_.Name -Descending",
+        "    $msiPath = $null",
+        "    foreach ($folder in $folders) {",
+        "        $msiPath = Join-Path -Path $folder.FullName -ChildPath 'main.msi'",
+        "        if (Test-Path -Path $msiPath -PathType Leaf) {",
+        "            break",
+        "        }",
+        "        $msiPath = $null",
+        "    }",
+        "    if ($msiPath -ne $null) {",
+        "        Copy-Item -Path \"$msiPath\" \"$dir\"",
+        "        Expand-MsiArchive \"$dir\\main.msi\" -ExtractDir \"Pure Writer 2\" -Removal",
+        "    }",
+        "} finally {",
+        "    Stop-Process -Id $process.Id -Force",
+        "    $process.WaitForExit()",
+        "    Remove-Item \"$msiPath\"",
+        "    Remove-Item \"$dir\\purewriter.exe\"",
+        "}",
+        ""
+    ],
+    "shortcuts": [
+        [
+            "Pure Writer 2.exe",
+            "Pure Writer 2"
+        ]
+    ],
+    "checkver": {
+        "script": [
+            "$url = \"https://api.github.com/repos/PureWriter/desktop/releases\"",
+            "$releases = Invoke-RestMethod -Uri $url -Headers @{ 'User-Agent' = 'Scoop Installer' }",
+            "$prerelease = $releases | Where-Object { [bool]$_.prerelease -eq $true } | Select-Object -First 1",
+            "$prerelease.assets.browser_download_url | Sort-Object -Descending {",
+            "    if ($_ -match 'PureWriter2-(\\d+)\\.(\\d+)\\.(\\d+)-') {",
+            "        return \"{0:D3}.{1:D3}.{2:D3}\" -f [int]$matches[1], [int]$matches[2], [int]$matches[3]",
+            "    }",
+            "} | Where-Object { $_ -like \"*.exe\" } | Select-Object -First 1"
+        ],
+        "regex": "/(?<tag>[\\d+\\.]+)/PureWriter2-([\\d+\\.]+)-Windows-x64.exe"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/PureWriter/desktop/releases/download/$matchTag/PureWriter2-$version-Windows-x64.exe#/purewriter.exe"
+            }
+        }
+    }
+}
