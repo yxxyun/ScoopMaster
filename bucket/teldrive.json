@@ -1,0 +1,47 @@
+{
+    "version": "1.6.2-1",
+    "description": "Teldrive is a powerful utility that enables you to organise your telegram files and much more",
+    "homepage": "https://github.com/tgdrive/teldrive",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/tgdrive/teldrive/releases/download/1.6.2/teldrive-1.6.2-windows-amd64.zip",
+            "hash": "d2b62934421339a972e189126a8676819e58cfbf5399ef5c8ba53973456c89a9"
+        },
+        "arm64": {
+            "url": "https://github.com/tgdrive/teldrive/releases/download/1.6.2/teldrive-1.6.2-windows-arm64.zip",
+            "hash": "94c987d2bae987067c9305b7cb4a73553a8c800311107a314df0673a6a2d0ca2"
+        }
+    },
+    "pre_install": [
+        "if (!(Test-Path \"$persist_dir\\session.db\")) { New-Item \"$dir\\session.db\" | Out-Null }",
+        "if (!(Test-Path \"$persist_dir\\config.toml\")) { New-Item \"$dir\\session.db\" | Out-Null }",
+    ],
+    "bin": "teldrive.exe",
+    "persist": [
+        "session.db",
+        "config.toml"
+    ],
+    "checkver": {
+        "script": [
+            "$url = 'https://api.github.com/repositories/618091352/actions/workflows/release.yml/runs?status=success&event=push'",
+            "$runs = (Invoke-RestMethod -UseBasicParsing -Headers @{'Accept'='application/vnd.github+json'} -Uri $url).workflow_runs",
+            "$latest = $runs | Sort-Object -Property created_at -Descending | Select-Object -First 1",
+            "$version = $latest.head_branch",
+            "$count = ($runs | Where-Object { $_.head_branch -eq $version }).Count",
+            "Write-Output ('version:\"' + $version + '\"') ('count:\"' + $count + '\"')"
+        ],
+        "regex": "version:\"(?<version>[^\"]+)\"\\scount:\"(?<count>\\d+)\"",
+        "replace": "${version}-${count}"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/tgdrive/teldrive/releases/download/$matchHead/teldrive-$matchHead-windows-amd64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/tgdrive/teldrive/releases/download/$matchHead/teldrive-$matchHead-windows-arm64.zip"
+            }
+        }
+    }
+}

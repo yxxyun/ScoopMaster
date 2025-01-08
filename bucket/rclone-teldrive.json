@@ -1,17 +1,17 @@
 {
-    "version": "1.68.3-88d38c0",
+    "version": "1.68.3-4",
     "description": "Sync files and directories to and from multiple cloud / FTP / HTTP hosters.",
     "homepage": "https://rclone.org",
     "license": "MIT",
     "architecture": {
         "64bit": {
             "url": "https://github.com/tgdrive/rclone/releases/download/v1.68.3/rclone-v1.68.3-windows-amd64.zip",
-            "hash": "52cda2867725ea89171141b35d3c878c52ff9c18a6aa3384449ed06967ce1150",
+            "hash": "fea83c41daf99a04ac511b41046b09c07cc68c277c8a9291c9805cf503f90415",
             "extract_dir": "rclone-v1.68.3-windows-amd64"
         },
         "arm64": {
             "url": "https://github.com/tgdrive/rclone/releases/download/v1.68.3/rclone-v1.68.3-windows-arm64.zip",
-            "hash": "0693abe8c388340ed4baf28c22120057b78d61f6a1830357da4fb488cfd21b22",
+            "hash": "a51c50e8db087c7784db594b60a623c0d859d13b1413afd3544bcffb927047c8",
             "extract_dir": "rclone-v1.68.3-windows-arm64"
         }
     },
@@ -50,15 +50,15 @@
     "persist": "rclone.conf",
     "checkver": {
         "script": [
-            "$url = 'https://api.github.com/repositories/667140583/actions/workflows/build.yml/runs?status=success&per_page=1&event=push'",
-            "$cont = Invoke-RestMethod -UseBasicParsing -Method Get -Headers @{'Accept'='application/vnd.github+json';'Accept-Encoding'='gzip'} -Uri $url",
-            "$workflow_run = $cont.workflow_runs[0]",
-            "$matchHead = $workflow_run.head_branch.Trim('v')",
-            "$commit = $workflow_run.head_sha.Substring(0,7)",
-            "Write-Output ('version:\"' + $matchHead + '\"') ('commit:\"' + $commit + '\"')"
+            "$url = 'https://api.github.com/repositories/667140583/actions/workflows/build.yml/runs?status=success&event=push'",
+            "$runs = (Invoke-RestMethod -UseBasicParsing -Headers @{'Accept'='application/vnd.github+json'} -Uri $url).workflow_runs",
+            "$latest = $runs | Sort-Object -Property created_at -Descending | Select-Object -First 1",
+            "$version = $latest.head_branch.Trim('v')",
+            "$count = ($runs | Where-Object { $_.head_branch.Trim('v') -eq $version }).Count",
+            "Write-Output ('version:\"' + $version + '\"') ('count:\"' + $count + '\"')"
         ],
-        "regex": "version:\"(?<version>[\\d.]+)\"\\scommit:\"(?<commit>[\\w\\d]+)\"",
-        "replace": "${version}-${commit}"
+        "regex": "version:\"(?<version>[\\d.]+)\"\\scount:\"(?<count>\\d+)\"",
+        "replace": "${version}-${count}"
     },
     "autoupdate": {
         "architecture": {
