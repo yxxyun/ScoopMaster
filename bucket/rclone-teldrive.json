@@ -1,5 +1,5 @@
 {
-    "version": "1.68.3-5",
+    "version": "1.68.3-20b0a76",
     "description": "Sync files and directories to and from multiple cloud / FTP / HTTP hosters.",
     "homepage": "https://rclone.org",
     "license": "MIT",
@@ -50,15 +50,15 @@
     "persist": "rclone.conf",
     "checkver": {
         "script": [
-            "$url = 'https://api.github.com/repositories/667140583/actions/workflows/build.yml/runs?status=success&event=push'",
-            "$runs = (Invoke-RestMethod -UseBasicParsing -Headers @{'Accept'='application/vnd.github+json'} -Uri $url).workflow_runs",
-            "$latest = $runs | Sort-Object -Property created_at -Descending | Select-Object -First 1",
-            "$version = $latest.head_branch.Trim('v')",
-            "$count = ($runs | Where-Object { $_.head_branch.Trim('v') -eq $version }).Count",
-            "Write-Output ('version:\"' + $version + '\"') ('count:\"' + $count + '\"')"
+            "$url = 'https://api.github.com/repositories/667140583/tags?per_page=100'",
+            "$tags = Invoke-RestMethod -UseBasicParsing -Headers @{'Accept'='application/vnd.github+json'} -Uri $url",
+            "$latest = $tags | Sort-Object -Property name -Descending | Select-Object -First 1",
+            "$version = $latest.name.TrimStart('v')",
+            "$commit = $latest.commit.sha.Substring(0, 7)",
+            "Write-Output ('version:\"' + $version + '\" commit:\"' + $commit + '\"')"
         ],
-        "regex": "version:\"(?<version>[\\d.]+)\"\\scount:\"(?<count>\\d+)\"",
-        "replace": "${version}-${count}"
+        "regex": "version:\"(?<version>[^\"]+)\" commit:\"(?<commit>[^\"]+)\"",
+        "replace": "${version}-${commit}"
     },
     "autoupdate": {
         "architecture": {
