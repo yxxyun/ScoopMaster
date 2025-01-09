@@ -30,15 +30,30 @@
         ]
     },
     "pre_install": [
+        "if (!(is_admin)) {",
+        "    error \"Administrator rights are required to install $app.\"",
+        "    scoop uninstall $app",
+        "    exit 1",
+        "}",
         ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
         "New-PersistDirectory \"$env:USERPROFILE\\.docker\" \"$persist_dir\\USERPROFILE\\.docker\" -Migrate",
         "New-PersistDirectory \"$env:LOCALAPPDATA\\Docker\" \"$persist_dir\\LOCALAPPDATA\\Docker\" -Migrate",
         "New-PersistDirectory \"$env:APPDATA\\Docker\" \"$persist_dir\\APPDATA\\Docker\" -Migrate"
     ],
+    "post_install": [
+        "Remove-Item \"$env:USERPROFILE\\Desktop\\Docker Desktop.lnk\" -Force",
+        "Remove-Item \"$env:PROGRAMDATA\\Microsoft\\Windows\\Start Menu\\Docker Desktop.lnk\" -Force"
+    ],
     "pre_uninstall": [
+        "if (!(is_admin)) {",
+        "    error \"Administrator rights are required to uninstall $app.\"",
+        "    exit 1",
+        "}",
+        "info 'Shutting down Docker Desktop...'",
         ". \"$dir\\docker\\DockerCli.exe\" -Shutdown",
+        "info 'Uninstalling Docker Desktop...'",
+        "Start-Process -FilePath \"$dir\\docker\\Docker Desktop Installer.exe\" -ArgumentList @('uninstall', '--quiet', \"--installation-dir=$dir\\docker\") -Wait -Verb RunAs",
         "$bucket = $install.bucket",
-        "Invoke-ExternalCommand \"$dir\\docker\\Docker Desktop Installer.exe\" -ArgumentList -ArgumentList @('uninstall', '--quiet', \"--installation-dir=$dir\\docker\") -RunAs",
         ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
         "Stop-App",
         "Remove-Junction \"$env:USERPROFILE\\.docker\"",
