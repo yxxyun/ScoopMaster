@@ -1,19 +1,39 @@
 {
     "version": "5.7.1",
-    "description": "Pester is the ubiquitous test and mock framework for PowerShell.",
-    "homepage": "https://github.com/pester/Pester",
+    "description": "Pester is a test and mock framework for PowerShell.",
+    "homepage": "https://pester.dev",
     "license": "Apache-2.0",
-    "url": "https://www.powershellgallery.com/api/v2/package/Pester/5.7.1#/dl.7z",
-    "hash": "4a27904c6814a5fbe4758f8e49861f6a1994aee77b71165a5c43c0371ba6c580",
-    "pre_install": "Remove-Item \"$dir\\_rels\", \"$dir\\package\", \"$dir\\*Content*.xml\" -Recurse",
+    "notes": [
+        "'Pester' is currently installed as a PS module",
+        "For more information, visit: 'https://pester.dev/docs/quick-start'"
+    ],
+    "url": "https://globalcdn.nuget.org/packages/pester.5.7.1.nupkg",
+    "hash": "3c6dad5fb143faf19709dfb28c31c873989944705a087e160e23b7ce462e37a1",
+    "extract_dir": "tools",
     "psmodule": {
         "name": "Pester"
     },
     "checkver": {
-        "url": "https://www.powershellgallery.com/packages/Pester",
-        "regex": "<h2>([\\d.]+)</h2>"
+        "script": [
+            "# Using checkver script to check through all release tags",
+            "$auth = Get-GitHubToken",
+            "$head = @{}",
+            "if($auth) { $head.add('authorization', \"Bearer $auth\") }",
+            "$url = 'https://api.github.com/repositories/1213474/releases'",
+            "$latest_ver = [Version]::new(0,0,0,0) # note: Powershell 5 does not support casting 'int' or 'float' to 'System.Version'",
+            "$releases = $(Invoke-WebRequest -Headers $head $url).Content | ConvertFrom-Json",
+            "$releases | ForEach-Object {",
+            "    if (!($_.tag_name -match '([\\d.]+)')) { return }",
+            "    if ($_.prerelease) { return }",
+            "    $ver = [Version]::new($matches[1])",
+            "    if ($ver -gt $latest_ver) { $latest_ver = $ver }",
+            "}",
+            "if ($latest_ver -eq [Version]::new(0,0,0,0)) { error \"Could not match version string in '$url'\"; continue }",
+            "Write-Output $latest_ver"
+        ],
+        "regex": "([\\d.]+)"
     },
     "autoupdate": {
-        "url": "https://www.powershellgallery.com/api/v2/package/Pester/$version#/dl.7z"
+        "url": "https://globalcdn.nuget.org/packages/pester.$version.nupkg"
     }
 }
