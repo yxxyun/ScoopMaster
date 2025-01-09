@@ -1,50 +1,47 @@
 {
-    "version": "133.0.3-1",
-    "description": "A fork of Firefox, focused on privacy, security and freedom.",
+    "##": "ltguillaume/schep",
+    "version": "134.0-1",
+    "description": "A fork of Firefox, focused on privacy, security and freedom. This variant does not use the portable launcher and makes sure the Scoop profile is used by default.",
     "homepage": "https://librewolf.net/",
     "license": "MPL-2.0",
+    "notes": "After installation, the profile manager will be run to choose the right default profile.",
     "architecture": {
         "64bit": {
-            "url": "https://gitlab.com/api/v4/projects/44042130/packages/generic/librewolf/133.0.3-1/librewolf-133.0.3-1-windows-x86_64-portable.zip",
-            "hash": "db930399b89de804889c35c2242f1ddbfa988142eee8decc95278ae8bf6c5fab"
+            "url": "https://gitlab.com/api/v4/projects/44042130/packages/generic/librewolf/134.0-1/librewolf-134.0-1-windows-x86_64-portable.zip",
+            "hash": "50f35c1a69c9c80dceb00a07dcf820f9e0cbd4b3368fb02675ad2d2735f659c9"
         },
         "32bit": {
-            "url": "https://gitlab.com/api/v4/projects/44042130/packages/generic/librewolf/133.0.3-1/librewolf-133.0.3-1-windows-i686-portable.zip",
-            "hash": "98759e05b377d53be68f4cb70f29f72fcd60301d70f69feb35b6de83651756c9"
+            "url": "https://gitlab.com/api/v4/projects/44042130/packages/generic/librewolf/134.0-1/librewolf-134.0-1-windows-i686-portable.zip",
+            "hash": "0b03ac644822b5938cbe64d1d59631cfb46f25a49368e86954dfb0187cf2cfea"
         }
     },
-    "extract_dir": "librewolf-133.0.3-1",
-    "pre_install": [
-        "'LibreWolf-WinUpdater.exe', 'ScheduledTask-Create.ps1', 'ScheduledTask-Remove.ps1' | ForEach-Object { \"$dir/$_\" } | Remove-Item",
-        "",
-        "# Customizing LibreWolf Using AutoConfig",
-        "# https://support.mozilla.org/en-US/kb/customizing-firefox-using-autoconfig",
-        "$null = ensure \"$persist_dir/LibreWolf/defaults/pref\"",
-        "Copy-Item \"$persist_dir/LibreWolf/defaults/pref/*\" \"$dir/LibreWolf/defaults/pref\" -Exclude channel-prefs.js",
-        "Copy-Item \"$persist_dir/LibreWolf/*.js\", \"$persist_dir/LibreWolf/*.cfg\" \"$dir/LibreWolf\"",
-        "",
-        "# Customizing LibreWolf Using policies.json",
-        "# https://support.mozilla.org/en-US/kb/customizing-firefox-using-policiesjson",
-        "# Used to override the default policies.json of LibreWolf, if you want",
-        "$null = ensure \"$persist_dir/LibreWolf/distribution\"",
-        "Copy-Item \"$persist_dir/LibreWolf/distribution/policies.json\" \"$dir/LibreWolf/distribution\" -ErrorAction SilentlyContinue"
+    "extract_dir": "librewolf-134.0-1\\LibreWolf",
+    "post_install": [
+        "$Addition = \"$persist_dir\\addition\"",
+        "if (Test-Path $Addition) {",
+        "  info 'Copying additional items...'",
+        "  Copy-Item -Path $Addition\\* -Destination $dir -Force -Recurse -ErrorAction SilentlyContinue",
+        "}",
+        "if (!(Test-Path \"$persist_dir\\profile\\times.json\")) {",
+        "    librewolf.exe -CreateProfile \"Scoop $persist_dir\\profile\"",
+        "}",
+        "Start-Process -WorkingDirectory $dir -FilePath librewolf.exe -ArgumentList '-P'"
     ],
     "bin": [
         [
-            "LibreWolf-Portable.exe",
+            "librewolf.exe",
             "librewolf"
         ]
     ],
     "shortcuts": [
         [
-            "LibreWolf-Portable.exe",
+            "librewolf.exe",
             "LibreWolf"
         ]
     ],
-    "persist": "Profiles",
-    "pre_uninstall": [
-        "Copy-Item \"$dir/LibreWolf/defaults/pref/*\" \"$persist_dir/LibreWolf/defaults/pref\" -Exclude channel-prefs.js",
-        "Copy-Item \"$dir/LibreWolf/*.js\", \"$dir/LibreWolf/*.cfg\" \"$persist_dir/LibreWolf\" -Exclude librewolf.cfg"
+    "persist": [
+        "distribution",
+        "profile"
     ],
     "checkver": {
         "url": "https://gitlab.com/api/v4/projects/44042130/releases/permalink/latest",
@@ -62,6 +59,6 @@
         "hash": {
             "url": "$url.sha256sum"
         },
-        "extract_dir": "librewolf-$version"
+        "extract_dir": "librewolf-$version\\LibreWolf"
     }
 }
