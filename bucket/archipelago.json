@@ -3,6 +3,9 @@
     "description": "A multi-game multiworld randomizer.",
     "homepage": "https://archipelago.gg",
     "license": "MIT",
+    "suggest": {
+        "vcredist": "extras/vcredist2022"
+    },
     "architecture": {
         "64bit": {
             "url": "https://github.com/ArchipelagoMW/Archipelago/releases/download/0.5.1/Setup.Archipelago.0.5.1.exe",
@@ -10,6 +13,23 @@
         }
     },
     "innosetup": true,
+    "post_install": [
+        "Get-ChildItem \"$persist_dir\" -File | % {",
+        "   Copy-Item -LiteralPath $_ -Destination \"$dir\" -Force",
+        "}",
+        "$archidir = \"$dir\".Replace('\\', '\\\\')",
+        "'install-associations', 'uninstall-associations' | ForEach-Object {",
+        "    if (Test-Path \"$bucketsdir\\spiraster\\scripts\\$app\\$_.reg\") {",
+        "        $content = Get-Content \"$bucketsdir\\spiraster\\scripts\\$app\\$_.reg\"",
+        "        $content = $content.Replace('$archidir', $archidir)",
+        "        if ($global) {",
+        "            $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "        }",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_.reg\" -Encoding ascii",
+        "}",
+        "reg import \"$dir\\install-associations.reg\""
+    ],
     "bin": [
         [
             "ArchipelagoLauncher.exe",
@@ -21,6 +41,19 @@
             "ArchipelagoLauncher.exe",
             "Archipelago Launcher"
         ]
+    ],
+    "persist": [
+        "custom_worlds"
+    ],
+    "pre_uninstall": [
+        "Get-ChildItem \"$dir\" | ? {",
+        "   $_.Name -match '\\.(yaml|gb|nes|sfc|z64|bin|a26)'",
+        "} | % {",
+        "   Copy-Item -LiteralPath $_ -Destination \"$persist_dir\" -Force",
+        "}",
+        "if ($cmd -eq 'uninstall') {",
+        "   reg import \"$dir\\uninstall-associations.reg\" ",
+        "}"
     ],
     "checkver": {
         "github": "https://github.com/ArchipelagoMW/Archipelago"
