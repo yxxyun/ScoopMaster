@@ -1,0 +1,75 @@
+{
+    "version": "1.1.43",
+    "description": "Incredibly fast JavaScript runtime, bundler, transpiler and package manager - all in one.",
+    "homepage": "https://bun.sh/",
+    "license": "MIT",
+    "suggest": {
+        "vcredist": "extras/vcredist2022"
+    },
+    "architecture": {
+        "64bit": {
+            "url": [
+                "https://github.com/oven-sh/bun/releases/download/bun-v1.1.43/bun-windows-x64.zip",
+                "https://github.com/oven-sh/bun/releases/download/bun-v1.1.43/bun-windows-x64-baseline.zip"
+            ],
+            "hash": [
+                "0af5374d1aa76e88722c2c66f72fa018b786766304c8cafec09774296d5ca80e",
+                "2f2b8270a8b8696e131e07ee5eb985d381c66eca67bfd88bef497cf6fc13848c"
+            ]
+        }
+    },
+    "env_set": {
+        "BUN_INSTALL_BIN": "$dir\\bun\\bin",
+        "BUN_INSTALL_CACHE_DIR": "$dir\\bun\\cache",
+        "BUN_INSTALL_GLOBAL_DIR": "$dir\\bun\\global"
+    },
+    "post_install": [
+        "if (!(Test-Path $HOME\\.bunfig.toml)) {",
+        "    New-Item -ItemType File -Path $HOME\\.bunfig.toml -Force",
+        "    Set-Content -Path $HOME\\.bunfig.toml -Value '[install]
+registry = \"https://registry.npmmirror.com/\"'",
+        "} else {",
+        "    Copy-Item -Path $HOME\\.bunfig.toml -Destination $HOME\\.bunfig.toml.bak -Force",
+        "    Set-Content -Path $HOME\\.bunfig.toml -Value '[install]
+registry = \"https://registry.npmmirror.com/\"'",
+        "}"
+    ],
+    "env_add_path": "$dir\\bun\\bin",
+    "pre_install": [
+        "$avx2 = Start-Job -ScriptBlock {",
+        "    Add-Type -MemberDefinition '[DllImport(\"kernel32.dll\")] public static extern bool IsProcessorFeaturePresent(int ProcessorFeature);' -Name Kernel32 -Namespace Win32",
+        "    return [Win32.Kernel32]::IsProcessorFeaturePresent(40)",
+        "} | Receive-Job -Wait -AutoRemoveJob",
+        "$target = 'bun-windows-x64'",
+        "if (-not $avx2) {",
+        "    $target += '-baseline'",
+        "}",
+        "Move-Item \"$dir\\$target\\bun.exe\" \"$dir\\bun.exe\"",
+        "Remove-Item \"$dir\\bun-windows-*\" -Recurse"
+    ],
+    "bin": [
+        "bun.exe",
+        [
+            "bun.exe",
+            "bunx",
+            "x"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/oven-sh/bun",
+        "re": "bun-v([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": [
+                    "https://github.com/oven-sh/bun/releases/download/bun-v$version/bun-windows-x64.zip",
+                    "https://github.com/oven-sh/bun/releases/download/bun-v$version/bun-windows-x64-baseline.zip"
+                ]
+            }
+        },
+        "hash": {
+            "url": "$baseurl/SHASUMS256.txt"
+        }
+    }
+}
