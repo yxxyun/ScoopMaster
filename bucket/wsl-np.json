@@ -1,35 +1,42 @@
 {
     "version": "2.3.26",
-    "homepage": "https://docs.microsoft.com/windows/wsl",
-    "description": "Windows Subsystem for Linux (WSL) lets developers run a GNU/Linux environment -- including most command-line tools, utilities, and applications -- directly on Windows, unmodified, without the overhead of a traditional virtual machine or dual-boot setup.",
-    "license": "MIT",
-    "notes": "If WSL installed successfully, you can remove this installer by running, `scoop uninstall wsl-np`",
+    "description": "Windows Subsystem for Linux (WSL) Installer",
+    "homepage": "https://github.com/microsoft/WSL",
     "architecture": {
-        "arm64": {
-            "url": "https://github.com/microsoft/WSL/releases/download/2.3.26/wsl.2.3.26.0.ARM64.msi#/setup.msi_",
-            "hash": "d23b30f34d3e21bbf1a92db0a25d55d446262eb2169e84ffff999ee77f751ac5"
-        },
         "64bit": {
-            "url": "https://github.com/microsoft/WSL/releases/download/2.3.26/wsl.2.3.26.0.x64.msi#/setup.msi_",
+            "url": "https://github.com/microsoft/WSL/releases/download/2.3.26/wsl.2.3.26.0.x64.msi#/wsl.msi_",
             "hash": "cd3f2a68a1a5836f6a1cc9965a7f5f54db267ca221eaa87df29345ab7957aec4"
+        },
+        "arm64": {
+            "url": "https://github.com/microsoft/WSL/releases/download/2.3.26/wsl.2.3.26.0.arm64.msi#/wsl.msi_",
+            "hash": "d23b30f34d3e21bbf1a92db0a25d55d446262eb2169e84ffff999ee77f751ac5"
         }
     },
+    "pre_install": [
+        "if (!(is_admin)) {",
+        "    error \"Administrator rights are required to install $app.\"",
+        "    scoop uninstall $app",
+        "    exit 1",
+        "}",
+        "info 'Enable Hyper-V Core for WSL2...'",
+        "Enable-WindowsOptionalFeature -FeatureName 'VirtualMachinePlatform' -All -Online -NoRestart -LimitAccess | Out-Null",
+        "info 'Enable WSL1...'",
+        "Enable-WindowsOptionalFeature -FeatureName 'Microsoft-Windows-Subsystem-Linux' -All -Online -NoRestart -LimitAccess | Out-Null"
+    ],
     "installer": {
         "script": [
-            "if (!(is_admin)) {error \"$app requires admin rights to $cmd\"; break}",
-            "Start-Process 'msiexec' -Wait -Args @('/i', \"$dir\\setup.msi_\", '/qn')"
+            "Invoke-ExternalCommand 'msiexec' -RunAs -ArgumentList @('/i', \"$dir\\wsl.msi_\", '/quiet', '/norestart')",
+            "warn 'You must restart your computer for the changes to take effect.'"
         ]
     },
-    "checkver": {
-        "github": "https://github.com/microsoft/WSL"
-    },
+    "checkver": "github",
     "autoupdate": {
         "architecture": {
-            "arm64": {
-                "url": "https://github.com/microsoft/WSL/releases/download/$version/wsl.$version.0.ARM64.msi#/setup.msi_"
-            },
             "64bit": {
-                "url": "https://github.com/microsoft/WSL/releases/download/$version/wsl.$version.0.x64.msi#/setup.msi_"
+                "url": "https://github.com/microsoft/WSL/releases/download/$version/wsl.$version.0.x64.msi#/wsl.msi"
+            },
+            "arm64": {
+                "url": "https://github.com/microsoft/WSL/releases/download/$version/wsl.$version.0.arm64.msi#/wsl.msi"
             }
         }
     }
