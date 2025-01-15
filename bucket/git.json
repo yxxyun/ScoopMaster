@@ -1,12 +1,15 @@
 {
-    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
     "version": "2.47.1",
-    "description": "The Windows port of Git, a free and open source distributed version control system.",
-    "homepage": "https://gitforwindows.org/",
-    "license": {
-        "identifier": "GPL-2.0-only",
-        "url": "https://github.com/git-for-windows/git/blob/main/COPYING"
-    },
+    "description": "Distributed version control system",
+    "homepage": "https://gitforwindows.org",
+    "license": "GPL-2.0-only",
+    "notes": [
+        "Set Git Credential Manager Core by running: \"git config --global credential.helper manager\"",
+        "",
+        "To add context menu entries, run '$dir\\install-context.reg'",
+        "",
+        "To create file-associations for .git* and .sh files, run '$dir\\install-file-associations.reg'"
+    ],
     "architecture": {
         "64bit": {
             "url": "https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/PortableGit-2.47.1-64-bit.7z.exe#/dl.7z",
@@ -17,28 +20,132 @@
             "hash": "7d022cdf6a79b0206db4274231f51bee271001d8c88fe2e25d5ff81cc0535b80"
         }
     },
-    "post_install": "& \"$dir\\bin\\bash.exe\" -c 'cmd //c /post-install.bat' *>$null",
-    "env_add_path": "bin",
-    "persist": [
-        "etc\\fstab",
-        "etc\\gitconfig"
+    "post_install": [
+        "'install-context', 'uninstall-context', 'install-file-associations', 'uninstall-file-associations' | ForEach-Object {",
+        "    $reg_file_in  = \"$bucketsdir\\main\\scripts\\git\\$_.reg\"",
+        "    $reg_file_out = \"$dir\\$_.reg\"",
+        "    $git_root     = \"$dir\".Replace('\\', '\\\\')",
+        "    if (Test-Path $reg_file_in) {",
+        "        $content = Get-Content $reg_file_in",
+        "        $content = $content.Replace('$git_root', $git_root)",
+        "        if ($global) {",
+        "            $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "        }",
+        "        Set-Content -Path $reg_file_out -Value $content -Encoding Ascii",
+        "    }",
+        "}"
     ],
+    "bin": [
+        "bin\\sh.exe",
+        "bin\\bash.exe",
+        "cmd\\git.exe",
+        "cmd\\gitk.exe",
+        "cmd\\git-gui.exe",
+        "cmd\\scalar.exe",
+        "usr\\bin\\tig.exe",
+        "git-bash.exe",
+        "usr\\bin\\awk.exe",
+        "usr\\bin\\base32.exe",
+        "usr\\bin\\base64.exe",
+        "usr\\bin\\basename.exe",
+        "usr\\bin\\cat.exe",
+        "usr\\bin\\chmod.exe",
+        "usr\\bin\\comm.exe",
+        "usr\\bin\\cp.exe",
+        "usr\\bin\\cut.exe",
+        "usr\\bin\\date.exe",
+        "usr\\bin\\dirname.exe",
+        "usr\\bin\\echo.exe",
+        "usr\\bin\\env.exe",
+        "usr\\bin\\expr.exe",
+        "usr\\bin\\false.exe",
+        "usr\\bin\\find.exe",
+        "usr\\bin\\fold.exe",
+        "usr\\bin\\gpg-agent.exe",
+        "usr\\bin\\gpg-connect-agent.exe",
+        "usr\\bin\\gpg-error.exe",
+        "usr\\bin\\gpg-wks-server.exe",
+        "usr\\bin\\gpg.exe",
+        "usr\\bin\\gpgconf.exe",
+        "usr\\bin\\gpgparsemail.exe",
+        "usr\\bin\\gpgscm.exe",
+        "usr\\bin\\gpgsm.exe",
+        "usr\\bin\\gpgsplit.exe",
+        "usr\\bin\\gpgtar.exe",
+        "usr\\bin\\gpgv.exe",
+        "usr\\bin\\grep.exe",
+        "usr\\bin\\gzip.exe",
+        "usr\\bin\\head.exe",
+        "usr\\bin\\id.exe",
+        "usr\\bin\\install.exe",
+        "usr\\bin\\join.exe",
+        "usr\\bin\\ln.exe",
+        "usr\\bin\\ls.exe",
+        "usr\\bin\\md5sum.exe",
+        "usr\\bin\\mkdir.exe",
+        "usr\\bin\\mkfifo.exe",
+        "usr\\bin\\mv.exe",
+        "usr\\bin\\nano.exe",
+        "usr\\bin\\od.exe",
+        "usr\\bin\\paste.exe",
+        "usr\\bin\\perl.exe",
+        "usr\\bin\\printf.exe",
+        "usr\\bin\\ps.exe",
+        "usr\\bin\\pwd.exe",
+        "usr\\bin\\rm.exe",
+        "usr\\bin\\sed.exe",
+        "usr\\bin\\rmdir.exe",
+        "usr\\bin\\rnano.exe",
+        "usr\\bin\\sha1sum.exe",
+        "usr\\bin\\sha224sum.exe",
+        "usr\\bin\\sha256sum.exe",
+        "usr\\bin\\sha384sum.exe",
+        "usr\\bin\\sha512sum.exe",
+        "usr\\bin\\sleep.exe",
+        "usr\\bin\\sort.exe",
+        "usr\\bin\\split.exe",
+        "usr\\bin\\stty.exe",
+        "usr\\bin\\tail.exe",
+        "usr\\bin\\tar.exe",
+        "usr\\bin\\tee.exe",
+        "usr\\bin\\touch.exe",
+        "usr\\bin\\tr.exe",
+        "usr\\bin\\true.exe",
+        "usr\\bin\\uname.exe",
+        "usr\\bin\\uniq.exe",
+        "usr\\bin\\wc.exe",
+        "usr\\bin\\xargs.exe"
+    ],
+    "shortcuts": [
+        [
+            "git-bash.exe",
+            "Git Bash",
+            "--cd-to-home"
+        ],
+        [
+            "cmd\\git-gui.exe",
+            "Git GUI"
+        ]
+    ],
+    "env_set": {
+        "GIT_INSTALL_ROOT": "$dir"
+    },
     "checkver": {
         "url": "https://api.github.com/repos/git-for-windows/git/releases/latest",
-        "jsonpath": "$.tag_name",
-        "regex": "(?<tag>v([\\d.]+)\\.windows\\.\\d)"
+        "jsonpath": "$..browser_download_url",
+        "regex": "download/v(?<tag>[\\d.]+windows\\.\\d)/PortableGit-([\\d.]+)-64"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/git-for-windows/git/releases/download/$matchTag/PortableGit-$version-64-bit.7z.exe#/dl.7z"
+                "url": "https://github.com/git-for-windows/git/releases/download/v$matchTag/PortableGit-$version-64-bit.7z.exe#/dl.7z"
             },
             "32bit": {
-                "url": "https://github.com/git-for-windows/git/releases/download/$matchTag/PortableGit-$version-32-bit.7z.exe#/dl.7z"
+                "url": "https://github.com/git-for-windows/git/releases/download/v$matchTag/PortableGit-$version-32-bit.7z.exe#/dl.7z"
             }
         },
         "hash": {
-            "url": "https://github.com/git-for-windows/git/releases/tag/$matchTag",
+            "url": "https://github.com/git-for-windows/git/releases/tag/v$matchTag",
             "regex": "(?s)$basename.*?$sha256"
         }
     }
