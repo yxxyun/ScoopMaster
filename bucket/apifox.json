@@ -1,43 +1,48 @@
 {
     "version": "2.6.46",
-    "description": "Apifox 是 API 文档、API 调试、API Mock、API 自动化测试一体化协作平台，定位 Postman + Swagger + Mock + JMeter。",
+    "description": "API 设计、开发、测试一体化协作平台。All-in-one collaboration platform for API documentation, API debugging, API Mock and API test automation.",
     "homepage": "https://apifox.com",
-    "notes": "https://github.com/ViCrack/scoop-bucket/blob/master/bucket/apifox.json",
     "license": "Freeware",
-    "architecture": {
-        "32bit": {
-            "url": "https://file-assets.apifox.com/download/2.6.46/Apifox-windows-x86-2.6.46.exe#/dl.7z",
-            "hash": "e3b775662525b96db5c17de2fe644cac0e512a3ab40135a865cacc2782d4f67c"
-        },
-        "64bit": {
-            "url": "https://file-assets.apifox.com/download/2.6.46/Apifox-2.6.46.exe#/dl.7z",
-            "hash": "441b100675ea5a143bfeeac8b1a71437b975fce1d4b05fd1aa4c938b66960048"
-        }
-    },
-    "pre_install": [
-        "Get-Item \"$dir\\`$PLUGINSDIR\\app*.7z\" | Expand-7zipArchive -DestinationPath \"$dir\"",
-        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Force -Recurse"
-    ],
+    "url": "https://file-assets.apifox.com/download/Apifox-windows-latest.zip",
+    "hash": "sha512:719f13c16b6dcf057af5c1840af3709e381048318c2641c68712c5e89e6242a0f51aef25af12260936268aa48aa6b12a0f9d8610a861304d3685e010bfd4f8a8",
     "shortcuts": [
         [
             "Apifox.exe",
-            "Apifox",
-            "--user-data-dir=\"$dir\\UserData\""
+            "Apifox"
         ]
     ],
-    "persist": "UserData",
+    "pre_install": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$path_installer=\"$dir\\Apifox-$version.exe\"",
+        "& $path_installer /S /D=$dir",
+        "$core_exe=\"$dir\\Apifox.exe\"",
+        "sleep_install $core_exe",
+        "persist_file -dir @(\"$user_AppData\\apifox\") @(\"$persist_dir\\apifox\")",
+        "handle_app_lnk",
+        "do_some_things"
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process $false",
+        "Stop-Process -Name 'ApifoxAppAgent' -ErrorAction SilentlyContinue",
+        "Wait-Process -Name 'ApifoxAppAgent' -ErrorAction SilentlyContinue -Timeout 30",
+        "remove_files @(\"$user_AppData\\apifox\")",
+        "$ui_exe=\"$dir\\Uninstall Apifox.exe\"",
+        "try{ & $ui_exe /S }catch{}",
+        "sleep_uninstall $ui_exe",
+        "remove_files @(\"$user_LocalAppData\\apifox-updater\")"
+    ],
     "checkver": {
-        "url": "https://apifox.com/help/release/changelog.json",
-        "regex": "\"version\": \"([\\d.]+)\""
+        "url": "https://apifox.com/help/app/changelog",
+        "regex": ">([\\d.]+)<"
     },
     "autoupdate": {
-        "architecture": {
-            "32bit": {
-                "url": "https://file-assets.apifox.com/download/$version/Apifox-windows-x86-$version.exe#/dl.7z"
-            },
-            "64bit": {
-                "url": "https://file-assets.apifox.com/download/$version/Apifox-$version.exe#/dl.7z"
-            }
+        "url": "https://file-assets.apifox.com/download/Apifox-windows-latest.zip",
+        "hash": {
+            "url": "$baseurl/latest.yml",
+            "regex": "sha512: $base64"
         }
     }
 }
