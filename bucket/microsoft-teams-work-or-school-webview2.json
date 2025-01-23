@@ -22,12 +22,20 @@
    },
    "installer": {
       "script": [
+         "if ((Get-ItemProperty -Path 'Registry::HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock').AllowDevelopmentWithoutDevLicense -eq 1) { $AppModelUnlocked = $true }",
+         "if (-not $AppModelUnlocked) {",
+         "   if (-not (is_admin)) { error 'This package requires admin privileges to install'; break }",
+         "   New-ItemProperty -Force -Path 'Registry::HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock' -Name 'AllowDevelopmentWithoutDevLicense' -PropertyType DWord -Value '1' > $null",
+         "}",
          "if ($PSVersionTable.PSVersion.Major -ge 6) { Import-Module Appx -UseWindowsPowershell 3>$null }",
          "Add-AppxPackage -Path \"$dir\\AppxManifest.xml\" -Register",
          "@(",
          "   'Set SHL = CreateObject(\"WScript.Shell\")'",
          "   \"call SHL.Run(`\"$env:LocalAppData\\Microsoft\\WindowsApps\\ms-teams.exe`\", o, false)\"",
-         ") | Set-Content -Path \"$dir\\ms-teams.vbs\""
+         ") | Set-Content -Path \"$dir\\ms-teams.vbs\"",
+         "if (-not $AppModelUnlocked) {",
+         "   Remove-ItemProperty -Force -Path 'Registry::HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock' -Name 'AllowDevelopmentWithoutDevLicense'",
+         "}"
       ]
    },
    "uninstaller": {
