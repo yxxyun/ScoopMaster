@@ -1,30 +1,58 @@
 {
-    "version": "7.0.0164",
-    "description": "XShell",
-    "homepage": "https://github.com/gendloop/Xshell",
-    "license": "LGPL-2.1-or-later",
-    "notes": "<Installer>",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/gendloop/Xshell/archive/refs/tags/v7.0.0164.zip",
-            "hash": "40917cd81f4c27e53f35ec07bf4547b2995191d1f9529b35180e9297d86c761e"
-        }
+    "version": "8.0.0066p",
+    "description": "The Industry’s Most Powerful SSH Client",
+    "homepage": "https://www.xshell.com/en/free-for-home-school/",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://www.xshell.com/docs/ver8_free_eula.pdf"
     },
+    "depends": [
+        "isx",
+        "gsudo"
+    ],
+    "url": "https://cdn.netsarang.net/3a9c1902/Xshell-8.0.0066p.exe#/dl.exe",
+    "hash": "59ecccd074dbf3c12a84093bac09717ea247ecb275bc52be6ef14c3cda278fb9",
+    "notes": [
+        "* Known issue:",
+        "  - 'Initialize Flexnet Service failed' is displayed when you start Xshell everytime.",
+        "  - NetSarang Computer, Inc.’s free licensing of Xshell and Xftp is for non-commercial use only."
+    ],
+    "shortcuts": [
+        [
+            "Xshell.exe",
+            "Xshell.exe",
+            "",
+            "XshellIcon.ico"
+        ]
+    ],
     "installer": {
         "script": [
-            "Push-Location \"$dir\"",
-            "7z x Xshell-$version\\dist\\Xshell.7z",
-            "Remove-Item Xshell-$version -Recurse",
-            "Start-Process Xshell.exe",
-            "Pop-Location"
+            "Invoke-ExternalCommand ((Get-Command 'isx' -CommandType Application).Source) -ArgumentList \"$dir\\dl.exe\" -LogPath \"$dir\\isx.log\" | Out-Null",
+            "$folder = Get-ChildItem \"$dir\" -Directory | Select-Object -First 1 -ExpandProperty FullName",
+            "Expand-MsiArchive \"$folder\\Xshell 8.msi\" \"$dir\" -ExtractDir \"SourceDir\\program files\\NetSarang\\Xshell 8\" -Removal",
+            "Remove-Item $folder -Force -Recurse",
+            "Remove-Item \"$dir\\LiveUpdate.dat\" -Force",
+            "Remove-Item \"$dir\\LiveUpdate.exe\" -Force",
+            "Remove-Item \"$dir\\nsregister.exe\" -Force",
+            "reg.exe add \"HKCU\\SOFTWARE\\NetSarang\\Xshell\\8\\License\" /v \"SubmitTime\" /t REG_DWORD /d \"2145888000\" /f",
+            "reg.exe add \"HKCU\\SOFTWARE\\NetSarang\\Xshell\\8\\Personal\" /v \"Notified\" /t REG_DWORD /d \"1\" /f",
+            "reg.exe add \"HKCU\\SOFTWARE\\NetSarang\\Xshell\\8\\LiveUpdate\" /v \"EnableLiveUpdate\" /t REG_DWORD /d \"0\" /f",
+            "gsudo reg.exe add \"HKLM\\SOFTWARE\\NetSarang\\Xshell\\8\" /v \"MagicCode\" /t REG\\_BINARY /d \"$(-join (((48..57) + (97..102)) * 44 | Get-Random -Count 44 | % { [char]$_ }))\" /f /reg:32"
         ]
     },
-    "checkver": "github",
+    "uninstaller": {
+        "script": [
+            "reg.exe delete \"HKCU\\SOFTWARE\\NetSarang\\Xshell\\8\" /f",
+            "gsudo {",
+            "    reg.exe delete \"HKLM\\SOFTWARE\\NetSarang\\Xshell\\8\" /f *>$null",
+            "    reg.exe delete \"HKLM\\SOFTWARE\\WOW6432Node\\NetSarang\\Xshell\\8\" /f *>$null",
+            "}"
+        ]
+    },
+    "checkver": {
+        "regex": "https://cdn.netsarang.net/(?<hash>[^/]+)/Xshell-([\\d.]+p).exe#/dl.exe"
+    },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/gendloop/Xshell/archive/refs/tags/v$version.zip"
-            }
-        }
+        "url": "https://cdn.netsarang.net/$matchHash/Xshell-$version.exe"
     }
 }
