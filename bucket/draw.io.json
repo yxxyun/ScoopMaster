@@ -1,32 +1,47 @@
 {
     "version": "26.0.9",
-    "description": "Professional diagramming",
-    "homepage": "https://www.draw.io",
-    "license": "Apache-2.0",
+    "description": "一款专业的绘图工具。Professional diagramming.",
+    "homepage": "https://www.diagrams.net",
+    "license": {
+        "identifier": "Apache License 2.0",
+        "url": "https://github.com/jgraph/drawio-desktop/blob/dev/LICENSE"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/jgraph/drawio-desktop/releases/download/v26.0.9/draw.io-26.0.9-windows-no-installer.exe#/dl.7z",
-            "hash": "e884a90dcfac3c20333e776720276f24147323828f04059686ac449c963062ee",
-            "pre_install": [
-                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse"
-            ]
+            "url": "https://github.com/jgraph/drawio-desktop/releases/download/v26.0.9/draw.io-26.0.9-windows-installer.exe#/abgo_bucket_installer.exe",
+            "hash": "1e9416edf9902e1918c0a93fb3e9dbc53f74e6df450a5f6f895ca037bf410e1d"
         },
         "32bit": {
-            "url": "https://github.com/jgraph/drawio-desktop/releases/download/v26.0.9/draw.io-ia32-26.0.9-windows-32bit-no-installer.exe#/dl.7z",
-            "hash": "b0a6163b818004f96a655771eb217fbff19a82d3575558e2e64324e4d089b304",
-            "pre_install": [
-                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-32.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse"
-            ]
+            "url": "https://github.com/jgraph/drawio-desktop/releases/download/v26.0.9/draw.io-ia32-26.0.9-windows-32bit-installer.exe#/abgo_bucket_installer.exe",
+            "hash": "1c0db3ec47623e17eaddb13acca6db5477dfdd6a5059771cf52f761ccb534583"
         }
     },
-    "bin": "draw.io.exe",
     "shortcuts": [
         [
             "draw.io.exe",
             "draw.io"
         ]
+    ],
+    "pre_install": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$path_installer=\"$dir\\abgo_bucket_installer.exe\"",
+        "& $path_installer /S /D=$dir",
+        "$core_exe=\"$dir\\draw.io.exe\"",
+        "sleep_install $core_exe",
+        "persist_file -dir @(\"$user_AppData\\draw.io\") @(\"$persist_dir\\draw.io\")",
+        "handle_app_lnk",
+        "do_some_things"
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process $false",
+        "remove_files @(\"$user_AppData\\draw.io\")",
+        "$ui_exe=\"$dir\\Uninstall draw.io.exe\"",
+        "try{ & $ui_exe /S }catch{}",
+        "sleep_uninstall $ui_exe",
+        "remove_files @(\"$user_LocalAppData\\draw.io-updater\")"
     ],
     "checkver": {
         "github": "https://github.com/jgraph/drawio-desktop"
@@ -34,19 +49,15 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/jgraph/drawio-desktop/releases/download/v$version/draw.io-$version-windows-no-installer.exe#/dl.7z",
-                "hash": {
-                    "url": "$baseurl/Files-SHA256-Hashes.txt",
-                    "regex": "draw.io-$version-windows-no-installer.exe\\s*$sha256"
-                }
+                "url": "https://github.com/jgraph/drawio-desktop/releases/download/v$version/draw.io-$version-windows-installer.exe#/abgo_bucket_installer.exe"
             },
             "32bit": {
-                "url": "https://github.com/jgraph/drawio-desktop/releases/download/v$version/draw.io-ia32-$version-windows-32bit-no-installer.exe#/dl.7z",
-                "hash": {
-                    "url": "$baseurl/Files-SHA256-Hashes.txt",
-                    "regex": "draw.io-ia32-$version-windows-32bit-no-installer.exe\\s*$sha256"
-                }
+                "url": "https://github.com/jgraph/drawio-desktop/releases/download/v$version/draw.io-ia32-$version-windows-32bit-installer.exe#/abgo_bucket_installer.exe"
             }
+        },
+        "hash": {
+            "url": "$baseurl/Files-SHA256-Hashes.txt",
+            "regex": "$basename\\s*?$sha256"
         }
     }
 }
