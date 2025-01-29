@@ -1,0 +1,64 @@
+{
+    "version": "0.41.1",
+    "description": "Amateur radio logbook software",
+    "homepage": "https://github.com/foldynl/QLog",
+    "license": "GPL-3.0-only",
+    "url": "https://github.com/foldynl/QLog/releases/download/v0.41.1/qlog-installer0.41.1.exe#/dl.exe",
+    "hash": "72ac41935eba7c91262939fed78a7a089e856fae6eab69256dedf32706a7ad31",
+    "installer": {
+        "script": [
+            "if (!(is_admin)) {",
+            "    Start-Process powershell -ArgumentList \"-ExecutionPolicy Bypass -Command & { scoop install $global:scoop_local_bucket/qlog-np }\" -Verb RunAs;",
+            "    break;",
+            "}",
+            "$sourcePath = \"$dir\\Qlog\";",
+            "Start-Process \"$dir\\$fname\" -ArgumentList @('--root', \"$sourcePath\", '--accept-licenses', '--default-answer', '--confirm-command', 'install') -Wait -Verb RunAs",
+            "",
+            "if (!(Test-Path $sourcePath)) { throw \"Source path not found: $sourcePath\" }",
+            "",
+            "Write-Host 'Creating shortcut for Qlog...';",
+            "$startMenuPath = Join-Path ([Environment]::GetFolderPath('StartMenu')) 'Programs';",
+            "$shortcutPath = Join-Path $startMenuPath 'Qlog.lnk';",
+            "$shell = New-Object -ComObject WScript.Shell;",
+            "$shortcut = $shell.CreateShortcut($shortcutPath);",
+            "$shortcut.TargetPath = \"$sourcePath\\qlog.exe\";",
+            "$shortcut.WorkingDirectory = \"$shortcutPath\";",
+            "$shortcut.IconLocation = \"$shortcutPath\\qlog.exe\";",
+            "$shortcut.Save();",
+            "Write-Host \"Shortcut created in Start Menu: $shortcutPath\";",
+            "",
+            "Write-Host 'Refreshing Windows Search Index...';",
+            "Start-Sleep -Seconds 2;",
+            "Stop-Service 'WSearch' -Force;",
+            "Start-Sleep -Seconds 3;",
+            "Start-Service 'WSearch';",
+            "Write-Host 'Windows Search Index refreshed successfully.';"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if (!(is_admin)) {",
+            "    Start-Process powershell -ArgumentList \"-ExecutionPolicy Bypass -Command & { scoop uninstall qlog-np }\" -Verb RunAs;",
+            "    break;",
+            "}",
+            "Start-Process \"$dir\\Qlog\\maintenancetool.exe\" -ArgumentList('--confirm-command', 'purge', 'de.dl2ic.qlog') -Wait -Verb RunAs",
+            "if (!(Test-Path \"$dir\\Qlog\")) {",
+            "  Write-Host 'GlazeWM uninstalled successfully.';",
+            "} else {",
+            "  throw 'Uninstallation failed. Directory still exists.';",
+            "}"
+        ]
+    },
+    "shortcuts": [
+        [
+            "QLog\\qlog.exe",
+            "QLog"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/foldynl/QLog"
+    },
+    "autoupdate": {
+        "url": "https://github.com/foldynl/QLog/releases/download/v$version/qlog-installer$version.exe#/dl.exe"
+    }
+}
