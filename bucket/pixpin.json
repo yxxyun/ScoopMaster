@@ -1,17 +1,30 @@
 {
-    "version": "1.9.11.7",
+    "version": "1.9.11.8",
     "description": "功能强大使用简单的截图/贴图工具，帮助你提高效率",
     "homepage": "https://pixpinapp.com/",
     "license": {
         "identifier": "Proprietary",
         "url": "http://qt.io/licensing/"
     },
-    "url": "https://download.pixpinapp.com/PixPin_1.9.11.7.zip",
-    "hash": "1246a88c80bc3365c167fcfe91b66da1672ddb3d85849104fad1e2083d3d65b0",
+    "url": "https://download.pixpinapp.com/PixPin_1.9.11.8.zip",
+    "hash": "5c7eb2f080dc0974abe0e56211ec63cae81ef0a0042c37a2f375da57ae7bdea7",
     "extract_dir": "PixPin",
+    "pre_install": [
+        "if(-not (Test-Path -Path \"$dir\\History\")){mkdir \"$dir\\History\"}",
+        "if(-not (Test-Path -Path \"$dir\\Data\")){mkdir \"$dir\\Data\"}",
+        "if(-not (Test-Path -Path \"$dir\\Coredump\")){mkdir \"$dir\\Coredump\"}",
+        "if(-not (Test-Path -Path \"$dir\\Config\")){mkdir \"$dir\\Config\"}"
+    ],
+    "bin": [
+        [
+            "PixPin.exe",
+            "pixpin"
+        ]
+    ],
     "persist": [
         "History",
         "Data",
+        "Coredump",
         "Config"
     ],
     "shortcuts": [
@@ -20,16 +33,18 @@
             "PixPin"
         ]
     ],
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App"
-    ],
     "checkver": {
-        "url": "https://api.viewdepth.cn/app_info?app_id=pixpin&update_type=1&sys=win",
-        "jsonpath": "$.ver_info.version"
+        "script": [
+            "$url = 'https://pixpin.cn'",
+            "$resp = Invoke-WebRequest -Uri $url",
+            "$cont = $resp.Content",
+            "$pattern = 'page-[\\w\\d]+.js'",
+            "$url = 'https://pixpin.cn/_next/static/chunks/app/' + [regex]::Match($cont, $pattern).Value",
+            "$(Invoke-WebRequest -Uri $url).Content"
+        ],
+        "regex": "PixPin_([\\d\\.]+)\\.exe"
     },
     "autoupdate": {
-        "url": "https://download.pixpinapp.com/PixPin_$version.zip"
+        "url": "https://download.pixpinapp.com/PixPin_$match1.zip"
     }
 }
