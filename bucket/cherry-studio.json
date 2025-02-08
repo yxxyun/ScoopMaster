@@ -1,28 +1,57 @@
 {
-    "##": "CherryStudio",
-    "version": "0.9.19",
-    "description": "Cherry Studio 是一款支持多个大语言模型（LLM）服务商的桌面客户端，兼容 Windows、Mac 和 Linux 系统",
-    "homepage": "https://github.com/CherryHQ/cherry-studio",
-    "license": {
-        "identifier": "Apache-2.0",
-        "url": "https://github.com/CherryHQ/cherry-studio?tab=License-1-ov-file#readme"
-    },
-    "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v0.9.19/Cherry-Studio-0.9.19-setup.exe#/dl.7z",
-    "hash": "4ee976fd292b2decd8cf2888ae63325a47ac459eadaf193a50c1873a85ccab20",
-    "checkver": "github",
-    "autoupdate": {
-        "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-setup.exe#/dl.7z"
-    },
-    "pre_install": [
-        "Move-Item \"$dir\\`$PLUGINSDIR\\app-64.7z\" $dir -Force",
-        "Move-Item \"$dir\\`$R0\\Uninstall Cherry Studio.exe\" $dir -Force",
-        "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\" -Force -Recurse",
-        "Expand-7zipArchive \"$dir\\app-64.7z\" $dir -Removal"
-    ],
-    "shortcuts": [
-        [
-            "Cherry Studio.exe",
-            "Cherry Studio"
-        ]
+  "version": "0.9.19",
+  "description": "A desktop client that supports for multiple LLM providers",
+  "homepage": "https://cherry-ai.com/",
+  "license": {
+    "identifier": "Apache-2.0",
+    "url": "https://github.com/CherryHQ/cherry-studio/raw/refs/heads/main/LICENSE"
+  },
+  "architecture": {
+    "64bit": {
+      "url": "https://cherrystudio.ocool.online/Cherry-Studio-0.9.19-setup.exe",
+      "hash": "4ee976fd292b2decd8cf2888ae63325a47ac459eadaf193a50c1873a85ccab20"
+    }
+  },
+  "installer": {
+    "script": [
+      "Expand-7zipArchive \"$dir\\Cherry-Studio-$version-setup.exe\" \"$dir\\temp\\\" -Removal",
+      "Expand-7zipArchive \"$dir\\temp\\`$PLUGINSDIR\\app-64.7z\" \"$dir\\\" -Removal",
+      "Remove-Item \"$dir\\temp\" -Recurse",
+      "$appDataPath = \"$env:APPDATA\\CherryStudio\"",
+      "$persistPath = \"$persist_dir\\CherryStudio\"",
+      "if (Test-Path $appDataPath) {",
+      "    Copy-Item \"$appDataPath\\*\" -Destination $persistPath -Recurse -Force",
+      "    Remove-Item $appDataPath -Recurse -Force",
+      "}",
+      "New-Item -ItemType Junction -Path \"$appDataPath\" -Target \"$persistPath\""
     ]
+  },
+  "notes": "You'd better turn off update detection in Settings->About Us in Cherry Studio and use scoop to manage updates, otherwise it will cause some errors.",
+  "shortcuts": [
+    [
+      "Cherry Studio.exe",
+      "Cherry Studio"
+    ]
+  ],
+  "persist": "CherryStudio",
+  "uninstaller": {
+    "script": [
+      "if (Test-Path \"$env:APPDATA\\CherryStudio\" -PathType Any) {",
+      "    Remove-Item -Recurse -Force \"$env:APPDATA\\CherryStudio\"",
+      "}",
+      "if (Test-Path \"$env:LOCALAPPDATA\\cherrystudio-updater\" -PathType Container) {",
+      "    Remove-Item -Recurse -Force \"$env:LOCALAPPDATA\\cherrystudio-updater\"",
+      "}"
+    ]
+  },
+  "checkver": {
+    "github": "https://github.com/CherryHQ/cherry-studio"
+  },
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://cherrystudio.ocool.online/Cherry-Studio-$version-setup.exe"
+      }
+    }
+  }
 }
