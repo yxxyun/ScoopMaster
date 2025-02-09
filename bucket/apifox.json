@@ -6,23 +6,28 @@
     "architecture": {
         "64bit": {
             "url": "https://file-assets.apifox.com/download/Apifox-windows-latest.zip",
-            "hash": "816BF1951C8051802A673A6E9A0ABCB141A92CE56FBC38FFA56B74DB3EDA5BE1"
-        },
-        "32bit": {
-            "url": "https://file-assets.apifox.com/download/Apifox-win32-latest.zip",
-            "hash": "3BCED4120E6A208E3047D2AB6A8F18A9F3A0E827E32BCCA09B3A117F5D22942E"
+            "hash": "816bf1951c8051802a673a6e9a0abcb141a92ce56fbc38ffa56b74db3eda5be1"
         }
     },
-    "pre_install": [
-        "Expand-7zipArchive $(Get-Item \"$dir\\Apifox*.exe\").FullName -Destination \"$dir\" -Removal",
-        "Get-Item \"$dir\\`$PLUGINSDIR\\app*.7z\" | Expand-7zipArchive -Destination \"$dir\"",
-        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse"
+    "pre_uninstall": "Stop-Process -Name 'ApifoxAppAgent' -Force",
+    "installer": {
+        "script": [
+            "Expand-7zipArchive -Path \"$dir\\Apifox-$version.exe\" -Removal",
+            "Expand-7zipArchive -Path \"$dir\\`$PLUGINSDIR\\app-64.7z\" -DestinationPath $dir"
+        ]
+    },
+    "post_install": [
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
+        "Remove-Item \"$dir\\`$R0\" -Force -Recurse"
     ],
-    "shortcuts": [["Apifox.exe", "Apifox", "--user-data-dir=\"$persist_dir\""]],
-    "pre_uninstall": [
-        "Stop-Process -Name 'ApifoxAppAgent' -ErrorAction SilentlyContinue",
-        "Wait-Process -Name 'ApifoxAppAgent' -ErrorAction SilentlyContinue -Timeout 30"
+    "shortcuts": [
+        [
+            "Apifox.exe",
+            "Apifox",
+            "--user-data-dir=\"$dir\\UserData\""
+        ]
     ],
+    "persist": "UserData",
     "checkver": {
         "url": "https://apifox.com/help/app/changelog",
         "regex": ">([\\d.]+)<"
@@ -31,9 +36,6 @@
         "architecture": {
             "64bit": {
                 "url": "https://file-assets.apifox.com/download/Apifox-windows-latest.zip"
-            },
-            "32bit": {
-                "url": "https://file-assets.apifox.com/download/Apifox-win32-latest.zip"
             }
         }
     }
