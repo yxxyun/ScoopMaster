@@ -1,30 +1,38 @@
 {
-    "version": "6djng9me6f6h37fa",
+    "version": "213",
     "description": "自用的 PT (private tracker) 全自动刷流、辅种、辅助工具",
     "homepage": "https://github.com/sagan/ptool",
     "license": "AGPL-3.0-or-later",
     "architecture": {
         "64bit": {
-            "url": "https://ci.appveyor.com/api/buildjobs/6djng9me6f6h37fa/artifacts/dist%2Fptool-v0.1.10-snapshot-windows-amd64.zip",
-            "hash": "898c67aac3ce6eed3772f2c0a74bf21f26a1e3ef53a43e1acfb8da60923d8797"
+            "url": "https://ci.appveyor.com/api/buildjobs/t3ey1ruhty2qydo8/artifacts/dist/ptool-v0.1.11-snapshot-windows-amd64.zip",
+            "hash": "2f7c47737775ef7e0408fa117fdcd49890a9791d45bd137473e25b2dcb444996"
         },
         "arm64": {
-            "url": "https://ci.appveyor.com/api/buildjobs/6djng9me6f6h37fa/artifacts/dist%2Fptool-v0.1.10-snapshot-windows-arm64.zip",
-            "hash": "512de20b4487382a825b3c17ea4bc62208bdd94a5ef6775573ea83ff0418105a"
+            "url": "https://ci.appveyor.com/api/buildjobs/t3ey1ruhty2qydo8/artifacts/dist/ptool-v0.1.11-snapshot-windows-arm64.zip",
+            "hash": "46bf58cc0bbf5ef322283ac20e6619f55b672ca4aee183a003af6face6202ca5"
         }
     },
     "bin": "ptool.exe",
     "checkver": {
-        "url": "https://ci.appveyor.com/api/projects/sagan/ptool",
-        "jsonpath": "$.build.jobs[0].jobId"
+        "script": [
+            "$project = Invoke-RestMethod -Uri \"https://ci.appveyor.com/api/projects/sagan/ptool\"",
+            "$buildNumber = $project.build.buildNumber",
+            "$jobId = $project.build.jobs[0].jobId",
+            "$artifacts = Invoke-RestMethod -Uri \"https://ci.appveyor.com/api/buildjobs/$jobId/artifacts\"",
+            "$amd64 = $artifacts | Where-Object { $_.fileName -like \"*windows-amd64*\" }",
+            "$arm64 = $artifacts | Where-Object { $_.fileName -like \"*windows-arm64*\" }",
+            "Write-Output $buildNumber $jobId $amd64.fileName $arm64.fileName"
+        ],
+        "regex": "(?<version>[\\d]+)\\s(?<jobid>[\\w]+)\\s(?<amd64>[\\S]+)\\s(?<arm64>[\\S]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://ci.appveyor.com/api/buildjobs/$version/artifacts/dist%2Fptool-v0.1.10-snapshot-windows-amd64.zip"
+                "url": "https://ci.appveyor.com/api/buildjobs/$matchJobid/artifacts/$matchAmd64"
             },
             "arm64": {
-                "url": "https://ci.appveyor.com/api/buildjobs/$version/artifacts/dist%2Fptool-v0.1.10-snapshot-windows-arm64.zip"
+                "url": "https://ci.appveyor.com/api/buildjobs/$matchJobid/artifacts/$matchArm64"
             }
         }
     }
