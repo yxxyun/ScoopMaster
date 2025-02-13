@@ -1,44 +1,80 @@
 {
-    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
-    "version": "2.47.1",
-    "description": "The Windows port of Git, a free and open source distributed version control system.",
-    "homepage": "https://gitforwindows.org/",
-    "license": {
-        "identifier": "GPL-2.0-only",
-        "url": "https://github.com/git-for-windows/git/blob/main/COPYING"
-    },
+    "version": "2.48.1",
+    "description": "Distributed version control system",
+    "homepage": "https://gitforwindows.org",
+    "license": "GPL-2.0-only",
+    "notes": [
+        "Set Git Credential Manager Core by running: \"git config --global credential.helper manager\"",
+        "",
+        "To add context menu entries, run '$dir\\install-context.reg'",
+        "",
+        "To create file-associations for .git* and .sh files, run '$dir\\install-file-associations.reg'"
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/PortableGit-2.47.1-64-bit.7z.exe#/dl.7z",
-            "hash": "4f3f21f4effcb659566883ee1ed3ae403e5b3d7a0699cee455f6cd765e1ac39c"
+            "url": "https://mirror.nju.edu.cn/github-release/git-for-windows/git/Git%20for%20Windows%20v2.48.1.windows.1/PortableGit-2.48.1-64-bit.7z.exe#/dl.7z",
+            "hash": "a4335111b3363871cac632be93d7466154d8eb08782ff55103866b67d6722257"
         },
         "32bit": {
-            "url": "https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/PortableGit-2.47.1-32-bit.7z.exe#/dl.7z",
-            "hash": "7d022cdf6a79b0206db4274231f51bee271001d8c88fe2e25d5ff81cc0535b80"
+            "url": "https://mirror.nju.edu.cn/github-release/git-for-windows/git/Git%20for%20Windows%20v2.48.1.windows.1/PortableGit-2.48.1-32-bit.7z.exe#/dl.7z",
+            "hash": "63ddbc7ea11ea8a1375f39f45d38f928dbec564360ad12dd11d0d649474063a0"
         }
     },
-    "post_install": "& \"$dir\\bin\\bash.exe\" -c 'cmd //c /post-install.bat' *>$null",
-    "env_add_path": "bin",
-    "persist": [
-        "etc\\fstab",
-        "etc\\gitconfig"
+    "post_install": [
+        "'install-context', 'uninstall-context', 'install-file-associations', 'uninstall-file-associations' | ForEach-Object {",
+        "    $reg_file_in  = \"$bucketsdir\\main\\scripts\\git\\$_.reg\"",
+        "    $reg_file_out = \"$dir\\$_.reg\"",
+        "    $git_root     = \"$dir\".Replace('\\', '\\\\')",
+        "    if (Test-Path $reg_file_in) {",
+        "        $content = Get-Content $reg_file_in",
+        "        $content = $content.Replace('$git_root', $git_root)",
+        "        if ($global) {",
+        "            $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "        }",
+        "        Set-Content -Path $reg_file_out -Value $content -Encoding Ascii",
+        "    }",
+        "}"
     ],
+    "bin": [
+        "bin\\sh.exe",
+        "bin\\bash.exe",
+        "cmd\\git.exe",
+        "cmd\\gitk.exe",
+        "cmd\\git-gui.exe",
+        "cmd\\scalar.exe",
+        "usr\\bin\\tig.exe",
+        "git-bash.exe"
+    ],
+    "shortcuts": [
+        [
+            "git-bash.exe",
+            "Git Bash",
+            "--cd-to-home"
+        ],
+        [
+            "cmd\\git-gui.exe",
+            "Git GUI"
+        ]
+    ],
+    "env_set": {
+        "GIT_INSTALL_ROOT": "$dir"
+    },
     "checkver": {
         "url": "https://api.github.com/repos/git-for-windows/git/releases/latest",
-        "jsonpath": "$.tag_name",
-        "regex": "(?<tag>v([\\d.]+)\\.windows\\.\\d)"
+        "jsonpath": "$..browser_download_url",
+        "regex": "download/v(?<tag>[\\d.]+windows\\.\\d)/PortableGit-([\\d.]+)-64"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/git-for-windows/git/releases/download/$matchTag/PortableGit-$version-64-bit.7z.exe#/dl.7z"
+                "url": "https://mirror.nju.edu.cn/github-release/git-for-windows/git/Git%20for%20Windows%20v$matchTag/PortableGit-$version-64-bit.7z.exe#/dl.7z"
             },
             "32bit": {
-                "url": "https://github.com/git-for-windows/git/releases/download/$matchTag/PortableGit-$version-32-bit.7z.exe#/dl.7z"
+                "url": "https://mirror.nju.edu.cn/github-release/git-for-windows/git/Git%20for%20Windows%20v$matchTag/PortableGit-$version-32-bit.7z.exe#/dl.7z"
             }
         },
         "hash": {
-            "url": "https://github.com/git-for-windows/git/releases/tag/$matchTag",
+            "url": "https://github.com/git-for-windows/git/releases/tag/v$matchTag",
             "regex": "(?s)$basename.*?$sha256"
         }
     }
