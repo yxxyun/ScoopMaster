@@ -1,21 +1,25 @@
 {
-    "version": "1.6.7",
-    "description": "A all-in-one Desktop & Docker AI application with full RAG and AI Agent capabilities.",
-    "homepage": "https://useanything.com/",
+    "version": "1.7.3-r2",
+    "description": "The all-in-one Desktop & Docker AI application with built-in RAG, AI agents, and more.",
+    "homepage": "https://anythingllm.com",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://s3.us-west-1.amazonaws.com/public.useanything.com/latest/AnythingLLMDesktop.exe",
-            "hash": "857247d6d81ca8a48eba05a5526305f74cd19d49f9522507055d99fda368041a"
+            "url": "https://github.com/Mintplex-Labs/anything-llm/releases/download/v1.4.0/AnythingLLMDesktop.exe#/dl.7z",
+            "hash": "265b89855c776cc713ed2bc9bc878486a118460a11a60bea0e3f2aa76c07f9c2",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\", \"$dir\\Unintall*\" -Recurse"
+            ]
+        },
+        "arm64": {
+            "url": "https://github.com/Mintplex-Labs/anything-llm/releases/download/v1.4.0/AnythingLLMDesktop-Arm64.exe#/dl.7z",
+            "hash": "b21b7b5fcad87110e9bd880946ad69daf4601ede4ce8c24874147e19db0ee8df",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\", \"$dir\\Unintall*\" -Recurse"
+            ]
         }
-    },
-    "installer": {
-        "script": [
-            "$file = (Get-ChildItem \"$dir\" 'AnythingLLM*.exe' | Select-Object -First 1).FullName",
-            "Expand-7ZipArchive \"$file\" \"$dir\\\" -Removal",
-            "Expand-7ZipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
-            "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\`$R0\"  -Force -Recurse"
-        ]
     },
     "shortcuts": [
         [
@@ -23,10 +27,28 @@
             "AnythingLLM"
         ]
     ],
+    "checkver": {
+        "url": "https://github.com/Mintplex-Labs/anything-llm/releases/latest",
+        "script": [
+            "$response = (Invoke-WebRequest -Uri $url -UseBasicParsing -Method Head).BaseResponse",
+            "$release = if ($response.RequestMessage) {",
+            "    $response.RequestMessage.RequestUri.Segments[-1]",
+            "} else {",
+            "    $response.ResponseUri.Segments[-1]",
+            "}",
+            "$version_txt = 'https://github.com/Mintplex-Labs/anything-llm/releases/download/' + $release + '/version.txt'",
+            "$version = (Invoke-RestMethod -Uri $version_txt -UseBasicParsing).Trim()",
+            "Write-Output $version $release"
+        ],
+        "regex": "(\\S+) (?<release>\\S+)"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://s3.us-west-1.amazonaws.com/public.useanything.com/latest/AnythingLLMDesktop.exe"
+                "url": "https://github.com/Mintplex-Labs/anything-llm/releases/download/$matchRelease/AnythingLLMDesktop.exe#/dl.7z"
+            },
+            "arm64": {
+                "url": "https://github.com/Mintplex-Labs/anything-llm/releases/download/$matchRelease/AnythingLLMDesktop-Arm64.exe#/dl.7z"
             }
         }
     }
