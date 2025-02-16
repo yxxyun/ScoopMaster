@@ -1,44 +1,41 @@
 {
     "version": "7.36.6",
-    "homepage": "https://github.com/microsoft/winget-pkgs/tree/master/manifests/b/ByteDance/Feishu",
-    "description": "字节跳动旗下先进企业写协作与管理平台，一站式无缝办公协作。Empowering teams by messenger, meetings, calendar, docs, and emails. It's all in one place.",
-    "license": "Unknown",
+    "homepage": "https://www.feishu.cn/",
+    "description": "Connect with teammates anytime and anywhere",
+    "license": {
+        "identifier": "EULA",
+        "url": "https://www.feishu.cn/en/terms"
+    },
     "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/741dff82/Feishu-win32_ia32-7.36.6-signed.exe#/dl.7z",
-    "hash": "ff7a50aca503a5fb60eb5acc0fd9f897c7301ac2cbc8816c6339b9b1fb7c91a7",
+    "hash": "md5:4627a81c40fc7cc1e09647d626932c56",
     "extract_to": "app",
     "shortcuts": [
         [
-            "app\\Feishu.exe",
+            "app/Feishu.exe",
             "飞书"
         ]
     ],
-    "pre_install": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "persist_file -dir @(\"$user_AppData\\LarkShell\") @(\"$persist_dir\\LarkShell\")",
-        "handle_app_lnk",
-        "do_some_things"
-    ],
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:APPDATA\\LarkShell\" \"$persist_dir\\AppData\" -Migrate"
+        ]
+    },
     "pre_uninstall": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        "$bucket = $install.bucket",
         ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "stop_process",
-        "remove_files @(\"$user_AppData\\LarkShell\",\"$user_LocalAppData\\Feishu\")"
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\LarkShell\""
     ],
     "checkver": {
-        "script": [
-            ". \"$pwd\\bin\\utils.ps1\"",
-            "$dl_info = get_installer_info 'ByteDance/Feishu'",
-            "\"ver:$($dl_info.PackageVersion);\"",
-            "\"x86:$($dl_info.x86_exe.InstallerUrl);\""
-        ],
-        "regex": "ver:(?<version>.+?); x86:(?<x86>.+?);"
+        "url": "https://www.feishu.cn/api/downloads",
+        "regex": "(?sm)Windows.*?https://(?<path>[\\w.-/].*?)-(?<version>[\\d.]+)(?<suffix>[\\w.-].*?).exe"
     },
     "autoupdate": {
-        "url": "$matchX86#/dl.7z",
+        "url": "https://$matchPath-$version$matchSuffix.exe#/dl.7z",
         "hash": {
-            "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/b/ByteDance/Feishu/$version/ByteDance.Feishu.installer.yaml",
-            "regex": "Architecture: x86[\\s\\S]+?InstallerSha256:\\s?(.+)"
+            "url": "https://www.feishu.cn/api/downloads",
+            "jsonpath": "$.versions.Windows.hash"
         }
     }
 }
