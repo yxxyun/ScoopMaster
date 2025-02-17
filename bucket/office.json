@@ -1,46 +1,42 @@
 {
-    "version": "16.0.18324.20194",
-    "description": "办公软件 Office",
-    "homepage": "https://office.com",
-    "url": "https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/officedeploymenttool_18324-20194.exe#/dl.7z_",
-    "hash": "cf69955e81ecff5331e39f0f18255f9f6ff8026e50a918eb5e832258e1961593",
-    "pre_install": [
-        "$scriptdir = \"$bucketsdir\\rainte\\scripts\\office\"",
-        "Copy-Item \"$scriptdir\\install.xml\" \"$dir\\\"",
-        "Copy-Item \"$scriptdir\\uninstall.xml\" \"$dir\\\""
+  "version": "16.0.18324.20194",
+  "description": "办公软件 Office",
+  "homepage": "https://office.com",
+  "url": "https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/officedeploymenttool_18324-20194.exe#/dl.7z_",
+  "hash": "cf69955e81ecff5331e39f0f18255f9f6ff8026e50a918eb5e832258e1961593",
+  "pre_install": [
+    "$scriptdir = \"$bucketsdir\\rainte\\scripts\\office\"",
+    "Copy-Item \"$scriptdir\\install.xml\" \"$dir\\\"",
+    "Copy-Item \"$scriptdir\\uninstall.xml\" \"$dir\\\""
+  ],
+  "installer": {
+    "script": [
+      "Start-Process -Wait 7z -ArgumentList @('x', '-bso0', \"`\"$dir\\dl.7z_`\"\", \"`\"-o$dir`\"\")",
+      "Start-Process -Wait \"$dir\\setup.exe\" -ArgumentList @('/configure', \"`\"$dir\\install.xml`\"\")"
+    ]
+  },
+  "uninstaller": {
+    "script": "Start-Process -Wait \"$dir\\setup.exe\" -ArgumentList @('/configure', \"`\"$dir\\uninstall.xml`\"\")"
+  },
+  "checkver": {
+    "script": [
+      "$ProgressPreference = 'SilentlyContinue'",
+      "$url1 = 'https://docs.microsoft.com/en-us/officeupdates/odt-release-history'",
+      "$regex1 = '<p>Version ([\\d.]+)'",
+      "$url2 = 'https://www.microsoft.com/en-au/download/details.aspx?id=49117'",
+      "$regex2 = 'download/([\\w/-]+)(officedeploymenttool_[\\d-]+\\.exe)'",
+      "",
+      "$cont = $(Invoke-WebRequest $url1).Content",
+      "if (!($cont -match $regex1)) { Write-Host \"Could not match '$regex1' in '$url1'\"; return }",
+      "$app_ver = $matches[1]",
+      "$cont = $(Invoke-WebRequest $url2).Content",
+      "if (!($cont -match $regex2)) { Write-Host \"Could not match '$regex2' in '$url2'\"; return }",
+      "$path = $matches[1]; $filename = $matches[2]",
+      "Write-Output $app_ver $path $filename"
     ],
-    "installer": {
-        "script": [
-            "Start-Process -Wait 7z -ArgumentList @('x', '-bso0', \"`\"$dir\\dl.7z_`\"\", \"`\"-o$dir`\"\")",
-            "Start-Process -Wait \"$dir\\setup.exe\" -ArgumentList @('/configure', \"`\"$dir\\install.xml`\"\")"
-        ]
-    },
-    "uninstaller": {
-        "script": "Start-Process -Wait \"$dir\\setup.exe\" -ArgumentList @('/configure', \"`\"$dir\\uninstall.xml`\"\")"
-    },
-    "checkver": {
-        "script": [
-            "$ProgressPreference = 'SilentlyContinue'",
-            "$url1 = 'https://docs.microsoft.com/en-us/officeupdates/odt-release-history'",
-            "$regex1 = '<p>Version ([\\d.]+)'",
-            "$url2 = 'https://www.microsoft.com/en-au/download/details.aspx?id=49117'",
-            "$regex2 = 'download/([\\w/-]+)(officedeploymenttool_[\\d-]+\\.exe)'",
-            "",
-            "$cont = $(Invoke-WebRequest $url1).Content",
-            "if (!($cont -match $regex1)) { Write-Host \"Could not match '$regex1' in '$url1'\"; return }",
-            "$app_ver = $matches[1]",
-            "$cont = $(Invoke-WebRequest $url2).Content",
-            "if (!($cont -match $regex2)) { Write-Host \"Could not match '$regex2' in '$url2'\"; return }",
-            "$path = $matches[1]; $filename = $matches[2]",
-            "Write-Output $app_ver $path $filename"
-        ],
-        "regex": "([\\d.]+) (?<path>[\\w-/]+) (?<filename>[\\w.-]+)"
-    },
-    "autoupdate": {
-        "url": "https://download.microsoft.com/download/$matchPath$matchFilename#/dl.7z_",
-        "hash": {
-            "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/m/Microsoft/Office/$version/Microsoft.Office.installer.yaml",
-            "regex": "$sha256"
-        }
-    }
+    "regex": "([\\d.]+) (?<path>[\\w-/]+) (?<filename>[\\w.-]+)"
+  },
+  "autoupdate": {
+    "url": "https://download.microsoft.com/download/$matchPath$matchFilename#/dl.7z_"
+  }
 }
