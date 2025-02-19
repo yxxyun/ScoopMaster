@@ -4,13 +4,22 @@
     "version": "4.7.6.3",
     "license": "Proprietary",
     "url": "https://dl.todesk.com/irrigation/ToDesk_4.7.6.3.exe#/dl.7z",
-    "hash": "dd4dd8e6d8bc78ada8fa3109aaecf6cc0becb214cbcc0f03aa9331e907de5714",
+    "hash": "da754ffd887aa15974dc18b74c48204f7deab8300b644e878b0fb6ac994a86b1",
     "pre_install": [
         "if (!(Test-Path \"$persist_dir\\config.ini\")) {",
         "    New-Item -Force -Path \"$persist_dir\\config.ini\" -ItemType File -Value \"[ConfigInfo]`nautoStart=0\" | Out-Null",
         "}"
     ],
     "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\uninst.exe\" -Force -Recurse",
+    "pre_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    if (!(is_admin)) {",
+        "        Start-Process -Wait powershell.exe -ArgumentList \"-Command sc.exe delete ToDesk_Service\" -Verb RunAs -WindowStyle Hidden",
+        "    } else {",
+        "        sc.exe delete ToDesk_Service",
+        "    }",
+        "}"
+    ],
     "shortcuts": [
         [
             "ToDesk.exe",
@@ -22,8 +31,8 @@
         "config.ini"
     ],
     "checkver": {
-        "url": "https://update.todesk.com/windows/uplog.html",
-        "regex": ">([\\d.]+)</div>"
+        "url": "https://www.todesk.com/download.html",
+        "regex": "https://dl.todesk.com/irrigation/ToDesk_([\\d.]+).exe"
     },
     "autoupdate": {
         "url": "https://dl.todesk.com/irrigation/ToDesk_$version.exe#/dl.7z"
