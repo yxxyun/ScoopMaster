@@ -10,20 +10,24 @@
             "url": "https://downloads.spacedesk.net/downloads/spacedesk_driver_Win_10_32_v2136.msi#/setup.msi_"
         }
     },
+    "pre_install":"Start-Process -Wait msiexec \"/i `\"$dir\\setup.msi_`\" /qn INSTALLFOLDER_MAIN=`\"$dir`\"\" -Verb RunAs",
     "installer": {
-        "script": "Start-Process msiexec -ArgumentList @('/i', \"`\"$dir\\setup.msi_`\"\", '/qn', '/norestart') -Wait -Verb RunAs"
+        "script": [
+            "# --- If spacedesk.lnk exists as a file, then remove it for tidiness---",
+            "$msi_startmenu_lnk = Join-Path $([Environment]::GetFolderPath('commonstartmenu')) 'Programs/spacedesk DRIVER Console.lnk'",
+            "if (Test-Path \"$msi_startmenu_lnk\" -PathType Leaf) {",
+            "    Remove-Item \"$msi_startmenu_lnk\" -Force -Recurse",
+            "}",
+            "Remove-Item \"$dir\\spacedeskTemporarySetupFiles*\", \"$dir\\setup.msi_\" -Recurse"
+        ]
     },
-    "extract_dir": "datronicsoft/spacedesk",
     "shortcuts": [
         [
             "spacedeskConsole.exe",
             "spacedeskConsole"
         ]
     ],
-    "uninstaller": {
-        "script": "Start-Process msiexec -ArgumentList @('/x', \"`\"$dir\\setup.msi_`\"\", '/qn', '/norestart') -Wait -Verb RunAs"
-
-    },
+    "pre_uninstall": "Start-Process msiexec -ArgumentList @('/x', \"`\"$dir\\setup.msi_`\"\", '/qn', '/norestart') -Wait -Verb RunAs",
     "checkver": {
         "url": "https://manual.spacedesk.net/ReleaseNotes.html",
         "regex": "spacedesk Windows 10/11 Driver version ([\\d.]+)"
