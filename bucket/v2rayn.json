@@ -1,37 +1,99 @@
 {
     "version": "7.9.3",
-    "description": "A GUI client for Windows, support Xray core and v2fly core and others.",
+    "description": "GUI client based on v2ray core",
     "homepage": "https://github.com/2dust/v2rayN",
-    "license": "GPL-3",
-    "notes": "",
+    "license": "GPL-3.0-only",
+    "suggest": {
+        "rules": "v2ray-rules-dat",
+        ".NET Desktop Runtime": "extras/windowsdesktop-runtime-lts",
+        "v2fly-core": "v2ray"
+    },
     "architecture": {
         "64bit": {
             "url": "https://github.com/2dust/v2rayN/releases/download/7.9.3/v2rayN-windows-64.zip",
-            "hash": "44aa379609eb729d50964601f11779ad2647fbbce81d7a6058c11aacec0ca070"
+            "hash": "44aa379609eb729d50964601f11779ad2647fbbce81d7a6058c11aacec0ca070",
+            "extract_dir": "v2rayN-windows-64"
+        },
+        "arm64": {
+            "url": "https://github.com/2dust/v2rayN/releases/download/7.9.3/v2rayN-windows-arm64.zip",
+            "hash": "456bdc832d6b8d798f716335177769c1b858e245858e8b8c1f1b6831508defa9",
+            "extract_dir": "v2rayN-windows-arm64"
         }
     },
-    "checkver": {
-        "url": "https://api.github.com/repos/2dust/v2rayN/releases",
-        "jsonpath": "$.[0].tag_name",
-        "regex": "([\\d.]+)"
-    },
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/2dust/v2rayN/releases/download/$version/v2rayN-windows-64.zip"
-            }
-        }
-    },
-    "persist": [
-        "bin",
-        "guiConfigs"
+    "extract_dir": "v2rayN",
+    "pre_install": [
+        "$list = ('v2fly')",
+        "foreach ($app in $list) {",
+        "    New-Item -ItemType directory -Path $dir\\bin\\$app | Out-Null",
+        "}",
+        "foreach ($form in @('*.exe')) {",
+        "    foreach ($_ in Get-ChildItem \"$(appdir v2ray $global)\\current\" -File) {",
+        "        $name = $_.Name",
+        "        if ($name -Like $form) {",
+        "            Write-Host \"Creating SymbolicLink for $name\"",
+        "            New-Item -ItemType SymbolicLink -Path \"$dir\\bin\\v2fly\\\" -Name $name -Target \"$(appdir v2ray $global)\\current\\$name\" | Out-Null",
+        "        }",
+        "    }",
+        "}",
+        "$path = $(appdir 'sing-box' $global)",
+        "if (Test-Path $path) {",
+        "    Remove-Item \"$dir\\bin\\sing_box\\*.*\"",
+        "    foreach ($form in @('*.exe')) {",
+        "        foreach ($_ in Get-ChildItem \"$path\\current\" -File) {",
+        "            $name = $_.Name",
+        "            if ($name -Like $form) {",
+        "                Write-Host \"Creating SymbolicLink for $name\"",
+        "                New-Item -ItemType SymbolicLink -Path \"$dir\\bin\\sing_box\\\" -Name $name -Target \"$path\\current\\$name\" | Out-Null",
+        "            }",
+        "        }",
+        "    }",
+        "}",
+        "$list = ('xray')",
+        "foreach ($app in $list) {",
+        "    $path = $(appdir $app $global)",
+        "    if (Test-Path $path) {",
+        "        Remove-Item \"$dir\\bin\\xray\\*.*\"",
+        "        foreach ($form in @('*.exe')) {",
+        "            foreach ($_ in Get-ChildItem $path\\current -File) {",
+        "                $name = $_.Name",
+        "                if ($name -Like $form) {",
+        "                    Write-Host Creating SymbolicLink for $name",
+        "                    New-Item -ItemType SymbolicLink -Path $dir\\bin\\$app\\ -Name $name -Target $path\\current\\$name | Out-Null",
+        "                }",
+        "            }",
+        "        }",
+        "    }",
+        "}",
+        "if (Test-Path $(appdir v2ray-rules-dat $global)) {",
+        "   Remove-Item -Path \"$dir\\bin\\\" -Include *.dat -Recurse -Force",
+        "   foreach ($form in @('*.dat')) {",
+        "       foreach ($_ in Get-ChildItem \"$(appdir v2ray-rules-dat $global)\\current\" -File) {",
+        "           $name = $_.Name",
+        "           if ($name -Like $form) {",
+        "               Write-Host \"Creating SymbolicLink for $name\"",
+        "               New-Item -ItemType SymbolicLink -Path \"$dir\\bin\\\" -Name $name -Target \"$(appdir v2ray-rules-dat $global)\\current\\$name\" | Out-Null",
+        "           }",
+        "       }",
+        "   }",
+        "}"
     ],
-    "extract_dir": "v2rayN-windows-64",
     "bin": "v2rayN.exe",
     "shortcuts": [
         [
             "v2rayN.exe",
             "v2rayN"
         ]
-    ]
+    ],
+    "persist": "guiConfigs",
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/2dust/v2rayN/releases/download/$version/v2rayN-windows-64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/2dust/v2rayN/releases/download/$version/v2rayN-windows-arm64.zip"
+            }
+        }
+    }
 }
