@@ -1,41 +1,43 @@
 {
     "version": "1.0.0",
-    "description": "🍒 Cherry Studio is a desktop client that supports for multiple LLM providers. Support deepseek-r1",
-    "homepage": "https://cherry-ai.com/",
+    "description": "A desktop client that supports for multiple LLM providers.",
+    "homepage": "https://github.com/kangfenmao/cherry-studio",
     "license": {
-        "identifier": "Cherry Studio 用户协议",
-        "url": "https://github.com/CherryHQ/cherry-studio/blob/main/LICENSE"
+        "identifier": "Apache-2.0",
+        "url": "https://github.com/kangfenmao/cherry-studio/raw/refs/heads/main/LICENSE"
     },
+    "url": "https://github.com/kangfenmao/cherry-studio/releases/download/v1.0.0/Cherry-Studio-1.0.0-setup.exe#/dl.7z",
+    "hash": "a172e855a861191b96b717a309377043f9036c49e1dc65202fc5e092cfe1fdab",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.0.0/Cherry-Studio-1.0.0-setup.exe#/dl.7z",
-            "hash": "sha512:d39b4995ad60a8c689267ada858206c0d1451b17de135d32b45b28fc61b88a1b836c3fa52ce60806279606fa3312755aa7f49d81b299cc7d6985187e956e64d3",
-            "pre_install": [
-                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\" -Recurse"
-            ]
+            "installer": {
+                "script": [
+                    "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+                    "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\" -Force -Recurse"
+                ]
+            }
         }
+    },
+    "persist": "data",
+    "post_install": [
+        "if (Test-Path $env:APPDATA\\CherryStudio) {",
+        "    Copy-Item -Path $env:APPDATA\\CherryStudio\\* -Destination \"$persist_dir\\data\" -Force -Recurse",
+        "    Remove-Item $env:APPDATA\\CherryStudio -Force -Recurse",
+        "}",
+        "Remove-Item \"$env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs\\Cherry Studio.lnk\" -ErrorAction SilentlyContinue -Confirm:$false -Force",
+        "New-Item -ItemType Junction -Path $env:APPDATA\\CherryStudio -Target $persist_dir\\data | Out-Null"
+    ],
+    "uninstaller": {
+        "script": "Remove-Item $env:APPDATA\\CherryStudio -Force -Recurse"
     },
     "shortcuts": [
         [
             "Cherry Studio.exe",
-            "Cherry Studio",
-            "--user-data-dir=\"$dir\\User Data\""
+            "Cherry Studio"
         ]
     ],
-    "persist": "User Data",
-    "checkver": {
-        "github": "https://github.com/CherryHQ/cherry-studio"
-    },
+    "checkver": "github",
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-setup.exe#/dl.7z",
-                "hash": {
-                    "url": "$baseurl/latest.yml",
-                    "regex": "sha512: $base64"
-                }
-            }
-        }
+        "url": "https://github.com/kangfenmao/cherry-studio/releases/download/v$version/Cherry-Studio-$version-setup.exe#/dl.7z"
     }
 }
