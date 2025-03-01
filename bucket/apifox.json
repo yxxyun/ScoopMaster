@@ -7,27 +7,28 @@
         "64bit": {
             "url": "https://file-assets.apifox.com/download/Apifox-windows-latest.zip",
             "hash": "1bc8b5135ac40f620b132fe939981160c76ea522f83b3cc6955a03ab6c40e719"
+        },
+        "32bit": {
+            "url": "https://file-assets.apifox.com/download/Apifox-win32-latest.zip",
+            "hash": "c7f0cdf79262c311f3641892befa58e4af4a33636bbc7f16b78d11628a0c2fcd"
         }
     },
-    "pre_uninstall": "Stop-Process -Name 'ApifoxAppAgent' -Force",
-    "installer": {
-        "script": [
-            "Expand-7zipArchive -Path \"$dir\\Apifox-$version.exe\" -Removal",
-            "Expand-7zipArchive -Path \"$dir\\`$PLUGINSDIR\\app-64.7z\" -DestinationPath $dir"
-        ]
-    },
-    "post_install": [
-        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
-        "Remove-Item \"$dir\\`$R0\" -Force -Recurse"
+    "pre_install": [
+        "Expand-7zipArchive $(Get-Item \"$dir\\Apifox*.exe\").FullName -Destination \"$dir\" -Removal",
+        "Get-Item \"$dir\\`$PLUGINSDIR\\app*.7z\" | Expand-7zipArchive -Destination \"$dir\"",
+        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse"
     ],
     "shortcuts": [
         [
             "Apifox.exe",
             "Apifox",
-            "--user-data-dir=\"$dir\\UserData\""
+            "--user-data-dir=\"$persist_dir\\User Data\""
         ]
     ],
-    "persist": "UserData",
+    "pre_uninstall": [
+        "Stop-Process -Name 'ApifoxAppAgent' -ErrorAction SilentlyContinue",
+        "Wait-Process -Name 'ApifoxAppAgent' -ErrorAction SilentlyContinue -Timeout 30"
+    ],
     "checkver": {
         "url": "https://apifox.com/help/app/changelog",
         "regex": ">([\\d.]+)<"
@@ -36,6 +37,9 @@
         "architecture": {
             "64bit": {
                 "url": "https://file-assets.apifox.com/download/Apifox-windows-latest.zip"
+            },
+            "32bit": {
+                "url": "https://file-assets.apifox.com/download/Apifox-win32-latest.zip"
             }
         }
     }
