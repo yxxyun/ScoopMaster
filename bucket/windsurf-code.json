@@ -1,5 +1,5 @@
 {
-    "version": "1.3.9",
+    "version": "1.3.10",
     "description": "The first agentic IDE, and then some. The Windsurf Editor is where the work of developers and AI truly flow together, allowing for a coding experience that feels like literal magic.",
     "homepage": "https://codeium.com/windsurf",
     "license": {
@@ -8,8 +8,8 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://windsurf-stable.codeiumdata.com/win32-x64/stable/43976ecab7354ba352849517e15779fe8a4eff88/WindsurfSetup-x64-1.3.9.exe",
-            "hash": "05bc6bd0c3e3f48067b3cc5b570d014e02ec6f9bcd272774646b3849f757689a"
+            "url": "https://windsurf-stable.codeiumdata.com/win32-x64/stable/61d65579650f356494469f86c21fb953834289a0/WindsurfSetup-x64-1.3.10.exe",
+            "hash": "afce3a109f73816ce3264362177e446683fd8725ba075781024c754ce2a92518"
         }
     },
     "pre_install": [
@@ -17,6 +17,22 @@
         "Expand-InnoArchive \"$setupfile\" \"$dir\" -ExtractDir \"{app}\"",
         "Expand-InnoArchive \"$setupfile\" \"$dir\" -ExtractDir \"{code_GetDestDir}\"",
         "Remove-Item \"$dir\\WindsurfSetup-*.exe\" -Force"
+    ],
+    "post_install": [
+        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Recurse",
+        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.windsurf\\extensions\")) {",
+        "    info '[Portable Mode] Copying extensions...'",
+        "    Copy-Item \"$env:USERPROFILE\\.windsurf\\extensions\" \"$dir\\data\" -Recurse",
+        "}",
+        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Windsurf\")) {",
+        "    info '[Portable Mode] Copying user data...'",
+        "    Copy-Item \"$env:AppData\\Windsurf\" \"$dir\\data\\user-data\" -Recurse",
+        "}",
+        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
+        "if ((Test-Path \"$extensions_file\")) {",
+        "    info 'Adjusting path in extensions file...'",
+        "    (Get-Content \"$extensions_file\") -replace '(?<=windsurf-code(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
+        "}"
     ],
     "bin": "bin/windsurf.cmd",
     "shortcuts": [
