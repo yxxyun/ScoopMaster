@@ -59,7 +59,9 @@
             "# $innerzipfile = (([regex]\"renamer-[^\\.]*\\.zip\").Matches($(7z l $(Join-Path -Path $dir -ChildPath $filename))) | Select-Object -First 1).Value",
             "# Push-Location $dir && (7z e $filename $innerzipfile | Out-Null) && Expand-Archive $innerzipfile -DestinationPath . -Force && Remove-Item $innerzipfile && Remove-Item $filename && Pop-Location",
             "# Push-Location $dir && 7z x -y $ghxiInfo.filename && Move-Item \"renamer-$version\\*\" .\\ && Remove-Item $ghxiInfo.filename && Pop-Location",
-            "Push-Location $dir && 7z x -y $ghxiInfo.filename && Expand-ZipArchive \"renamer-$version.zip\" $dir && Remove-Item $ghxiInfo.filename && Pop-Location",
+            "Push-Location $dir && 7z x -y $ghxiInfo.filename && Expand-ZipArchive \"renamer-$version.zip\" $dir && Remove-Item $ghxiInfo.filename",
+            "if (Test-Path \"renamer-$version\") { Move-Item \"renamer-$version\\*\" .\\ && Remove-Item \"renamer-$version\" -Recurse }",
+            "Pop-Location",
             "Remove-Item -Path $dir\\placeholder -ErrorAction SilentlyContinue"
         ]
     },
@@ -67,6 +69,7 @@
         "script": [
             "# Manifest is loaded as variable `$json` in `checkver.ps1`",
             "$manifest = $json | ConvertTo-Json | ConvertFrom-Json",
+            "if ($Env:GITHUB_ACTIONS) {return ($manifest.version + '以及' + $manifest.real_hash)}",
             "$manifest | Add-Member -MemberType NoteProperty -Name 'noninteractive' -Value $true -Force",
             "$oldVersion = $manifest.version",
             "$webResponse = Invoke-WebRequest $manifest.homepage",
