@@ -1,26 +1,50 @@
 {
     "version": "3.0.1",
-    "description": "Vedio download tool.",
-    "homepage": "https://github.com/caorushizi/mediago",
-    "license": "Freeware",
-    "url": "https://github.com/caorushizi/mediago/releases/download/v3.0.1/mediago-portable-win32-x64-3.0.1.exe",
-    "hash": "b69c019e364f4a6c51b063f056555f83f5488b603c5ece1ed1e50e492d8e512e",
-    "installer": {
-        "script": [
-            "Expand-7zipArchive -Path \"$dir\\$fname\" -Removal",
-            "Expand-7zipArchive -Path \"$dir\\`$PLUGINSDIR\\app-64.7z\" -DestinationPath $dir"
-        ]
+    "description": "MediaGo 跨平台视频提取工具：支持流媒体下载、视频下载、m3u8 下载及 B站视频下载，提供 Windows 和 Mac 桌面客户端。",
+    "homepage": "https://downloader.caorushizi.cn/",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/caorushizi/mediago/releases/download/v3.0.1/mediago-setup-win32-x64-3.0.1.exe#/dl.7z",
+            "hash": "sha512:f7a5a72842272bc0983eba6c471ac98aa3c8ec2cca623653d7da7fcc0340f4c2457665290bcbc13dfc7ca1470c8a45b3183aba855ed5a0ee7445129e553d5709"
+        }
     },
-    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
-    "bin": "mediago.exe",
     "shortcuts": [
         [
             "mediago.exe",
-            "Media Go"
+            "MediaGo"
         ]
     ],
-    "checkver": "github",
+    "installer": {
+        "script": [
+            "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+            "Remove-Item \"$dir\\`$*\" -Force -Recurse",
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:APPDATA\\MediaGo\" \"$persist_dir\\AppData\" -Migrate",
+            "if (!(Test-Path \"$persist_dir\\config.json\") -or !(Get-Item \"$persist_dir\\config.json\").Length) {",
+            "    New-Item \"$persist_dir\\config.json\" -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null",
+            "    Set-Content -Path \"$persist_dir\\config.json\" -Value '{\"autoUpgrade\": false}'",
+            "}"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\MediaGo\""
+    ],
+    "checkver": {
+        "github": "https://github.com/caorushizi/mediago"
+    },
     "autoupdate": {
-        "url": "https://github.com/caorushizi/mediago/releases/download/v$version/mediago-portable-win32-x64-$version.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/caorushizi/mediago/releases/download/v$version/mediago-setup-win32-x64-$version.exe#/dl.7z",
+                "hash": {
+                    "url": "$baseurl/latest.yml",
+                    "regex": "(?sm)$basename.*?sha512:\\s+$base64"
+                }
+            }
+        }
     }
 }
