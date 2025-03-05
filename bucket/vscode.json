@@ -10,69 +10,83 @@
         "Add Visual Studio Code as a context menu option by running:",
         "'reg import \"$dir\\install-context.reg\"'",
         "For file associations, run:",
-        "'reg import \"$dir\\install-associations.reg\"'"
+        "'reg import \"$dir\\install-associations.reg\"'",
+        "For github integration, run:",
+        "'reg import \"$dir\\install-github-integration.reg\"'"
     ],
     "architecture": {
         "64bit": {
-            "url": "https://vscode.download.prss.microsoft.com/dbazure/download/stable/6609ac3d66f4eade5cf376d1cb76f13985724bcb/VSCode-win32-x64-1.98.0.zip",
+            "url": "https://update.code.visualstudio.com/1.98.0/win32-x64-archive/stable#/dl.7z",
             "hash": "0e671d2c1b8793e09d288334c4bccbb1d15d1ffbccc7681e7d701b318df52679"
         },
         "arm64": {
-            "url": "https://vscode.download.prss.microsoft.com/dbazure/download/stable/6609ac3d66f4eade5cf376d1cb76f13985724bcb/VSCode-win32-arm64-1.98.0.zip",
+            "url": "https://update.code.visualstudio.com/1.98.0/win32-arm64-archive/stable#/dl.7z",
             "hash": "c4e2f612999aaccb83b96887e4ed662b73e1f9fcd83f6e33f0b17edb59d99287"
         }
     },
-    "bin": [
-        [
-            "Code.exe",
-            "code"
-        ]
-    ],
+    "env_add_path": "bin",
     "shortcuts": [
         [
             "code.exe",
             "Visual Studio Code"
         ]
     ],
-    "persist": "data",
     "post_install": [
-        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name air) scripts/AirUtils.psm1)",
-        "EnsureDirectory \"$persist_dir\\data\\tmp\"",
         "$dirpath = \"$dir\".Replace('\\', '\\\\')",
         "$exepath = \"$dir\\Code.exe\".Replace('\\', '\\\\')",
-        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context' | ForEach-Object {",
-        "  if (Test-Path \"$bucketsdir\\air\\scripts\\VSCode\\$_.reg\") {",
-        "    $content = Get-Content \"$bucketsdir\\air\\scripts\\VSCode\\$_.reg\"",
-        "    $content = $content.Replace('$codedir', $dirpath).Replace('$code', $exepath)",
+        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context', 'install-github-integration', 'uninstall-github-integration' | ForEach-Object {",
+        "  if (Test-Path \"$bucketsdir\\extras\\scripts\\vscode\\$_.reg\") {",
+        "    $content = Get-Content \"$bucketsdir\\extras\\scripts\\vscode\\$_.reg\"",
+        "    $content = $content.Replace('$codedir', $dirpath)",
+        "    $content = $content.Replace('$code', $exepath)",
         "    if ($global) {",
         "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
         "    }",
         "    $content | Set-Content -Path \"$dir\\$_.reg\"",
         "  }",
         "}",
-        "Remove-Module -Name AirUtils"
+        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.vscode\\extensions\")) {",
+        "    info '[Portable Mode] Copying extensions...'",
+        "    Copy-Item \"$env:USERPROFILE\\.vscode\\extensions\" \"$dir\\data\" -Recurse",
+        "}",
+        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Code\")) {",
+        "    info '[Portable Mode] Copying user data...'",
+        "    Copy-Item \"$env:AppData\\Code\" \"$dir\\data\\user-data\" -Recurse",
+        "}",
+        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
+        "if ((Test-Path \"$extensions_file\")) {",
+        "    info 'Adjusting path in extensions file...'",
+        "    (Get-Content \"$extensions_file\") -replace '(?<=vscode(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
+        "}"
     ],
     "uninstaller": {
-        "script": "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-context.reg\" }"
+        "script": [
+            "if ($cmd -eq 'uninstall')",
+            "{",
+            "   reg import \"$dir\\uninstall-context.reg\" ",
+            "   reg import \"$dir\\uninstall-github-integration.reg\" ",
+            "}"
+        ]
     },
+    "persist": "data",
     "checkver": {
-        "url": "https://code.visualstudio.com/sha?build=stable",
-        "regex": "(?<x64>https://[a-z\\d./]+/VSCode-win32-x64-(?<version>[\\d.]+)\\.zip).+(?<arm64>https://[a-z\\d./]+/VSCode-win32-arm64-\\k<version>\\.zip)"
+        "url": "https://update.code.visualstudio.com/api/update/win32-x64-archive/stable/latest",
+        "jsonpath": "$.name"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "$matchX64",
+                "url": "https://update.code.visualstudio.com/$version/win32-x64-archive/stable#/dl.7z",
                 "hash": {
-                    "url": "https://code.visualstudio.com/sha?build=stable",
-                    "jsonpath": "$.products[?(@.platform.os == 'win32-x64-archive')].sha256hash"
+                    "url": "https://update.code.visualstudio.com/api/update/win32-x64-archive/stable/latest",
+                    "jsonpath": "$.sha256hash"
                 }
             },
             "arm64": {
-                "url": "$matchArm64",
+                "url": "https://update.code.visualstudio.com/$version/win32-arm64-archive/stable#/dl.7z",
                 "hash": {
-                    "url": "https://code.visualstudio.com/sha?build=stable",
-                    "jsonpath": "$.products[?(@.platform.os == 'win32-arm64-archive')].sha256hash"
+                    "url": "https://update.code.visualstudio.com/api/update/win32-arm64-archive/stable/latest",
+                    "jsonpath": "$.sha256hash"
                 }
             }
         }

@@ -5,6 +5,7 @@
     "license": {
         "identifier": "GPL-3.0-or-later"
     },
+    "depends": "mingw-winlibs",
     "architecture": {
         "64bit": {
             "hash": [
@@ -19,7 +20,24 @@
             ]
         }
     },
-    "post_install": "Copy-Item -Path \"$bucketsdir\\$bucket\\scripts\\$app\\spellchecker\\*\" -Destination \"$dir\\share\\CodeBlocks\\SpellChecker\" -Recurse -Force",
+    "post_install": [
+        "Copy-Item \"$bucketsdir\\$bucket\\scripts\\$app\\spellchecker\" \"$dir\\share\\CodeBlocks\" -Recurse -Force",
+        "if (Test-Path \"$Env:AppData\\CodeBlocks\") {",
+        "    if (-not (Get-Item \"$Env:AppData\\CodeBlocks\" -ErrorAction SilentlyContinue).Attributes.HasFlag([IO.FileAttributes]::ReparsePoint)) {",
+        "        Write-Host \"Copying old '$Env:AppData\\CodeBlocks' to '$persist_dir'\" -ForegroundColor Yellow",
+        "        Copy-Item \"$Env:AppData\\CodeBlocks\" \"$persist_dir\" -Recurse -Force",
+        "    }",
+        "}",
+        "Remove-Item \"$Env:AppData\\CodeBlocks\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "New-Item -ItemType Directory -Path \"$persist_dir\" -Force | Out-Null",
+        "New-DirectoryJunction \"$Env:AppData\\CodeBlocks\" \"$persist_dir\" | Out-Null"
+    ],
+    "pre_uninstall": [
+        "Get-Process | Where-Object { $_.Path -like \"$scoopdir\\apps\\$app\\*\" } | Stop-Process -Force -ErrorAction SilentlyContinue",
+        "if ($purge) {",
+        "    Remove-Item \"$Env:AppData\\CodeBlocks\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "}"
+    ],
     "bin": [
         [
             "codeblocks.exe",
