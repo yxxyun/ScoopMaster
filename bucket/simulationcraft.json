@@ -23,18 +23,28 @@
     ],
     "bin": "simc.exe",
     "checkver": {
-        "url": "http://downloads.simulationcraft.org/nightly/?C=M;O=D",
-        "regex": "simc-(?<version>[\\d{3,}\\.\\d{2}]+\\.[a-fA-F0-9]{7})-(?<arch>\\w+)\\.7z"
+        "script": [
+            "try {",
+            "    $resp = Invoke-WebRequest 'http://downloads.simulationcraft.org/nightly/?C=M;O=D'",
+            "    # scrape information from a line like 'ms.date: 12/16/2024'",
+            "    $lines = $resp.Content.Split([Environment]::NewLine)",
+            "    $lines | Select-String -Pattern 'simc-(?<realVersion>\\d{3,}\\.\\d{2,}\\.[a-fA-F0-9]{7})-(?<arch>win(?:arm)?64)\\.7z\\s*</a>.*(?<date>\\d{4}-\\d{2}-\\d{2})' | Foreach-Object { \"version: $($_.Matches[0].Groups[\"realVersion\"]) xxx arch: $($_.Matches[0].Groups[\"arch\"]) xxx date: $($_.Matches[0].Groups[\"date\"])\" } | Write-Output",
+            "} catch {",
+            "    throw $_.Exception",
+            "}"
+        ],
+        "regex": "version: (?<major>\\d{3,}\\.\\d{2,})\\.(?<minor>[a-fA-F0-9]{7}) xxx arch: (?<arch>win(?:arm)?64) xxx date: (?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})",
+        "replace": "${major}.${year}${month}${day}.${minor}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "http://downloads.simulationcraft.org/nightly/simc-$version-win64.7z",
-                "extract_dir": "simc-$version-win64"
+                "url": "http://downloads.simulationcraft.org/nightly/simc-$matchMajor.$matchMinor-win64.7z",
+                "extract_dir": "simc-$matchMajor.$matchMinor-win64"
             },
             "arm64": {
-                "url": "http://downloads.simulationcraft.org/nightly/simc-$version-winarm64.7z",
-                "extract_dir": "simc-$version-winarm64"
+                "url": "http://downloads.simulationcraft.org/nightly/simc-$matchMajor.$matchMinor-winarm64.7z",
+                "extract_dir": "simc-$matchMajor.$matchMinor-winarm64"
             }
         }
     }
