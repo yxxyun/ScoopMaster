@@ -1,56 +1,48 @@
 {
-    "version": "1.1.4",
-    "description": "A desktop client that supports for multiple LLM providers",
-    "homepage": "https://cherry-ai.com/",
-    "license": {
-        "identifier": "Apache-2.0",
-        "url": "https://github.com/CherryHQ/cherry-studio/raw/refs/heads/main/LICENSE"
-    },
+    "version": "1.0.6",
+    "description": "A desktop client that supports for multiple LLM providers.",
+    "homepage": "https://cherry-ai.com",
+    "license": "Apache-2.0",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.1.4/Cherry-Studio-1.1.4-setup.exe",
-            "hash": "1FCB61C4DE675350E308DE2F6382F621A3A3C736B1277190FA8A87EB4F57FB7E"
+            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.0.6/Cherry-Studio-1.0.6-setup.exe#/dl.7z",
+            "hash": "sha512:f51b437a76e29b3b088d5b015be78158b7b1ecc4963522163962dbc751a34707919551eef9df04d32f841530ed255d5f79950955bf0bc11be2b38d4c44cfc590",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\", \"$dir\\Unintall*\" -Recurse"
+            ]
         }
     },
-    "installer": {
-        "script": [
-            "Expand-7zipArchive \"$dir\\Cherry-Studio-$version-setup.exe\" \"$dir\\temp\\\" -Removal",
-            "Expand-7zipArchive \"$dir\\temp\\`$PLUGINSDIR\\app-64.7z\" \"$dir\\\" -Removal",
-            "Remove-Item \"$dir\\temp\" -Recurse",
-            "$appDataPath = \"$env:APPDATA\\CherryStudio\"",
-            "$persistPath = \"$persist_dir\\CherryStudio\"",
-            "if (Test-Path $appDataPath) {",
-            "    Copy-Item \"$appDataPath\\*\" -Destination $persistPath -Recurse -Force",
-            "    Remove-Item $appDataPath -Recurse -Force",
-            "}",
-            "New-Item -ItemType Junction -Path \"$appDataPath\" -Target \"$persistPath\""
-        ]
-    },
-    "notes": "You'd better turn off update detection in Settings->About Us in Cherry Studio and use scoop to manage updates, otherwise it will cause some errors.",
     "shortcuts": [
         [
             "Cherry Studio.exe",
             "Cherry Studio"
         ]
     ],
-    "persist": "CherryStudio",
-    "uninstaller": {
-        "script": [
-            "if (Test-Path \"$env:APPDATA\\CherryStudio\" -PathType Any) {",
-            "    Remove-Item -Recurse -Force \"$env:APPDATA\\CherryStudio\"",
-            "}",
-            "if (Test-Path \"$env:LOCALAPPDATA\\cherrystudio-updater\" -PathType Container) {",
-            "    Remove-Item -Recurse -Force \"$env:LOCALAPPDATA\\cherrystudio-updater\"",
-            "}"
-        ]
-    },
+    "post_install": [
+        "if (Test-Path \"$persist_dir\\data\\*\") {",
+        "    New-Item \"$Env:AppData\\CherryStudio\" -ItemType Directory -Force | Out-Null",
+        "    Copy-Item \"$persist_dir\\data\\*\" \"$Env:AppData\\CherryStudio\" -Recurse",
+        "}"
+    ],
+    "pre_uninstall": [
+        "if (Test-Path \"$Env:AppData\\CherryStudio\\*\") {",
+        "    Remove-Item \"$persist_dir\\data\" -Recurse -Force",
+        "    Move-Item \"$Env:AppData\\CherryStudio\" \"$persist_dir\\data\" -Force",
+        "}"
+    ],
+    "persist": "data",
     "checkver": {
         "github": "https://github.com/CherryHQ/cherry-studio"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://cherrystudio.ocool.online/Cherry-Studio-$version-setup.exe"
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-setup.exe#/dl.7z",
+                "hash": {
+                    "url": "$baseurl/latest.yml",
+                    "regex": "sha512: $base64"
+                }
             }
         }
     }
