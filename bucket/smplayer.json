@@ -1,7 +1,8 @@
 {
+    "version": "24.5.0.0",
+    "description": "A video player forked from MPV. It can also play Youtube videos, search and download subtitles, and includes other features like a thumbnail generator and audio and video filters.",
     "homepage": "https://www.smplayer.info/",
-    "version": "24.5.0",
-    "license": "GPL-2.0-only",
+    "license": "GPL-2.0-or-later",
     "architecture": {
         "64bit": {
             "url": "https://github.com/smplayer-dev/smplayer/releases/download/v24.5.0/smplayer-portable-24.5.0.0-x64.7z",
@@ -13,19 +14,11 @@
         }
     },
     "extract_dir": "smplayer-portable",
-    "bin": [
-        "smplayer.exe",
-        "simple_web_server"
-    ],
-    "persist": [
-        "smplayer.ini",
-        "playlist.ini",
-        "player_info.ini",
-        "hdpi.ini",
-        "favorites.m3u8",
-        "radio.m3u8",
-        "tv.m3u8",
-        "file_settings"
+    "pre_install": [
+        "'hdpi.ini', 'playlist.ini', 'favorites.m3u8', 'radio.m3u8', 'tv.m3u8' | ForEach-Object {",
+        "    if (!(Test-Path \"$persist_dir\\$_\")) { New-Item \"$dir\\$_\" | Out-Null }",
+        "}",
+        "if (Test-Path \"$persist_dir\\smplayer.ini\") { Copy-Item \"$persist_dir\\smplayer.ini\" \"$dir\\smplayer.ini\" }"
     ],
     "shortcuts": [
         [
@@ -33,16 +26,29 @@
             "SMPlayer"
         ]
     ],
+    "persist": [
+        "screenshots",
+        "hdpi.ini",
+        "playlist.ini",
+        "favorites.m3u8",
+        "radio.m3u8",
+        "tv.m3u8"
+    ],
+    "pre_uninstall": [
+        "# The following must be done as SMPlayer deletes the original file which was linked to the persist folder when it saves settings, rather than editing the file.",
+        "Copy-Item \"$dir\\smplayer.ini\" \"$persist_dir\\smplayer.ini\""
+    ],
     "checkver": {
-        "github": "https://github.com/smplayer-dev/smplayer"
+        "url": "https://www.smplayer.info/en/download-smplayer-portable",
+        "regex": "smplayer-portable-([\\d.]+)-win32-qt(?<qtversion>[\\d.]+)\\.7z"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/smplayer-dev/smplayer/releases/download/v$version/smplayer-portable-$version.0-x64.7z"
+                "url": "https://github.com/smplayer-dev/smplayer/releases/download/v$matchHead/smplayer-portable-$version-x64.7z"
             },
             "32bit": {
-                "url": "https://github.com/smplayer-dev/smplayer/releases/download/v$version/smplayer-portable-$version.0-win32-qt5.6.7z"
+                "url": "https://github.com/smplayer-dev/smplayer/releases/download/v$matchHead/smplayer-portable-$version-win32-qt$matchQtversion.7z"
             }
         }
     }

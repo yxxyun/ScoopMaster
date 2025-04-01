@@ -1,15 +1,43 @@
 {
     "version": "5.9-2",
-    "description": "A very advanced and programmable command interpreter (shell) for UNIX ",
+    "description": "A very advanced and programmable command interpreter (shell) for UNIX",
     "homepage": "https://www.zsh.org/",
-    "license": "BSD-3-Clause",
-    "url": "https://mirror.msys2.org/msys/x86_64/zsh-5.9-2-x86_64.pkg.tar.zst",
-    "hash": "b88409ec82332af0524addac7259241812448f0f94007cea1a356016cc568826",
-    "checkver": {
-        "url": "https://packages.msys2.org/package/zsh?repo=msys&variant=x86_64",
-        "regex": "master/zsh\">([\\d.]+)</a>"
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://mirror.msys2.org/msys/x86_64/zsh-5.9-2-x86_64.pkg.tar.zst",
+            "hash": "b88409ec82332af0524addac7259241812448f0f94007cea1a356016cc568826"
+        }
     },
-    "autoupdate": {
-        "url": "https://mirror.msys2.org/msys/x86_64/zsh-$version-x86_64.pkg.tar.zst"
-    }
+    "post_install": [
+        "Copy-Item -Path $dir\\etc -Destination $env:GIT_INSTALL_ROOT -Recurse -Force -ErrorAction SilentlyContinue",
+        "Copy-Item -Path $dir\\usr -Destination $env:GIT_INSTALL_ROOT -Recurse -Force -ErrorAction SilentlyContinue",
+        "New-Item -Path $scoopdir\\shims\\zsh.shim -Value \"path = $env:GIT_INSTALL_ROOT\\bin\\sh.exe\nargs = '--login' '-i' '-c' 'zsh'\" | Out-Null",
+        "Copy-Item -Path $scoopdir\\shims\\git.exe -Destination $scoopdir\\shims\\zsh.exe -Force -ErrorAction SilentlyContinue"
+    ],
+    "pre_uninstall": [
+        "Remove-Item -Path $scoopdir\\shims\\zsh.shim -Force -ErrorAction SilentlyContinue",
+        "Remove-Item -Path $scoopdir\\shims\\zsh.exe -Force -ErrorAction SilentlyContinue",
+        "Get-ChildItem -Path $dir\\etc -Recurse -File | ForEach-Object {",
+        "  $relative_base_dir = \"$dir\\etc\"",
+        "  $relative_base_dir_length = $relative_base_dir.Length+1",
+        "  $fpath = \"$env:GIT_INSTALL_ROOT\\etc\\$($_.FullName.SubString($relative_base_dir_length))\"",
+        "  if (Test-Path $fpath) {",
+        "    \"Removing $fpath\"",
+        "    Remove-Item $fpath -Force -ErrorAction SilentlyContinue",
+        "  }",
+        "}",
+        "Get-ChildItem -Path $dir\\usr -Recurse -File | ForEach-Object {",
+        "  $relative_base_dir = \"$dir\\usr\"",
+        "  $relative_base_dir_length = $relative_base_dir.Length+1",
+        "  $fpath = \"$env:GIT_INSTALL_ROOT\\usr\\$($_.FullName.SubString($relative_base_dir_length))\"",
+        "  if (Test-Path $fpath) {",
+        "    \"Removing $fpath\"",
+        "    Remove-Item $fpath -Force -ErrorAction SilentlyContinue",
+        "  }",
+        "}"
+    ],
+    "depends": [
+        "git"
+    ]
 }
