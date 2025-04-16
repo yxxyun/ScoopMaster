@@ -207,7 +207,19 @@ jobs:
               $oldpercent=$percent
             }
             $date = $file.LastWriteTimeUtc.ToString("yyyy-MM-ddTHH:mm:ssZ")
-            $filecontent = gc $file
+            # 修复：处理符号链接
+            try {
+                $realFile = if ($file.LinkType -eq "SymbolicLink") { 
+                    (Get-Item $file).Target 
+                } else { 
+                    $file.FullName 
+                }
+                $filecontent = gc $realFile
+            } catch {
+                Write-Host "ERROR: Failed to read file (may be a broken symlink): $file"
+                $file.fullname >> ERROR_manifest.txt
+                continue
+            }
             try{
                 $json = $filecontent | ConvertFrom-Json
                 $version = $json.version
