@@ -1,5 +1,5 @@
 {
-    "version": "2022.3.51f1",
+    "version": "2022.3.61f1",
     "description": "Unity 3D 2022 (Long Term Support) editor and build tools",
     "homepage": "https://unity3d.com/unity/qa/lts-releases",
     "license": "https://unity.com/legal/terms-of-service",
@@ -7,21 +7,57 @@
         "To register:",
         " PS> unity -quit -batchmode -nographics -serial SE-R-I-A-L -username \"username\" -password \"password\""
     ],
-    "url": "https://download.unity3d.com/download_unity/9f9d16c45e54/Windows64EditorInstaller/UnitySetup64-2022.3.51f1.exe",
-    "hash": "157e734c96e7ed90cfba69aa1a8f97c2ab7ef5e097d7663b9d023e67d4612633",
-    "installer": {
-        "script": "Start-Process -FilePath \"$dir\\UnitySetup64-${version}.exe\" -ArgumentList \"/S /D=$dir\" -Wait"
+    "architecture": {
+        "64bit": {
+            "url": "https://download.unity3d.com/download_unity/6c53ebaf375d/Windows64EditorInstaller/UnitySetup64-2022.3.61f1.exe#/dl.exe",
+            "hash": "768ecfa409ba27d1faa201f8f48de2963fbc06b83ad1df9614515e79f0158251"
+        }
     },
+    "installer": {
+        "script": "Start-Process -FilePath \"$dir\\dl.exe\" -ArgumentList \"/S /D=$dir\" -Wait"
+    },
+    "post_install": [
+        "Remove-Item \"$Env:Public\\Desktop\\Unity ${version}.lnk\"",
+        "Remove-Item \"$dir\\dl.exe\""
+    ],
     "uninstaller": {
         "script": "Start-Process -FilePath \"$dir\\Editor\\Uninstall.exe\" -ArgumentList \"/S\" -Wait"
     },
     "bin": "Editor\\Unity.exe",
     "checkver": {
-        "url": "https://unity.com/releases/editor/archive",
-        "regex": "unityhub://2022.(\\d+\\.\\d+f\\d+)/([a-f0-9]+)",
-        "replace": "2022.${1}"
+        "script": [
+            "$versionPrefix=\"2022\"",
+            "$ltsReleases = Invoke-RestMethod -Uri 'https://unity.com/releases/editor/lts-releases.xml'",
+            "if ($null -eq $ltsReleases) { Write-Error \"Failed to fetch or parse XML\"; return $null }",
+            "$allItems = @($ltsReleases)",
+            "$latestRelease = $allItems | Where-Object { $_.link -match \"whats-new/$versionPrefix\\.\\d+\\.\\d+$\" } | Select-Object -First 1",
+            "if ($null -eq $latestRelease) { Write-Error \"No $versionPrefix.x.x releases found\"; return $null }",
+            "$versionMatch = $latestRelease.link -match \"whats-new/($versionPrefix\\.\\d+\\.\\d+)$\"",
+            "$version = if ($versionMatch) { $matches[1] + \"f1\" }",
+            "$releasePageUrl = $latestRelease.link",
+            "$releasePage = Invoke-WebRequest -Uri $releasePageUrl -UseBasicParsing",
+            "if ($releasePage.Content -match 'unityhub://[^/]+/([a-zA-Z0-9]+)') {",
+            "    $buildHash = $matches[1]",
+            "    return \"$version|$buildHash\"",
+            "} else {",
+            "    $releaseNotesLink = $latestRelease.releaseNotesLink",
+            "    if ($releaseNotesLink -match '(\\d+\\_\\d+\\_\\d+f\\d)_([a-zA-Z0-9]+)') {",
+            "        $versionFromNotes = $matches[1] -replace '_', '.'",
+            "        $hashFromNotes = $matches[2]",
+            "        return \"$versionFromNotes|$hashFromNotes\"",
+            "    } else {",
+            "        Write-Error 'Could not find build hash information'",
+            "        return $null",
+            "    }",
+            "}"
+        ],
+        "regex": "([\\d.]+f\\d)\\|([a-zA-Z0-9]+)"
     },
     "autoupdate": {
-        "url": "https://download.unity3d.com/download_unity/$match2/Windows64EditorInstaller/UnitySetup64-2022.$match1.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://download.unity3d.com/download_unity/$match2/Windows64EditorInstaller/UnitySetup64-$version.exe#/dl.exe"
+            }
+        }
     }
 }

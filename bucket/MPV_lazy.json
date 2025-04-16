@@ -1,0 +1,73 @@
+{
+    "version": "20250405",
+    "description": "🔄 mpv player 播放器折腾记录 windows conf ； 中文注释配置 快速帮助入门 ； mpv-lazy 懒人包 win10 x64 config",
+    "homepage": "https://github.com/hooke007/MPV_lazy",
+    "license": "https://github.com/hooke007/MPV_lazy/blob/main/LICENSE.MD",
+    "notes": [
+        "mpv lazy",
+        "关联手册（用前必读） 👉 《新整合包的快速说明》(https://github.com/hooke007/MPV_lazy/discussions/194)",
+        "不支持自更新，如果存在往期的版本，不要直接解压新版本覆盖旧文件。",
+        "所以没有对portable_config进行持久化处理"
+    ],
+    "url": "https://github.com/hooke007/MPV_lazy/releases/download/20250405/mpv-lazy-20250405.exe#/dl.7z",
+    "hash": "85bc63a16b76e3897538875289fe7361978a24f89b283dcec04b21360460d60e",
+    "extract_dir": "mpv-lazy",
+    "shortcuts": [
+        [
+            "mpv.exe",
+            "mpv lazy"
+        ]
+    ],
+    "post_install": [
+        "$mpv_installer = \"$dir\\installer\\mpv-install.bat\"",
+        "$caption = \"安装确认\"",
+        "$message = \"是否要执行'$mpv_installer'?\"",
+        "$yes = New-Object System.Management.Automation.Host.ChoiceDescription '&Yes', '执行安装脚本'",
+        "$no = New-Object System.Management.Automation.Host.ChoiceDescription '&No', '取消执行'",
+        "$options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)",
+        "$result = $host.UI.PromptForChoice($caption, $message, $options, 1)",
+        "if ($result -eq 0) {",
+        "   try {",
+        "       info '正在执行安装脚本...'",
+        "       Start-Process -FilePath \"$mpv_installer\" -Verb RunAs -Wait -ErrorAction Stop",
+        "       info '✔ 关联已成功设置'",
+        "   } catch {",
+        "       error \"执行失败: $_\"",
+        "   }",
+        "} else {",
+        "   info '已跳过文件关联设置'",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$mpv_reg = \"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\mpv.exe\"",
+        "$mpv_uninstaller = \"$dir\\installer\\mpv-uninstall.bat\"",
+        "if ($cmd -eq 'uninstall') {",
+        "   if (Test-Path \"Registry::$mpv_reg\") {",
+        "       $caption = \"发现mpv注册表残留\"",
+        "       $message = \"是否要执行'$mpv_uninstaller'?\"",
+        "       $yes = New-Object System.Management.Automation.Host.ChoiceDescription '&Yes', '执行清理脚本'",
+        "       $no = New-Object System.Management.Automation.Host.ChoiceDescription '&No', '取消执行'",
+        "       $options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)",
+        "       $result = $host.UI.PromptForChoice($caption, $message, $options, 1)",
+        "       if ($result -eq 0) {",
+        "           try {",
+        "               Start-Process -FilePath \"$mpv_uninstaller\" -Verb RunAs -Wait -ErrorAction Stop",
+        "               info \"注册表清理完成\"",
+        "           } catch {",
+        "               error \"执行'$mpv_uninstaller'失败: $_\"",
+        "           }",
+        "       } else {",
+        "           info \"已跳过注册表清理\"",
+        "       }",
+        "   }",
+        "}"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/hooke007/MPV_lazy/releases/download/$version/mpv-lazy-$version.exe#/dl.7z",
+        "hash": {
+            "url": "https://github.com/hooke007/MPV_lazy/releases/latest",
+            "regex": "<td>标准版本</td>\\s+<td><code>$sha256</code></td>"
+        }
+    }
+}

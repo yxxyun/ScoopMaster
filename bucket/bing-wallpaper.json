@@ -1,0 +1,45 @@
+{
+    "version": "2.0.2.1",
+    "description": "下载“必应壁纸”后，每天都用新的背景使桌面栩栩如生",
+    "homepage": "https://www.microsoft.com/zh-cn/bing/bing-wallpaper",
+    "license": "https://www.microsoft.com/zh-cn/legal/terms-of-use",
+    "url": "https://download.microsoft.com/download/7770f936-2ce6-43e9-8608-d6ee2df9718e/Installer/2.0.2.1/Bing/W011/BingWallpaper.exe#/dl.7z",
+    "hash": "cf70785d43a8be365cc7767312c63d4449ba133a4ab4baaae11400b8b4b05b49",
+    "installer": {
+        "script": [
+            "Rename-Item -Path \"$dir\\BWCInstaller.msi\" -NewName \"BWCInstaller.7z\"",
+            "Expand-7zipArchive \"$dir\\BWCInstaller.7z\" \"$dir\"",
+            "Remove-Item \"$dir\\BWCInstaller.7z\" -Force  -ErrorAction SilentlyContinue",
+            "$AppCache = \"$env:LOCALAPPDATA\\Microsoft\\BingWallpaperApp\"",
+            "$PersistCache = \"$persist_dir\\Cache\"",
+            "if(!(Test-Path $PersistCache)) { New-Item $PersistCache -Type Directory -Force | Out-Null }",
+            "if(Test-Path $AppCache) {",
+            "    $AppDir = Get-Item $AppCache",
+            "    if($AppDir.Attributes -ne \"Directory, ReparsePoint\") { ",
+            "        Move-Item $AppCache $PersistCache -Force",
+            "        Remove-Item $AppCache -Force -Recurse -ErrorAction SilentlyContinue",
+            "        New-Item -Type Junction -Path $AppCache -Target $PersistCache | Out-Null",
+            "    }",
+            "} else {",
+            "    New-Item -Type Junction -Path $AppCache -Target $PersistCache | Out-Null",
+            "}"
+        ]
+    },
+    "bin": "BingWallpaperApp.exe",
+    "shortcuts": [
+        [
+            "BingWallpaperApp.exe",
+            "Bing Wallpaper"
+        ]
+    ],
+    "checkver": {
+        "script": [
+            "$url = \"https://bingwallpaper.microsoft.com/api/BWC/downloadPackage?brand=bing\"",
+            "echo (Invoke-WebRequest -Uri $url -UseBasicParsing -SkipHttpErrorCheck -method Get -MaximumRedirection 0 -ErrorAction:SilentlyContinue).Headers.Location"
+        ],
+        "regex": "download/(?<path>[\\d\\w-/]+)/Installer/(?<version>[\\d.]+)/"
+    },
+    "autoupdate": {
+        "url": "https://download.microsoft.com/download/$matchPath/Installer/$matchVersion/Bing/W011/BingWallpaper.exe#/dl.7z"
+    }
+}

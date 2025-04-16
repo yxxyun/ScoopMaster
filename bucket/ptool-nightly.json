@@ -1,0 +1,39 @@
+{
+    "version": "219",
+    "description": "自用的 PT (private tracker) 全自动刷流、辅种、辅助工具",
+    "homepage": "https://github.com/sagan/ptool",
+    "license": "AGPL-3.0-or-later",
+    "architecture": {
+        "64bit": {
+            "url": "https://ci.appveyor.com/api/buildjobs/o8c6kc3pynsg8sog/artifacts/dist/ptool-v0.1.11-snapshot-windows-amd64.zip",
+            "hash": "7e5188e3a6edb106df2ed4c590fa6f53cf159f508c5a59085d4defa8ec93abaa"
+        },
+        "arm64": {
+            "url": "https://ci.appveyor.com/api/buildjobs/o8c6kc3pynsg8sog/artifacts/dist/ptool-v0.1.11-snapshot-windows-arm64.zip",
+            "hash": "7272e38651e0c319229d3c174c20cec3b365baefb7a8973d52cbfcbdbc2ad330"
+        }
+    },
+    "bin": "ptool.exe",
+    "checkver": {
+        "script": [
+            "$project = Invoke-RestMethod -Uri \"https://ci.appveyor.com/api/projects/sagan/ptool\"",
+            "$buildNumber = $project.build.buildNumber",
+            "$jobId = $project.build.jobs[0].jobId",
+            "$artifacts = Invoke-RestMethod -Uri \"https://ci.appveyor.com/api/buildjobs/$jobId/artifacts\"",
+            "$amd64 = $artifacts | Where-Object { $_.fileName -like \"*windows-amd64*\" }",
+            "$arm64 = $artifacts | Where-Object { $_.fileName -like \"*windows-arm64*\" }",
+            "Write-Output $buildNumber $jobId $amd64.fileName $arm64.fileName"
+        ],
+        "regex": "(?<version>[\\d]+)\\s(?<jobid>[\\w]+)\\s(?<amd64>[\\S]+)\\s(?<arm64>[\\S]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://ci.appveyor.com/api/buildjobs/$matchJobid/artifacts/$matchAmd64"
+            },
+            "arm64": {
+                "url": "https://ci.appveyor.com/api/buildjobs/$matchJobid/artifacts/$matchArm64"
+            }
+        }
+    }
+}

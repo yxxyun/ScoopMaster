@@ -1,0 +1,52 @@
+{
+    "version": "20250405",
+    "description": "🔄 mpv player 播放器折腾记录 windows conf ； 中文注释配置 快速帮助入门 ； mpv-lazy 懒人包 win10 x64 config",
+    "homepage": "https://github.com/hooke007/MPV_lazy",
+    "license": "https://github.com/hooke007/MPV_lazy/blob/main/LICENSE.MD",
+    "notes": [
+        "mpv lazy vsNV 补丁包",
+        "关联手册（用前必读） 👉 《新整合包的快速说明》(https://github.com/hooke007/MPV_lazy/discussions/194)"
+    ],
+    "url": "https://github.com/hooke007/MPV_lazy/releases/download/20250405/mpv-lazy-20250405-vsNV.7z#/dl.tmp",
+    "hash": "dece3f3775191fa6b037424b4011dfd0816494074813e4c0e24e3f81a570bc12",
+    "checkver": "github",
+    "post_install": [
+        "$mpvs = @(",
+        "    @{ app = \"mpv\"; reg = \"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\mpv.exe\" }",
+        "    @{ app = \"umpv\"; reg = \"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\umpv.exe\"  }",
+        ")",
+        "foreach ($mpv in $mpvs) {",
+        "    $mpvPath = Get-ItemProperty -Path $($mpv.reg) -ErrorAction SilentlyContinue | Select-Object -ExpandProperty \"(default)\"",
+        "    if ($mpvPath) {",
+        "       $mpvPath = Split-Path $mpvPath -Parent",
+        "       $mpvPath = (Get-Item $mpvPath).Target",
+        "       $caption = \"$($mpv.app) 路径存在: $mpvPath\"",
+        "       $message = \"是否要执行将补丁包安装到 $mpvPath ?该操作会覆盖同名文件\"",
+        "       $yes = New-Object System.Management.Automation.Host.ChoiceDescription '&Yes', '是'",
+        "       $no = New-Object System.Management.Automation.Host.ChoiceDescription '&No', '否'",
+        "       $options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)",
+        "       $result = $host.UI.PromptForChoice($caption, $message, $options, 1)",
+        "       if ($result -eq 0) {",
+        "           try {",
+        "               Expand-7zipArchive -Path \"$dir\\dl.tmp\" -ExtractDir \"mpv-lazy\" -DestinationPath \"$mpvPath\" -Overwrite All -Removal",
+        "               info \"安装成功\"",
+        "           } catch {",
+        "               error \"安装失败: $_\"",
+        "           }",
+        "       } else {",
+        "           info \"已跳过对 $mpvPath 的安装\"",
+        "       }",
+        "    } else {",
+        "       info \"$($mpv.app) 未在注册表中注册\"",
+        "    }",
+        "}",
+        "Write-Host \"您现在可以执行'scoop uninstall MPV_lazy_vsNV'了\""
+    ],
+    "autoupdate": {
+        "url": "https://github.com/hooke007/MPV_lazy/releases/download/$version/mpv-lazy-$version-vsNV.7z#/dl.tmp",
+        "hash": {
+            "url": "https://github.com/hooke007/MPV_lazy/releases/latest",
+            "regex": "<td>可选补丁包：更多的vs与CUDA专用滤镜</td>\\s+<td><code>$sha256</code></td>"
+        }
+    }
+}

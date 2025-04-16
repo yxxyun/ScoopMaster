@@ -1,0 +1,77 @@
+{
+    "version": "1.7.2-1",
+    "description": "Device Tree Compiler and YAML library for Windows (with msys2-runtime)",
+    "homepage": "https://packages.msys2.org/package/mingw-w64-ucrt-x86_64-dtc",
+    "license": "GPL-2.0-or-later",
+    "architecture": {
+        "64bit": {
+            "url": [
+                "https://mirror.msys2.org/msys/x86_64/dtc-1.7.2-1-x86_64.pkg.tar.zst",
+                "https://mirror.msys2.org/msys/x86_64/libyaml-0.2.5-2-x86_64.pkg.tar.zst",
+                "https://mirror.msys2.org/msys/x86_64/msys2-runtime-3.5.4-8-x86_64.pkg.tar.zst"
+            ],
+            "hash": [
+                "8d75950a950deb4a1e561461d2f8e3a2ca38701cc36fa34f3a05c5ecf9eb63d5",
+                "11509c6e3133b3fc63f99cc04e89a1cc5685aa746e96bd5f481e3424fbd4f6c1",
+                "49112144021c2e49e6583db7f1097355cc38746034f5839c48029892ee20356d"
+            ]
+        }
+    },
+    "pre_install": [
+        "movedir \"$dir\\usr\" \"$dir\" | Out-Null",
+        "$keep_dirs = @(\"$dir\\bin\",",
+        "                \"$dir\\share\")",
+        "",
+        "Get-ChildItem \"$dir\"                                         |",
+        "    Select-Object -ExpandProperty FullName                     |",
+        "    Sort-Object Length -Descending                             |",
+        "    Where-Object {$_ -notin $keep_dirs }                       |",
+        "    ForEach-Object { if ((Test-Path $_ -Type Container) -and (Get-ChildItem $_)) {  Remove-Item $_ -Recurse -Force } }"
+    ],
+    "bin": "bin\\dtc.exe",
+    "checkver": {
+        "script": [
+            "$base_url = 'https://packages.msys2.org/package/'",
+            "$version_regex = \"Version:.+\\s+<.+>([\\d.-]+)\"",
+            "",
+            "$dtc_page = (Invoke-WebRequest \"${base_url}dtc?repo=msys&variant=x86_64\" -UseBasicParsing).Content",
+            "$libyaml_page = (Invoke-WebRequest \"${base_url}libyaml?repo=msys&variant=x86_64\" -UseBasicParsing).Content",
+            "$msys_runtime_page = (Invoke-WebRequest \"${base_url}msys2-runtime?repo=msys&variant=x86_64\" -UseBasicParsing).Content",
+            "",
+            "if(!($dtc_page -match $version_regex)) { error \"No match found for version\"; continue }",
+            "$scriptver = $matches[1]",
+            "if(!($libyaml_page -match $version_regex)) { error \"No match found for version\"; continue }",
+            "$libyaml_version = $matches[1]",
+            "if(!($msys_runtime_page -match $version_regex)) { error \"No match found for version\"; continue }",
+            "$msys_runtime_version = $matches[1]",
+            "",
+            "Write-Output $scriptver $libyaml_version $msys_runtime_version"
+        ],
+        "regex": "(?<version>[\\d.-]+)\\s(?<libyamlversion>[\\d.-]+)\\s(?<msysruntimeversion>[\\d.-]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": [
+                    "https://mirror.msys2.org/msys/x86_64/dtc-$matchVersion-x86_64.pkg.tar.zst",
+                    "https://mirror.msys2.org/msys/x86_64/libyaml-$matchLibyamlversion-x86_64.pkg.tar.zst",
+                    "https://mirror.msys2.org/msys/x86_64/msys2-runtime-$matchMsysruntimeversion-x86_64.pkg.tar.zst"
+                ],
+                "hash": [
+                    {
+                        "url": "https://packages.msys2.org/package/dtc?repo=msys&variant=x86_64",
+                        "regex": "SHA256:.+\\s+<.+>$sha256"
+                    },
+                    {
+                        "url": "https://packages.msys2.org/package/libyaml?repo=msys&variant=x86_64",
+                        "regex": "SHA256:.+\\s+<.+>$sha256"
+                    },
+                    {
+                        "url": "https://packages.msys2.org/package/msys2-runtime?repo=msys&variant=x86_64",
+                        "regex": "SHA256:.+\\s+<.+>$sha256"
+                    }
+                ]
+            }
+        }
+    }
+}

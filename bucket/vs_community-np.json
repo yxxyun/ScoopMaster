@@ -1,0 +1,39 @@
+{
+    "##": "Necessary features must be installed manually",
+    "version": "17.13.5",
+    "description": "Microsoft Visual Studio Community (minimum version in German and English)",
+    "homepage": "https://www.visualstudio.com/downloads/",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://visualstudio.microsoft.com/license-terms"
+    },
+    "url": "https://download.visualstudio.microsoft.com/download/pr/8fada5c7-8417-4239-acc3-bd499af09222/29a1ee404504b4903d201a0b56127dcc451af1b8d6726b27c53d096d86c90ffc/vs_Community.exe",
+    "hash": "29a1ee404504b4903d201a0b56127dcc451af1b8d6726b27c53d096d86c90ffc",
+    "installer": {
+        "script": "Start-Process \"$dir\\vs_community.exe\" -ArgumentList @('--quiet', '--norestart', '--addProductLang De-de', '--addProductLang En-us') -Wait | Out-Null"
+    },
+    "uninstaller": {
+        "script": "Write-Output \"Deinstallation must be done manually.\""
+    },
+    "checkver": {
+        "script": [
+            "$cont = Invoke-RestMethod 'https://visualstudio.microsoft.com/downloads/'",
+            "$cont -match '/releases/(?<Year>[\\d]+)' | Out-Null",
+            "$year = $Matches.Year",
+            "$uri = \"https://learn.microsoft.com/visualstudio/releases/$year/release-history\"",
+            "(Invoke-RestMethod $uri) -match 'tr\\>\\n\\<tr\\>\\n.*?Current\\</td\\>\\n.*?\\>(?<Version>[\\d.]+)\\<' | Out-Null",
+            "$version = $Matches.Version",
+            "$majorVersion = $version.Split('.')[0]",
+            "$uri = \"https://aka.ms/vs/$majorVersion/release/vs_community.exe\"",
+            "$response = (Invoke-WebRequest \"https://aka.ms/vs/$majorVersion/release/vs_community.exe\").BaseResponse.RequestMessage.RequestUri.AbsolutePath",
+            "Write-Output \"$version $response\""
+        ],
+        "regex": "([\\d.]+)\\s/download/pr/(?<Uuid>[\\w-]+)/(?<Hash>[\\w]+)/"
+    },
+    "autoupdate": {
+        "url": "https://download.visualstudio.microsoft.com/download/pr/$matchUuid/$matchHash/vs_Community.exe",
+        "hash": {
+            "regex": "$matchHash"
+        }
+    }
+}

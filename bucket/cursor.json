@@ -1,27 +1,23 @@
 {
-    "version": "0.48.6",
+    "version": "0.48.9",
     "description": "The AI Code Editor",
     "homepage": "https://www.cursor.com/",
     "license": {
         "identifier": "Proprietary",
         "url": "https://www.cursor.com/terms-of-service"
     },
-    "depends": "aki/innounpacker",
+    "innosetup": true,
     "architecture": {
         "64bit": {
-            "url": "https://downloads.cursor.com/production/1649e229afdef8fd1d18ea173f063563f1e722ef/win32/x64/user-setup/CursorUserSetup-x64-0.48.6.exe#/dl.7z",
-            "hash": "c16d8f8606807ad2dbb60c7860b3a29a04c8df8fb6af27a8370aeedaede28ea5"
+            "url": "https://downloads.cursor.com/production/61e99179e4080fecf9d8b92c6e2e3e00fbfb53f4/win32/x64/user-setup/CursorUserSetup-x64-0.48.9.exe",
+            "hash": "7727d7ea23b69972c7b7c4a15a8b8cf10d806a4ab36b8253482d8a0c6cc6aad2"
+        },
+        "arm64": {
+            "url": "https://downloads.cursor.com/production/61e99179e4080fecf9d8b92c6e2e3e00fbfb53f4/win32/arm64/user-setup/CursorUserSetup-arm64-0.48.9.exe",
+            "hash": "b802368719fdf4713fd7746c011695e84264b1f6437b98a658c30d240420d827"
         }
     },
-    "pre_install": [
-        "(Get-ChildItem $dir 'CursorUserSetup*exe').Fullname | Rename-Item -NewName 'Cursor_Setup.exe'",
-        "innounpack.exe -x -d\"$dir\" \"$dir\\Cursor_Setup.exe\" | Out-Null",
-        "Move-Item -Force -Path \"$dir\\{app}\\tools\\*\" -Destination \"$dir\"",
-        "Move-Item -Force -Path \"$dir\\{code_GetDestDir}\\*\" -Destination \"$dir\"",
-        "Remove-Item -Force -Path \"$dir\\{app}\" -Recurse",
-        "Remove-Item -Force -Path \"$dir\\{code_GetDestDir}\" -Recurse",
-        "Remove-Item -Force -Path \"$dir\\Cursor_Setup.exe\" -Recurse"
-    ],
+    "extract_dir": "{code_GetDestDir}",
     "post_install": [
         "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Recurse",
         "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.cursor\\extensions\")) {",
@@ -48,22 +44,16 @@
     ],
     "persist": "data",
     "checkver": {
-        "script": [
-            ". \"$pwd\\bin\\utils.ps1\"",
-            "$dl_info = get_installer_info 'Anysphere/Cursor'",
-            "\"ver:$($dl_info.PackageVersion);\"",
-            "\"x64:$($dl_info.x64_exe.InstallerUrl);\""
-        ],
-        "regex": "ver:(?<version>.+?); x64:(?<x64>.+?);"
+        "url": "https://www.cursor.com/api/download?platform=win32-x64-user&releaseTrack=stable",
+        "regex": "version\":\"([\\d.]+).*production/(?<Code>[\\w]+)/win32"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "$matchX64#/dl.7z",
-                "hash": {
-                    "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/a/Anysphere/Cursor/$version/Anysphere.Cursor.installer.yaml",
-                    "regex": "Architecture: x64[\\s\\S]+?InstallerSha256:\\s?(.+)"
-                }
+                "url": "https://downloads.cursor.com/production/$matchCode/win32/x64/user-setup/CursorUserSetup-x64-$version.exe"
+            },
+            "arm64": {
+                "url": "https://downloads.cursor.com/production/$matchCode/win32/arm64/user-setup/CursorUserSetup-arm64-$version.exe"
             }
         }
     }

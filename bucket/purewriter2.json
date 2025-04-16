@@ -1,0 +1,58 @@
+{
+    "version": "2.5.0",
+    "description": "Pure Writer Desktop",
+    "homepage": "https://writer.drakeet.com/desktop2",
+    "license": "GPL-3.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://kuromi.drakeet.cn/PureWriter2-2.5.0-Windows-x64.exe#/purewriter.exe",
+            "hash": "a4457501646b77b00dc2637753033b39f99693933d95fe2d9f3253c7d59f498b"
+        }
+    },
+    "pre_install": [
+        "$process = Start-Process -File \"$dir\\purewriter.exe\" -ArgumentList '/extract' -PassThru",
+        "try {",
+        "    Start-Sleep 3",
+        "    $folders = Get-ChildItem -Path $env:TEMP -Directory | ",
+        "        Where-Object { $_.Name -match \"^\\d{8,9}\\.tmp$\" } |",
+        "        Sort-Object $_.Name -Descending",
+        "    $msiPath = $null",
+        "    foreach ($folder in $folders) {",
+        "        $msiPath = Join-Path -Path $folder.FullName -ChildPath 'main.msi'",
+        "        if (Test-Path -Path $msiPath -PathType Leaf) {",
+        "            break",
+        "        }",
+        "        $msiPath = $null",
+        "    }",
+        "    if ($msiPath -eq $null) {",
+        "        throw \"not found: main.msi \"",
+        "    }",
+        "    Copy-Item -Path \"$msiPath\" \"$dir\"",
+        "    Expand-MsiArchive \"$dir\\main.msi\" -ExtractDir \"Pure Writer 2\" -Removal",
+        "} finally {",
+        "    Stop-Process -Id $process.Id -Force",
+        "    $process.WaitForExit()",
+        "    if (Test-Path \"$msiPath\") { Remove-Item \"$msiPath\" }",
+        "    if (Test-Path \"$dir\\purewriter.exe\") { Remove-Item \"$dir\\purewriter.exe\" }",
+        "    Remove-Item \"$msiPath\" -ErrorAction SilentlyContinue",
+        "    Remove-Item \"$dir\\purewriter.exe\" -ErrorAction SilentlyContinue",
+        "}",
+        ""
+    ],
+    "shortcuts": [
+        [
+            "Pure Writer 2.exe",
+            "Pure Writer 2"
+        ]
+    ],
+    "checkver": {
+        "regex": "PureWriter2-([\\d+\\.]+)-Windows-x64.exe"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://kuromi.drakeet.cn/PureWriter2-$version-Windows-x64.exe#/purewriter.exe"
+            }
+        }
+    }
+}

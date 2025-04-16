@@ -1,0 +1,48 @@
+{
+    "version": "2024",
+    "url": [
+        "http://officecdn.microsoft.com/pr/492350f6-3a01-4f97-b9c0-c7c6ddf67d60/media/zh-cn/ProPlus2024Retail.img#/of#2024#e2081df.7z"
+    ],
+    "hash": [
+        "80c812d190c2ea0b8eaac01a6f66e8f03ac2d8708830e224338b74501941959b"
+    ],
+    "depends": "anderlli0053_DEV-tools/kms-vl-all-aio_cc713",
+    "extract_dir": [
+        "Office",
+        ""
+    ],
+    "pre_install": [
+        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+        "# 用于静默安装的配置文件",
+        "$xmlContent = '<Configuration><Display Level=\"None\" AcceptEULA=\"TRUE\" /></Configuration>'",
+        "$xmlContent | Set-Content -Path \"$dir\\config.xml\""
+    ],
+    "installer": {
+        "file": "Setup64.exe",
+        "args": [
+            "/configure",
+            "$dir\\config.xml"
+        ]
+    },
+    "post_install": [
+        "# 必须 Out-Null，否则会清空控制台",
+        "KMS_VL_ALL_AIO /a /s | Out-Null",
+        "Get-ChildItem -Path $dir -Recurse | Remove-Item -Force -ErrorAction SilentlyContinue -Recurse"
+    ],
+    "pre_uninstall":[
+        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }"
+    ],
+    "uninstaller": {
+        "script":[
+            "# Office 16 Click-to-Run Extensibility Component",
+            "Invoke-ExternalCommand 'msiexec' -RunAs -ArgumentList @('/X{90160000-008C-0000-1000-0000000FF1CE}') -Quiet",
+            "# Office 16 Click-to-Run Localization Component",
+            "Invoke-ExternalCommand 'msiexec' -RunAs -ArgumentList @('/X{90160000-008C-0804-1000-0000000FF1CE}') -Quiet",
+            "# Office 16 Click-to-Run Licensing Component",
+            "Invoke-ExternalCommand 'msiexec' -RunAs -ArgumentList @('/X{90160000-007E-0000-1000-0000000FF1CE}') -Quiet"
+        ]
+    },
+    "##": [
+        "https://learn.microsoft.com/en-us/microsoft-365-apps/deploy/office-deployment-tool-configuration-options"
+    ]
+}

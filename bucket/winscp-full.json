@@ -1,0 +1,42 @@
+{
+    "homepage": "https://winscp.net",
+    "license": "GPL-3.0-or-later",
+    "version": "6.5",
+    "description": "Copy files between a local computer and remote servers using FTP, FTPS, SCP, SFTP, WebDAV or S3 file transfer protocols.",
+    "url": "https://downloads.sourceforge.net/project/winscp/WinSCP/6.5/WinSCP-6.5-Setup.exe",
+    "hash": "sha1:4fa3d0003f25a25e0d3901e3a4348c1d07d859cb",
+    "notes": "Register the protocol for winscp by running: \"$dir\\install-context.reg\"",
+    "innosetup": true,
+    "pre_install": [
+        "if (!(Test-Path \"$persist_dir\\winscp.ini\")) {",
+        "    new-item \"$dir\\winscp.ini\" -type file | out-null",
+        "    write-output \"[Configuration\\Interface]`r`nRandomSeedFile=.\\winscp.rnd\" | Out-File -encoding \"ASCII\" \"$dir\\winscp.ini\"",
+        "}"
+    ],
+    "post_install": [
+        "$winscp_full_root = \"$dir\".Replace('\\', '\\\\')",
+        "'install-context.reg', 'uninstall-context.reg' | ForEach-Object {",
+        "    $content = Get-Content \"$bucketsdir\\jbwfu\\scripts\\winscp-full\\$_\"",
+        "    $content = $content.Replace('$winscp_full_root', $winscp_full_root)",
+        "    if ($global) {",
+        "       $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    Set-Content \"$dir\\$_\" $content -Encoding Ascii",
+        "}"
+    ],
+    "bin": "WinSCP.exe",
+    "persist": "winscp.ini",
+    "checkver": {
+        "url": "https://winscp.net/eng/downloads.php",
+        "re": "WinSCP-([\\d.]+)-Setup\\.exe"
+    },
+    "autoupdate": {
+        "url": "https://downloads.sourceforge.net/project/winscp/WinSCP/$version/WinSCP-$version-Setup.exe"
+    },
+    "shortcuts": [
+        [
+            "WinSCP.exe",
+            "WinSCP"
+        ]
+    ]
+}

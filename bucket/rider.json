@@ -1,63 +1,56 @@
 {
-    "version": "2024.3.6-243.25659.34",
-    "description": "Cross-Platform IDE for .NET by JetBrains.",
+    "version": "2024.3.7",
+    "description": "由 JetBrains 开发的适用于 .NET 的跨平台集成开发环境。Cross-Platform IDE for .NET by JetBrains.",
     "homepage": "https://www.jetbrains.com/rider/",
     "license": {
-        "identifier": "Proprietary",
+        "identifier": "Shareware",
         "url": "https://www.jetbrains.com/store/license.html"
     },
-    "architecture": {
-        "64bit": {
-            "url": "https://download.jetbrains.com/rider/JetBrains.Rider-2024.3.6.win.zip",
-            "hash": "5d36e256666115844e3109afee366bfe4afdfc05238f5e0fa11861b6776d4566"
-        },
-        "arm64": {
-            "url": "https://download.jetbrains.com/rider/JetBrains.Rider-2024.3.6-aarch64.win.zip",
-            "hash": "141f7f9adf590395c40870d890013290d9acd9740d4f729b0c93cd756bd09c3c"
-        }
-    },
-    "extract_to": "IDE",
-    "pre_install": [
-        "Get-ChildItem \"$persist_dir\\IDE\\bin\\rider64.exe.vmoptions\" -ErrorAction SilentlyContinue | Copy-Item -Destination \"$dir\\IDE\\bin\"",
-        "Get-ChildItem \"$persist_dir\\IDE\\bin\\jetbrains_client64.exe.vmoptions\" -ErrorAction SilentlyContinue | Copy-Item -Destination \"$dir\\IDE\\bin\""
-    ],
-    "installer": {
-        "script": "& \"$bucketsdir\\extras\\scripts\\jetbrains\\portable.ps1\" \"$dir\" \"$persist_dir\""
-    },
+    "url": "https://download.jetbrains.com/rider/JetBrains.Rider-2024.3.7.exe#/abgo_bucket_installer.exe",
+    "hash": "a095c5bca9a780a36ab822d15cc623676c63fe822b4835c5ad82d45983d3de13",
     "bin": [
         [
             "IDE\\bin\\rider64.exe",
-            "rider"
+            "Rider"
         ]
     ],
     "shortcuts": [
         [
             "IDE\\bin\\rider64.exe",
-            "JetBrains\\Rider"
+            "Rider"
         ]
     ],
-    "persist": [
-        "IDE\\bin\\idea.properties",
-        "profile"
+    "pre_install": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$verPart = $version -split '\\.'",
+        "$verRes = \"$($verPart[0]).$($verPart[1])\"",
+        "persist_file -dir @(\"$user_AppData\\JetBrains\\Rider$($verRes)\",\"$user_LocalAppData\\JetBrains\\Rider$($verRes)\") @(\"$persist_dir\\Rider\",\"$persist_dir\\Rider_LocalAppData\")",
+        "$path_installer=\"$dir\\abgo_bucket_installer.exe\"",
+        "& $path_installer /S /D=\"$dir\\IDE\"",
+        "sleep_install \"$dir\\IDE\\bin\\idea.properties\"",
+        "handle_app_lnk",
+        "do_some_things"
     ],
     "pre_uninstall": [
-        "Get-ChildItem \"$dir\\IDE\\bin\\rider64.exe.vmoptions\" -ErrorAction SilentlyContinue | Copy-Item -Destination \"$persist_dir\\IDE\\bin\"",
-        "Get-ChildItem \"$dir\\IDE\\bin\\jetbrains_client64.exe.vmoptions\" -ErrorAction SilentlyContinue | Copy-Item -Destination \"$persist_dir\\IDE\\bin\""
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "stop_process $false",
+        "$preName = \"Rider\"",
+        "$remove_list = @(\"$user_AppData\\JetBrains\", \"$user_LocalAppData\\JetBrains\") | ForEach-Object {",
+        "   Get-ChildItem $_ | Where-Object { $_.Name -match \"$preName[\\d\\.]+\" } | ForEach-Object { $_.FullName }",
+        "}",
+        "remove_files $remove_list",
+        "$ui_exe=\"$dir\\IDE\\bin\\Uninstall.exe\"",
+        "try{ & $ui_exe /S }catch{}",
+        "sleep_uninstall $ui_exe"
     ],
     "checkver": {
-        "url": "https://data.services.jetbrains.com/products/releases?code=RD&latest=true&platform=zip&type=release",
-        "regex": "version\":\"(?<ver>[\\d.]+)\".*\"build\":\"(?<build>[\\d.]+)\"",
-        "replace": "${ver}-${build}"
+        "url": "https://data.services.jetbrains.com/products/releases?code=RD&latest=true",
+        "jsonpath": "$.RD[0].version"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://download.jetbrains.com/rider/JetBrains.Rider-$matchVer.win.zip"
-            },
-            "arm64": {
-                "url": "https://download.jetbrains.com/rider/JetBrains.Rider-$matchVer-aarch64.win.zip"
-            }
-        },
+        "url": "https://download.jetbrains.com/rider/JetBrains.Rider-$version.exe#/abgo_bucket_installer.exe",
         "hash": {
             "url": "$url.sha256"
         }

@@ -1,0 +1,66 @@
+{
+    "version": "0.49.3",
+    "description": "一个 开源的启动器，拥有现代化的UX.提供一种磁盘空间最优的方式来管理你的所有模组!",
+    "homepage": "https://xmcl.app/zh/",
+    "license": "MIT",
+    "notes": "默认的游戏数据目录位于~/.xmcl,已被persist",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Voxelum/x-minecraft-launcher/releases/download/v0.49.3/xmcl-0.49.3-win32-x64.zip",
+            "hash": "78151772f6529f667df6c522f65a4af6c6fb4c9c060251ae2af613b3917b5f72"
+        },
+        "32bit": {
+            "url": "https://github.com/Voxelum/x-minecraft-launcher/releases/download/v0.49.3/xmcl-0.49.3-win32-ia32.zip",
+            "hash": "27b042140af5d95254555ffb3162f3277e3960e9e40b89b0dc058564bc3ef98d"
+        }
+    },
+    "shortcuts": [
+        [
+            "X Minecraft Launcher.exe",
+            "XMCL"
+        ]
+    ],
+    "installer": {
+        "script": [
+            "$links = @(",
+            "    @{ source = \"$persist_dir\\.xmcl\"; target = \"~\\.xmcl\" },",
+            "    @{ source = \"$persist_dir\\xmcl\"; target = \"$env:APPDATA\\xmcl\" }",
+            ")",
+            "foreach ($link in $links) {",
+            "    ensure $($link.source) | Out-Null",
+            "    if (Test-Path $($link.target)) {",
+            "        $linkType = (Get-Item -Path $($link.target) -ErrorAction SilentlyContinue).LinkType",
+            "        if ($linkType -eq 'Junction') {",
+            "            Remove-Item -Path $($link.target) -Force",
+            "        } else {",
+            "            Get-ChildItem -Path $($link.target) -Force | Move-Item -Destination $($link.source) -Force",
+            "            Remove-Item -Path $($link.target) -Force -Recurse",
+            "        }",
+            "    }",
+            "    New-Item -Path $($link.target) -ItemType Junction -Value $($link.source) -Force | Out-Null",
+            "}"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Remove-Item \"~\\.xmcl\" -Recurse -Force -ErrorAction SilentlyContinue",
+            "Remove-Item \"$env:APPDATA\\xmcl\" -Recurse -Force -ErrorAction SilentlyContinue"
+        ]
+    },
+    "checkver": {
+        "github": "https://github.com/voxelum/x-minecraft-launcher"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Voxelum/x-minecraft-launcher/releases/download/v$version/xmcl-$version-win32-x64.zip"
+            },
+            "32bit": {
+                "url": "https://github.com/Voxelum/x-minecraft-launcher/releases/download/v$version/xmcl-$version-win32-ia32.zip"
+            }
+        },
+        "hash": {
+            "url": "$url.sha256"
+        }
+    }
+}
