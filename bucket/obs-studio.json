@@ -1,44 +1,43 @@
 {
-    "version": "31.0.3",
-    "description": "用于视频录制和直播的免费开源软件。Free and open source software for video recording and live streaming.",
-    "homepage": "https://obsproject.com",
-    "license": {
-        "identifier": "GNU General Public License v2.0",
-        "url": "https://github.com/obsproject/obs-studio/blob/master/COPYING"
+    "architecture": {
+        "64bit": {
+            "hash": "b7086a6b6162d5122eedf7773e96c723e455ad1a931b59d1097f020ee7ff145e",
+            "shortcuts": [
+                [
+                    "bin\\64bit\\obs64.exe",
+                    "OBS Studio"
+                ]
+            ],
+            "url": "https://cdn-fastly.obsproject.com/downloads/OBS-Studio-31.0.3-Windows.zip"
+        }
     },
-    "url": "https://github.com/obsproject/obs-studio/releases/download/31.0.3/OBS-Studio-31.0.3-Windows-Installer.exe#/abgo_bucket_installer.exe",
-    "hash": "4800ea05ddcdde7832a1c58a2b1e29684eee122c08e23ab122c9815d05404c32",
-    "shortcuts": [
-        [
-            "bin\\64bit\\obs64.exe",
-            "OBS Studio"
-        ]
-    ],
-    "pre_install": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "$path_installer= \"$dir\\abgo_bucket_installer.exe\"",
-        "& $path_installer /S /D=$dir",
-        "$core_exe=\"$dir\\uninstall.exe\"",
-        "sleep_install $core_exe",
-        "persist_file -dir @(\"$user_AppData\\obs-studio\") @(\"$persist_dir\\obs-studio\")",
-        "handle_app_lnk",
-        "do_some_things"
-    ],
-    "pre_uninstall": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match '(gitee|github).com/abgox/abgo_bucket'})[0].Name",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "stop_process $false",
-        "remove_files @(\"$user_AppData\\obs-studio\")",
-        "$ui_exe=\"$dir\\uninstall.exe\"",
-        "try{ & $ui_exe /S }catch{}",
-        "sleep_uninstall $ui_exe",
-        "remove_files @(\"$user_LocalAppData\\obs-studio-updater\")"
-    ],
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://cdn-fastly.obsproject.com/downloads/OBS-Studio-$version-Windows.zip"
+            }
+        }
+    },
     "checkver": {
         "github": "https://github.com/obsproject/obs-studio"
     },
-    "autoupdate": {
-        "url": "https://github.com/obsproject/obs-studio/releases/download/$version/OBS-Studio-$version-Windows-Installer.exe#/abgo_bucket_installer.exe"
-    }
+    "description": "Free and open source software for live streaming and screen recording.",
+    "homepage": "https://obsproject.com",
+    "license": {
+        "identifier": "GPL-2.0-only",
+        "url": "https://github.com/obsproject/obs-studio/blob/master/COPYING"
+    },
+    "persist": "config",
+    "post_install": [
+        "New-Item -ItemType File -Path \"$dir\\portable_mode.txt\" -Force | Out-Null",
+        "Get-ChildItem -Path \"$scoopdir\\apps\\obs-*\" -Directory | Where-Object { $_.Name -notlike 'obs-studio*' } | ForEach-Object {",
+        "    Get-ChildItem -Path \"$($_.FullName)\\current\\obs-plugins\\$architecture\" -File | ForEach-Object {",
+        "        New-Item -ItemType HardLink -Path \"$dir\\obs-plugins\\$architecture\\$($_.Name)\" -Target $_.FullName -Force | Out-Null",
+        "    }",
+        "    Get-ChildItem -Path \"$($_.FullName)\\current\\data\\obs-plugins\" -Directory | ForEach-Object {",
+        "        New-Item -ItemType Junction -Path \"$dir\\data\\obs-plugins\\$($_.Name)\" -Target $_.FullName -Force | Out-Null",
+        "    }",
+        "}"
+    ],
+    "version": "31.0.3"
 }
