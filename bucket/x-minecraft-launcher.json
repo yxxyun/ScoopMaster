@@ -22,29 +22,21 @@
     ],
     "installer": {
         "script": [
+            ". \"$bucketsdir\\doge\\scripts\\utils.ps1\"",
             "$links = @(",
             "    @{ source = \"$persist_dir\\.xmcl\"; target = \"~\\.xmcl\" },",
             "    @{ source = \"$persist_dir\\xmcl\"; target = \"$env:APPDATA\\xmcl\" }",
             ")",
             "foreach ($link in $links) {",
-            "    ensure $($link.source) | Out-Null",
-            "    if (Test-Path $($link.target)) {",
-            "        $linkType = (Get-Item -Path $($link.target) -ErrorAction SilentlyContinue).LinkType",
-            "        if ($linkType -eq 'Junction') {",
-            "            Remove-Item -Path $($link.target) -Force",
-            "        } else {",
-            "            Get-ChildItem -Path $($link.target) -Force | Move-Item -Destination $($link.source) -Force",
-            "            Remove-Item -Path $($link.target) -Force -Recurse",
-            "        }",
-            "    }",
-            "    New-Item -Path $($link.target) -ItemType Junction -Value $($link.source) -Force | Out-Null",
+            "    Ensure-Junction -Source $($link.Source) -Target $($link.Target)",
             "}"
         ]
     },
     "uninstaller": {
         "script": [
-            "Remove-Item \"~\\.xmcl\" -Recurse -Force -ErrorAction SilentlyContinue",
-            "Remove-Item \"$env:APPDATA\\xmcl\" -Recurse -Force -ErrorAction SilentlyContinue"
+            ". \"$bucketsdir\\doge\\scripts\\utils.ps1\"",
+            "Remove-Junction -Path \"~\\.xmcl\"",
+            "Remove-Junction -Path \"$env:APPDATA\\xmcl\""
         ]
     },
     "checkver": {
