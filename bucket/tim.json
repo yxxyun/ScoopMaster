@@ -1,54 +1,40 @@
 {
-    "##": "来自https://github.com/Scoopforge/Extras-CN/blob/master/bucket/tim.json",
     "version": "3.5.0.22143",
-    "description": "团队沟通协作工具",
-    "homepage": "https://tim.qq.com/",
+    "description": "Tencent TIM, lightweight alternative to QQ",
+    "homepage": "https://office.qq.com/",
     "license": {
-        "identifier": "Proprietary",
-        "url": "https://ti.qq.com/tim/serverinfo.html"
+        "identifier": "Unknown",
+        "url": "http://play.mobile.qq.com/yy/eim/help/serverinfo.html"
     },
-    "url": "https://dldir1.qq.com/qqfile/qq/TIM3.5.0/TIM3.5.0.22143.exe#/dl.exe",
+    "url": "http://dldir1.qq.com/qqfile/qq/TIM3.5.0/TIM3.5.0.22143.exe#/dl.7z",
     "hash": "4143f88baa26d4e61b0380eb917d20918f64b4b7a86e93c39cbf08ff841934e1",
+    "pre_install": [
+        "if (Test-Path \"$env:AppData\\Tencent\\Tim\") {",
+        "    info '[Persistent data]: Copying user data...'",
+        "    ensure \"$dir\\User Data\" | Out-Null",
+        "    Copy-Item \"$env:AppData\\Tencent\\Tim\\*\" \"$dir\\User Data\\\" -Recurse -Force -ErrorAction 'SilentlyContinue'",
+        "    Remove-Item \"$env:AppData\\Tencent\\Tim\" -Recurse -Force -ErrorAction 'SilentlyContinue'",
+        "}",
+        "Move-Item \"$dir\\Files\\*\" \"$dir\\\""
+    ],
+    "post_install": "Remove-Item \"$dir\\Application Data\", \"$dir\\Common\" -Recurse -Force -ErrorAction 'SilentlyContinue'",
     "shortcuts": [
         [
             "Bin\\QQScLauncher.exe",
-            "TIM"
+            "Tim",
+            "--user-data-dir=\"$dir\\User Data\""
         ]
     ],
-    "installer": {
-        "script": [
-            "Expand-7zipArchive \"$dir\\$fname\" -Switches '-t*' -Removal",
-            "Get-Item \"$dir\\*\" -Exclude .rsrc | Remove-Item",
-            "Expand-7zipArchive \"$dir\\.rsrc\\2052\\MSI\\101\" \"$dir\" -ExtractDir 'Files'",
-            "Expand-7zipArchive \"$dir\\.rsrc\\2052\\MSI\\102\" \"$dir\\temp\"",
-            "'vcruntime140.dll', 'msvcp140.dll', 'msvcr100.dll', 'vcomp140.dll', 'msvcp100.dll' | ForEach-Object {",
-            "  Move-Item \"$dir\\temp\\$_\" \"$dir\\Bin\\\"",
-            "}",
-            "Expand-7zipArchive \"$dir\\temp\\TXSSO\\TXSSOSetup.exe\" \"$dir\\Bin\\TXSSO\" -ExtractDir 'TXSSO'",
-            "Remove-Item \"$dir\\.rsrc\", \"$dir\\temp\" -Recurse",
-            "$source = \"$persist_dir\\Tencent Files\"",
-            "$personalPath = Get-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders\" -Name \"Personal\" | Select-Object -ExpandProperty Personal",
-            "$target = \"$personalPath\\Tencent Files\"",
-            ". \"$bucketsdir\\doge\\scripts\\utils.ps1\"",
-            "Ensure-Junction -Source \"$source\" -Target \"$target\""
-        ]
-    },
-    "uninstaller": {
-        "script": [
-            ". \"$bucketsdir\\doge\\scripts\\utils.ps1\"",
-            "$personalPath = Get-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders\" -Name \"Personal\" | Select-Object -ExpandProperty Personal",
-            "Remove-Junction -Path \"$personalPath\\Tencent Files\""
-        ]
-    },
+    "persist": "User Data",
     "checkver": {
-        "url": "https://pc.qq.com/detail/18/detail_23258.html",
-        "re": "<div class=\"sys-info-value ellipsis\">\\s+([\\d.]+)\\s+</div>\\s+<div class=\"sys-info-desc\">版本</div>"
+        "url": "https://im.qq.com/rainbow/TIMDownload/",
+        "regex": "\"pcLink\":\"https?://dldir1\\.qq\\.com/qqfile/qq(?<extra>.*)/TIM(?<main>\\d+\\.\\d+\\.\\d+)/TIM.*\\.(?<patch>\\d+)\\.exe",
+        "replace": "${main}.${patch}"
     },
     "autoupdate": {
-        "url": "https://dldir1.qq.com/qqfile/qq/TIM3.5.0/TIM$version.exe#/dl.exe"
-    },
-    "notes": [
-        "Files produced at runtime leaves in '%AppData%\\Tencent'.",
-        "#TODO 处理%AppData%\\Tencent和注册表"
-    ]
+        "url": "http://dldir1.qq.com/qqfile/qq$matchExtra/TIM$matchMain/TIM$version.exe#/dl.7z",
+        "hash": {
+            "mode": "download"
+        }
+    }
 }
