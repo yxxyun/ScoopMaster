@@ -1,72 +1,35 @@
 {
-    "##": "来自https://github.com/ZhangTianrong/scoop-bucket/blob/master/bucket/dandanplay.json",
     "homepage": "https://www.dandanplay.com/",
-    "description": "A free to use bangumi player with danmaku support",
+    "description": "A local video player with danmu.",
     "version": "15.13.0",
     "license": "Unknown",
     "architecture": {
         "64bit": {
-            "url": "http://lsw-fast.lenovo.com.cn/appstore/apps/adp/pkg/1997-2025-02-17103833-1739759913728.exe#/dandanplay-x64_15.13.0.exe",
-            "hash": "18dfe3763cec0cc461d99f5ba51aa76e570115b9f275fa8b7e7e82b25016b502"
+            "url": "https://github.com/kaedei/dandanplay/releases/download/windows-15.13.0.0/dandanplay-x64_15.13.0.zip",
+            "hash": "70578f1a06d95026fb4f878569156622761a83845d67f1f247d03e97e9dabda6",
+            "extract_dir": "dandanplay-x64"
         }
     },
-    "pre_install": [
-        "if (!(Test-Path \"$persist_dir\\Config\")) {",
-        "    New-Item -Path \"$persist_dir\\Config\" -ItemType Directory | Out-Null",
-        "}",
-        "# Disable auto update",
-        "if (!(Test-Path \"$persist_dir\\Config\\ConnectionSettings.xml\")) {",
-        "    New-Item -Force -Path \"$persist_dir\\Config\\ConnectionSettings.xml\" -ItemType File -Value '<?xml version=\"1.0\"?><ConnectionSettings><EnableAutoUpdate>false</EnableAutoUpdate><NotifyOnUpdateDownloaded>false</NotifyOnUpdateDownloaded></ConnectionSettings>' | Out-Null",
-        "}",
-        "# Disable tracking",
-        "if (!(Test-Path \"$persist_dir\\Config\\UserSettings.xml\")) {",
-        "    New-Item -Force -Path \"$persist_dir\\Config\\UserSettings.xml\" -ItemType File -Value '<?xml version=\"1.0\"?><UserSettings><EnableTelemetry>false</EnableTelemetry></UserSettings>' | Out-Null",
-        "}"
+    "persist": [
+        "Cache",
+        "Config",
+        "Log"
     ],
-    "installer": {
-        "script": [
-            "Start-Process \"$dir\\$fname\" \"/extract $dir\" -PassThru -NoNewWindow | Wait-Process",
-            "$subdir = (Get-ChildItem -Path \"$dir\" -Exclude \"*NET*\",\"WebView2\" -Directory).Name",
-            "movedir \"$dir\\$subdir\" \"$dir\" | Out-Null",
-            "Remove-Item \"$dir\\$fname\",\"$dir\\decoder.dll\",\"$dir\\$subdir\" -Force -ErrorAction SilentlyContinue"
-        ]
-    },
     "shortcuts": [
         [
             "dandanplay.exe",
-            "弹弹play"
+            "DandanPlay"
         ]
     ],
-    "persist": [
-        "Config",
-        "Log",
-        "Cache"
-    ],
-    "lestoreid": "10343",
     "checkver": {
-        "script": [
-            "$path1 = \"$bucketsdir\\doge\\scripts\\lestore.ps1\"",
-            "$path2 = \"D:\\a\\doge_bucket\\doge_bucket\\scripts\\lestore.ps1\"",
-            "if (Test-Path $path1) { . $path1 }",
-            "elseif (Test-Path $path2) { . $path2 }",
-            "else { throw '未找到 lestore.ps1 文件，请检查路径配置' }",
-            "$officialPage = Invoke-WebRequest -Uri 'https://www.dandanplay.com/' -UseBasicParsing",
-            "if ($officialPage.Content -match '(?<=最新版本)[^\\d]*(\\d+(\\.\\d+)+)') {",
-            "    $officialVersion = $Matches[1]",
-            "} else {",
-            "    throw 'Failed to get version from official website'",
-            "}",
-            "$leStoreVersion = Get-LeStoreAppVersion -SoftwareId $($json.lestoreid)",
-            "if ($officialVersion -ne $leStoreVersion) {",
-            "    throw \"Version mismatch! Official: $officialVersion vs LeStore: $leStoreVersion\"",
-            "}",
-            "$downloadLink = Get-LeStoreDownloadUrl -SoftwareId $($json.lestoreid)",
-            "\"$($officialVersion)以及$($downloadLink)\""
-        ],
-        "regex": "(?<Version>\\d+(?:\\.\\d+)+)以及(?<URL>.*)$",
-        "replace": "${Version}"
+        "url": "https://github.com/kaedei/dandanplay/releases/latest",
+        "regex": "(?sm)/releases/tag/windows-(?<ver>[\\d.]+).+\\bv(?<version>[\\d.]+)</"
     },
     "autoupdate": {
-        "url": "$matchURL#/dandanplay-x64_$version.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/kaedei/dandanplay/releases/download/windows-$matchVer/dandanplay-x64_$version.zip"
+            }
+        }
     }
 }
