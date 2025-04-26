@@ -1,14 +1,17 @@
 {
     "version": "4.0.0.9",
-    "description": "Eagle helps you become a happier, better designer. A new way to collect, search and organize your image files in a logical way and all in one place.",
-    "homepage": "https://en.eagle.cool/",
+    "description": "A new way to collect, search and organize your image files in a logical way and all in one place.",
+    "homepage": "https://eagle.cool/",
     "license": {
         "identifier": "Shareware",
-        "url": "https://en.eagle.cool/privacy"
+        "url": "https://eagle.cool/eula"
     },
-    "depends": "sudo",
-    "url": "https://eaglefile.oss-cn-shenzhen.aliyuncs.com/releases/Eagle-4.0-x64-build9.exe#/installer.exe",
-    "hash": "3d866043617a0f2b21ef4eda6d6d82d57b1b781edccd0bb549fcde534aef8ef6",
+    "architecture": {
+        "64bit": {
+            "url": "https://eaglefile.oss-cn-shenzhen.aliyuncs.com/releases/Eagle-4.0-x64-build9.exe",
+            "hash": "3d866043617a0f2b21ef4eda6d6d82d57b1b781edccd0bb549fcde534aef8ef6"
+        }
+    },
     "shortcuts": [
         [
             "Eagle.exe",
@@ -16,15 +19,47 @@
         ]
     ],
     "installer": {
-        "script": "sudo Start-Process -Filepath \"$dir\\installer.exe\" -WorkingDirectory \"$dir\" -ArgumentList \"/S /D=$dir\" -Wait"
+        "args": [
+            "/S",
+            "/D=\"$dir\""
+        ]
+    },
+    "pre_install": [
+        "if (!(is_admin)) { Write-Warning 'Eagle requires administrative privileges.'; exit 1 }",
+        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name air) scripts/AirUtils.psm1)",
+        "RedirectDirectory \"$env:PROGRAMDATA\\Eagle\" \"$persist_dir\\PROGRAMDATA\\Eagle\"",
+        "RedirectDirectory \"$env:APPDATA\\Eagle\" \"$persist_dir\\APPDATA\\Eagle\"",
+        "Remove-Module -Name AirUtils"
+    ],
+    "post_install": [
+        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name air) scripts/AirUtils.psm1)",
+        "RemoveDesktopShortcut 'Eagle'",
+        "RemoveStartMenuItem 'Eagle'",
+        "Remove-Module -Name AirUtils"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    if (!(is_admin)) { Write-Warning 'Eagle requires administrative privileges.'; exit 1 }",
+            "    Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name air) scripts/AirUtils.psm1)",
+            "    RemoveJunction \"$env:PROGRAMDATA\\Eagle\"",
+            "    RemoveJunction \"$env:APPDATA\\Eagle\"",
+            "    Remove-Module -Name AirUtils",
+            "    Invoke-ExternalCommand \"$dir\\uninst.exe\" -ArgumentList '/S' -Quiet",
+            "}"
+        ]
     },
     "checkver": {
-        "url": "https://en.eagle.cool/check-for-update",
+        "url": "https://eagle.cool/check-for-update",
         "jsonpath": "$.links.windows",
-        "regex": "//(?<url>eaglefile.oss-cn-shenzhen.aliyuncs.com/releases/Eagle-(?<ver>[\\d.]+)-x64-build(?<build>\\d+)\\.exe)",
+        "regex": "Eagle-(?<ver>[\\d.]+)-x64-build(?<build>\\d+)\\.exe",
         "replace": "${ver}.0.${build}"
     },
     "autoupdate": {
-        "url": "https://eaglefile.oss-cn-shenzhen.aliyuncs.com/releases/Eagle-$majorVersion.$minorVersion-x64-build$buildVersion.exe#/installer.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://eaglefile.oss-cn-shenzhen.aliyuncs.com/releases/Eagle-$majorVersion.$minorVersion-x64-build$buildVersion.exe"
+            }
+        }
     }
 }
