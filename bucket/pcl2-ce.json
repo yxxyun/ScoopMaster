@@ -1,63 +1,53 @@
 {
     "version": "2.10.7",
     "description": "PCL2 社区版，可体验上游暂未合并的功能",
-    "homepage": "https://pcl-community.github.io/PCL2-CE-Web/",
-    "license": "https://github.com/PCL-Community/PCL2-CE/blob/dev/LICENCE",
+    "homepage": "https://github.com/PCL-Community/PCL2-CE",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://github.com/PCL-Community/PCL2-CE/blob/main/LICENCE"
+    },
     "architecture": {
         "64bit": {
             "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/2.10.7/PCL2_CE_x64.exe",
-            "hash": "76dd9248ee7f86255df128f7ef57358a70b5d6cb1be2b35911ae60b844b010b0"
+            "hash": "76dd9248ee7f86255df128f7ef57358a70b5d6cb1be2b35911ae60b844b010b0",
+            "shortcuts": [
+                [
+                    "PCL2_CE_x64.exe",
+                    "PCL2 CE"
+                ]
+            ]
         },
         "arm64": {
             "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/2.10.7/PCL2_CE_ARM64.exe",
-            "hash": "c33f9361f83d3e7af44e49fab5b05e419bb9ef709056c9c867e75be21e837731"
+            "hash": "c33f9361f83d3e7af44e49fab5b05e419bb9ef709056c9c867e75be21e837731",
+            "shortcuts": [
+                [
+                    "PCL2_CE_ARM64.exe",
+                    "PCL2 CE"
+                ]
+            ]
         }
     },
-    "persist": [
-        "PCL",
-        ".minecraft"
+    "pre_install": [
+        "ensure \"$persist_dir\\PCL\" | Out-Null",
+        "ensure \"$persist_dir\\.minecraft\" | Out-Null",
+        "$conf = \"$persist_dir\\PCL\\Setup.ini\"",
+        "if (!(Test-Path \"$conf\")) {",
+        "    $content = \"LaunchFolderSelect:$persist_dir\\.minecraft\\\"",
+        "    Add-Content \"$conf\" \"$content\"",
+        "}"
     ],
     "shortcuts": [
         [
             "PCL2_CE.exe",
-            "PCL2_CE"
+            "PCL2 CE"
         ]
     ],
-    "pre_install": [
-        "$reg_data = \"$persist_dir\\PCL2-CE.reg\"",
-        "if (Test-Path -Path $reg_data) {",
-        "   reg.exe import \"$reg_data\" | Out-Null",
-        "}"
+    "persist": [
+        "PCL",
+        ".minecraft"
     ],
-    "post_install": [
-        "'hide-hint.reg', 'show-hint.reg' , 'uninstall.reg' | ForEach-Object {",
-        "    $content = Get-Content \"$bucketsdir\\doge\\scripts\\PCL2-CE\\$_\"",
-        "    Set-Content \"$dir\\$_\" $content -Encoding Ascii",
-        "}"
-    ],
-    "installer": {
-        "script": [
-            "if ($architecture -eq '64bit')",
-            "{",
-            "   Rename-Item \"$dir\\PCL2_CE_x64.exe\" 'PCL2_CE.exe' -ErrorAction SilentlyContinue ",
-            "} else {",
-            "   Rename-Item \"$dir\\PCL2_CE_ARM64.exe\" 'PCL2_CE.exe' -ErrorAction SilentlyContinue ",
-            "}"
-        ]
-    },
-    "uninstaller": {
-        "script": [
-            "$reg_path = \"HKEY_CURRENT_USER\\Software\\PCLCE\"",
-            "$reg_data = \"$persist_dir\\PCL2-CE.reg\"",
-            "if (Test-Path \"Registry::$reg_path\") {",
-            "    reg.exe export \"$reg_path\" \"$reg_data\" /y | Out-Null",
-            "}",
-            "reg.exe import \"$dir\\uninstall.reg\" | Out-Null"
-        ]
-    },
-    "checkver": {
-        "github": "https://github.com/PCL-Community/PCL2-CE"
-    },
+    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
@@ -67,12 +57,5 @@
                 "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/$version/PCL2_CE_ARM64.exe"
             }
         }
-    },
-    "notes": [
-        "在注册表项中添加 UiLauncherCEHint 字符串值，值设置为 False 即可隐藏提示",
-        "或者执行:",
-        "'reg import \"$dir\\hide-hint.reg\"'",
-        "如果想要再次打开提示, 请执行:",
-        "'reg import \"$dir\\show-hint.reg\"'"
-    ]
+    }
 }
