@@ -1,44 +1,30 @@
 {
-  "version": "10.14.0",
-  "description": "Thousands of free mods and trainers for your favorite single-player PC games — all in one place",
-  "license": {
-    "identifier": "Freeware",
-    "url": "https://www.wemod.com/terms"
-  },
-  "homepage": "https://www.wemod.com",
-  "architecture": {
-    "64bit": {
-      "url": "https://storage-cdn.wemod.com/app/releases/stable/WeMod-10.14.0-full.nupkg",
-      "hash": "2e0dbc2612763947b877ababffc47e526c4bea49dd6dbf440b03ad969e9c1d6a",
-      "shortcuts": [
-        [
-          "WeMod.exe",
-          "WeMod"
-        ]
-      ]
-    }
-  },
-  "pre_install": [
-    "Get-ChildItem -Path \"$original_dir\" -Exclude lib | Remove-Item -Recurse -Force",
-    "$unzip_dir = (Get-ChildItem -Path \"$original_dir\\lib\" -Directory)[0].FullName",
-    "Move-Item -Path \"${unzip_dir}\\*\" -Destination \"$original_dir\" -Force",
-    "Remove-Item -Path \"$original_dir\\lib\" -Recurse -Force"
-  ],
-  "checkver": {
-    "script": [
-      "$resp = Invoke-WebRequest -Uri 'https://api.wemod.com/client/channels/stable/RELEASES'",
-      "$body = $resp.Content -replace '^\\xEF\\xBB\\xBF', ''",
-      "$download_url = $body -split '\\s' -match '^http(s?)://'",
-      "$version = $download_url -split '-' -match '\\d(\\.\\d+)+'",
-      "Write-Output $version"
+    "version": "10.14.0",
+    "description": "Thousands of free mods and trainers for your favorite single-player PC games - all in one place.",
+    "homepage": "https://www.wemod.com",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.wemod.com/terms"
+    },
+    "url": "https://storage-cdn.wemod.com/app/releases/stable/WeMod-10.14.0.exe#/dl.7z",
+    "hash": "7058212cced2965bc756143ab0b79c2ed7b3de593a56020fcc7d912245805a75",
+    "pre_install": [
+        "$nupkg=(Get-ChildItem $dir\\*full.nupkg).Name",
+        "Get-ChildItem \"$dir\" -Exclude \"$nupkg\" | Remove-Item -ErrorAction SilentlyContinue -Force -Recurse",
+        "Expand-7zipArchive \"$dir\\$nupkg\" -ExtractDir 'lib\\net45' -Removal"
     ],
-    "regex": "(?<version>[\\d\\.]+)"
-  },
-  "autoupdate": {
-    "architecture": {
-      "64bit": {
-        "url": "https://storage-cdn.wemod.com/app/releases/stable/WeMod-$version-full.nupkg"
-      }
+    "shortcuts": [
+        [
+            "WeMod.exe",
+            "WeMod"
+        ]
+    ],
+    "post_uninstall": "If ($cmd -eq 'uninstall') { Remove-Item ${env:APPDATA}\\wemod\\* -Force -Recurse }",
+    "checkver": {
+        "regex": "WeMod-([\\d.]+)",
+        "script": "(Invoke-WebRequest 'https://api.wemod.com/client/channels/stable/RELEASES').Content"
+    },
+    "autoupdate": {
+        "url": "https://storage-cdn.wemod.com/app/releases/stable/WeMod-$version.exe#/dl.7z"
     }
-  }
 }
