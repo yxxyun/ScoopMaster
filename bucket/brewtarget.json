@@ -1,0 +1,55 @@
+{
+    "version": "4.0.17",
+    "description": "Beer brewing and recipe creation tool",
+    "homepage": "https://www.brewtarget.beer/",
+    "license": "GPL-3.0-or-later",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Brewtarget/brewtarget/releases/download/v4.0.17/Brewtarget.4.0.17.Windows.Installer.exe#/dl.7z",
+            "hash": "b9797fe0d53ea2cb9fe8f05225bf675904583bcc05640a843f6683c516bb71b9"
+        }
+    },
+    "pre_install": [
+        "Remove-Item \"$dir\\$*\" -Recurse"
+    ],
+    "post_install": [
+        "$appdata = \"$env:LOCALAPPDATA\\brewtarget\"",
+        "ensure $appdata | Out-Null",
+        "if (Test-Path \"$persist_dir\\brewtargetPersistentSettings.conf\") {",
+        "   Copy-Item \"$persist_dir\\brewtargetPersistentSettings.conf\" \"$appdata\"",
+        "} else {",
+        "   $dir_unix = \"$dir\".Replace('\\', '/')",
+        "   Set-Content \"$appdata\\brewtargetPersistentSettings.conf\" \"[General]\nUserDataDirectory=$dir_unix/userdata\n[backups]\ndirectory=$dir_unix/backups\"",
+        "}"
+    ],
+    "bin": "bin\\brewtarget.exe",
+    "shortcuts": [
+        [
+            "bin\\brewtarget.exe",
+            "Brewtarget",
+            "",
+            "logo.ico"
+        ]
+    ],
+    "persist": [
+        "userdata",
+        "backups"
+    ],
+    "pre_uninstall": [
+        "$config = \"$env:LOCALAPPDATA\\brewtarget\\brewtargetPersistentSettings.conf\"",
+        "if (Test-Path \"$config\") {",
+        "    Copy-Item \"$config\" \"$persist_dir\" -Force",
+        "}"
+    ],
+    "post_uninstall": "Remove-Item \"$env:LOCALAPPDATA\\brewtarget\" -Recurse",
+    "checkver": {
+        "github": "https://github.com/Brewtarget/brewtarget"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Brewtarget/brewtarget/releases/download/v$version/Brewtarget.$version.Windows.Installer.exe"
+            }
+        }
+    }
+}
