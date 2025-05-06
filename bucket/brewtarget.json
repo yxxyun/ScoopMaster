@@ -9,18 +9,14 @@
             "hash": "b9797fe0d53ea2cb9fe8f05225bf675904583bcc05640a843f6683c516bb71b9"
         }
     },
-    "pre_install": [
-        "Remove-Item \"$dir\\$*\" -Recurse"
-    ],
+    "pre_install": "Remove-Item \"$dir\\$*\" -Recurse",
     "post_install": [
+        "ensure \"$persist_dir\" | Out-Null",
         "$appdata = \"$env:LOCALAPPDATA\\brewtarget\"",
-        "ensure $appdata | Out-Null",
-        "if (Test-Path \"$persist_dir\\brewtargetPersistentSettings.conf\") {",
-        "   Copy-Item \"$persist_dir\\brewtargetPersistentSettings.conf\" \"$appdata\"",
-        "} else {",
-        "   $dir_unix = \"$dir\".Replace('\\', '/')",
-        "   Set-Content \"$appdata\\brewtargetPersistentSettings.conf\" \"[General]\nUserDataDirectory=$dir_unix/userdata\n[backups]\ndirectory=$dir_unix/backups\"",
-        "}"
+        "if (Test-Path \"$appdata\") {",
+        "   Move-Item \"$appdata\\*\" \"$persist_dir\"",
+        "}",
+        "New-Item -Type Junction -Path \"$appdata\" -Target \"$persist_dir\" | Out-Null"
     ],
     "bin": "bin\\brewtarget.exe",
     "shortcuts": [
@@ -31,17 +27,7 @@
             "logo.ico"
         ]
     ],
-    "persist": [
-        "userdata",
-        "backups"
-    ],
-    "pre_uninstall": [
-        "$config = \"$env:LOCALAPPDATA\\brewtarget\\brewtargetPersistentSettings.conf\"",
-        "if (Test-Path \"$config\") {",
-        "    Copy-Item \"$config\" \"$persist_dir\" -Force",
-        "}"
-    ],
-    "post_uninstall": "Remove-Item \"$env:LOCALAPPDATA\\brewtarget\" -Recurse 2>&1 | Out-Null",
+    "post_uninstall": "Remove-Item \"$env:LOCALAPPDATA\\brewtarget\" 2>&1 | Out-Null",
     "checkver": {
         "github": "https://github.com/Brewtarget/brewtarget"
     },
