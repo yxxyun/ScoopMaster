@@ -1,8 +1,8 @@
 {
     "version": "1.8.1",
-    "description": "Backrest is a web UI and orchestrator for restic backup",
+    "description": "Web UI and orchestrator for restic backup. Fully portable version with Start Menu shortcut to Backrest Tray.",
     "homepage": "https://github.com/garethgeorge/backrest",
-    "license": "GPL-3.0-or-later",
+    "license": "GPL-3.0-only",
     "architecture": {
         "64bit": {
             "url": "https://github.com/garethgeorge/backrest/releases/download/v1.8.1/backrest_Windows_x86_64.zip",
@@ -13,12 +13,32 @@
             "hash": "d2704e809b42dc0ead4273cf4dbf617c351e5f9623aa90e4a7068d5567d2a641"
         }
     },
-    "bin": "backrest.exe",
+    "bin": [
+        "backrest.exe",
+        "backrest-windows-tray.exe"
+    ],
     "shortcuts": [
         [
-            "backrest-windows-tray.exe",
+            "backrest.exe",
             "Backrest"
+        ],
+        [
+            "backrest-windows-tray.exe",
+            "Backrest Tray"
         ]
+    ],
+    "post_install": [
+        "if (-not (Test-Path \"$Env:AppData\\backrest\\*\")) {",
+        "    Remove-Item \"$Env:AppData\\backrest\" 2>$null",
+        "    if (-not (Test-Path \"$persist_dir\")) {",
+        "        New-Item -ItemType \"directory\" -Path \"$persist_dir\" >$null",
+        "    }",
+        "    New-DirectoryJunction \"$Env:AppData\\backrest\" \"$persist_dir\" >$null",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$backrest_data = Get-Item \"$Env:AppData\\backrest\"",
+        "if (\"$($backrest_data.Target)\" -eq \"$persist_dir\") { $backrest_data.Delete() }"
     ],
     "checkver": "github",
     "autoupdate": {
@@ -29,6 +49,10 @@
             "arm64": {
                 "url": "https://github.com/garethgeorge/backrest/releases/download/v$version/backrest_Windows_arm64.zip"
             }
+        },
+        "hash": {
+            "url": "$baseurl/backrest_$version_checksums.txt",
+            "regex": "$sha256\\s+$basename"
         }
     }
 }
