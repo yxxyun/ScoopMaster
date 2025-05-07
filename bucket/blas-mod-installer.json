@@ -3,23 +3,28 @@
     "description": "A mod installer/manager for Blasphemous 1 & 2.",
     "homepage": "https://github.com/BrandenEK/Blasphemous.Modding.Installer",
     "license": "Unknown",
-    "notes": [
-        "Requires .NET Desktop Runtime 6 (x64).",
-        "Settings and cache are currently stored in AppData."
-    ],
+    "notes": "Requires .NET Desktop Runtime 6 (x64).",
     "architecture": {
         "64bit": {
             "url": "https://github.com/BrandenEK/Blasphemous.Modding.Installer/releases/download/1.9.0/BlasModInstaller.zip",
             "hash": "360d110ef76ea2f7d94ce864c6f89434b0be1339b8f1c49a289d7704eaf8ef95"
         }
     },
-    "bin": "BlasModInstaller.exe",
+    "post_install": [
+        "ensure \"$persist_dir\" | Out-Null",
+        "$appdata = \"$env:APPDATA\\BlasModInstaller\"",
+        "if (Test-Path \"$appdata\") {",
+        "   Move-Item \"$appdata\\*\" \"$persist_dir\"",
+        "}",
+        "New-Item -Type Junction -Path \"$appdata\" -Target \"$persist_dir\" | Out-Null"
+    ],
     "shortcuts": [
         [
             "BlasModInstaller.exe",
             "Blasphemous Mod Installer"
         ]
     ],
+    "post_uninstall": "Remove-Item \"$env:APPDATA\\BlasModInstaller\" 2>&1 | Out-Null",
     "checkver": "github",
     "autoupdate": {
         "architecture": {
