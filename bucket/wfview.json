@@ -1,0 +1,64 @@
+{
+    "version": "2.10",
+    "description": "wfview is open-source software for the control of modern Icom radios",
+    "homepage": "https://wfview.org",
+    "license": "GPL-3.0-only",
+    "architecture": {
+        "64bit": {
+            "url": "https://wfview.org/download/windows-x64-release-v2-10/?wpdmdl=1589/#dl.zip",
+            "hash": "0cfd9492291e899010bda14e178894e6cfccc2664a435d591554ec3f3a97c926"
+        },
+        "32bit": {
+            "url": "https://wfview.org/download/windows-x86-release-v2-10/?wpdmdl=1587/#dl.zip",
+            "hash": "bb0527c41835eaf795e5d8d1290cc346f3a6180bcc13ca31be302447ec0ffe7d"
+        }
+    },
+    "pre_install": "(Get-ChildItem \"$dir\\wfview-*.exe\")[0] | Rename-Item -NewName \"$dir\\installer.exe\"",
+    "installer": {
+        "file": "installer.exe",
+        "args": [
+            "--root",
+            "$dir\\wfview",
+            "--accept-licenses",
+            "--default-answer",
+            "--confirm-command",
+            "install"
+        ]
+    },
+    "uninstaller": {
+        "file": "wfview\\maintenancetool.exe",
+        "args": [
+            "--confirm-command",
+            "purge",
+            "wfview"
+        ]
+    },
+    "shortcuts": [
+        [
+            "wfview\\wfview.exe",
+            "wfview"
+        ]
+    ],
+    "checkver": {
+        "script": [
+            "$search_url = 'https://wfview.org/wp-json/wpdm/search';",
+            "$j = Invoke-WebRequest $search_url -UseBasicParsing | ConvertFrom-Json;",
+            "$win64 = ($j.packages | Where-Object post_title -match \".*Windows \\(x64\\).*\")[0];",
+            "$win32 = ($j.packages | Where-Object post_title -match \".*Windows \\(x86\\).*\")[0];",
+            "$win64.post_title -match '.*v([\\d.]+).*';",
+            "$ver = $matches[1];",
+            "Write-Output $ver $win64.id $win32.id"
+        ],
+        "regex": "(?<version>[\\d.]+)\\s+(?<win64>\\d+)\\s+(?<win32>\\d+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://wfview.org/download/windows-x64-release-v$dashVersion/?wpdmdl=$matchWin64/#dl.zip"
+            },
+            "32bit": {
+                "url": "https://wfview.org/download/windows-x86-release-v$dashVersion/?wpdmdl=$matchWin32/#dl.zip"
+            }
+        }
+    }
+}
