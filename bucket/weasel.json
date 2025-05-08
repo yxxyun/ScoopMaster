@@ -1,20 +1,42 @@
 {
     "version": "0.16.3",
-    "homepage": "https://rime.im/",
-    "license": "GPL-3.0-or-later",
     "description": "【小狼毫】Rime for Windows",
+    "homepage": "https://rime.im/",
+    "license": "GPL-3.0-only",
     "url": "https://github.com/rime/weasel/releases/download/0.16.3/weasel-0.16.3.0-installer.exe#/dl.7z",
     "hash": "efa114b20a8cda39c34316cd1a9b5ed25ac0581891aa3e485c830ff7cc2dbdd9",
-    "pre_install": [
-        "if(!(Test-Path \"$dir\\Rime\")) {New-Item \"$dir\\Rime\" -ItemType Directory | Out-Null} ",
-        "& \"$dir\\WeaselSetup.exe\" /i",
-        "& \"$dir\\WeaselDeployer.exe\" /install",
-        "& \"$dir\\WeaselServer.exe\""
+    "post_install": [
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
+        "Add-Content -Path \"$dir\\rime-install-config.bat\" -Value \"
+
+set rime_dir=$persist_dir\""
     ],
-    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse",
-    "uninstaller": {
-        "script": "Invoke-ExternalCommand \"$dir/uninstall.exe\" -ArgumentList '/S' -RunAs | Out-Null"
+    "installer": {
+        "script": [
+            "New-Item -Path \"HKCU:\\Software\\Rime\" | Out-Null",
+            "New-Item -Path \"HKCU:\\Software\\Rime\\Weasel\" | Out-Null",
+            "New-ItemProperty -Path \"HKCU:\\Software\\Rime\\Weasel\" -Name RimeUserDir -Value \"$persist_dir\" | Out-Null",
+            "New-Item -Path \"HKCU:\\Software\\Rime\\Weasel\\Updates\" | Out-Null",
+            "New-ItemProperty -Path \"HKCU:\\Software\\Rime\\Weasel\\Updates\" -Name CheckForUpdates -Value \"0\" | Out-Null",
+            "Start-Process -Wait \"$dir\\WeaselSetup.exe\" \"/s\"",
+            "New-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\" -Name WeaselServer -Value \"$dir\\WeaselServer.exe\" | Out-Null",
+            "Start-Process \"$dir\\WeaselServer.exe\""
+        ]
     },
+    "uninstaller": {
+        "script": [
+            "Start-Process -Wait \"$dir\\WeaselServer.exe\"  \"/quit\"",
+            "Start-Process -Wait \"$dir\\WeaselSetup.exe\" \"/u\"",
+            "Remove-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\" -Name WeaselServer",
+            "Remove-Item -Path \"HKCU:\\Software\\Rime\" -Recurse"
+        ]
+    },
+    "shortcuts": [
+        [
+            "WeaselServer.exe",
+            "小狼毫算法服務"
+        ]
+    ],
     "checkver": {
         "github": "https://github.com/rime/weasel"
     },
