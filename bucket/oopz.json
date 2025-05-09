@@ -10,12 +10,15 @@
     "hash": "7c0b845ee3c2f63b0f72ebe8d44ad03dfd234eaaf77736d61c15a7196a5ec513",
     "installer": {
         "script": [
-            "Move-Item \"$dir\\`$TEMP\\oopz_nsis\\app.7z\" \"$dir\\app.7z\"",
-            "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$TEMP\" -Force -Recurse",
-            "Expand-7zipArchive \"$dir\\app.7z\" \"$dir\\app\"",
-            "Remove-Item \"$dir\\app.7z\" -Force"
+            "Expand-7zipArchive \"$dir\\`$TEMP\\oopz_nsis\\app.7z\" \"$dir\\app\"",
+            "Remove-Item \"$dir\\`$*\" -Recurse -Force"
         ]
     },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App"
+    ],
     "shortcuts": [
         [
             "app/oopz.exe",
@@ -24,14 +27,12 @@
     ],
     "checkver": {
         "script": [
-            "$url = 'https://www.oopz.cn/download/xx?v=' + $([DateTimeOffset]::Now.ToUnixTimeMilliseconds() / 1e3 -bor 0)",
-            "$resp = Invoke-WebRequest -Uri $url -Method Head",
-            "$resp.Baseresponse.RequestMessage.RequestUri.AbsoluteUri"
+            ". bin\\utils.ps1",
+            "Get-RedirectedUrl1st -Uri \"https://www.oopz.cn/download/xx?v=$([int] (Get-Date (Get-Date).ToUniversalTime() -uformat \"%s\"))\""
         ],
-        "regex": "/([\\d]+)/oopz_([\\w]+)_v([\\d\\.]+)\\.exe",
-        "replace": "$3"
+        "regex": "oopz_setup_v([\\d.]+)\\.exe"
     },
     "autoupdate": {
-        "url": "https://downloadcdn.oopz.cn/release/$match1/oopz_$match2_v$match3.exe#/dl.7z"
+        "url": "https://downloadcdn.oopz.cn/release/$cleanVersion/oopz_setup_v$version.exe#/dl.7z"
     }
 }
