@@ -1,0 +1,68 @@
+{
+    "version": "1.99.30023",
+    "description": "Void is an open source Cursor alternative.",
+    "homepage": "https://voideditor.com/",
+    "license": "Apache-2.0",
+    "notes": [
+        "Add Void as a context menu option by running 'reg import \"$dir\\install-context.reg\"'",
+        "For file associations, run 'reg import \"$dir\\install-associations.reg\"'"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/voideditor/binaries/releases/download/1.99.30023/Void-win32-x64-1.99.30023.zip",
+            "hash": "8aa19b939ad7afc0dd61255b9c4b6bf58d631a3c5a4b6359822d1f2d82e9babf"
+        },
+        "arm64": {
+            "url": "https://github.com/voideditor/binaries/releases/download/1.99.30023/Void-win32-arm64-1.99.30023.zip",
+            "hash": "5dab76680a8faec6ad43a04fd18c6f5302571e1a8de70ea641bb368d00a6fce3"
+        }
+    },
+    "post_install": [
+        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
+        "$exepath = \"$dir\\Void.exe\".Replace('\\', '\\\\')",
+        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context' | ForEach-Object {",
+        "  if (Test-Path \"$bucketsdir\\extras\\scripts\\vscode\\$_.reg\") {",
+        "    $content = Get-Content \"$bucketsdir\\extras\\scripts\\vscode\\$_.reg\"",
+        "    $content = $content.Replace('$codedir', $dirpath)",
+        "    $content = $content.Replace('$code', $exepath)",
+        "    $content = $content.Replace('&Code', '&Void')",
+        "    if ($global) {",
+        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
+        "  }",
+        "}",
+        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.vscode-oss\\extensions\")) {",
+        "    info '[Portable Mode] Copying extensions...'",
+        "    Copy-Item \"$env:USERPROFILE\\.vscode-oss\\extensions\" \"$dir\\data\" -Recurse",
+        "}",
+        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Void\")) {",
+        "    info '[Portable Mode] Copying user data...'",
+        "    Copy-Item \"$env:AppData\\Void\" \"$dir\\data\\user-data\" -Recurse",
+        "}",
+        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
+        "if ((Test-Path \"$extensions_file\")) {",
+        "    info 'Adjusting path in extensions file...'",
+        "    (Get-Content \"$extensions_file\") -replace '(?<=void(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
+        "}"
+    ],
+    "env_add_path": "bin",
+    "shortcuts": [["Void.exe", "Void"]],
+    "persist": "data",
+    "checkver": {
+        "github": "https://github.com/voideditor/binaries"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/voideditor/binaries/releases/download/$version/Void-win32-x64-$version.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/chawyehsu/hok/releases/download/v$version/hok-aarch64-pc-windows-msvc.zip"
+            }
+        },
+        "hash": {
+            "url": "$url.sha256"
+        }
+    }
+}
