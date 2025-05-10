@@ -6,14 +6,20 @@
         "identifier": "Freeware",
         "url": "https://code.visualstudio.com/License/"
     },
+    "notes": [
+        "Add Visual Studio Code as a context menu option by running:",
+        "'reg import \"$dir\\install-context.reg\"'",
+        "For file associations, run:",
+        "'reg import \"$dir\\install-associations.reg\"'"
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://vscode.download.prss.microsoft.com/dbazure/download/stable/19e0f9e681ecb8e5c09d8784acaa601316ca4571/VSCodeSetup-x64-1.100.0.exe#/setup.exe",
-            "hash": "706a0a535436ce3f9a9bf565b81a92202edb0f2dea7ac9ae8f7fde5f2f8761af"
+            "url": "https://update.code.visualstudio.com/1.100.0/win32-x64-archive/stable#/dl.7z",
+            "hash": "6fa62a8f07a2b42993b19f81ed90c95a2de78299b7e227f226c76d87ceb06a9c"
         },
         "arm64": {
-            "url": "https://vscode.download.prss.microsoft.com/dbazure/download/stable/19e0f9e681ecb8e5c09d8784acaa601316ca4571/VSCodeSetup-arm64-1.100.0.exe#/setup.exe",
-            "hash": "94c7cb1c9caf10a73e9a865a8bee78612d6639e178940e1a275a711ae5770e61"
+            "url": "https://update.code.visualstudio.com/1.100.0/win32-arm64-archive/stable#/dl.7z",
+            "hash": "b34eefdb0c0f8201bf163ae71971116a786c17dbaf29df735b995517d0f2444f"
         }
     },
     "env_add_path": "bin",
@@ -23,33 +29,42 @@
             "Visual Studio Code"
         ]
     ],
-    "pre_install": [
-        "innounp -x -q \"-d$dir\" \"$dir\\setup.exe\" *> $null",
-        "Copy-Item \"$dir\\{code_GetDestDir}\\*\" \"$dir\" -Recurse",
-        "Remove-Item \"$dir\\{code_GetDestDir}\" -Recurse",
-        "Remove-Item \"$dir\\{app}\" -Recurse",
-        "Remove-Item \"$dir\\install_script.iss\""
+    "post_install": [
+        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
+        "$exepath = \"$dir\\Code.exe\".Replace('\\', '\\\\')",
+        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context' | ForEach-Object {",
+        "  if (Test-Path \"$bucketsdir\\extras\\scripts\\vscode\\$_.reg\") {",
+        "    $content = Get-Content \"$bucketsdir\\extras\\scripts\\vscode\\$_.reg\"",
+        "    $content = $content.Replace('$codedir', $dirpath)",
+        "    $content = $content.Replace('$code', $exepath)",
+        "    if ($global) {",
+        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
+        "  }",
+        "}"
     ],
-    "persist": "data",
+    "uninstaller": {
+        "script": "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-context.reg\" }"
+    },
     "checkver": {
         "url": "https://code.visualstudio.com/sha?build=stable",
-        "regex": "version\":\"(?<Code>[\\d\\w]+)\",\"productVersion\":\"(?<version>[\\d.]+)",
-        "replace": "${version}"
+        "jsonpath": "$.products[?(@.platform.os == 'win32-x64-archive')].name"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://vscode.download.prss.microsoft.com/dbazure/download/stable/$matchCode/VSCodeSetup-x64-$version.exe#/setup.exe",
+                "url": "https://update.code.visualstudio.com/$version/win32-x64-archive/stable#/dl.7z",
                 "hash": {
                     "url": "https://code.visualstudio.com/sha?build=stable",
-                    "jsonpath": "$.products[?(@.platform.os == 'win32-x64')].sha256hash"
+                    "jsonpath": "$.products[?(@.platform.os == 'win32-x64-archive')].sha256hash"
                 }
             },
             "arm64": {
-                "url": "https://vscode.download.prss.microsoft.com/dbazure/download/stable/$matchCode/VSCodeSetup-arm64-$version.exe#/setup.exe",
+                "url": "https://update.code.visualstudio.com/$version/win32-arm64-archive/stable#/dl.7z",
                 "hash": {
                     "url": "https://code.visualstudio.com/sha?build=stable",
-                    "jsonpath": "$.products[?(@.platform.os == 'win32-arm64')].sha256hash"
+                    "jsonpath": "$.products[?(@.platform.os == 'win32-arm64-archive')].sha256hash"
                 }
             }
         }
