@@ -1,0 +1,51 @@
+{
+    "version": "2025.05.12.060336",
+    "homepage": "https://github.com/amzxyz/RIME-LMDG",
+    "description": "基于32GB超大规模语料的RIME中文语法模型",
+    "license": "CC-BY-4.0",
+    "url": "https://github.com/amzxyz/RIME-LMDG/releases/download/LTS/wanxiang-lts-zh-hans.gram",
+    "hash": "b331731bcd6a338be5901d2200a6e665cf464496f32c3860b88f4599f3b983e3",
+    "post_install": [
+        "$weaselRegPath = \"HKLM:\\SOFTWARE\\WOW6432Node\\Rime\\Weasel\"",
+        "if (Test-Path $weaselRegPath) {",
+        "    $weaselRoot = (Get-ItemProperty -Path $weaselRegPath).WeaselRoot",
+        "}",
+        "if (!$weaselRoot) {",
+        "    abort \"请先安装weasel\"",
+        "}",
+        "$rimeConfigRegPath = \"HKCU:\\SOFTWARE\\Rime\\Weasel\"",
+        "$defaultPath = \"$env:APPDATA\\Rime\"",
+        "if (Test-Path $rimeConfigRegPath) {",
+        "    $rimeConfigRoot = (Get-ItemProperty -Path $rimeConfigRegPath).RimeUserDir",
+        "}",
+        "if (!$rimeConfigRoot) {",
+        "    $caption = \"未在注册表中找到Rime安装位置\"",
+        "    $message = \"是否要使用默认位置: $defaultPath ? [Y/N]\"",
+        "    $yes = New-Object System.Management.Automation.Host.ChoiceDescription '&Yes', '是'",
+        "    $no = New-Object System.Management.Automation.Host.ChoiceDescription '&No', '否'",
+        "    $options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)",
+        "    $result = $host.UI.PromptForChoice($caption, $message, $options, 1)",
+        "    if ($result -eq 0) {",
+        "       $rimeConfigRoot = $defaultPath",
+        "    }",
+        "    else {",
+        "       abort \"退出安装\"",
+        "    }",
+        "}",
+        "info \"RIME-LMDG_LTS将会安装到: $rimeConfigRoot\"",
+        "Start-Process -FilePath \"$weaselRoot\\stop_service.bat\" -Wait -NoNewWindow",
+        "Unblock-File -Path \"$dir\\wanxiang-lts-zh-hans.gram\"",
+        "Copy-Item -Path \"$dir\\wanxiang-lts-zh-hans.gram\" -Destination \"$rimeConfigRoot\" -Force",
+        "Start-Process -FilePath \"$weaselRoot\\start_service.bat\" -NoNewWindow",
+        "info \"安装成功\""
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/amzxyz/RIME-LMDG/releases",
+        "jsonpath": "$[?(@.tag_name == 'LTS')].assets[?(@.name == 'wanxiang-lts-zh-hans.gram')].updated_at",
+        "regex": "(\\d+)-(\\d+)-(\\d+)T(\\d+):(\\d+):(\\d+)Z",
+        "replace": "${1}.${2}.${3}.${4}${5}${6}"
+    },
+    "autoupdate": {
+        "url": "https://github.com/amzxyz/RIME-LMDG/releases/download/LTS/wanxiang-lts-zh-hans.gram"
+    }
+}
