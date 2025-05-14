@@ -1,20 +1,38 @@
 {
     "version": "2.2.54",
-    "description": "Network simulation software for designing and testing virtual network topologies",
-    "homepage": "http://www.gns3.com/",
-    "license": "GPL-3.0-or-later",
-    "notes": "Setting up a server VM is recommended: https://gns3.com/software/download-vm",
+    "description": "An advanced network simulator to design and configure virtual networks",
+    "homepage": "https://gns3.com",
+    "license": "GPL-3.0-only",
+    "notes": [
+        "Npcap needs to be installed separately and possibly vc_redist.x64",
+        "Run 'scoop install nmap' (from a elevated shell) to install 'Npcap' automatically,",
+        "bundled version is available at $dir\\npcap-*.exe,",
+        "latest version can be downloaded from https://nmap.org/npcap"
+    ],
     "suggest": {
-        "vcredist": "extras/vcredist2022"
+        "Nmap (includes Npcap)": "nmap"
     },
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/GNS3/gns3-gui/releases/download/v2.2.54/GNS3-2.2.54-all-in-one.exe#/dl.7z",
-            "hash": "99f365fec79627bfb4ff77f3c15878f23c1300447a9741b1bad05fbc99e5db61"
-        }
-    },
-    "pre_install": "Remove-Item \"$dir\\$*\" -Recurse",
-    "bin": "gns3.exe",
+    "url": "https://github.com/GNS3/gns3-gui/releases/download/v2.2.54/GNS3-2.2.54-all-in-one.exe#/dl.7z",
+    "hash": "99f365fec79627bfb4ff77f3c15878f23c1300447a9741b1bad05fbc99e5db61",
+    "pre_install": [
+        "Move-Item \"$dir\\`$TEMP\\*\" \"$dir\"",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$TEMP\" -Recurse",
+        "foreach ($binary in @(\"gns3\", \"gns3server\", \"gns3vmnet\")) {",
+        "    Set-Content -Path \"$dir\\${binary}.ps1\" -Value @\"",
+        "if (!(Test-Path Variable:PSScriptRoot)) { `$PSScriptRoot = Split-Path `$MyInvocation.MyCommand.Path -Parent }",
+        "try {",
+        "    Push-Location `\"`$PSScriptRoot`\"",
+        "    if(`$MyInvocation.ExpectingInput) { `$input | & `\".\\${binary}.exe`\" @args } else { & `\".\\${binary}.exe`\" @args }",
+        "} finally { Pop-Location }",
+        "exit `$LASTEXITCODE",
+        "\"@",
+        "}"
+    ],
+    "bin": [
+        "gns3.ps1",
+        "gns3server.ps1",
+        "gns3vmnet.ps1"
+    ],
     "shortcuts": [
         [
             "gns3.exe",
@@ -25,13 +43,9 @@
         "github": "https://github.com/GNS3/gns3-gui"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/GNS3/gns3-gui/releases/download/v$version/GNS3-$version-all-in-one.exe#/dl.7z",
-                "hash": {
-                    "url": "https://github.com/GNS3/gns3-gui/releases/download/v$version/GNS3-$version-all-in-one.exe.sha256"
-                }
-            }
+        "url": "https://github.com/GNS3/gns3-gui/releases/download/v$version/GNS3-$version-all-in-one.exe#/dl.7z",
+        "hash": {
+            "url": "https://github.com/GNS3/gns3-gui/releases/download/v$version/GNS3-$version-all-in-one.exe.sha256"
         }
     }
 }
