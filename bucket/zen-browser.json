@@ -1,46 +1,52 @@
 {
     "version": "1.12.5b",
-    "description": "🌀 Experience tranquillity while browsing the web without people tracking you! Based on Firefox",
+    "description": "A open-source browser based on the Firefox engine. Experience tranquility while browsing the internet with Zen! Our mission is to give you a perfect balance for speed, privacy and productivity",
     "homepage": "https://www.zen-browser.app/",
     "license": "MPL-2.0",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/zen-browser/desktop/releases/download/1.12.5b/zen.installer.exe#/dl.7z",
-            "hash": "b7e487ff2308e3b91378f3708713a42a4eaf156f8d3693c462f9829e319acbac"
-        },
-        "arm64": {
-            "url": "https://github.com/zen-browser/desktop/releases/download/1.12.5b/zen.installer-arm64.exe#/dl.7z",
-            "hash": "5eaf4d79fc96b5d7fafe288b462bdaa82fe64c6d774b1a840c73a3940aa2e7f3"
-        }
-    },
-    "extract_dir": "core",
+    "url": "https://github.com/zen-browser/desktop/releases/download/1.12.5b/zen.installer.exe#/dl.7z",
+    "hash": "875c7967944e09ec5662d8af394246e15f19790654ddb8827f7a832f52f3f44d",
     "bin": [
         [
             "zen.exe",
-            "zen",
-            "-profile \"$dir\\profile\""
+            "zen"
         ]
     ],
     "shortcuts": [
         [
             "zen.exe",
-            "Zen Browser",
-            "-profile \"$dir\\profile\""
+            "Zen Browser"
         ]
     ],
-    "persist": "Profile",
+    "pre_install": [
+        "$extractDir = \"$dir\"",
+        "if (Test-Path \"$extractDir\\core\") {",
+        "    # 将 core 文件夹中的所有文件移动到解压目录",
+        "    Move-Item -Path \"$extractDir\\core\\*\" -Destination \"$extractDir\" -Force",
+        "    # 删除 core 文件夹",
+        "    Remove-Item -Path \"$extractDir\\core\" -Recurse -Force",
+        "}",
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match 'Scoop-Store'})[0].Name",
+        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name $bucket) scripts/AirUtils.psm1)",
+        "RedirectDirectory \"$env:APPDATA\\zen\" \"$persist_dir\\Roaming\\zen\"",
+        "RedirectDirectory \"$env:LOCALAPPDATA\\zen\" \"$persist_dir\\Local\\zen\"",
+        "Remove-Module -Name AirUtils"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    $bucket=(scoop bucket list | where-Object { $_.Source -match 'Scoop-Store'})[0].Name",
+            "    Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name $bucket) scripts/AirUtils.psm1)",
+            "    RemoveJunction \"$env:APPDATA\\zen\"",
+            "    RemoveJunction \"$env:LOCALAPPDATA\\zen\"",
+            "    Remove-Module -Name AirUtils",
+            "}"
+        ]
+    },
     "checkver": {
         "url": "https://github.com/zen-browser/desktop/tags",
         "regex": "releases/tag/([ab\\d.-]+)"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/zen-browser/desktop/releases/download/$version/zen.installer.exe#/dl.7z"
-            },
-            "arm64": {
-                "url": "https://github.com/zen-browser/desktop/releases/download/$version/zen.installer-arm64.exe#/dl.7z"
-            }
-        }
+        "url": "https://github.com/zen-browser/desktop/releases/download/$version/zen.installer.exe#/dl.7z"
     }
 }
