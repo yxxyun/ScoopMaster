@@ -1,27 +1,18 @@
 {
     "homepage": "https://www.todesk.com/",
-    "description": "A unlimited speed multifunctional remote control software",
-    "version": "4.7.7.0",
+    "description": "A remote control software",
+    "version": "4.7.7.1",
     "license": {
         "identifier": "Proprietary",
         "url": "https://www.todesk.com/licence.html"
     },
-    "url": "https://dl.todesk.com/irrigation/ToDesk_4.7.7.0.exe#/dl.7z",
-    "hash": "36669f8c3d8adde28a659296ffd848876eb12cf82e339727faa7813519edff0a",
-    "pre_install": [
-        "if (!(Test-Path \"$persist_dir\\config.ini\")) {",
-        "    New-Item -Force -Path \"$persist_dir\\config.ini\" -ItemType File -Value \"[ConfigInfo]`nautoStart=0\" | Out-Null",
-        "}"
-    ],
-    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\uninst.exe\" -Force -Recurse",
-    "pre_uninstall": [
-        "if ($cmd -eq 'uninstall') {",
-        "    if (!(is_admin)) {",
-        "        Start-Process -Wait powershell.exe -ArgumentList \"-Command sc.exe delete ToDesk_Service\" -Verb RunAs -WindowStyle Hidden",
-        "    } else {",
-        "        sc.exe delete ToDesk_Service",
-        "    }",
-        "}"
+    "url": "https://dl.todesk.com/irrigation/ToDesk_4.7.7.1.exe#/dl.7z",
+    "hash": "d2d362c8f1474d964a1389f784c67eabd249e23292aa3762ab1592ebb42e1a68",
+    "bin": [
+        [
+            "ToDesk.exe",
+            "todesk"
+        ]
     ],
     "shortcuts": [
         [
@@ -33,14 +24,21 @@
         "Logs",
         "config.ini"
     ],
+    "pre_install": [
+        "$config_path = \"$persist_dir\\config.ini\"",
+        "if (!(Test-Path $config_path)) {",
+        "    Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name air) scripts/AirUtils.psm1)",
+        "    $config_content = '[ConfigInfo]`nautoStart=0`nautoupdate=0'",
+        "    EnsureSetContent $config_path $config_content",
+        "    Remove-Module -Name AirUtils",
+        "}"
+    ],
+    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\uninst.exe\" -Force -Recurse",
     "checkver": {
-        "url": "https://www.todesk.com/download.html",
-        "regex": "https://dl.todesk.com/irrigation/ToDesk_([\\d.]+).exe"
+        "url": "https://update.todesk.com/windows/uplog.html",
+        "regex": ">([\\d.]+)</div>"
     },
     "autoupdate": {
-        "url": "https://dl.todesk.com/irrigation/ToDesk_$version.exe#/dl.7z",
-        "hash": {
-            "mode": "download"
-        }
+        "url": "https://dl.todesk.com/irrigation/ToDesk_$version.exe#/dl.7z"
     }
 }
