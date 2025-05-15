@@ -5,67 +5,44 @@
     "license": "GPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/dnGrep/dnGrep/releases/download/v4.5.30.0/dnGREP.4.5.30.0.x64.zip",
-            "hash": "cda9dc417a2e322f5dbda00eb1b183b52f0c58d82da8fcbbd17c0fb3d98e8c90"
+            "url": "https://github.com/dnGrep/dnGrep/releases/download/v4.5.30.0/dnGREP.4.5.30.x64.msi",
+            "hash": "a0848bc728a40af440004587f809ce887991bd630e8e1bdb6846f434ed2fe893"
         },
         "32bit": {
-            "url": "https://github.com/dnGrep/dnGrep/releases/download/v4.5.30.0/dnGREP.4.5.30.0.x86.zip",
-            "hash": "28f682b9d3a7da60ab647be1bc479d90007ed1ba309ba9a4898020c1fa9bc571"
+            "url": "https://github.com/dnGrep/dnGrep/releases/download/v4.5.30.0/dnGREP.4.5.30.x86.msi",
+            "hash": "5a185dd6b11efd2f5f1c9dda79fb1e548487b70bf2eb0d0c5d3e2ddc19518958"
         }
     },
-    "bin": [
-        [
-            "dnGREP.exe",
-            "dngrep"
-        ]
+    "pre_install": [
+        "$cont = '<?xml version=\"1.0\" encoding=\"utf-8\"?><dictionary version=\"2\"></dictionary>'",
+        "if (!(Test-Path \"$persist_dir\\dnGREP.Settings.dat\")) { Set-Content \"$dir\\dnGREP.Settings.dat\" $cont -Encoding 'ascii' }",
+        "Copy-Item \"$persist_dir\\Themes\\*\" \"$dir\\Themes\" -ErrorAction 'SilentlyContinue' -Recurse"
     ],
+    "extract_dir": "dnGREP",
+    "bin": "dnGREP.exe",
     "shortcuts": [
         [
             "dnGREP.exe",
-            "dnGrep"
+            "dnGREP"
         ]
     ],
-    "pre_install": [
-        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name air) scripts/AirUtils.psm1)",
-        "$bookmarks_path = \"$persist_dir\\bookmarks.xml\"",
-        "if (!(Test-Path $bookmarks_path)) {",
-        "    $bookmarks_content = '<?xml version=\"1.0\" encoding=\"utf-8\"?><BookmarkEntity xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Bookmarks></Bookmarks></BookmarkEntity>'",
-        "    EnsureSetContent $bookmarks_path $bookmarks_content",
-        "}",
-        "$settings_path = \"$persist_dir\\dnGREP.Settings.dat\"",
-        "if (!(Test-Path $settings_path)) {",
-        "    $setting_content = '<?xml version=\"1.0\" encoding=\"utf-8\"?><dictionary version=\"3\" xmlns:xml=\"http://www.w3.org/XML/1998/namespace\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"></dictionary>'",
-        "    EnsureSetContent $settings_path $setting_content",
-        "}",
-        "Remove-Module -Name AirUtils"
-    ],
-    "persist": [
-        "Filters",
-        "logs",
-        "Scripts",
-        "Themes",
-        "bookmarks.xml",
-        "dnGREP.Settings.dat"
-    ],
+    "persist": "dnGREP.Settings.dat",
+    "pre_uninstall": "Copy-Item \"$dir\\Themes\\*\" \"$persist_dir\\Themes\" -ErrorAction 'SilentlyContinue' -Recurse",
     "checkver": {
         "github": "https://github.com/dnGrep/dnGrep"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/dnGrep/dnGrep/releases/download/v$version/dnGREP.$version.x64.zip",
-                "hash": {
-                    "url": "https://github.com/dnGrep/dnGrep/releases/v$version",
-                    "regex": "x64.zip[<>/\\w\\n: \\(\\)]+SHA256: ($sha256)"
-                }
+                "url": "https://github.com/dnGrep/dnGrep/releases/download/v$version/dnGREP.$matchHead.x64.msi"
             },
             "32bit": {
-                "url": "https://github.com/dnGrep/dnGrep/releases/download/v$version/dnGREP.$version.x86.zip",
-                "hash": {
-                    "url": "https://github.com/dnGrep/dnGrep/releases/v$version",
-                    "find": "x86.zip[<>/\\w\\n: \\(\\)]+SHA256: ($sha256)"
-                }
+                "url": "https://github.com/dnGrep/dnGrep/releases/download/v$version/dnGREP.$matchHead.x86.msi"
             }
+        },
+        "hash": {
+            "url": "https://github.com/dnGrep/dnGrep/releases/v$version",
+            "regex": "(?sm)$basename.*?SHA-256: $sha256"
         }
     }
 }
