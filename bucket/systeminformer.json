@@ -1,13 +1,10 @@
 {
-    "version": "3.2.25129.1713",
+    "version": "3.2.25011",
     "description": "A powerful, multi-purpose tool that helps you monitor system resources, debug software and detect malware.",
     "homepage": "https://systeminformer.sourceforge.io",
-    "license": {
-        "identifier": "MIT",
-        "url": "https://github.com/winsiderss/si-builds/blob/main/LICENSE"
-    },
-    "url": "https://github.com/winsiderss/si-builds/releases/download/3.2.25129.1713/systeminformer-3.2.25129.1713-canary-bin.zip",
-    "hash": "b13b1e6505c49ce494a091d72e78c42d261593be1f58694c38265c3efcd9eaee",
+    "license": "MIT",
+    "url": "https://sourceforge.net/projects/systeminformer/files/systeminformer-3.2.25011-release-bin.zip",
+    "hash": "md5:c004b4a6d9c9bb87512fd0484b119fa5",
     "architecture": {
         "32bit": {
             "extract_dir": "i386"
@@ -21,16 +18,15 @@
     },
     "pre_install": [
         "ensure \"$persist_dir\" | Out-Null",
-        "'SystemInformer.exe.settings.xml', 'usernotesdb.xml' | ForEach-Object { Copy-Item \"$persist_dir\\$_\" \"$dir\\$_\" -ErrorAction 'SilentlyContinue' }"
-    ],
-    "post_install": [
-        "# Clear icon GUIDs",
-        "$settings = Get-ChildItem \"$dir\\SystemInformer.exe.settings.xml\"",
-        "(Get-Content -Raw $settingsPath) -replace \"`0\", \"\" | Set-Content $settings",
-        "$settingsXml = [xml](Get-Content $settings)",
-        "if ($settingsXml.settings -eq $null) { return }",
-        "($settingsXml.settings.ChildNodes | Where-Object { $_.name.Contains(\"IconGuids\") }) | ForEach-Object { [void]$_.ParentNode.RemoveChild($_) }",
-        "$settingsXml.Save($settings)"
+        "'SystemInformer.exe.settings.xml', 'usernotesdb.xml' | ForEach-Object {",
+        "    Copy-Item \"$persist_dir\\$_\" \"$dir\\$_\" -ErrorAction 'SilentlyContinue'",
+        "}",
+        "$key = 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\taskmgr.exe'",
+        "$get_Taskmgr = Get-ItemProperty $key -Name 'Debugger' -ErrorAction 'SilentlyContinue'",
+        "if (($cmd -eq 'update') -and $get_Taskmgr) {",
+        "    if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+        "    Set-ItemProperty $key -Name 'Debugger' -Value \"\"\"$dir\\SystemInformer.exe\"\"\" -Force",
+        "}"
     ],
     "shortcuts": [
         [
@@ -38,13 +34,34 @@
             "System Informer"
         ]
     ],
-    "pre_uninstall": "'SystemInformer.exe.settings.xml', 'usernotesdb.xml' | ForEach-Object { Copy-Item \"$dir\\$_\" \"$persist_dir\\$_\" -ErrorAction 'SilentlyContinue' }",
+    "post_install": [
+        "# Clear icon GUIDs",
+        "$settings = Get-ChildItem \"$dir\\SystemInformer.exe.settings.xml\"",
+        "$settingsXml = [xml](Get-Content $settings)",
+        "if ($settingsXml.settings -eq $null) { return }",
+        "($settingsXml.settings.ChildNodes | Where-Object { $_.name.Contains(\"IconGuids\") }) | ForEach-Object { [void]$_.ParentNode.RemoveChild($_) }",
+        "$settingsXml.Save($settings)"
+    ],
+    "pre_uninstall": [
+        "'SystemInformer.exe.settings.xml', 'usernotesdb.xml' | ForEach-Object {",
+        "    Copy-Item \"$dir\\$_\" \"$persist_dir\\$_\" -ErrorAction 'SilentlyContinue'",
+        "}",
+        "$key = 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\taskmgr.exe'",
+        "$get_Taskmgr = Get-ItemProperty $key -Name 'Debugger' -ErrorAction 'SilentlyContinue'",
+        "if (($cmd -eq 'uninstall') -and $get_Taskmgr) {",
+        "    if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+        "    Remove-ItemProperty $key -Name 'Debugger' -Force",
+        "}"
+    ],
     "checkver": {
-        "url": "https://api.github.com/repos/winsiderss/si-builds/releases",
-        "jsonpath": "$..name",
-        "regex": "([\\d.]+)"
+        "url": "https://sourceforge.net/projects/systeminformer/rss?path=/",
+        "regex": "systeminformer-([\\d.]+)"
     },
     "autoupdate": {
-        "url": "https://github.com/winsiderss/si-builds/releases/download/$version/systeminformer-$version-canary-bin.zip"
+        "url": "https://sourceforge.net/projects/systeminformer/files/systeminformer-$version-release-bin.zip",
+        "hash": {
+            "url": "https://sourceforge.net/projects/systeminformer/rss?path=/",
+            "regex": "$basename/download\".*?md5\"\\>$md5"
+        }
     }
 }
