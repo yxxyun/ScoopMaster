@@ -1,17 +1,15 @@
 {
-    "version": "7.4.6",
-    "description": "Install/uninstall scripts for Windows Terminal context menu items",
+    "version": "0.0.1",
+    "description": "个人使用的使用 Windows Terminal 增强脚本",
     "homepage": "https://github.com/lextm/windowsterminal-shell/tree/master",
     "license": "MIT",
     "notes": [
-        "此安装程序已经自动执行 install.ps1 以安装 Windows Terminal 上下文菜单"
+        "些程序包含：",
+        "1. 安装 Windows Terminal 上下文菜单",
+        "2. 使 windows terminal 开机启动 quake 模式"
     ],
     "url": "https://github.com/lextm/windowsterminal-shell/archive/refs/heads/master.zip",
     "extract_dir": "windowsterminal-shell-master",
-    "post_install": [
-        "& \"$dir\\install.ps1\" mini",
-        "Get-ChildItem -Path $dir -Recurse | Remove-Item -Force -ErrorAction SilentlyContinue -Recurse"
-    ],
     "bin": [
         [
             "install.ps1",
@@ -25,5 +23,30 @@
             "uninstall.old.ps1",
             "uninstall_windowsterminal-shell_old"
         ]
+    ],
+    "pre_install": [
+        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }"
+    ],
+    "installer": {
+        "script": [
+            "& \"$dir\\install.ps1\" mini"
+        ]
+    },
+    "post_install": [
+        "# 设置开机启动",
+        "Set-Content -Path \"$env:ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\wt.cmd\" -Value \"wt -w _quake ; split-pane -V\""
+    ],
+    "pre_uninstall": [
+        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }"
+    ],
+    "uninstaller": {
+        "script": [
+            "& \"$dir\\uninstall.ps1\" mini"
+        ]
+    },
+    "post_uninstall": [
+        "# 删除开机启动",
+        "$file = \"$env:ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\wt.cmd\"",
+        "if (Test-Path $file) { Remove-Item -Path $file -Force }"
     ]
 }
