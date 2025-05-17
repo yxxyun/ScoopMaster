@@ -1,21 +1,10 @@
 {
     "version": "136.0.7103.114",
-    "description": "Fast, secure, and free web browser, built for the modern web.",
-    "homepage": "https://www.google.com/chrome/",
-    "license": {
-        "identifier": "Freeware",
-        "url": "https://www.google.com/chrome/terms/"
-    },
-    "architecture": {
-        "64bit": {
-            "url": "https://dl.google.com/release2/chrome/ii74n6hkryhvtp67bbscqhvh2i_136.0.7103.114/136.0.7103.114_chrome_installer.exe#/dl.7z",
-            "hash": "a517f5ecb72f347bf36f415408de8616639ac005bde655b7f4ea200e7a694006"
-        },
-        "32bit": {
-            "url": "https://dl.google.com/release2/chrome/adyugir77j6puiowb5ktoemfhpeq_136.0.7103.114/136.0.7103.114_chrome_installer.exe#/dl.7z",
-            "hash": "bb59a94aaed6b43665e83c49a067487d56fec49cd574f96dcc7e3d1e9334db9e"
-        }
-    },
+    "description": "浏览器: Chrome",
+    "homepage": "https://google.com/chrome",
+    "license": "Unknown",
+    "url": "https://dl.google.com/release2/chrome/ii74n6hkryhvtp67bbscqhvh2i_136.0.7103.114/136.0.7103.114_chrome_installer.exe#/dl.7z",
+    "hash": "a517f5ecb72f347bf36f415408de8616639ac005bde655b7f4ea200e7a694006",
     "installer": {
         "script": "Expand-7zipArchive \"$dir\\chrome.7z\" -ExtractDir 'Chrome-bin' -Removal"
     },
@@ -29,32 +18,39 @@
         [
             "chrome.exe",
             "Google Chrome"
+        ],
+        [
+            "chrome.exe",
+            "Google Chrome Proxy",
+            "--proxy-server=\"socks5://127.0.0.1:1080\""
         ]
     ],
     "env_set": {
         "CHROME_EXECUTABLE": "$dir\\chrome.exe"
     },
     "persist": "User Data",
+    "post_install": [
+        "$chrome = \"$env:LocalAppData\\Google\\Chrome\"",
+        "New-Item -ItemType Directory -Force -Path \"$chrome\"",
+        "if ((Test-Path \"$dir\\User Data\") -and !(Test-Path \"$chrome\\User Data\")) {",
+        "    New-Item -ItemType SymbolicLink -Target \"$dir\\User Data\" -Path \"$chrome\\User Data\"",
+        "}",
+        "Invoke-WebRequest -Uri \"https://raw.githubusercontent.com/rainte/chrome/refs/heads/main/rainte.crx\" -OutFile \"$persist_dir\\rainte.crx\"",
+        "Expand-7zipArchive \"$persist_dir\\rainte.crx\" \"$persist_dir\\rainte\""
+    ],
+    "notes": "AutoProxy: https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt",
+    "uninstaller": {
+        "script": "[Environment]::SetEnvironmentVariable('CHROME_EXECUTABLE', '', 'User')"
+    },
     "checkver": {
         "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
         "regex": "(?sm)<stable32><version>(?<version>[\\d.]+)</version>.+release2/chrome/(?<32>[\\w-]+)_.+<stable64>.+release2/chrome/(?<64>[\\w-]+)_.+</stable64>"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://dl.google.com/release2/chrome/$match64_$version/$version_chrome_installer.exe#/dl.7z",
-                "hash": {
-                    "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
-                    "xpath": "/chromechecker/stable64[version='$version']/sha256"
-                }
-            },
-            "32bit": {
-                "url": "https://dl.google.com/release2/chrome/$match32_$version/$version_chrome_installer.exe#/dl.7z",
-                "hash": {
-                    "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
-                    "xpath": "/chromechecker/stable32[version='$version']/sha256"
-                }
-            }
+        "url": "https://dl.google.com/release2/chrome/$match64_$version/$version_chrome_installer.exe#/dl.7z",
+        "hash": {
+            "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
+            "xpath": "/chromechecker/stable64[version='$version']/sha256"
         }
     }
 }
