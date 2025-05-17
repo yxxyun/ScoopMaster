@@ -1,56 +1,65 @@
 {
     "version": "2.10.7",
     "description": "PCL2 社区版，可体验上游暂未合并的功能",
-    "homepage": "https://pcl-community.github.io/projects/pcl-ce/",
-    "license": {
-        "identifier": "Freeware",
-        "url": "https://github.com/PCL-Community/PCL2-CE/blob/dev/LICENCE"
-    },
+    "homepage": "https://pcl-community.github.io/PCL2-CE-Web/",
+    "license": "https://github.com/PCL-Community/PCL2-CE/blob/dev/LICENCE",
     "architecture": {
         "64bit": {
             "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/2.10.7/PCL2_CE_x64.exe",
-            "hash": "76dd9248ee7f86255df128f7ef57358a70b5d6cb1be2b35911ae60b844b010b0",
-            "shortcuts": [
-                [
-                    "PCL2_CE_x64.exe",
-                    "Plain Craft Launcher (CE)"
-                ]
-            ]
+            "hash": "76dd9248ee7f86255df128f7ef57358a70b5d6cb1be2b35911ae60b844b010b0"
         },
         "arm64": {
             "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/2.10.7/PCL2_CE_ARM64.exe",
-            "hash": "c33f9361f83d3e7af44e49fab5b05e419bb9ef709056c9c867e75be21e837731",
-            "shortcuts": [
-                [
-                    "PCL2_CE_ARM64.exe",
-                    "Plain Craft Launcher (CE)"
-                ]
-            ]
+            "hash": "c33f9361f83d3e7af44e49fab5b05e419bb9ef709056c9c867e75be21e837731"
         }
     },
-    "pre_install": [
-        "ensure \"$persist_dir\\PCL\" | Out-Null",
-        "ensure \"$persist_dir\\.minecraft\" | Out-Null",
-        "$conf = \"$persist_dir\\PCL\\Setup.ini\"",
-        "if (!(Test-Path \"$conf\")) {",
-        "    $content = \"LaunchFolderSelect:$persist_dir\\.minecraft\\\"",
-        "    Add-Content \"$conf\" \"$content\"",
-        "}"
-    ],
     "persist": [
         "PCL",
         ".minecraft"
     ],
+    "shortcuts": [
+        [
+            "PCL2_CE.exe",
+            "PCL2_CE"
+        ]
+    ],
+    "installer": {
+        "script": [
+            "if ($architecture -eq '64bit')",
+            "{",
+            "   Rename-Item \"$dir\\PCL2_CE_x64.exe\" 'PCL2_CE.exe' -ErrorAction SilentlyContinue ",
+            "} else {",
+            "   Rename-Item \"$dir\\PCL2_CE_ARM64.exe\" 'PCL2_CE.exe' -ErrorAction SilentlyContinue ",
+            "}",
+            "",
+            ". \"$bucketsdir\\doge\\scripts\\utils.ps1\"",
+            "Ensure-Junction -Source \"$persist_dir\\.PCLCE\" -Target \"$env:APPDATA\\.PCLCE\""
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            ". \"$bucketsdir\\doge\\scripts\\utils.ps1\"",
+            "Remove-Junction -Path \"$env:APPDATA\\.PCLCE\""
+        ]
+    },
     "checkver": {
         "github": "https://github.com/PCL-Community/PCL2-CE"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/$version/PCL2_CE_x64.exe"
+                "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/$version/PCL2_CE_x64.exe",
+                "hash": {
+                    "url": "https://github.com/PCL-Community/PCL2-CE/releases/latest",
+                    "regex": "x86_64 SR[\\s\\S]+?<td>$sha256</td>"
+                }
             },
             "arm64": {
-                "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/$version/PCL2_CE_ARM64.exe"
+                "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/$version/PCL2_CE_ARM64.exe",
+                "hash": {
+                    "url": "https://github.com/PCL-Community/PCL2-CE/releases/latest",
+                    "regex": "ARM64 SR[\\s\\S]+?<td>$sha256</td>"
+                }
             }
         }
     }
