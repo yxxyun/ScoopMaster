@@ -1,0 +1,41 @@
+{
+    "version": "1.4",
+    "description": "Preview Handler and Thumbnail Provider for SVG files.",
+    "homepage": "https://github.com/AngusJohnson/SvgShellExtensions",
+    "license": "BSL-1.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/AngusJohnson/SvgShellExtensions/releases/download/SVG_ShellExt_1.4/SvgShellExtensions.zip",
+            "hash": "f553750d884ddd7afd0208ddbcd5bdc08c5f192b0a5d521ddbfb52c7a24e9b9f"
+        }
+    },
+    "post_install": [
+        "regsvr32 /s \"$dir\\SvgShellExtensions.dll\"",
+        "cmd.exe /c \"taskkill /f /im explorer.exe 2>nul & start explorer.exe\"",
+        "Start-Sleep -Seconds 2"
+    ],
+    "pre_uninstall": [
+        "regsvr32 /s /u \"$dir\\SvgShellExtensions.dll\"",
+        "cmd.exe /c \"taskkill /f /im explorer.exe 2>nul & start explorer.exe\"",
+        "Start-Sleep -Seconds 2"
+    ],
+    "checkver": {
+        "script": [
+            "try {",
+            "    $auth = Get-GitHubToken",
+            "    $head = @{}",
+            "    if ($auth) { $head = @{ 'Authorization' = \"token $auth\" } }",
+            "    $url1 = 'https://api.github.com/repos/AngusJohnson/SvgShellExtensions/releases/latest'",
+            "    $cont = (Invoke-WebRequest -Headers $head -Uri $url1).Content | ConvertFrom-Json",
+            "    if (!($cont.tag_name)) { Write-Error \"Tag name not found in '$url1'\"; throw }",
+            "    $app_ver = $cont.tag_name -replace '.*?_([\\d.]+)$', '$1'",
+            "    Write-Output \"$app_ver\"",
+            "}",
+            "catch { error $_.Exception.Message; throw }"
+        ],
+        "regex": "([\\w.]+)"
+    },
+    "autoupdate": {
+        "url": "https://github.com/AngusJohnson/SvgShellExtensions/releases/download/SVG_ShellExt_$version/SvgShellExtensions.zip"
+    }
+}
