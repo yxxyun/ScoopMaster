@@ -1,19 +1,28 @@
 {
-    "version": "4.7.7.1",
-    "description": "A unlimited speed multifunctional remote control software",
     "homepage": "https://www.todesk.com/",
-    "license": "Proprietary",
-    "architecture": {
-        "64bit": {
-            "url": "https://dl.todesk.com/irrigation/ToDesk_4.7.7.1.exe#/dl.7z"
-        }
+    "description": "A unlimited speed multifunctional remote control software",
+    "version": "4.7.7.1",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.todesk.com/licence.html"
     },
+    "url": "https://dl.todesk.com/windows/ToDesk_Setup.exe#/dl.7z",
+    "hash": "78bacfba23438526553960a45ef7dae817dab185421b00be33c8a70d155c1237",
     "pre_install": [
         "if (!(Test-Path \"$persist_dir\\config.ini\")) {",
         "    New-Item -Force -Path \"$persist_dir\\config.ini\" -ItemType File -Value \"[ConfigInfo]`nautoStart=0\" | Out-Null",
         "}"
     ],
     "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\uninst.exe\" -Force -Recurse",
+    "pre_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    if (!(is_admin)) {",
+        "        Start-Process -Wait powershell.exe -ArgumentList \"-Command sc.exe delete ToDesk_Service\" -Verb RunAs -WindowStyle Hidden",
+        "    } else {",
+        "        sc.exe delete ToDesk_Service",
+        "    }",
+        "}"
+    ],
     "shortcuts": [
         [
             "ToDesk.exe",
@@ -25,14 +34,13 @@
         "config.ini"
     ],
     "checkver": {
-        "url": "https://www.todesk.com/download.html",
-        "regex": "ToDesk_([\\d.]+).exe"
+        "url": "https://update.todesk.com/windows/uplog.html",
+        "regex": "<div class=\"text\">([\\d.]+)</div>"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://dl.todesk.com/irrigation/ToDesk_$version.exe#/dl.7z"
-            }
+        "url": "https://dl.todesk.com/windows/ToDesk_Setup.exe#/dl.7z",
+        "hash": {
+            "mode": "download"
         }
     }
 }
