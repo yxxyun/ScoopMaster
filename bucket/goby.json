@@ -1,15 +1,40 @@
 {
-    "version": "2.9.16",
-    "description": "资产测绘及实战化漏洞扫描工具",
+    "version": "2.9.11",
+    "description": "新一代网络安全技术，通过为目标建立完整的资产数据库，实现快速的安全应急(Scoop bucket for Cybersecurity by whoopscs)",
     "homepage": "https://gobysec.net/",
     "license": "https://gobysec.net/faq",
-    "url": "https://gobies.org/download/release?type=full_url&id=291#/goby-2.9.16-Community.zip",
-    "hash": "522166b648f6c35c1c59e08728c33cca05dfb9b070bc99cf4c27ab6ca202fcdc",
-    "extract_dir": "goby-win-x64-2.9.16",
+    "notes": "Scoop bucket for Cybersecurity by whoopscs(https://github.com/whoopscs/scoop-security).",
+    "architecture": {
+        "64bit": {
+            "url": "https://goby-storage-public.oss-cn-beijing.aliyuncs.com/2.9.11/goby-win-x64-2.9.11-Community.zip",
+            "hash": "4cb93a8a971165b95a060d854f3c39fd82391f6fe1a1b0f8a1c59613111f1590",
+            "extract_dir": "goby-win-x64-2.9.11"
+        }
+    },
+    "post_install": [
+        "$wsShell = New-Object -ComObject WScript.Shell",
+        "$shortcut = $wsShell.CreateShortcut([System.IO.Path]::Combine($env:USERPROFILE, 'Desktop', 'Goby.lnk'))",
+        "$shortcut.TargetPath = \"powershell.exe\"",
+        "$shortcut.Arguments = \"-NoProfile -ExecutionPolicy Bypass -Command pushd `\"$dir`\"; .\\Goby.exe \\%*; popd\"",
+        "$shortcut.IconLocation  = \"$dir\\Goby.exe,0\"",
+        "$shortcut.Save()"
+    ],
+    "pre_uninstall": [
+        "$desktopPath = Join-Path $env:USERPROFILE '\\Desktop'",
+        "$shortcutName = 'Goby.lnk'",
+        "$shortcutPath = Join-Path $desktopPath $shortcutName",
+        "Write-Host ([Environment]::NewLine + 'Checking for desktop shortcut at: ' + $shortcutPath)",
+        "if (Test-Path $shortcutPath) {",
+        "    Write-Host ('Deleting desktop shortcut: ' + $shortcutPath)",
+        "    Remove-Item $shortcutPath -Force",
+        "} else {",
+        "    Write-Host ('Desktop shortcut not found at: ' + $shortcutPath)",
+        "}"
+    ],
     "bin": [
         [
-            "golib/goby-cmd.exe",
-            "goby"
+            "Goby.exe",
+            "Goby"
         ]
     ],
     "shortcuts": [
@@ -25,10 +50,14 @@
     ],
     "checkver": {
         "url": "https://gobysec.net/api/versions",
-        "regex": "\"title\":\"(?<version>[^\"]+)\",\"versionType\":\"(?<type>[^\"]+)\",\"content\":\"(?<changeLog>.*?)\",\"url\":\"(?<path>[^\"]+)release(?<params>[^\"]+)"
+        "jsonpath": "$.data[0].title"
     },
     "autoupdate": {
-        "url": "https://gobies.org/download/release$matchParams#/goby-$version-$matchType.zip",
-        "extract_dir": "goby-win-x64-$version"
+        "architecture": {
+            "64bit": {
+                "url": "https://goby-storage-public.oss-cn-beijing.aliyuncs.com/$version/goby-win-x64-$version-Community.zip",
+                "extract_dir": "goby-win-x64-$version"
+            }
+        }
     }
 }
