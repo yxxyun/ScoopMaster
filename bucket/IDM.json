@@ -1,20 +1,34 @@
 {
-  "version": "642build37",
-  "description": "(IDM) is a tool to increase download speeds by up to 5 times, resume and schedule downloads.",
-  "license": "© ToneC",
-  "homepage": "http://www.internetdownloadmanager.com",
-  "url": "https://mirror2.internetdownloadmanager.com/idman642build37.exe#/idman-install.exe",
-  "hash": "234eb82a452feb9f539e45ec0cbc9f8d27027dc36a8911ec53761d17d776f786",
-  "installer": {
-    "script": "Start-Process -Wait $dir\\idman-install.exe /skipdlgs",
-    "keep": true
-  },
-  "checkver": {
-    "url": "http://www.internetdownloadmanager.com/download.html",
-    "regex": "idman([\\d]+)build([\\d]+)\\.exe",
-    "replace": "${1}build${2}"
-  },
-  "autoupdate": {
-    "url": "https://mirror2.internetdownloadmanager.com/idman$match1build$match2.exe#/idman-install.exe"
-  }
+    "version": "642build37",
+    "description": "(IDM) is a tool to increase download speeds by up to 5 times, resume and schedule downloads.",
+    "license": "© ToneC",
+    "homepage": "http://www.internetdownloadmanager.com",
+    "url": "https://mirror2.internetdownloadmanager.com/idman642build37.exe#/idman-install.exe",
+    "hash": "234eb82a452feb9f539e45ec0cbc9f8d27027dc36a8911ec53761d17d776f786",
+    "installer": {
+        "script": [
+            "if (!(is_admin)) { \"$app requires admin rights to $cmd\"; break }",
+            "Start-Process -Wait $dir\\idman-install.exe /skipdlgs",
+            "Remove-Item \"$Env:USERPROFILE\\Desktop\\Internet Download Manager.lnk\""
+        ],
+        "keep": true
+    },
+    "uninstaller": {
+        "script": [
+            "if (!(is_admin)) { \"$app requires admin rights to $cmd\"; break }",
+            "elseif ($cmd -eq \"uninstall\") {",
+            "    $uninstaller = (Get-ItemProperty -ErrorAction Ignore \"HKLM:\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Internet Download Manager\" -Name UninstallString).UninstallString",
+            "    if (!$uninstaller) { warn 'Could not find app info in registry' }",
+            "    if (Test-Path -Path \"$uninstaller\" -PathType Leaf) { Start-Process -Wait \"$uninstaller\" -Verb RunAs}",
+            "}"
+        ]
+    },
+    "checkver": {
+        "url": "http://www.internetdownloadmanager.com/download.html",
+        "regex": "idman([\\d]+)build([\\d]+)\\.exe",
+        "replace": "${1}build${2}"
+    },
+    "autoupdate": {
+        "url": "https://mirror2.internetdownloadmanager.com/idman$match1build$match2.exe#/idman-install.exe"
+    }
 }
