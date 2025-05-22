@@ -1,32 +1,54 @@
 {
+    "##": "来自https://github.com/Scoopforge/Extras-CN/blob/master/bucket/tim.json",
     "version": "3.5.0.22143",
-    "description": "tencent TIM, lightweight alternative to QQ",
-    "homepage": "https://office.qq.com/",
+    "description": "团队沟通协作工具",
+    "homepage": "https://tim.qq.com/",
     "license": {
-        "identifier": "Unknown",
-        "url": "http://play.mobile.qq.com/yy/eim/help/serverinfo.html"
+        "identifier": "Proprietary",
+        "url": "https://ti.qq.com/tim/serverinfo.html"
     },
-    "url": "http://dldir1.qq.com/qqfile/qq/TIM3.5.0/TIM3.5.0.22143.exe#/TimSetup.exe",
+    "url": "https://dldir1.qq.com/qqfile/qq/TIM3.5.0/TIM3.5.0.22143.exe#/dl.exe",
     "hash": "4143f88baa26d4e61b0380eb917d20918f64b4b7a86e93c39cbf08ff841934e1",
+    "shortcuts": [
+        [
+            "Bin\\QQScLauncher.exe",
+            "TIM"
+        ]
+    ],
     "installer": {
         "script": [
-            "Start-Process -Wait -WindowStyle Hidden cmd \"/c call `\"$dir\\TimSetup.exe`\" -s\" -Verb RunAs",
-            "Remove-Item \"$dir\\TimSetup.exe\""
+            "Expand-7zipArchive \"$dir\\$fname\" -Switches '-t*' -Removal",
+            "Get-Item \"$dir\\*\" -Exclude .rsrc | Remove-Item",
+            "Expand-7zipArchive \"$dir\\.rsrc\\2052\\MSI\\101\" \"$dir\" -ExtractDir 'Files'",
+            "Expand-7zipArchive \"$dir\\.rsrc\\2052\\MSI\\102\" \"$dir\\temp\"",
+            "'vcruntime140.dll', 'msvcp140.dll', 'msvcr100.dll', 'vcomp140.dll', 'msvcp100.dll' | ForEach-Object {",
+            "  Move-Item \"$dir\\temp\\$_\" \"$dir\\Bin\\\"",
+            "}",
+            "Expand-7zipArchive \"$dir\\temp\\TXSSO\\TXSSOSetup.exe\" \"$dir\\Bin\\TXSSO\" -ExtractDir 'TXSSO'",
+            "Remove-Item \"$dir\\.rsrc\", \"$dir\\temp\" -Recurse",
+            "$source = \"$persist_dir\\Tencent Files\"",
+            "$personalPath = Get-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders\" -Name \"Personal\" | Select-Object -ExpandProperty Personal",
+            "$target = \"$personalPath\\Tencent Files\"",
+            ". \"$bucketsdir\\doge\\scripts\\utils.ps1\"",
+            "Ensure-Junction -Source \"$source\" -Target \"$target\""
         ]
     },
-    "post_install": "Copy-Item -Path \"C:\\Program Files (x86)\\Tencent\\TIM\\TIMUninst.exe\" \"$dir\\TIMUninst.exe\"",
     "uninstaller": {
-        "script": "Start-Process -Wait -WindowStyle Hidden cmd \"/c call `\"$dir\\TIMUninst.exe`\" -s\" -Verb RunAs"
+        "script": [
+            ". \"$bucketsdir\\doge\\scripts\\utils.ps1\"",
+            "$personalPath = Get-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders\" -Name \"Personal\" | Select-Object -ExpandProperty Personal",
+            "Remove-Junction -Path \"$personalPath\\Tencent Files\""
+        ]
     },
     "checkver": {
-        "url": "https://im.qq.com/rainbow/TIMDownload/",
-        "regex": "\"pcLink\":\"https?://dldir1\\.qq\\.com/qqfile/qq(?<extra>.*)/TIM(?<main>\\d+\\.\\d+\\.\\d+)/TIM.*\\.(?<patch>\\d+)\\.exe",
-        "replace": "${main}.${patch}"
+        "url": "https://pc.qq.com/detail/18/detail_23258.html",
+        "re": "<div class=\"sys-info-value ellipsis\">\\s+([\\d.]+)\\s+</div>\\s+<div class=\"sys-info-desc\">版本</div>"
     },
     "autoupdate": {
-        "url": "http://dldir1.qq.com/qqfile/qq$matchExtra/TIM$matchMain/TIM$version.exe#/TimSetup.exe",
-        "hash": {
-            "mode": "download"
-        }
-    }
+        "url": "https://dldir1.qq.com/qqfile/qq/TIM3.5.0/TIM$version.exe#/dl.exe"
+    },
+    "notes": [
+        "Files produced at runtime leaves in '%AppData%\\Tencent'.",
+        "#TODO 处理%AppData%\\Tencent和注册表"
+    ]
 }

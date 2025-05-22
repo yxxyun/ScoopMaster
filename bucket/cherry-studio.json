@@ -1,54 +1,42 @@
 {
     "version": "1.3.9",
-    "description": "🍒 Cherry Studio is a desktop client that supports for multiple LLM providers",
+    "description": "🍒 Cherry Studio is a desktop client that supports for multiple LLM providers.",
     "homepage": "https://cherry-ai.com/",
     "license": {
         "identifier": "Apache-2.0",
-        "url": "https://github.com/CherryHQ/cherry-studio/raw/refs/heads/main/LICENSE"
+        "url": "https://github.com/CherryHQ/cherry-studio/blob/main/LICENSE"
     },
     "architecture": {
         "64bit": {
             "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.3.9/Cherry-Studio-1.3.9-x64-setup.exe#/dl.7z",
             "hash": "sha512:4828a89c65145d6b7971388bb6301c3108ac08e5084df8ba94223a3f9d7139919fcf57d986d1c0a8feadd8f220de6774e210b5cf54cab48e7e426636a4378cbe",
-            "pre_install": [
-                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\", \"$dir\\Unintall*\" -Recurse"
-            ]
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
         },
         "arm64": {
             "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.3.9/Cherry-Studio-1.3.9-arm64-setup.exe#/dl.7z",
             "hash": "2bc6a9634557675255b7c4cf1bb670fc9bbfb23bd22b74b370ac82ca29b15cdc",
-            "pre_install": [
-                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\", \"$dir\\Unintall*\" -Recurse"
-            ]
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\""
         }
     },
-    "post_install": [
-        "$appDataPath = \"$env:APPDATA\\CherryStudio\"",
-        "$persistPath = \"$persist_dir\\CherryStudio\"",
-        "if (Test-Path $appDataPath) {",
-        "    Remove-Item $appDataPath -Recurse -Force",
-        "}",
-        "if (-Not (Test-Path $persistPath)) {",
-        "    New-Item -Path \"$persistPath\" -ItemType Directory | Out-Null",
-        "}",
-        "New-Item -ItemType Junction -Path \"$appDataPath\" -Target \"$persistPath\" | Out-Null"
-    ],
-    "notes": "You'd better turn off update detection in Settings->About Us in Cherry Studio and use scoop to manage updates, otherwise it will cause some errors.",
     "shortcuts": [
         [
             "Cherry Studio.exe",
             "Cherry Studio"
         ]
     ],
-    "uninstaller": {
+    "installer": {
         "script": [
-            "if (Test-Path \"$env:LOCALAPPDATA\\cherrystudio-updater\" -PathType Container) {",
-            "    Remove-Item -Recurse -Force \"$env:LOCALAPPDATA\\cherrystudio-updater\"",
-            "}"
+            "Remove-Item \"$dir\\`$*\" -Force -Recurse",
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:APPDATA\\CherryStudio\" \"$persist_dir\\AppData\" -Migrate"
         ]
     },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\CherryStudio\""
+    ],
     "checkver": {
         "github": "https://github.com/CherryHQ/cherry-studio"
     },
@@ -57,12 +45,16 @@
             "64bit": {
                 "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-x64-setup.exe#/dl.7z",
                 "hash": {
+                    "mode": "extract",
                     "url": "$baseurl/latest.yml",
-                    "regex": "sha512: $base64"
+                    "regex": "sha512:\\s+$base64"
                 }
             },
             "arm64": {
-                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-arm64-setup.exe#/dl.7z"
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-arm64-setup.exe#/dl.7z",
+                "hash": {
+                    "mode": "download"
+                }
             }
         }
     }
