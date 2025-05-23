@@ -1,0 +1,47 @@
+{
+    "version": "20250523",
+    "homepage": "https://github.com/WantChane/fcitx5-pinyin-prts",
+    "description": "Rime 配置：雾凇拼音 | 长期维护的简体词库",
+    "license": "GPL-3.0-only",
+    "url": "https://github.com/WantChane/fcitx5-pinyin-prts/releases/download/v20250523/cn_dicts.7z",
+    "hash": "5d7cd459e33143ed904fb951f85fff42891d141499e27370ca0635075bc2d73a",
+    "extract_to": "dicts/cn_dicts",
+    "post_install": [
+        "$weaselRegPath = \"HKLM:\\SOFTWARE\\WOW6432Node\\Rime\\Weasel\"",
+        "if (Test-Path $weaselRegPath) {",
+        "    $weaselRoot = (Get-ItemProperty -Path $weaselRegPath).WeaselRoot",
+        "}",
+        "if (!$weaselRoot) {",
+        "    abort \"请先安装weasel\"",
+        "}",
+        "$rimeConfigRegPath = \"HKCU:\\SOFTWARE\\Rime\\Weasel\"",
+        "$defaultPath = \"$env:APPDATA\\Rime\"",
+        "if (Test-Path $rimeConfigRegPath) {",
+        "    $rimeConfigRoot = (Get-ItemProperty -Path $rimeConfigRegPath).RimeUserDir",
+        "}",
+        "if (!$rimeConfigRoot) {",
+        "    $caption = \"未在注册表中找到Rime配置位置\"",
+        "    $message = \"是否要使用默认位置: $defaultPath ? [Y/N]\"",
+        "    $yes = New-Object System.Management.Automation.Host.ChoiceDescription '&Yes', '是'",
+        "    $no = New-Object System.Management.Automation.Host.ChoiceDescription '&No', '否'",
+        "    $options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)",
+        "    $result = $host.UI.PromptForChoice($caption, $message, $options, 1)",
+        "    if ($result -eq 0) {",
+        "       $rimeConfigRoot = $defaultPath",
+        "    }",
+        "    else {",
+        "       abort \"退出安装\"",
+        "    }",
+        "}",
+        "Copy-Item \"$dir\\dicts\\*\" $rimeConfigRoot -Recurse -Force",
+        "Start-Process -FilePath \"$weaselRoot\\WeaselDeployer.exe\" -ArgumentList \"/deploy\" -Wait -NoNewWindow"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/WantChane/fcitx5-pinyin-prts/releases/download/v$version/cn_dicts.7z",
+        "hash": {
+            "url": "https://github.com/WantChane/fcitx5-pinyin-prts/releases/download/v$version/checksums.txt",
+            "regex": "$sha256\\s+./cn_dicts.7z"
+        }
+    }
+}
