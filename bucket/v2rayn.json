@@ -1,57 +1,63 @@
 {
-    "version": "7.12.4",
-    "description": "A GUI client for Windows, Linux and macOS, support Xray and sing-box and others",
-    "homepage": "https://github.com/2dust/v2rayN",
-    "license": "GPL-3.0-or-later",
-    "suggest": {
-        "Microsoft .NET 8.0 Desktop Runtime": "windowsdesktop-runtime-lts"
+  "version": "7.12.4",
+  "description": "A V2Ray client for Windows, support Xray & v2fly core",
+  "homepage": "https://github.com/2dust/v2rayN",
+  "license": "GPL-3.0-only",
+  "depends": "xray",
+  "suggest": {
+    ".NET Desktop Runtime": "windowsdesktop-runtime-lts",
+    "v2fly-core": "v2ray"
+  },
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/2dust/v2rayN/releases/download/7.12.4/v2rayN-windows-64.zip",
+      "hash": "9609e2e5a7821b14df5b963925c0319eecc721d5a040c12e372bc0a3862fdb4a",
+      "extract_dir": "v2rayN-windows-64"
     },
-    "depends": "extras/hysteria",
-    "notes": [
-        "* This is the beta and Avalonia UI version.",
-        "* Better use administrator privileges to install so that the cores could be linked by symlinks, rather than shims, providing better compatibility and performance.",
-        "* If the tray icon doesn't appear, run the v2rayN.exe from the version number path: '$original_dir\\v2rayN.exe'"
-    ],
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/2dust/v2rayN/releases/download/7.12.4/v2rayN-windows-64-desktop.zip",
-            "hash": "27c26d68d07adfb4d1f1694fd66ac6fd17ac7e6bc3882eca364d2753ef0644f9",
-            "extract_dir": "v2rayN-windows-64"
-        },
-        "arm64": {
-            "url": "https://github.com/2dust/v2rayN/releases/download/7.12.4/v2rayN-windows-arm64-desktop.zip",
-            "hash": "b0e3f80d50efd707bccca81895bafe4306aca5bbf1a336b348dd61749d2daa52",
-            "extract_dir": "v2rayN-windows-arm64"
-        }
-    },
-    "shortcuts": [
-        [
-            "v2rayN.exe",
-            "v2rayN"
-        ]
-    ],
-    "persist": [
-        "guiConfigs",
-        "binConfigs"
-    ],
-    "installer": {
-        "script": [
-            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-            "New-AppLink -App 'hysteria' -Target \"$dir\\bin\\hysteria2\""
-        ]
-    },
-    "checkver": {
-        "url": "https://api.github.com/repos/2dust/v2rayN/releases?per_page=1",
-        "jsonpath": "$.tag_name"
-    },
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/2dust/v2rayN/releases/download/$version/v2rayN-windows-64-desktop.zip"
-            },
-            "arm64": {
-                "url": "https://github.com/2dust/v2rayN/releases/download/$version/v2rayN-windows-arm64-desktop.zip"
-            }
-        }
+    "arm64": {
+      "url": "https://github.com/2dust/v2rayN/releases/download/7.12.4/v2rayN-windows-arm64.zip",
+      "hash": "8e0281770c64ff5f80819dc82ce788c90f8fed73fb5d051397b4957a0b8f2943",
+      "extract_dir": "v2rayN-windows-arm64"
     }
+  },
+  "pre_install": [
+    "foreach ($form in @('*.exe', '*.dat')) {",
+    "    foreach ($_ in Get-ChildItem \"$(appdir xray $global)\\current\" -File) {",
+    "        $name = $_.Name",
+    "        if ($name -Like $form) {",
+    "            Write-Host \"Creating hardlink for $name\"",
+    "            New-Item -ItemType HardLink -Path \"$dir\\bin\\Xray\" -Name $name -Target \"$(appdir xray $global)\\current\\$name\" | Out-Null",
+    "        }",
+    "    }",
+    "}"
+  ],
+  "bin": "v2rayN.exe",
+  "shortcuts": [
+    [
+      "v2rayN.exe",
+      "v2rayN"
+    ]
+  ],
+  "persist": "guiConfigs",
+  "uninstaller": {
+    "script": [
+      "if (Test-Path \"$dir\\guiConfigs\\config.json\") {",
+      "    Copy-Item \"$dir\\guiConfigs\\config.json\" \"$persist_dir\\guiConfigs\\config.json\" | Out-Null",
+      "}"
+    ]
+  },
+  "checkver": {
+    "url": "https://api.github.com/repos/2dust/v2rayN/releases?per_page=1",
+    "jsonpath": "$[0].tag_name"
+  },
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://github.com/2dust/v2rayN/releases/download/$version/v2rayN-windows-64.zip"
+      },
+      "arm64": {
+        "url": "https://github.com/2dust/v2rayN/releases/download/$version/v2rayN-windows-arm64.zip"
+      }
+    }
+  }
 }
