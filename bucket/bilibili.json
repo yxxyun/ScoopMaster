@@ -1,50 +1,54 @@
 {
     "version": "1.16.4",
-    "description": "哔哩哔哩 Windows 客户端",
-    "homepage": "https://app.bilibili.com/",
-    "license": "Unknown",
-    "url": "https://dl.hdslb.com/mobile/pack/bili_win/18385078/public/bilibili-setup-v1.16.4.exe#/abgo_bucket_installer.exe",
-    "hash": "94987d351ac63cfbd685b69c3b0af3a0ae1cf947ebe740e0640c6aba1076362a",
+    "description": "Bilibili(bilibili.com) Official Client.",
+    "homepage": "https://app.bilibili.com",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.bilibili.com/blackboard/protocal/privacy-pc-desktop.html"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://dl.hdslb.com/mobile/fixed/bili_win/bili_win-install.exe#/dl.7z",
+            "hash": "sha512:46753b625e7696007f57e10ae8534d55bcbd43efdb1c508a1ae27ec142b2113a715fe67582e5970ed803abf21f6011f5b5e2a74d57feaaf7c54b1fd3559be8bb",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Force -Recurse"
+            ]
+        }
+    },
+    "installer": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:APPDATA\\bilibili\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\bilibili\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
     "shortcuts": [
         [
-            "bilibili\\哔哩哔哩.exe",
+            "哔哩哔哩.exe",
             "哔哩哔哩"
         ]
     ],
-    "pre_install": [
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "$path_installer=\"$dir\\abgo_bucket_installer.exe\"",
-        "& $path_installer /S /D=$dir",
-        "$core_exe=\"$dir\\bilibili\\哔哩哔哩.exe\"",
-        "sleep_install $core_exe",
-        "persist_file -dir @(\"$user_AppData\\bilibili\") @(\"$persist_dir\\bilibili\")",
-        "handle_app_lnk",
-        "do_some_things"
-    ],
-    "pre_uninstall": [
-        "$bucket = (Get-Content \"$dir\\install.json\" | ConvertFrom-Json).bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "stop_process $false",
-        "remove_files @(\"$user_AppData\\bilibili\")",
-        "$ui_exe=\"$dir\\bilibili\\卸载哔哩哔哩.exe\"",
-        "& $ui_exe /S",
-        "sleep_uninstall $ui_exe",
-        "remove_files @(\"$user_LocalAppData\\bilibili-updater\")"
-    ],
     "checkver": {
-        "script": [
-            ". \"$pwd\\bin\\utils.ps1\"",
-            "$dl_info = get_installer_info \"Bilibili/Bilibili\"",
-            "\"ver:$($dl_info.PackageVersion);\"",
-            "\"x64:$($dl_info.x64_exe.InstallerUrl);\""
-        ],
-        "regex": "ver:(?<version>.+?); x64:(?<x64>.+?);"
+        "url": "http://api.bilibili.com/x/elec-frontend/update/latest.yml",
+        "regex": "bilibili-setup-v([\\d\\.]+)\\.exe"
     },
     "autoupdate": {
-        "url": "$matchX64#/abgo_bucket_installer.exe",
-        "hash": {
-            "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/b/Bilibili/Bilibili/$version/Bilibili.Bilibili.installer.yaml",
-            "regex": "x64[\\s\\S]*InstallerSha256:\\s?(.+)"
+        "architecture": {
+            "64bit": {
+                "url": "https://dl.hdslb.com/mobile/fixed/bili_win/bili_win-install.exe#/dl.7z",
+                "hash": {
+                    "url": "http://api.bilibili.com/x/elec-frontend/update/latest.yml",
+                    "regex": "sha512: ([\\w\\d+\\/=]{24,88})"
+                }
+            }
         }
     }
 }
