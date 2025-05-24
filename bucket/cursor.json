@@ -1,11 +1,8 @@
 {
     "version": "0.50.6",
-    "description": "Built to make you extraordinarily productive, Cursor is the best way to code with AI.",
-    "homepage": "https://www.cursor.com/",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://www.cursor.com/terms-of-service"
-    },
+    "description": "Cursor - The AI-first code editor based on VSCode with ChatGPT-like features",
+    "homepage": "https://www.cursor.com",
+    "license": "Proprietary",
     "architecture": {
         "64bit": {
             "url": "https://downloads.cursor.com/production/f3f2ad556456ff2df80332923bb1e2a818110d1b/win32/x64/user-setup/CursorUserSetup-x64-0.50.6.exe",
@@ -17,26 +14,44 @@
     "shortcuts": [
         [
             "Cursor.exe",
-            "Cursor",
-            "--user-data-dir=\"%SCOOP%\\apps\\cursor\\current\\data\\user-data\" --extensions-dir=\"%SCOOP%\\apps\\cursor\\current\\data\\extensions\""
+            "Cursor"
         ]
     ],
+    "persist": [
+        "data",
+        "resources\\app\\extensions"
+    ],
     "post_install": [
+        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
+        "$exepath = \"$dir\\Cursor.exe\".Replace('\\', '\\\\')",
+        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context' | ForEach-Object {",
+        "  if (Test-Path \"$dir\\$_.reg\") {",
+        "    $content = Get-Content \"$dir\\$_.reg\"",
+        "    $content = $content.Replace('$codedir', $dirpath)",
+        "    $content = $content.Replace('$code', $exepath)",
+        "    if ($global) {",
+        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
+        "  }",
+        "}",
         "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.cursor\\extensions\")) {",
-        "  info '[Portable Mode] Copying extensions...'",
-        "  Copy-Item \"$env:USERPROFILE\\.cursor\\extensions\" \"$dir\\data\" -Recurse",
+        "    info '[Portable Mode] Copying extensions...'",
+        "    Copy-Item \"$env:USERPROFILE\\.cursor\\extensions\" \"$dir\\data\" -Recurse",
         "}",
         "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Cursor\")) {",
-        "  info '[Portable Mode] Copying user data...'",
-        "  Copy-Item \"$env:AppData\\Cursor\" \"$dir\\data\\user-data\" -Recurse",
+        "    info '[Portable Mode] Copying user data...'",
+        "    Copy-Item \"$env:AppData\\Cursor\" \"$dir\\data\\user-data\" -Recurse",
         "}",
         "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
         "if ((Test-Path \"$extensions_file\")) {",
-        "  info 'Adjusting path in extensions file...'",
+        "    info 'Adjusting path in extensions file...'",
         "    (Get-Content \"$extensions_file\") -replace '(?<=cursor(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
         "}"
     ],
-    "persist": "data",
+    "uninstaller": {
+        "script": "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-context.reg\" }"
+    },
     "checkver": {
         "url": "https://api2.cursor.sh/updates/api/update/win32-x64-archive/cursor/0.0.0/stable",
         "jsonpath": "$.url",
@@ -49,5 +64,12 @@
                 "url": "$matchUrl"
             }
         }
-    }
+    },
+    "notes": [
+        "🔮 Welcome to Cursor - where coding meets AI!",
+        "🚀 Experience coding at warp speed with built-in AI assistance.",
+        "🧠 Powered by Claude 3.7 Sonnet and other advanced AI models.",
+        "🔄 For version history and more info: https://github.com/oslook/cursor-ai-downloads",
+        "⚠️ Note: Close all Cursor instances before updating to avoid conflicts."
+    ]
 }
