@@ -1,35 +1,76 @@
 {
     "version": "6.7.1",
-    "description": "A tiny alternative Discord client with a smaller footprint, themes, plugins.",
-    "homepage": "https://spikehd.github.io/projects/dorion/",
-    "license": "GPL-3.0-only",
+    "description": "Tiny alternative Discord client with a smaller footprint, themes and plugins, multi-profile, and more!",
+    "homepage": "https://github.com/SpikeHD/Dorion",
+    "license": {
+        "identifier": "GPL-3.0",
+        "url": "https://github.com/SpikeHD/Dorion/blob/main/LICENSE"
+    },
     "architecture": {
         "64bit": {
             "url": "https://github.com/SpikeHD/Dorion/releases/download/v6.7.1/Dorion_6.7.1_win64_portable.zip",
             "hash": "08dc1479be3b459068271624127aa8ec629f4d1054e3f584d96a713636d14c4b"
+        },
+        "arm64": {
+            "url": "https://github.com/SpikeHD/Dorion/releases/download/v6.7.1/Dorion_6.7.1_win_arm64_portable.zip",
+            "hash": "3e4fcbf610f895923b2b485e9a2c7a55ef53c5b1310701279588c32a30ed2a10"
         }
     },
-    "pre_install": "Remove-Item \"$dir\\updater*\" -Force",
+    "pre_install": [
+        "$files = @('config.json', 'detectables.json')",
+        "if (-not (Test-Path -Path $persist_dir)) {",
+        "    New-Item -Path $persist_dir -ItemType Directory",
+        "}",
+        "foreach ($file in $files) {",
+        "    if (-not (Test-Path -Path (Join-Path $persist_dir $file))) {",
+        "        New-Item -Path (Join-Path $persist_dir $file)",
+        "    }",
+        "}"
+    ],
+    "post_install": [
+        "$sourceFolders = @(\"~\\dorion\", \"$env:APPDATA\\dorion\")",
+        "$canMoveFolders = $false",
+        "foreach ($sourceFolder in $sourceFolders) {",
+        "    If (Test-Path -Path \"$sourceFolder\\*\") {$canMoveFolders = $true; break}",
+        "}",
+        "If ($canMoveFolders) {",
+        "    $confirm = Read-Host -Prompt \"Do you want to move the current data to '$persist_dir'? (Y/N)\"",
+        "    If ($confirm.ToUpper() -eq \"Y\") {",
+        "        foreach ($sourceFolder in $sourceFolders) {",
+        "            If (Test-Path -Path \"$sourceFolder\") {",
+        "                If (Test-Path -Path \"$sourceFolder\") {Move-Item -Path \"$sourceFolder\\*\" -Destination \"$persist_dir\" -Force}",
+        "                Remove-Item \"$sourceFolder\" -Force -Recurse",
+        "            }",
+        "        }",
+        "    }",
+        "}",
+        "Remove-Item \"$dir\\*.original\" -Force -Recurse"
+    ],
+    "persist": [
+        "config.json",
+        "detectables.json",
+        "plugins",
+        "logs",
+        "themes",
+        "profiles",
+        "extensions"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "extract_dir": "Dorion_$version_win64_portable",
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/SpikeHD/Dorion/releases/download/v$version/Dorion_$version_win64_portable.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/SpikeHD/Dorion/releases/download/v$version/Dorion_$version_win_arm64_portable.zip"
+            }
+        }
+    },
     "shortcuts": [
         [
             "Dorion.exe",
             "Dorion"
         ]
-    ],
-    "persist": [
-        "profiles",
-        "themes",
-        "plugins",
-        "config.json"
-    ],
-    "checkver": {
-        "github": "https://github.com/SpikeHD/Dorion"
-    },
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/SpikeHD/Dorion/releases/download/v$version/Dorion_$version_win64_portable.zip"
-            }
-        }
-    }
+    ]
 }
