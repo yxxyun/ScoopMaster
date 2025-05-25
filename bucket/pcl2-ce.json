@@ -1,60 +1,65 @@
 {
     "version": "2.11.1",
     "description": "PCL2 社区版，可体验上游暂未合并的功能",
-    "homepage": "https://github.com/PCL-Community/PCL2-CE",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://github.com/PCL-Community/PCL2-CE/blob/main/LICENCE"
-    },
+    "homepage": "https://pcl-community.github.io/PCL2-CE-Web/",
+    "license": "https://github.com/PCL-Community/PCL2-CE/blob/dev/LICENCE",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/2.11.1/PCL2_CE_Release_x64.exe",
-            "hash": "db465dc724bd767df93788220002f3e4a5cf45617a9f748b1e739414ec625305",
-            "shortcuts": [
-                [
-                    "PCL2_CE_x64.exe",
-                    "PCL2 CE"
-                ]
-            ]
+            "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/2.11.1/PCL2_CE_x64.exe",
+            "hash": "db465dc724bd767df93788220002f3e4a5cf45617a9f748b1e739414ec625305"
         },
         "arm64": {
-            "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/2.11.1/PCL2_CE_Release_ARM64.exe",
-            "hash": "08df12328d33c6316a1f17016f1d18bb2aa8854ac9b4513710f125fb82acb93b",
-            "shortcuts": [
-                [
-                    "PCL2_CE_ARM64.exe",
-                    "PCL2 CE"
-                ]
-            ]
+            "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/2.11.1/PCL2_CE_ARM64.exe",
+            "hash": "08df12328d33c6316a1f17016f1d18bb2aa8854ac9b4513710f125fb82acb93b"
         }
     },
-    "pre_install": [
-        "ensure \"$persist_dir\\PCL\" | Out-Null",
-        "ensure \"$persist_dir\\.minecraft\" | Out-Null",
-        "$conf = \"$persist_dir\\PCL\\Setup.ini\"",
-        "if (!(Test-Path \"$conf\")) {",
-        "    $content = \"LaunchFolderSelect:$persist_dir\\.minecraft\\\"",
-        "    Add-Content \"$conf\" \"$content\"",
-        "}"
-    ],
-    "shortcuts": [
-        [
-            "PCL2_CE.exe",
-            "PCL2 CE"
-        ]
-    ],
     "persist": [
         "PCL",
         ".minecraft"
     ],
-    "checkver": "github",
+    "shortcuts": [
+        [
+            "PCL2_CE.exe",
+            "PCL2_CE"
+        ]
+    ],
+    "installer": {
+        "script": [
+            "if ($architecture -eq '64bit')",
+            "{",
+            "   Rename-Item \"$dir\\PCL2_CE_x64.exe\" 'PCL2_CE.exe' -ErrorAction SilentlyContinue ",
+            "} else {",
+            "   Rename-Item \"$dir\\PCL2_CE_ARM64.exe\" 'PCL2_CE.exe' -ErrorAction SilentlyContinue ",
+            "}",
+            "",
+            ". \"$bucketsdir\\doge\\scripts\\utils.ps1\"",
+            "Ensure-Junction -Source \"$persist_dir\\.PCLCE\" -Target \"$env:APPDATA\\.PCLCE\""
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            ". \"$bucketsdir\\doge\\scripts\\utils.ps1\"",
+            "Remove-Junction -Path \"$env:APPDATA\\.PCLCE\""
+        ]
+    },
+    "checkver": {
+        "github": "https://github.com/PCL-Community/PCL2-CE"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/$version/PCL2_CE_Release_x64.exe"
+                "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/$version/PCL2_CE_x64.exe",
+                "hash": {
+                    "url": "https://github.com/PCL-Community/PCL2-CE/releases/latest",
+                    "regex": "x86_64 SR[\\s\\S]+?<td>$sha256</td>"
+                }
             },
             "arm64": {
-                "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/2.11.1/PCL2_CE_Release_ARM64.exe"
+                "url": "https://github.com/PCL-Community/PCL2-CE/releases/download/$version/PCL2_CE_ARM64.exe",
+                "hash": {
+                    "url": "https://github.com/PCL-Community/PCL2-CE/releases/latest",
+                    "regex": "ARM64 SR[\\s\\S]+?<td>$sha256</td>"
+                }
             }
         }
     }
