@@ -1,37 +1,81 @@
 {
-  "version": "0.3.1",
-  "description": "Document Extraction/Conversion Tool for the AI Era",
-  "homepage": "https://mineru.net/",
-  "license": "unknown",
-  "url": "https://webpub.shlab.tech/MinerU/latest/win/minerU-0.3.1-setup.exe?t=1743230736681#dl.7z",
-  "hash": "0798aa11b5bb78c5383c5d15a4abe8172d63ce7d9b424b84f46602c87b87dbda",
-  "architecture": {
-    "64bit": {
-      "installer": {
-        "script": [
-          "$file = (Get-ChildItem \"$dir\" 'minerU*.exe' | Select-Object -First 1).FullName",
-          "Expand-7ZipArchive \"$file\" \"$dir\\\" -Removal",
-          "Expand-7ZipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
-          "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\`$R0\"  -Force -Recurse"
-        ]
-      }
+    "version": "0.5.3",
+    "description": "免费全能的文档解析神器，开箱即用·批量上传·多种文档·一键解析",
+    "homepage": "https://mineru.net/",
+    "license": "Unknown",
+    "architecture": {
+        "64bit": {
+            "url": "https://webpub.shlab.tech/MinerU/latest/win/minerU-0.5.3-setup.exe#/dl.7z",
+            "hash": "94042090fb71ce9ea687557bef5c68ba57bed8ce8aa5b06eb8a244aa5e89f952",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\" -Recurse"
+            ]
+        },
+        "32bit": {
+            "url": "https://webpub.shlab.tech/MinerU/latest/win/minerU-0.5.3-setup.exe#/dl.7z",
+            "hash": "94042090fb71ce9ea687557bef5c68ba57bed8ce8aa5b06eb8a244aa5e89f952",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-32.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\" -Recurse"
+            ]
+        }
     },
-    "32bit": {
-      "installer": {
+    "installer": {
         "script": [
-          "$file = (Get-ChildItem \"$dir\" 'minerU*.exe' | Select-Object -First 1).FullName",
-          "Expand-7ZipArchive \"$file\" \"$dir\\\" -Removal",
-          "Expand-7ZipArchive \"$dir\\`$PLUGINSDIR\\app-32.7z\" \"$dir\" -Removal",
-          "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\`$R0\"  -Force -Recurse"
+            ". \"$bucketsdir\\doge\\scripts\\utils.ps1\"",
+            "$links = @(",
+            "    @{ source = \"$persist_dir\\data\"; target = \"$env:APPDATA\\minerU\" },",
+            "    @{ source = \"$persist_dir\\output\"; target = \"~\\MinerU\" }",
+            ")",
+            "foreach ($link in $links) {",
+            "    Ensure-Junction -Source $($link.Source) -Target $($link.Target)",
+            "}"
         ]
-      }
+    },
+    "uninstaller": {
+        "script": [
+            ". \"$bucketsdir\\doge\\scripts\\utils.ps1\"",
+            "Remove-Junction -Path \"~\\MinerU\"",
+            "Remove-Junction -Path \"$env:APPDATA\\minerU\""
+        ]
+    },
+    "shortcuts": [
+        [
+            "MinerU.exe",
+            "MinerU"
+        ]
+    ],
+    "checkver": {
+        "script": [
+            "$url = \"https://mineru.net/client\"",
+            "$currentVersion = $json.version",
+            "$content = (Invoke-WebRequest -Uri $url -UseBasicParsing).Content",
+            "if ($content -match '<script[^>]*type=\"module\"[^>]*src=\"([^\"]+)\"') {",
+            "   $jsPath = $Matches[1]",
+            "} else {",
+            "   error \"Js File Not Found\"",
+            "   \"$currentVersion\"",
+            "}",
+            "$jsContent = (Invoke-WebRequest -Uri $jsPath -UseBasicParsing).Content",
+            "if ($jsContent -match 'https://webpub.shlab.tech/MinerU/latest/win/minerU-([\\d.]+)-setup.exe') {",
+            "   $version = $Matches[1]",
+            "} else {",
+            "   error \"Version Not Found\"",
+            "   \"$currentVersion\"",
+            "}",
+            "\"$version\""
+        ],
+        "regex": "(.*)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "32bit": {
+                "url": "https://webpub.shlab.tech/MinerU/latest/win/minerU-$version-setup.exe#/dl.7z"
+            },
+            "64bit": {
+                "url": "https://webpub.shlab.tech/MinerU/latest/win/minerU-$version-setup.exe#/dl.7z"
+            }
+        }
     }
-  },
-  "bin": "MinerU.exe",
-  "shortcuts": [
-    [
-      "MinerU.exe",
-      "MinerU"
-    ]
-  ]
 }
