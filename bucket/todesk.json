@@ -1,16 +1,28 @@
 {
     "homepage": "https://www.todesk.com/",
-    "description": "An unlimited speed multifunctional remote control software",
+    "description": "A unlimited speed multifunctional remote control software",
     "version": "4.7.7.2",
-    "license": "Proprietary",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.todesk.com/licence.html"
+    },
     "url": "https://dl.todesk.com/windows/ToDesk_Setup.exe#/dl.7z",
-    "hash": "a67244074e16b32be0a3b959284175625284395165d25d1d8eff53a56f2b33f5",
+    "hash": "7bad68fc9630ec4025e027b4627e025590678b6124f647fb6394618f7907c08e",
     "pre_install": [
         "if (!(Test-Path \"$persist_dir\\config.ini\")) {",
         "    New-Item -Force -Path \"$persist_dir\\config.ini\" -ItemType File -Value \"[ConfigInfo]`nautoStart=0\" | Out-Null",
         "}"
     ],
     "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\uninst.exe\" -Force -Recurse",
+    "pre_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    if (!(is_admin)) {",
+        "        Start-Process -Wait powershell.exe -ArgumentList \"-Command sc.exe delete ToDesk_Service\" -Verb RunAs -WindowStyle Hidden",
+        "    } else {",
+        "        sc.exe delete ToDesk_Service",
+        "    }",
+        "}"
+    ],
     "shortcuts": [
         [
             "ToDesk.exe",
@@ -23,9 +35,12 @@
     ],
     "checkver": {
         "url": "https://update.todesk.com/windows/uplog.html",
-        "regex": ">([\\d.]+)</div>"
+        "regex": "<div class=\"text\">([\\d.]+)</div>"
     },
     "autoupdate": {
-        "url": "https://dl.todesk.com/windows/ToDesk_Setup.exe#/dl.7z"
+        "url": "https://dl.todesk.com/windows/ToDesk_Setup.exe#/dl.7z",
+        "hash": {
+            "mode": "download"
+        }
     }
 }
