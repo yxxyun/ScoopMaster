@@ -1,24 +1,21 @@
 {
-    "version": "1.2.8",
+    "version": "1.2.8.10",
     "description": "Game voice platform",
     "homepage": "https://oopz.cn/",
     "license": {
         "identifier": "Proprietary",
         "url": "https://help.oopz.cn/agreement/service"
     },
-    "url": "https://downloadcdn.oopz.cn/release/128/oopz_setup_v1.2.8.exe#/dl.7z",
-    "hash": "7c0b845ee3c2f63b0f72ebe8d44ad03dfd234eaaf77736d61c15a7196a5ec513",
+    "url": "https://downloadcdn.oopz.cn/release/128/oopz_setup_v1.2.8.10.exe#/dl.7z",
+    "hash": "3f3e7175a8f693647d4e1b23d712dcea28f7b5e85432df326d9a7796a82c1fbc",
     "installer": {
         "script": [
-            "Expand-7zipArchive \"$dir\\`$TEMP\\oopz_nsis\\app.7z\" \"$dir\\app\"",
-            "Remove-Item \"$dir\\`$*\" -Recurse -Force"
+            "Move-Item \"$dir\\`$TEMP\\oopz_nsis\\app.7z\" \"$dir\\app.7z\"",
+            "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$TEMP\" -Force -Recurse",
+            "Expand-7zipArchive \"$dir\\app.7z\" \"$dir\\app\"",
+            "Remove-Item \"$dir\\app.7z\" -Force"
         ]
     },
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App"
-    ],
     "shortcuts": [
         [
             "app/oopz.exe",
@@ -27,12 +24,14 @@
     ],
     "checkver": {
         "script": [
-            ". bin\\utils.ps1",
-            "Get-RedirectedUrl1st -Uri \"https://www.oopz.cn/download/xx?v=$([int] (Get-Date (Get-Date).ToUniversalTime() -uformat \"%s\"))\""
+            "$url = 'https://www.oopz.cn/download/xx?v=' + $([DateTimeOffset]::Now.ToUnixTimeMilliseconds() / 1e3 -bor 0)",
+            "$resp = Invoke-WebRequest -Uri $url -Method Head",
+            "$resp.Baseresponse.RequestMessage.RequestUri.AbsoluteUri"
         ],
-        "regex": "oopz_setup_v([\\d.]+)\\.exe"
+        "regex": "/([\\d]+)/oopz_([\\w]+)_v([\\d\\.]+)\\.exe",
+        "replace": "$3"
     },
     "autoupdate": {
-        "url": "https://downloadcdn.oopz.cn/release/$cleanVersion/oopz_setup_v$version.exe#/dl.7z"
+        "url": "https://downloadcdn.oopz.cn/release/$match1/oopz_$match2_v$match3.exe#/dl.7z"
     }
 }
