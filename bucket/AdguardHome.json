@@ -1,7 +1,9 @@
 {
-    "homepage": "https://adguard.com/adguard-home/overview.html",
-    "license": "GPL-3.0-or-later",
     "version": "0.107.62",
+    "description": "AdGuardHome. Network-wide ads & trackers blocking DNS server",
+    "homepage": "https://github.com/AdguardTeam/AdGuardHome",
+    "notes": "Running as a service: AdGuardHome -s install (https://adguard-dns.io/kb/zh-CN/adguard-home/getting-started/#service)",
+    "license": "GPL-3.0-or-later",
     "architecture": {
         "64bit": {
             "url": "https://github.com/AdguardTeam/AdGuardHome/releases/download/v0.107.62/AdGuardHome_windows_amd64.zip",
@@ -12,17 +14,19 @@
             "hash": "de813838ebcd821eeec8ddeb561cf8ac3efb9e34ccc8fa7788255ad5f8745657"
         }
     },
+    "pre_install": "if (!(Test-Path \"$persist_dir\\AdGuardHome.yaml\")) { New-Item \"$dir\\AdGuardHome.yaml\" | Out-Null }",
+    "pre_uninstall": [
+        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+        "if (!(Test-Path \"$persist_dir\\vicrac.test\")) { }",
+        "Start-Process -Wait \"$dir\\AdGuardHome.exe\" -ArgumentList '-s stop' | Out-Null",
+        "Start-Process -Wait \"$dir\\AdGuardHome.exe\" -ArgumentList '-s uninstall' | Out-Null"
+    ],
     "extract_dir": "AdGuardHome",
     "bin": "AdGuardHome.exe",
-    "pre_install": "if (!(is_admin)) {error 'This package requires admin rights to install';break}",
-    "post_install": "AdGuardHome.exe -s install --no-check-update --work-dir \"$persist_dir\"",
-    "pre_uninstall": [
-        "if (!(is_admin)) { error 'Admin rights are required to uninstall'; break }",
-        "Stop-Service -Name 'AdGuardHome' -Force -ErrorAction Stop | Out-Null"
+    "persist": [
+        "data",
+        "AdGuardHome.yaml"
     ],
-    "uninstaller": {
-        "script": "AdGuardHome.exe -s uninstall"
-    },
     "checkver": {
         "github": "https://github.com/AdguardTeam/AdGuardHome"
     },
