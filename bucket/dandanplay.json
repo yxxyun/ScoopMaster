@@ -1,35 +1,28 @@
 {
+    "version": "15.14.1.529",
+    "description": "A free to use bangumi player with danmaku support.",
     "homepage": "https://www.dandanplay.com/",
-    "description": "A free to use bangumi player with danmaku support",
-    "version": "15.14.0",
-    "license": "Unknown",
+    "license": "Apache-2.0",
     "architecture": {
         "64bit": {
-            "url": "http://lsw-fast.lenovo.com.cn/appstore/apps/adp/pkg/1997-2025-02-17103833-1739759913728.exe#/dandanplay-x64_15.14.0.exe",
-            "hash": "18dfe3763cec0cc461d99f5ba51aa76e570115b9f275fa8b7e7e82b25016b502"
+            "url": "https://github.com/kaedei/dandanplay/releases/download/windows-15.14.1.529/dandanplay-x64_15.14.1.zip",
+            "hash": "e640f795665e823a740cbe45c4999fe8872f8f17a70dcff1499fab1b473644db",
+            "extract_dir": "dandanplay-x64"
         }
     },
     "pre_install": [
         "if (!(Test-Path \"$persist_dir\\Config\")) {",
-        "    New-Item -Path \"$persist_dir\\Config\" -ItemType Directory | Out-Null",
+        "    New-Item \"$dir\\Config\" -ItemType Directory | Out-Null",
         "}",
         "# Disable auto update",
         "if (!(Test-Path \"$persist_dir\\Config\\ConnectionSettings.xml\")) {",
-        "    New-Item -Force -Path \"$persist_dir\\Config\\ConnectionSettings.xml\" -ItemType File -Value '<?xml version=\"1.0\"?><ConnectionSettings><EnableAutoUpdate>false</EnableAutoUpdate><NotifyOnUpdateDownloaded>false</NotifyOnUpdateDownloaded></ConnectionSettings>' | Out-Null",
+        "    New-Item \"$dir\\Config\\ConnectionSettings.xml\" -ItemType File -Value '<?xml version=\"1.0\"?><ConnectionSettings><EnableAutoUpdate>false</EnableAutoUpdate><NotifyOnUpdateDownloaded>false</NotifyOnUpdateDownloaded></ConnectionSettings>' | Out-Null",
         "}",
-        "# Disable tracking",
+        "# Disable telemetry",
         "if (!(Test-Path \"$persist_dir\\Config\\UserSettings.xml\")) {",
-        "    New-Item -Force -Path \"$persist_dir\\Config\\UserSettings.xml\" -ItemType File -Value '<?xml version=\"1.0\"?><UserSettings><EnableTelemetry>false</EnableTelemetry></UserSettings>' | Out-Null",
+        "    New-Item \"$dir\\Config\\UserSettings.xml\" -ItemType File -Value '<?xml version=\"1.0\"?><UserSettings><EnableTelemetry>false</EnableTelemetry></UserSettings>' | Out-Null",
         "}"
     ],
-    "installer": {
-        "script": [
-            "Start-Process \"$dir\\$fname\" \"/extract $dir\" -PassThru -NoNewWindow | Wait-Process",
-            "$subdir = (Get-ChildItem -Path \"$dir\" -Exclude \"*NET*\",\"WebView2\" -Directory).Name",
-            "movedir \"$dir\\$subdir\" \"$dir\" | Out-Null",
-            "Remove-Item \"$dir\\$fname\",\"$dir\\decoder.dll\",\"$dir\\$subdir\" -Force -ErrorAction SilentlyContinue"
-        ]
-    },
     "shortcuts": [
         [
             "dandanplay.exe",
@@ -37,68 +30,21 @@
         ]
     ],
     "persist": [
+        "Cache",
         "Config",
-        "Log",
-        "Cache"
+        "dandanplay.exe.WebView2",
+        "Log"
     ],
-    "lestoreid": "10343",
     "checkver": {
-        "script": [
-            "# Get latest version from the official website",
-            "$OfficialPage = Invoke-WebRequest -Uri \"https://www.dandanplay.com/\"",
-            "$OfficialPage.Content -match \"(?<=最新版本)[^\\d]*(\\d+(\\.\\d+)*)\"",
-            "$Version = $Matches[1]",
-            "if ($OfficialPage.Content -match \"dandanplay-x64_([\\d.]+)\\.exe\") {",
-            "# Legacy approach to obtain download link",
-            "$DownloadLink = \"https://dandan.sakurateam.top/dandanplay-x64_$version.exe\"",
-            "} else {",
-            "# Get the Lenovo LeStore page",
-            "$SoftwareId = $json.lestoreid # The app manifest is named json when running checkver",
-            "$LeStoreLink = \"https://lestore.lenovo.com/detail/$SoftwareId\"",
-            "$LeStorePage = Invoke-WebRequest -Uri $LeStoreLink",
-            "# Get the main.js link with regex ",
-            "$LeStorePage.Content -match '<script src=\"(\\/static\\/js\\/main\\..+?\\.js)\"'",
-            "$JsLink = $Matches[1]",
-            "# Get the main.js content",
-            "$JsContent = (Invoke-WebRequest -Uri \"https://lestore.lenovo.com$JsLink\").Content",
-            "# Get the AES key and IV with regex",
-            "$JsContent -match 'enc\\.Utf8\\.parse\\(\"(.+?)\"\\)'",
-            "$Key = $Matches[1]",
-            "# Encrypt the payload",
-            "function Encrypt($jsonStr, $key) {",
-            "    $keyBytes = [System.Text.Encoding]::UTF8.GetBytes($key)",
-            "    $ivBytes = $keyBytes",
-            "    $jsonBytes = [System.Text.Encoding]::UTF8.GetBytes($jsonStr)",
-            "    $aes = [System.Security.Cryptography.Aes]::Create()",
-            "    $aes.Mode = [System.Security.Cryptography.CipherMode]::CBC",
-            "    $aes.Padding = [System.Security.Cryptography.PaddingMode]::PKCS7",
-            "    $aes.Key = $keyBytes",
-            "    $aes.IV = $ivBytes",
-            "    $encryptor = $aes.CreateEncryptor()",
-            "    $encryptedBytes = $encryptor.TransformFinalBlock($jsonBytes, 0, $jsonBytes.Length)",
-            "    return [Convert]::ToBase64String($encryptedBytes)",
-            "}",
-            "$JsonStr = '{\"bizType\":\"1\",\"product\":\"3\",\"softId\":\"' + $SoftwareId + '\",\"type\":\"0\"}'",
-            "$EncryptedPayload = Encrypt $jsonStr $Key",
-            "# Send the request to obtain the download link",
-            "$RequestUri = \"https://lestore.lenovo.com/api/webstorecontents/download/getDownloadUrl\"",
-            "$RequestHeaders = @{",
-            "    \"Content-Type\" = \"application/json\"",
-            "    \"Origin\" = \"https://lestore.lenovo.com\"",
-            "    \"Referer\" = $LeStoreLink",
-            "}",
-            "$RequestBody = @{",
-            "    \"data\" = $EncryptedPayload",
-            "} | ConvertTo-Json",
-            "$Response = (Invoke-WebRequest -Uri $RequestUri -Method Post -Headers $RequestHeaders -Body $RequestBody).Content | ConvertFrom-Json",
-            "$DownloadLink = $Response.data.downloadUrls | Sort-Object { $_.downLoadUrl.Length } | Select-Object -First 1 -ExpandProperty downLoadUrl",
-            "}",
-            "\"$($Version)以及$($DownloadLink)\""
-        ],
-        "regex": "(?<Version>\\d+(\\.\\d+)*)以及(?<URL>.*)$",
-        "replace": "${Version}"
+        "url": "https://github.com/kaedei/dandanplay/tags",
+        "regex": ">windows-([\\d.]+)"
     },
     "autoupdate": {
-        "url": "$matchURL#/dandanplay-x64_$version.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/kaedei/dandanplay/releases/download/windows-$version/dandanplay-x64_$matchHead.zip",
+                "extract_dir": "dandanplay-x64"
+            }
+        }
     }
 }
