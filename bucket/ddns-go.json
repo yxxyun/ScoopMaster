@@ -1,6 +1,6 @@
 {
     "version": "6.9.4",
-    "description": "简单好用的 DDNS，把 .ddns_go_config.yaml 也持久化了，卸载时仅会保留在 persist 文件夹中",
+    "description": "简单好用的DDNS。自动更新域名解析到公网IP(支持阿里云、腾讯云dnspod、Cloudflare、华为云、百度云、porkbun)",
     "homepage": "https://github.com/jeessy2/ddns-go",
     "license": "MIT",
     "architecture": {
@@ -18,19 +18,12 @@
         }
     },
     "bin": "ddns-go.exe",
-    "post_install": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match 'Scoop-Store'})[0].Name",
-        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name $bucket) scripts/SSUtils.psm1)",
-        "RedirectDirectory \"$env:USERPROFILE\\.ddns_go_config.yaml\" \"$persist_dir\\USERPROFILE\\.ddns_go_config.yaml\"",
-        "Invoke-ExternalCommand -Path \"$dir\\ddns-go.exe\" -ArgumentList @('-s', 'install') -RunAs",
-        "Remove-Module -Name SSUtils"
-    ],
+    "post_install": "Invoke-ExternalCommand -Path \"$dir\\ddns-go.exe\" -ArgumentList @('-s', 'install') -RunAs",
     "pre_uninstall": [
-        "$bucket=(scoop bucket list | where-Object { $_.Source -match 'Scoop-Store'})[0].Name",
-        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name $bucket) scripts/SSUtils.psm1)",
-        "RemoveJunction -Path \"$env:USERPROFILE\\.ddns_go_config.yaml\"",
-        "Invoke-ExternalCommand -Path \"$dir\\ddns-go.exe\" -ArgumentList @('-s', 'uninstall') -RunAs",
-        "Remove-Module -Name SSUtils"
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Invoke-ExternalCommand -Path \"$dir\\ddns-go.exe\" -ArgumentList @('-s', 'uninstall') -RunAs"
     ],
     "checkver": "github",
     "autoupdate": {
