@@ -1,51 +1,40 @@
 {
     "version": "4.66.2025051912",
-    "description": "DCloud 旗下的代码编辑器。A code editor by DCloud.",
+    "description": "HBuilderX，简称HX，是轻如编辑器、强如IDE的合体版本",
     "homepage": "https://www.dcloud.io/hbuilderx.html",
     "license": {
-        "identifier": "Unknown",
+        "identifier": "Freeware",
         "url": "https://dcloud.io/license/hbuilder.html"
     },
+    "extract_dir": "HBuilderX",
     "url": "https://download1.dcloud.net.cn/download/HBuilderX.4.66.2025051912.zip",
     "hash": "4b52581a5288b4e8c05bbed186eb4aaec743772794edc797536fe6d0026b6ac2",
-    "extract_dir": "HBuilderX",
-    "bin": "HBuilderX.exe",
+    "bin": [
+        "HBuilderX.exe",
+        [
+            "HBuilderX.exe",
+            "hx"
+        ]
+    ],
     "shortcuts": [
         [
             "HBuilderX.exe",
             "HBuilder X"
         ]
     ],
-    "post_install": [
-        "# ------------------------------------------------------------------",
-        "$linkPaths = @(\"$env:AppData\\HBuilder X\")",
-        "$linkTargets = @(\"$persist_dir\\HBuilder X\")",
-        "# ------------------------------------------------------------------",
-        "Write-Host",
-        "for ($i = 0; $i -lt $linkPaths.Count; $i++) {",
-        "    $linkPath = $linkPaths[$i]",
-        "    $linkTarget = $linkTargets[$i]",
-        "    if ((Test-Path $linkPath) -and !(Get-Item $linkPath).LinkType) {",
-        "        if (!(Test-Path $linkTarget)) {",
-        "            Write-Host \"Copying $linkPath => $linkTarget\" -ForegroundColor Yellow",
-        "            Copy-Item -Path $linkPath -Destination $linkTarget -Recurse -Force",
-        "        }",
-        "        Write-Host \"Removing $linkPath\" -ForegroundColor Yellow",
-        "        try {",
-        "            Remove-Item $linkPath -Recurse -Force -ErrorAction Stop",
-        "        } catch {",
-        "            Write-Host",
-        "            Write-Host \"Failed to remove the directory: '$linkPath'\" -ForegroundColor Red",
-        "            Write-Host \"Failed to $cmd $app.\" -ForegroundColor Red",
-        "            Write-Host \"Please stop the relevant processes and try to $cmd $app again.\" -ForegroundColor Red",
-        "            Write-Host",
-        "            throw \"Failed to remove the directory: '$linkPath'\"",
-        "        }",
-        "    }",
-        "    ensure $linkTarget | Out-Null",
-        "    New-Item -ItemType Junction -Path $linkPath -Target $linkTarget -Force | Out-Null",
-        "    Write-Host \"Linking $linkPath => $linkTarget\" -ForegroundColor Yellow",
-        "}"
+    "installer": {
+        "script": [
+            "Remove-Item \"$dir\\Updater.exe\" -Force -ErrorAction SilentlyContinue | Out-Null",
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:APPDATA\\HBuilder X\" \"$persist_dir\\AppData\" -Migrate"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\HBuilder X\"",
+        "Remove-Item \"$env:LOCALAPPDATA\\HBuilder X\" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null"
     ],
     "checkver": {
         "url": "https://download1.dcloud.net.cn/hbuilderx/release.json",
