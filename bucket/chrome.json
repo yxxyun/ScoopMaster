@@ -1,56 +1,89 @@
 {
     "version": "137.0.7151.56",
-    "description": "浏览器: Chrome",
-    "homepage": "https://google.com/chrome",
-    "license": "Unknown",
-    "url": "https://dl.google.com/release2/chrome/adlrlnvy7s5suwrh4x5fzaye66qq_137.0.7151.56/137.0.7151.56_chrome_installer.exe#/dl.7z",
-    "hash": "55fe06256bbdf652f3398431a0b6261ca19af1b78d674ce9df9c0ed5464c3427",
-    "installer": {
-        "script": "Expand-7zipArchive \"$dir\\chrome.7z\" -ExtractDir 'Chrome-bin' -Removal"
+    "description": "Fast, secure, and free web browser, built for the modern web.",
+    "homepage": "https://www.google.com/chrome/",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://www.google.com/chrome/privacy/eula_text.html"
     },
-    "bin": [
-        [
-            "chrome.exe",
-            "chrome"
-        ]
-    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://dl.google.com/release2/chrome/adlrlnvy7s5suwrh4x5fzaye66qq_137.0.7151.56/137.0.7151.56_chrome_installer.exe#/dl.7z",
+            "hash": "55fe06256bbdf652f3398431a0b6261ca19af1b78d674ce9df9c0ed5464c3427"
+        },
+        "32bit": {
+            "url": "https://dl.google.com/release2/chrome/admhvoiy4yjlr2bjs4mrfdgomt2a_137.0.7151.56/137.0.7151.56_chrome_installer.exe#/dl.7z",
+            "hash": "ed2273d2b3293900d5fd5fddb05c607f484aab08852be65ceb65d81cfab360fe"
+        },
+        "arm64": {
+            "url": "https://dl.google.com/release2/chrome/adajp3ynpc2cqya7m7pbkv32s3cq_137.0.7151.56/137.0.7151.56_chrome_installer.exe#/dl.7z",
+            "hash": "9385328ee59e675be5ac06f26d46ff10753358d346214b93ad9541da97c6ab88"
+        }
+    },
+    "bin": "chrome.exe",
     "shortcuts": [
         [
             "chrome.exe",
             "Google Chrome"
-        ],
-        [
-            "chrome.exe",
-            "Google Chrome Proxy",
-            "--proxy-server=\"socks5://127.0.0.1:1080\""
         ]
     ],
     "env_set": {
         "CHROME_EXECUTABLE": "$dir\\chrome.exe"
     },
-    "persist": "User Data",
-    "post_install": [
-        "$chrome = \"$env:LocalAppData\\Google\\Chrome\"",
-        "New-Item -ItemType Directory -Force -Path \"$chrome\"",
-        "if ((Test-Path \"$dir\\User Data\") -and !(Test-Path \"$chrome\\User Data\")) {",
-        "    New-Item -ItemType SymbolicLink -Target \"$dir\\User Data\" -Path \"$chrome\\User Data\"",
-        "}",
-        "Invoke-WebRequest -Uri \"https://raw.githubusercontent.com/rainte/chrome/refs/heads/main/rainte.crx\" -OutFile \"$persist_dir\\rainte.crx\"",
-        "Expand-7zipArchive \"$persist_dir\\rainte.crx\" \"$persist_dir\\rainte\""
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:LocalAppData\\Google\\Chrome\\User Data\" \"$persist_dir\\User Data\" -Migrate",
+            "Expand-7zipArchive \"$dir\\chrome.7z\" -ExtractDir 'Chrome-bin' -Removal"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:LocalAppData\\Google\\Chrome\\User Data\""
     ],
-    "notes": "AutoProxy: https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt",
     "uninstaller": {
-        "script": "[Environment]::SetEnvironmentVariable('CHROME_EXECUTABLE', '', 'User')"
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    Remove-Item -Path \"$env:LOCALAPPDATA\\Google\\Chrome\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+            "    Remove-Item -Path HKCU:\\SOFTWARE\\Google\\Chrome -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+            "}"
+        ]
     },
     "checkver": {
-        "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
-        "regex": "(?sm)<stable32><version>(?<version>[\\d.]+)</version>.+release2/chrome/(?<32>[\\w-]+)_.+<stable64>.+release2/chrome/(?<64>[\\w-]+)_.+</stable64>"
+        "script": [
+            "$data = Invoke-RestMethod -Uri \"https://raw.githubusercontent.com/Bush2021/chrome_installer/refs/heads/main/data.json\"",
+            "\"=====version=====\" + $data.win_stable_x64.version +",
+            "\"=====x64=====\" + ($data.win_stable_x64.urls | Where-Object { $_ -match \"^https://dl.google.com\" } | Select-Object -First 1) +",
+            "\"=====x86=====\" + ($data.win_stable_x86.urls | Where-Object { $_ -match \"^https://dl.google.com\" } | Select-Object -First 1) +",
+            "\"=====arm64=====\" + ($data.win_stable_arm64.urls | Where-Object { $_ -match \"^https://dl.google.com\" } | Select-Object -First 1)"
+        ],
+        "regex": "=====version=====(.+)=====x64=====(?<x64>.+)=====x86=====(?<x86>.+)=====arm64=====(?<arm64>.+)"
     },
     "autoupdate": {
-        "url": "https://dl.google.com/release2/chrome/$match64_$version/$version_chrome_installer.exe#/dl.7z",
-        "hash": {
-            "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
-            "xpath": "/chromechecker/stable64[version='$version']/sha256"
+        "architecture": {
+            "64bit": {
+                "url": "$matchX64#/dl.7z",
+                "hash": {
+                    "url": "https://raw.githubusercontent.com/Bush2021/chrome_installer/refs/heads/main/data.json",
+                    "jsonpath": "$.win_stable_x64.sha256"
+                }
+            },
+            "32bit": {
+                "url": "$matchX86#/dl.7z",
+                "hash": {
+                    "url": "https://raw.githubusercontent.com/Bush2021/chrome_installer/refs/heads/main/data.json",
+                    "jsonpath": "$.win_stable_x86.sha256"
+                }
+            },
+            "arm64": {
+                "url": "$matchArm64#/dl.7z",
+                "hash": {
+                    "url": "https://raw.githubusercontent.com/Bush2021/chrome_installer/refs/heads/main/data.json",
+                    "jsonpath": "$.win_stable_arm64.sha256"
+                }
+            }
         }
     }
 }
