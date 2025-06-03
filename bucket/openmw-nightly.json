@@ -1,15 +1,27 @@
 {
-    "version": "20240220-e88e92d3",
+    "version": "20250527-b0d38931",
     "description": "An open-source open-world RPG game engine that supports playing Morrowind. (nightly version)",
     "homepage": "https://openmw.org/",
     "license": "GPL-3.0-or-later",
     "notes": "Please run the OpenMW Launcher in the start menu to configure the game data path. Otherwise, OpenMW won't start correctly.",
     "architecture": {
         "64bit": {
-            "url": "https://gitlab.com/api/v4/projects/7107382/jobs/6209339223/artifacts/OpenMW_MSVC2019_64_RelWithDebInfo_master.zip#/dl.7z",
-            "hash": "b6831df0247585a63d3e526edf22a6bb7915cf56de178df69d62db50c9f52769"
+            "url": "https://gitlab.com/OpenMW/openmw/-/jobs/10164811024/artifacts/raw/OpenMW_MSVC2022_64_RelWithDebInfo_master.zip",
+            "hash": "9528534a7c5bfb3f08b343b011f415d5974e1560e112660ee640198193deb930"
         }
     },
+    "bin": [
+        "openmw.exe",
+        "openmw-launcher.exe",
+        [
+            "openmw.exe",
+            "openmw-nightly"
+        ],
+        [
+            "openmw-launcher.exe",
+            "openmw-launcher-nightly"
+        ]
+    ],
     "shortcuts": [
         [
             "openmw.exe",
@@ -21,24 +33,37 @@
         ]
     ],
     "checkver": {
-        "url": "https://gitlab.com/api/v4/projects/7107382/pipelines/?source=schedule",
+        "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
         "script": [
-            "$openmw_recent_pipeline = ((Invoke-WebRequest -Uri 'https://gitlab.com/api/v4/projects/7107382/pipelines/?source=schedule').Content | ConvertFrom-Json | Where-Object ref -eq 'master')[0].id",
-            "$openmw_pipeline_jobs_url = 'https://gitlab.com/api/v4/projects/7107382/pipelines/' + $openmw_recent_pipeline + '/jobs/'",
-            "$openmw_jobs = ((Invoke-WebRequest -Uri $openmw_pipeline_jobs_url))",
-            "$openmw_winjob = ($openmw_jobs | ConvertFrom-Json | Where-Object Name -like 'Windows*' | Where-Object status -eq 'success' | Where-Object ref -eq 'master')",
-            "$openmw_job_date = $openmw_winjob.finished_at",
-            "$openmw_job_commit = $openmw_winjob.commit.short_id",
-            "$openmw_winjob_id = $openmw_winjob.id",
-            "Write-Output (Get-Date $openmw_job_date -Format 'yyyyMMdd') $openmw_job_commit $openmw_winjob_id"
+            "$headers = @{",
+            "    'Accept'='application/json'",
+            "    'Content-Type'='application/json'",
+            "    'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'",
+            "    'origin' = 'https://gitlab.com'",
+            "}",
+            "$body = '{",
+            "   \"operationName\": \"getJobs\",",
+            "   \"variables\": {",
+            "       \"fullPath\": \"OpenMW/openmw\",",
+            "       \"first\": 30,",
+            "       \"statuses\": \"SUCCESS\",",
+            "       \"name\": \"Windows_MSBuild_RelWithDebInfo\"",
+            "   },",
+            "   \"query\": \"query getJobs($fullPath: ID!, $first: Int, $last: Int, $after: String, $before: String, $statuses: [CiJobStatus!], $sources: [CiJobSource!], $name: String) {\\n  project(fullPath: $fullPath) {\\n    id\\n    jobs(\\n      first: $first\\n      last: $last\\n      after: $after\\n      before: $before\\n      statuses: $statuses\\n      sources: $sources\\n      name: $name\\n    ) {\\n      pageInfo {\\n        endCursor\\n        hasNextPage\\n        hasPreviousPage\\n        startCursor\\n        __typename\\n      }\\n      nodes {\\n        artifacts {\\n          nodes {\\n            downloadPath\\n            fileType\\n            __typename\\n          }\\n          __typename\\n        }\\n        allowFailure\\n        status\\n        scheduledAt\\n        manualJob\\n        triggered\\n        createdByTag\\n        detailedStatus {\\n          id\\n          detailsPath\\n          group\\n          icon\\n          label\\n          text\\n          tooltip\\n          action {\\n            id\\n            buttonTitle\\n            icon\\n            method\\n            path\\n            title\\n            confirmationMessage\\n            __typename\\n          }\\n          __typename\\n        }\\n        id\\n        refName\\n        refPath\\n        tags\\n        shortSha\\n        commitPath\\n        pipeline {\\n          id\\n          path\\n          user {\\n            id\\n            webPath\\n            avatarUrl\\n            __typename\\n          }\\n          __typename\\n        }\\n        stage {\\n          id\\n          name\\n          __typename\\n        }\\n        name\\n        duration\\n        finishedAt\\n        coverage\\n        retryable\\n        playable\\n        cancelable\\n        active\\n        stuck\\n        userPermissions {\\n          readBuild\\n          readJobArtifacts\\n          updateBuild\\n          cancelBuild\\n          __typename\\n        }\\n        __typename\\n      }\\n      __typename\\n    }\\n    __typename\\n  }\\n}\"",
+            "}'",
+            "$response = Invoke-WebRequest -Uri https://gitlab.com/api/graphql -Method POST -Body $body -Headers $headers",
+            "$info = (ConvertFrom-Json $response).data.project.jobs.nodes | Where-Object { $_.refName -eq 'master' } | Select-Object -First 1",
+            "$job = $info.id.split('/')[-1]",
+            "$date = $info.finishedAt.ToString('yyyyMMdd')",
+            "$commit = $info.shortSha",
+            "Write-Output ('{0}|{1}-{2}' -f $job, $date, $commit)"
         ],
-        "regex": "(?<date>.+?)\\s(?<commit>.+?)\\s(?<job>.+)",
-        "replace": "${date}-${commit}"
+        "regex": "(?<job>\\d+)\\|(?<version>[\\w-]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://gitlab.com/api/v4/projects/7107382/jobs/$matchJob/artifacts/OpenMW_MSVC2019_64_RelWithDebInfo_master.zip#/dl.7z"
+                "url": "https://gitlab.com/OpenMW/openmw/-/jobs/$matchJob/artifacts/raw/OpenMW_MSVC2022_64_RelWithDebInfo_master.zip"
             }
         }
     }
