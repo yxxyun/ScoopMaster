@@ -1,40 +1,25 @@
 {
     "version": "1.0.0",
-    "description": "Cursor - The AI-first code editor based on VSCode with ChatGPT-like features",
+    "description": "The AI Code Editor",
     "homepage": "https://www.cursor.com",
-    "license": "Proprietary",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.cursor.com/terms-of-service"
+    },
+    "innosetup": true,
     "architecture": {
         "64bit": {
             "url": "https://downloads.cursor.com/production/53b99ce608cba35127ae3a050c1738a959750865/win32/x64/user-setup/CursorUserSetup-x64-1.0.0.exe",
             "hash": "97daa3046c2af5be2937b23beab94854fed5f510d6f3e07bba812545e461a786"
+        },
+        "arm64": {
+            "url": "https://downloads.cursor.com/production/53b99ce608cba35127ae3a050c1738a959750865/win32/arm64/user-setup/CursorUserSetup-arm64-1.0.0.exe",
+            "hash": "11b591474d0dbc13a7fe064a5f2727678f6ac1c6ec88ab872e1e946c3763ca2b"
         }
     },
-    "innosetup": true,
     "extract_dir": "{code_GetDestDir}",
-    "shortcuts": [
-        [
-            "Cursor.exe",
-            "Cursor"
-        ]
-    ],
-    "persist": [
-        "data",
-        "resources\\app\\extensions"
-    ],
     "post_install": [
-        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
-        "$exepath = \"$dir\\Cursor.exe\".Replace('\\', '\\\\')",
-        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context' | ForEach-Object {",
-        "  if (Test-Path \"$dir\\$_.reg\") {",
-        "    $content = Get-Content \"$dir\\$_.reg\"",
-        "    $content = $content.Replace('$codedir', $dirpath)",
-        "    $content = $content.Replace('$code', $exepath)",
-        "    if ($global) {",
-        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
-        "    }",
-        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
-        "  }",
-        "}",
+        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Recurse",
         "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.cursor\\extensions\")) {",
         "    info '[Portable Mode] Copying extensions...'",
         "    Copy-Item \"$env:USERPROFILE\\.cursor\\extensions\" \"$dir\\data\" -Recurse",
@@ -49,27 +34,33 @@
         "    (Get-Content \"$extensions_file\") -replace '(?<=cursor(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
         "}"
     ],
-    "uninstaller": {
-        "script": "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-context.reg\" }"
-    },
+    "bin": [
+        [
+            "resources\\app\\bin\\cursor.cmd",
+            "",
+            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
+        ]
+    ],
+    "shortcuts": [
+        [
+            "Cursor.exe",
+            "Cursor",
+            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
+        ]
+    ],
+    "persist": "data",
     "checkver": {
-        "url": "https://api2.cursor.sh/updates/api/update/win32-x64-archive/cursor/0.0.0/stable",
-        "jsonpath": "$.url",
-        "regex": "(?<url>.*CursorUserSetup-x64-(?<version>[\\d.]+)\\.exe)",
-        "replace": "${version}"
+        "url": "https://api2.cursor.sh/updates/api/update/win32-x64/cursor/0.0.0/",
+        "regex": "version\":\"([\\d.]+).*production/(?<Code>[\\w]+)/win32"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "$matchUrl"
+                "url": "https://downloads.cursor.com/production/$matchCode/win32/x64/user-setup/CursorUserSetup-x64-$version.exe"
+            },
+            "arm64": {
+                "url": "https://downloads.cursor.com/production/$matchCode/win32/arm64/user-setup/CursorUserSetup-arm64-$version.exe"
             }
         }
-    },
-    "notes": [
-        "🔮 Welcome to Cursor - where coding meets AI!",
-        "🚀 Experience coding at warp speed with built-in AI assistance.",
-        "🧠 Powered by Claude 3.7 Sonnet and other advanced AI models.",
-        "🔄 For version history and more info: https://github.com/oslook/cursor-ai-downloads",
-        "⚠️ Note: Close all Cursor instances before updating to avoid conflicts."
-    ]
+    }
 }
