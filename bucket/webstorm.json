@@ -1,55 +1,64 @@
 {
-    "version": "2025.1.1",
-    "description": "由 JetBrains 开发的 JavaScript 和 TypeScript 的跨平台集成开发环境。Cross-Platform IDE for JavaScript and TypeScript by JetBrains.",
+    "version": "2025.1.2-251.26094.131",
+    "description": "Cross-Platform IDE for JavaScript by JetBrains.",
     "homepage": "https://www.jetbrains.com/webstorm/",
     "license": {
-        "identifier": "Shareware",
+        "identifier": "Proprietary",
         "url": "https://www.jetbrains.com/store/license.html"
     },
-    "url": "https://download.jetbrains.com/webstorm/WebStorm-2025.1.1.exe#/abgo_bucket_installer.exe",
-    "hash": "e148c643139b47338b3442892e15a2290b8d33e0abd2515a754f4b9e7adf800b",
-    "bin": [
-        [
-            "IDE\\bin\\webstorm64.exe",
-            "WebStorm"
-        ]
-    ],
-    "shortcuts": [
-        [
-            "IDE\\bin\\webstorm64.exe",
-            "WebStorm"
-        ]
-    ],
+    "url": "https://download.jetbrains.com/webstorm/WebStorm-2025.1.2.win.zip",
+    "hash": "53ba73bef2d338f674a1c7f698b024d70e46431cc74d9f45afbcfe2c7ba5dcc4",
+    "extract_to": "IDE",
     "pre_install": [
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "$verPart = $version -split '\\.'",
-        "$verRes = \"$($verPart[0]).$($verPart[1])\"",
-        "persist_file -dir @(\"$user_AppData\\JetBrains\\WebStorm$($verRes)\",\"$user_LocalAppData\\JetBrains\\WebStorm$($verRes)\") @(\"$persist_dir\\WebStorm\",\"$persist_dir\\WebStorm_LocalAppData\")",
-        "$path_installer=\"$dir\\abgo_bucket_installer.exe\"",
-        "& $path_installer /S /D=\"$dir\\IDE\"",
-        "sleep_install \"$dir\\IDE\\bin\\idea.properties\"",
-        "handle_app_lnk",
-        "do_some_things"
+        "Get-ChildItem \"$persist_dir\\IDE\\bin\\webstorm*.exe.vmoptions\" -ErrorAction SilentlyContinue | Copy-Item -Destination \"$dir\\IDE\\bin\"",
+        "Get-ChildItem \"$persist_dir\\IDE\\bin\\jetbrains_client64.exe.vmoptions\" -ErrorAction SilentlyContinue | Copy-Item -Destination \"$dir\\IDE\\bin\""
+    ],
+    "installer": {
+        "script": [
+            "& \"$bucketsdir\\extras\\scripts\\jetbrains\\portable.ps1\" \"$dir\" \"$persist_dir\"",
+            "Remove-Item \"$dir\\IDE\\`$*\" -Force -Recurse"
+        ]
+    },
+    "architecture": {
+        "64bit": {
+            "bin": [
+                [
+                    "IDE\\bin\\webstorm64.exe",
+                    "webstorm"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "IDE\\bin\\webstorm64.exe",
+                    "JetBrains\\WebStorm"
+                ]
+            ]
+        },
+        "32bit": {
+            "bin": "IDE\\bin\\webstorm.exe",
+            "shortcuts": [
+                [
+                    "IDE\\bin\\webstorm.exe",
+                    "JetBrains\\WebStorm"
+                ]
+            ]
+        }
+    },
+    "persist": [
+        "IDE\\bin\\idea.properties",
+        "profile"
     ],
     "pre_uninstall": [
-        "$bucket = (Get-Content \"$dir\\install.json\" | ConvertFrom-Json).bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "stop_process $false",
-        "$preName = \"WebStorm\"",
-        "$remove_list = @(\"$user_AppData\\JetBrains\", \"$user_LocalAppData\\JetBrains\") | ForEach-Object {",
-        "   Get-ChildItem $_ | Where-Object { $_.Name -match \"$preName[\\d\\.]+\" } | ForEach-Object { $_.FullName }",
-        "}",
-        "remove_files $remove_list",
-        "$ui_exe=\"$dir\\IDE\\bin\\Uninstall.exe\"",
-        "try{ & $ui_exe /S }catch{}",
-        "sleep_uninstall $ui_exe"
+        "Get-ChildItem \"$dir\\IDE\\bin\\webstorm*.exe.vmoptions\" -ErrorAction SilentlyContinue | Copy-Item -Destination \"$persist_dir\\IDE\\bin\"",
+        "Get-ChildItem \"$dir\\IDE\\bin\\jetbrains_client64.exe.vmoptions\" -ErrorAction SilentlyContinue | Copy-Item -Destination \"$persist_dir\\IDE\\bin\""
     ],
     "checkver": {
-        "url": "https://data.services.jetbrains.com/products/releases?code=WS&latest=true",
-        "jsonpath": "$.WS[0].version"
+        "url": "https://data.services.jetbrains.com/products/releases?code=WS&latest=true&platform=zip&type=release",
+        "regex": "version\":\"(?<ver>[\\d.]+)\".*\"build\":\"(?<build>[\\d.]+)\"",
+        "replace": "${ver}-${build}"
     },
     "autoupdate": {
-        "url": "https://download.jetbrains.com/webstorm/WebStorm-$version.exe#/abgo_bucket_installer.exe",
+        "url": "https://download.jetbrains.com/webstorm/WebStorm-$matchVer.win.zip",
         "hash": {
             "url": "$url.sha256"
         }
