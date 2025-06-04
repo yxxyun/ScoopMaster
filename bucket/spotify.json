@@ -1,13 +1,21 @@
 {
-    "version": "1.2.65.255.g85e641b4-609",
+    "version": "1.2.65.255.g85e641b4",
     "description": "A digital music service that gives you access to millions of songs.",
     "homepage": "https://www.spotify.com/",
     "license": {
         "identifier": "Freeware",
         "url": "https://www.spotify.com/legal/end-user-agreement/"
     },
-    "url": "https://upgrade.scdn.co/upgrade/client/win32-x86_64/spotify_installer-1.2.65.255.g85e641b4-609.exe",
-    "hash": "44c58e1a5afccb9d7b686508cab69e3d2355299e223f28d7ee2267cd1b544d45",
+    "architecture": {
+        "64bit": {
+            "url": "https://download.scdn.co/SpotifyFullSetupX64.exe",
+            "hash": "44c58e1a5afccb9d7b686508cab69e3d2355299e223f28d7ee2267cd1b544d45"
+        },
+        "arm64": {
+            "url": "https://download.scdn.co/SpotifyFullSetupARM64.exe",
+            "hash": "52cbbead97075576b2f09a5f81defe2700b057cf94c647de81e869d36c162452"
+        }
+    },
     "installer": {
         "script": [
             "Start-Process -Wait \"$dir\\$fname\" -ArgumentList '/extract', \"`\"$dir`\"\"",
@@ -27,15 +35,30 @@
     "uninstaller": {
         "script": [
             "$updateFile = \"$env:LOCALAPPDATA\\Spotify\\update\"",
-            "Remove-Item $updateFile -Force -ErrorAction SilentlyContinue"
+            "Remove-Item $updateFile -Force -ErrorAction SilentlyContinue",
+            "if ($cmd -ne 'uninstall') { return }",
+            "Start-Process -Wait \"$dir\\Spotify.exe\" -ArgumentList '/Uninstall', '/Silent'"
         ]
     },
     "checkver": {
-        "url": "https://raw.githubusercontent.com/amd64fox/LoaderSpot/main/versions.json",
-        "jsonpath": "$..[?(@.fullversion)].links.win.x64",
-        "regex": "spotify_installer-([\\d.]+[^.]+)"
+        "script": [
+            "$dl_url = 'https://download.scdn.co/SpotifyFullSetupX64.exe'",
+            "$dl = cache_path 'spotify' 'unknown' $dl_url",
+            "Invoke-WebRequest $dl_url -OutFile $dl",
+            "$ver = (Get-Item $dl).VersionInfo.ProductVersion",
+            "Move-Item -Force $dl (cache_path 'spotify' $ver $dl_url)",
+            "$ver"
+        ],
+        "regex": "(\\S+)"
     },
     "autoupdate": {
-        "url": "https://upgrade.scdn.co/upgrade/client/win32-x86_64/spotify_installer-$version.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://download.scdn.co/SpotifyFullSetupX64.exe"
+            },
+            "arm64": {
+                "url": "https://download.scdn.co/SpotifyFullSetupARM64.exe"
+            }
+        }
     }
 }
