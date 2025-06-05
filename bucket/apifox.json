@@ -1,42 +1,74 @@
 {
     "version": "2.7.15",
-    "description": "Apifox 是 API 文档、API 调试、API Mock、API 自动化测试一体化协作平台，定位 Postman + Swagger + Mock + JMeter。",
+    "description": "API 设计、开发、测试一体化协作平台。All-in-one collaboration platform for API documentation, API debugging, API Mock and API test automation.",
     "homepage": "https://apifox.com",
-    "notes": "https://github.com/ViCrack/scoop-bucket/blob/master/bucket/apifox.json",
-    "license": "Freeware",
+    "license": "Unknown",
     "architecture": {
-        "32bit": {
-            "url": "https://file-assets.apifox.com/download/2.7.15/Apifox-windows-x86-2.7.15.exe#/dl.7z",
-            "hash": "62df08f29d03be1e74a4fba7f4fb855fd8993b501ec0f8bbb9f260864909e872"
-        },
         "64bit": {
             "url": "https://file-assets.apifox.com/download/2.7.15/Apifox-2.7.15.exe#/dl.7z",
             "hash": "9fc013b65369d13318902a2c46721dd2b11cbedeb337064708a4f39d86dff4ed"
+        },
+        "32bit": {
+            "url": "https://file-assets.apifox.com/download/2.7.15/Apifox-windows-x86-2.7.15.exe#/dl.7z",
+            "hash": "62df08f29d03be1e74a4fba7f4fb855fd8993b501ec0f8bbb9f260864909e872"
         }
     },
-    "pre_install": [
-        "Get-Item \"$dir\\`$PLUGINSDIR\\app*.7z\" | Expand-7zipArchive -DestinationPath \"$dir\"",
-        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Force -Recurse"
-    ],
     "shortcuts": [
         [
             "Apifox.exe",
-            "Apifox",
-            "--user-data-dir=\"$dir\\UserData\""
+            "Apifox"
         ]
     ],
-    "persist": "UserData",
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreInstall",
+        "A-Expand-SetupExe"
+    ],
+    "post_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostInstall",
+        "$LinkPaths = @(\"$env:AppData\\apifox\")",
+        "$LinkTargets = @(\"$persist_dir\\apifox\")",
+        "A-New-LinkDirectory $LinkPaths $LinkTargets"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreUninstall",
+        "A-Stop-Process @(\"$env:AppData\\apifox\")",
+        "A-Remove-Link",
+        "A-Remove-TempData @(\"$env:LocalAppData\\apifox-updater\")"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostUninstall"
+    ],
     "checkver": {
-        "url": "https://apifox.com/help/release/changelog.json",
-        "regex": "\"version\": \"([\\d.]+)\""
+        "script": [
+            ". \"$pwd\\bin\\utils.ps1\"",
+            "$InstallerInfo = A-Get-InstallerInfoFromWinget 'Ruihu/Apifox' 'exe'",
+            "\"ver:$($InstallerInfo.PackageVersion);\"",
+            "\"x64:$($InstallerInfo.x64_user.InstallerUrl);\"",
+            "\"x86:$($InstallerInfo.x86_user.InstallerUrl);\""
+        ],
+        "regex": "ver:(?<version>[^;]+)(?:; x64:(?<x64>[^;]+))?(?:; x86:(?<x86>[^;]+))?(?:; arm64:(?<arm64>[^;]+))?"
     },
     "autoupdate": {
         "architecture": {
-            "32bit": {
-                "url": "https://file-assets.apifox.com/download/$version/Apifox-windows-x86-$version.exe#/dl.7z"
-            },
             "64bit": {
-                "url": "https://file-assets.apifox.com/download/$version/Apifox-$version.exe#/dl.7z"
+                "url": "$matchX64#/dl.7z",
+                "hash": {
+                    "url": "bin/scoop-auto-check-update-temp-data.jsonc",
+                    "jsonpath": "$.x64_user.InstallerSha256"
+                }
+            },
+            "32bit": {
+                "url": "$matchX86#/dl.7z",
+                "hash": {
+                    "url": "bin/scoop-auto-check-update-temp-data.jsonc",
+                    "jsonpath": "$.x86_user.InstallerSha256"
+                }
             }
         }
     }
