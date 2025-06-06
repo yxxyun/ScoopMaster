@@ -1,15 +1,30 @@
 {
     "version": "2025.605.3",
-    "description": "osu Lazer: A free-to-win rhythm game. Rhythm is just a click away!",
+    "description": "A free-to-win rhythm game. Rhythm is just a click away!",
     "homepage": "https://osu.ppy.sh/",
     "license": "MIT",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/ppy/osu/releases/download/2025.605.3/osulazer-2025.605.3-full.nupkg#/dl.7z",
-            "hash": "1971f3f796b689391856794d375b1cad3b31f2618f340746908128f2e2abe514",
-            "extract_dir": "lib/app"
-        }
-    },
+    "url": "https://github.com/ppy/osu/releases/download/2025.605.3/osulazer-2025.605.3-full.nupkg#/dl.7z",
+    "hash": "sha1:5aa043c7b5848ecd9a77321eae1e2de9ab92fd61",
+    "extract_dir": "lib\\app",
+    "pre_install": [
+        "function Create-Junction { param ([string]$runtimeCache, [string]$runtimeCachePersist)",
+        "  if (-not (Test-Path $runtimeCache)) { return }",
+        "  if (Test-Path $runtimeCachePersist) {",
+        "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+        "    New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
+        "  } else {",
+        "    mkdir $runtimeCache -ErrorAction SilentlyContinue",
+        "    Move-Item $runtimeCache $runtimeCachePersist -Force",
+        "    New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
+        "  }",
+        "}",
+        "foreach ($folder in @('osu')) {",
+        "  Create-Junction -runtimeCache \"$env:USERPROFILE\\$folder\" -runtimeCachePersist \"$persist_dir\\USERPROFILE\\$folder\"",
+        "  Create-Junction -runtimeCache \"$env:LOCALAPPDATA\\$folder\" -runtimeCachePersist \"$persist_dir\\LOCALAPPDATA\\$folder\"",
+        "  Create-Junction -runtimeCache \"$env:APPDATA\\$folder\" -runtimeCachePersist \"$persist_dir\\APPDATA\\$folder\"",
+        "}"
+    ],
+    "bin": "osu!.exe",
     "shortcuts": [
         [
             "osu!.exe",
@@ -17,15 +32,13 @@
         ]
     ],
     "checkver": {
-        "url": "https://api.github.com/repos/ppy/osu/releases/latest",
-        "regex": "/releases/tag/([\\d.]+)"
+        "github": "https://github.com/ppy/osu"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/ppy/osu/releases/download/$version/osulazer-$version-full.nupkg#/dl.7z",
-                "extract_dir": "lib/app"
-            }
+        "url": "https://github.com/ppy/osu/releases/download/$version/osulazer-$version-full.nupkg#/dl.7z",
+        "hash": {
+            "url": "https://github.com/ppy/osu/releases/download/$version/RELEASES",
+            "regex": "$sha1 .*full.nupkg"
         }
     }
 }
