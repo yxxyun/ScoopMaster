@@ -1,8 +1,12 @@
 {
     "version": "1.99.30038",
-    "description": "Void is the open-source Cursor alternative.",
+    "description": "Void is an open source Cursor alternative.",
     "homepage": "https://voideditor.com/",
     "license": "Apache-2.0",
+    "notes": [
+        "Add Void as a context menu option by running 'reg import \"$dir\\install-context.reg\"'",
+        "For file associations, run 'reg import \"$dir\\install-associations.reg\"'"
+    ],
     "architecture": {
         "64bit": {
             "url": "https://github.com/voideditor/binaries/releases/download/1.99.30038/Void-win32-x64-1.99.30038.zip",
@@ -13,16 +17,14 @@
             "hash": "d0805b2f82b1760d1a90ab9aff290065a05c320f9806bcbee8fd8d67170574e9"
         }
     },
-    "pre_install": [
-        "$product_path = \"$dir\\resources\\app\\product.json\"",
-        "if (Test-Path -Path $product_path) {",
-        "    $product = Get-Content -Path $product_path -Raw -Encoding UTF8 | ConvertFrom-Json",
-        "    if (![string]::IsNullOrEmpty($product.updateUrl)) {",
-        "        Get-Content -Path $product_path | Where-Object {$_ -notmatch \"updateurl\"} | Set-Content temp.json",
-        "        Move-Item -Path temp.json -Destination $product_path -Force",
-        "    }",
-        "}"
+    "env_add_path": "bin",
+    "shortcuts": [
+        [
+            "Void.exe",
+            "Void"
+        ]
     ],
+    "persist": "data",
     "post_install": [
         "$dirpath = \"$dir\".Replace('\\', '\\\\')",
         "$exepath = \"$dir\\Void.exe\".Replace('\\', '\\\\')",
@@ -49,23 +51,18 @@
         "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
         "if ((Test-Path \"$extensions_file\")) {",
         "    info 'Adjusting path in extensions file...'",
-        "    (Get-Content \"$extensions_file\") -replace '(?<=void-editor(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
+        "    (Get-Content \"$extensions_file\") -replace '(?<=void(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
         "}"
     ],
-    "env_add_path": "bin",
-    "bin": [
-        [
-            "bin/void.cmd",
-            "void"
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall')",
+            "{",
+            "   reg import \"$dir\\uninstall-context.reg\" ",
+            "   reg import \"$dir\\uninstall-associations.reg\" ",
+            "}"
         ]
-    ],
-    "shortcuts": [
-        [
-            "Void.exe",
-            "Void"
-        ]
-    ],
-    "persist": "data",
+    },
     "checkver": {
         "github": "https://github.com/voideditor/binaries"
     },
