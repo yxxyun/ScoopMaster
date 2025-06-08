@@ -1,20 +1,20 @@
 {
-    "##": [
-        "可选: 使用wsldl项目安装",
-        "https://wiki.archlinux.org/title/Install_Arch_Linux_on_WSL",
-        "https://github.com/ubuntu/WSL/blob/main/docs/tutorials/interop.md"
-    ],
     "version": "0.0.1",
     "description": "安装archlinux",
     "homepage": "https://gitlab.archlinux.org/archlinux/archlinux-wsl",
     "license": "Freeware",
-    "depends": ["Chuckie_s/microsoft-wsl", "Chuckie_s/wsldl_arch"],
+    "depends": [
+        "Chuckie_s/microsoft-wsl",
+        "Chuckie_s/wsldl_arch",
+        "main/chezmoi"
+    ],
     "architecture": {
         "64bit": {
             "url": "https://mirrors.tuna.tsinghua.edu.cn/archlinux/wsl/latest/archlinux.wsl"
         }
     },
     "pre_install": [
+        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
         "if ($null -eq (Get-Command 'wslconfig' -ErrorAction SilentlyContinue)) {",
         "    warn 'WSL appears not to be enabled!'",
         "    warn 'Run ''Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux'''",
@@ -25,27 +25,23 @@
     ],
     "installer": {
         "script": [
-            "$installable = $true",
             "& Arch 'isregd'",
             "if ($?) {",
-            "    Write-Host 'ArchWsl is already registered.'",
-            "    warn 'ArchWsl is already registered'",
-            "    $installable = $false",
+            "    Write-Host 'your customized archlinux is already registered.'",
+            "    warn 'your customized archlinux is already registered'",
+            "    break",
             "}",
-            "if ($installable) {",
-            "    Write-Host 'Installing ArchWsl...'",
-            "    Copy-Item \"$(appdir wsldl_arch $global)\\current\\Arch.exe\" \"$persist_dir\\data\\Arch.exe\"",
-            "    Write-Host 'copied...'",
-            "    $res = Invoke-ExternalCommand \"$persist_dir\\data\\Arch.exe\" 'install', \"$dir\\archlinux.wsl\"",
-            "    Write-Host 'installed...'",
-            "    Remove-Item \"$persist_dir\\data\\Arch.exe\" -Force",
-            "    if(!$res) { error 'ArchWsl installation failed!'; return }",
-            "}"
+            "ensure \"$persist_dir\\data\" | Out-Null",
+            "Copy-Item \"$(appdir wsldl_arch $global)\\current\\Arch.exe\" \"$persist_dir\\data\\Arch.exe\"",
+            "$res = Invoke-ExternalCommand \"$persist_dir\\data\\Arch.exe\" 'install', \"$dir\\archlinux.wsl\"",
+            "Remove-Item \"$persist_dir\\data\\Arch.exe\" -Force",
+            "if(!$res) { error 'ArchWsl installation failed!'; return }"
         ]
     },
     "post_install": [
         "Remove-Item \"$dir\\archlinux.wsl\" -Force -ErrorAction SilentlyContinue"
     ],
+    "pre_uninstall": [""],
     "uninstaller": {
         "script": [
             "if ($cmd -ne 'uninstall') { return }",

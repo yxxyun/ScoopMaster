@@ -1,0 +1,43 @@
+{
+    "version": "6.4.10.3",
+    "description": "Wacom Tablet. Drivers for Wacom Tablet",
+    "homepage": "https://www.wacom.com/en-us/support/product-support/drivers",
+    "license": "Proprietary",
+    "url": "https://cdn.wacom.com/u/productsupport/drivers/win/professional/WacomTablet_6.4.10-3.exe#/setup.exe",
+    "hash": "413fe72bcebd0fd9487c00dc5987cdc5cba81fff2857cae22126c6b49b758c90",
+    "pre_install": [
+        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+        "$filepath = Join-Path $env:ProgramFiles 'Tablet\\Wacom\\WacomCenter\\WacomCenterUI.exe'",
+        "$installed = Test-Path -Path $filepath -PathType Leaf",
+        "$targetVersion = [System.Version]$version",
+        "if ($installed) {",
+        "    $installedVersion = (Get-Command $filepath).Version",
+        "    if ($installedVersion -ge $targetVersion) {",
+        "        error \"$app is already installed. Version: $installedVersion\"",
+        "        break",
+        "    }",
+        "}",
+        "$processname = \"WacomDesktopCenter\"",
+        "$process = Get-Process $processname -ErrorAction SilentlyContinue",
+        "if ($process) {",
+        "   $process.CloseMainWindow()",
+        "   Start-Sleep -Seconds 5",
+        "   if (!$process.HasExited) {",
+        "       Start-Sleep -Seconds 25",
+        "       $process | Stop-Process -Force",
+        "   }",
+        "}"
+    ],
+    "installer": {
+        "file": "setup.exe",
+        "args": "/S"
+    },
+    "checkver": {
+        "url": "https://www.wacom.com/en-us/support/product-support/drivers",
+        "regex": "Driver ([\\d.]+)-([\\d]) Windows",
+        "replace": "$1.$2"
+    },
+    "autoupdate": {
+        "url": "https://cdn.wacom.com/u/productsupport/drivers/win/professional/WacomTablet_$majorVersion.$minorVersion.$patchVersion-$buildVersion.exe#/setup.exe"
+    }
+}
