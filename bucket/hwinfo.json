@@ -1,20 +1,10 @@
 {
-    "version": "8.26-5730",
-    "description": "Comprehensive Hardware Analysis, Monitoring and Reporting for Windows and DOS",
+    "version": "8.26",
+    "description": "适用于 Windows 和 DOS 的全面硬件分析、监测与报告。Comprehensive Hardware Analysis, Monitoring and Reporting for Windows and DOS.",
     "homepage": "https://www.hwinfo.com",
     "license": "Freeware",
-    "url": "https://www.sac.sk/download/utildiag/hwi_826.zip",
-    "hash": "e18430c25dffea343b92cededc0e28ac8786be9e67192c4ead0e11a42220571f",
-    "pre_install": [
-        "foreach ($conf in 'HWiNFO64.INI', 'HWiNFO32.INI') {",
-        "    if (!(Test-Path \"$persist_dir\\$conf\")) { Set-Content \"$dir\\$conf\" '[Settings]', 'AutoUpdate=0' -Encoding ASCII }",
-        "}",
-        "if (Test-PATH \"$persist_dir\\HWiNFO64_KEY.txt\" -PathType Leaf) {",
-        "    Copy-Item \"$persist_dir\\HWiNFO64_KEY.txt\" \"$dir\"",
-        "}",
-        "# Remove unwanted executable for x86/x64 installation",
-        "if ($architecture -ne 'arm64') { Remove-Item \"$dir\\HWiNFO_ARM64.exe\" }"
-    ],
+    "url": "https://www.hwinfo.com/files/hwi_826.zip",
+    "hash": "60c9580fbbeb0e76158498730394258caade62b269f0536eb1947950b5e83491",
     "architecture": {
         "64bit": {
             "bin": [
@@ -59,23 +49,56 @@
             ]
         }
     },
-    "persist": [
-        "HWiNFO64.INI",
-        "HWiNFO32.INI"
-    ],
-    "pre_uninstall": [
-        "if (Test-PATH \"$dir\\HWiNFO64_KEY.txt\" -PathType Leaf) {",
-        "    if (Test-PATH \"$persist_dir\\HWiNFO64_KEY.txt\" -PathType Container) {",
-        "        Remove-Item \"$persist_dir\\HWiNFO64_KEY.txt\" -Recurse",
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreInstall",
+        "foreach ($arch in @('64','32','_ARM64')) {",
+        "    A-New-PersistFile \"$dir\\HWiNFO$arch.INI\" -Content @('[Settings]', 'AutoUpdate=0') -Encoding ascii",
+        "    if (Test-PATH \"$persist_dir\\HWiNFO$arch_KEY.txt\" -PathType Leaf) {",
+        "        Copy-Item \"$persist_dir\\HWiNFO$arch_KEY.txt\" \"$dir\"",
         "    }",
-        "    Copy-Item \"$dir\\HWiNFO64_KEY.txt\" \"$persist_dir\"",
         "}"
     ],
+    "post_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostInstall"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreUninstall",
+        "A-Stop-Process",
+        "foreach ($arch in @('64','32','_ARM64')) {",
+        "    if (Test-PATH \"$dir\\HWiNFO$arch_KEY.txt\" -PathType Leaf) {",
+        "        if (Test-PATH \"$persist_dir\\HWiNFO$arch_KEY.txt\" -PathType Container) {",
+        "            Remove-Item \"$persist_dir\\HWiNFO$arch_KEY.txt\" -Recurse",
+        "        }",
+        "        Copy-Item \"$dir\\HWiNFO$arch_KEY.txt\" \"$persist_dir\"",
+        "    }",
+        "}"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostUninstall"
+    ],
+    "persist": [
+        "HWiNFO64.INI",
+        "HWiNFO32.INI",
+        "HWiNFO_ARM64.INI"
+    ],
     "checkver": {
-        "url": "https://www.hwinfo.com/ver.txt",
-        "regex": "([\\d-.]+)"
+        "script": [
+            ". \"$pwd\\bin\\utils.ps1\"",
+            "$InstallerInfo = A-Get-InstallerInfoFromWinget 'REALiX.HWiNFO' 'exe'",
+            "\"ver:$($InstallerInfo.PackageVersion);\"",
+            "\"x64:$($InstallerInfo.x64_machine.InstallerUrl);\"",
+            "\"x86:$($InstallerInfo.x86_machine.InstallerUrl);\"",
+            "\"arm64:$($InstallerInfo.arm64_machine.InstallerUrl);\""
+        ],
+        "regex": "ver:(?<version>[^;]+)(?:; x64:(?<x64>[^;]*))?(?:; x86:(?<x86>[^;]*))?(?:; arm64:(?<arm64>[^;]*))?"
     },
     "autoupdate": {
-        "url": "https://www.sac.sk/download/utildiag/hwi_$majorVersion$minorVersion.zip"
+        "url": "https://www.hwinfo.com/files/hwi_$majorVersion$minorVersion.zip"
     }
 }
