@@ -1,60 +1,99 @@
 {
-    "version": "2025.1.2-251.26094.122",
-    "description": "Cross-Platform IDE for Ruby on Rails by JetBrains.",
-    "homepage": "https://www.jetbrains.com/ruby/",
+    "version": "2025.1.2",
+    "description": "JetBrains 的 IDE 产品，用于 Ruby 和 Rails 开发。A IDE by JetBrains for Ruby and Rails development.",
+    "homepage": "https://www.jetbrains.com/rubymine/",
     "license": {
-        "identifier": "Proprietary",
+        "identifier": "Unknown",
         "url": "https://www.jetbrains.com/store/license.html"
-    },
-    "url": "https://download.jetbrains.com/ruby/RubyMine-2025.1.2.win.zip",
-    "hash": "a8acd8a4fec8633819fa143b61db6a44d050d6609d411d0df56332c1e8eda85a",
-    "extract_to": "IDE",
-    "installer": {
-        "script": [
-            "& \"$bucketsdir\\extras\\scripts\\jetbrains\\portable.ps1\" $dir $persist_dir",
-            "Remove-Item \"$dir\\IDE\\`$*\" -Force -Recurse"
-        ]
     },
     "architecture": {
         "64bit": {
-            "bin": [
-                [
-                    "IDE\\bin\\rubymine64.exe",
-                    "rubymine"
-                ]
-            ],
-            "shortcuts": [
-                [
-                    "IDE\\bin\\rubymine64.exe",
-                    "JetBrains\\RubyMine"
-                ]
-            ]
+            "url": "https://download.jetbrains.com/ruby/RubyMine-2025.1.2.exe",
+            "hash": "5d207015b8fb50f4a8326f2997cd5ea6d426eb59df98a1b7a8eccd2de16bdbf5"
         },
-        "32bit": {
-            "bin": "IDE\\bin\\rubymine.exe",
-            "shortcuts": [
-                [
-                    "IDE\\bin\\rubymine.exe",
-                    "JetBrains\\RubyMine"
-                ]
-            ]
+        "arm64": {
+            "url": "https://download.jetbrains.com/ruby/RubyMine-2025.1.2-aarch64.exe",
+            "hash": "34cf9f9ed618524fe51c100f6ab39f569c648c460f12e5a80b671a80695cc4b9"
         }
     },
-    "persist": [
-        "IDE\\bin\\idea.properties",
-        "IDE\\bin\\rubymine.exe.vmoptions",
-        "IDE\\bin\\rubymine64.exe.vmoptions",
-        "profile"
+    "bin": [
+        [
+            "App\\bin\\rubymine64.exe",
+            "RubyMine"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "App\\bin\\rubymine64.exe",
+            "RubyMine 2025.1.2"
+        ]
+    ],
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreInstall",
+        "$LogLocation = '\"' + \"$env:TEMP\\scoop-$app-logs\" + '\"'",
+        "A-Install-Exe -ArgumentList @('/S', \"/LOG=$LogLocation\", \"/D=$dir\\App\") -SuccessFile 'App\\bin\\Uninstall.exe'"
+    ],
+    "post_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostInstall",
+        "$versionPart = $version -split '\\.'",
+        "$versionShort = \"$($versionPart[0]).$($versionPart[1])\"",
+        "$DataDir = \"RubyMine$versionShort\"",
+        "$LinkPaths = @(\"$env:AppData\\JetBrains\\$DataDir\")",
+        "$LinkTargets = @(\"$persist_dir\\JetBrains\\$DataDir\")",
+        "A-New-LinkDirectory $LinkPaths $LinkTargets"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreUninstall",
+        "A-Stop-Process",
+        "A-Uninstall-Exe -Uninstaller 'App\\bin\\Uninstall.exe' -ArgumentList @('/S')",
+        "A-Remove-Link",
+        "$versionPart = $version -split '\\.'",
+        "$versionShort = \"$($versionPart[0]).$($versionPart[1])\"",
+        "$DataDir = \"RubyMine$versionShort\"",
+        "A-Remove-TempData @(\"$env:LocalAppData\\JetBrains\\$DataDir\")"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostUninstall"
     ],
     "checkver": {
-        "url": "https://data.services.jetbrains.com/products/releases?code=RM&latest=true&platform=zip&type=release",
-        "regex": "version\":\"(?<ver>[\\d.]+)\".*\"build\":\"(?<build>[\\d.]+)\"",
-        "replace": "${ver}-${build}"
+        "script": [
+            ". \"$pwd\\bin\\utils.ps1\"",
+            "$InstallerInfo = A-Get-InstallerInfoFromWinget 'JetBrains.RubyMine' 'exe'",
+            "\"ver:$($InstallerInfo.PackageVersion);\"",
+            "\"x64:$($InstallerInfo.x64_user.InstallerUrl);\"",
+            "\"x86:$($InstallerInfo.x86_user.InstallerUrl);\"",
+            "\"arm64:$($InstallerInfo.arm64_user.InstallerUrl);\""
+        ],
+        "regex": "ver:(?<version>[^;]+)(?:; x64:(?<x64>[^;]*))?(?:; x86:(?<x86>[^;]*))?(?:; arm64:(?<arm64>[^;]*))?"
     },
     "autoupdate": {
-        "url": "https://download.jetbrains.com/ruby/RubyMine-$matchVer.win.zip",
-        "hash": {
-            "url": "$url.sha256"
-        }
+        "architecture": {
+            "64bit": {
+                "url": "$matchX64",
+                "hash": {
+                    "url": "bin/scoop-auto-check-update-temp-data.jsonc",
+                    "jsonpath": "$.x64_user.InstallerSha256"
+                }
+            },
+            "arm64": {
+                "url": "$matchArm64",
+                "hash": {
+                    "url": "bin/scoop-auto-check-update-temp-data.jsonc",
+                    "jsonpath": "$.arm64_user.InstallerSha256"
+                }
+            }
+        },
+        "shortcuts": [
+            [
+                "App\\bin\\rubymine64.exe",
+                "RubyMine $version"
+            ]
+        ]
     }
 }

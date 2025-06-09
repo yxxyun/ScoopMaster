@@ -1,60 +1,99 @@
 {
-    "version": "2025.1.2-251.26094.127",
-    "description": "Cross-Platform IDE for Go by JetBrains.",
-    "homepage": "https://www.jetbrains.com/goland/",
+    "version": "2025.1.2",
+    "description": "JetBrains 的 IDE 产品，用于 Golang 开发。A IDE by JetBrains for Golang development.",
+    "homepage": "https://www.jetbrains.com/go/",
     "license": {
-        "identifier": "Proprietary",
+        "identifier": "Unknown",
         "url": "https://www.jetbrains.com/store/license.html"
-    },
-    "url": "https://download.jetbrains.com/go/goland-2025.1.2.win.zip",
-    "hash": "380488257f0c6ca8e0fafc447c454e5c34d052b5e5c981f9a370afd6773a8af2",
-    "extract_to": "IDE",
-    "installer": {
-        "script": [
-            "& \"$bucketsdir\\extras\\scripts\\jetbrains\\portable.ps1\" $dir $persist_dir",
-            "Remove-Item \"$dir\\IDE\\`$*\" -Force -Recurse"
-        ]
     },
     "architecture": {
         "64bit": {
-            "bin": [
-                [
-                    "IDE\\bin\\goland64.exe",
-                    "goland"
-                ]
-            ],
-            "shortcuts": [
-                [
-                    "IDE\\bin\\goland64.exe",
-                    "JetBrains\\GoLand"
-                ]
-            ]
+            "url": "https://download.jetbrains.com/go/goland-2025.1.2.exe",
+            "hash": "e0a6c25ae220fa8ef42352b9c32d93f508d196fe906ed4135cdeafca6ac7cc06"
         },
-        "32bit": {
-            "bin": "IDE\\bin\\goland.exe",
-            "shortcuts": [
-                [
-                    "IDE\\bin\\goland.exe",
-                    "JetBrains\\GoLand"
-                ]
-            ]
+        "arm64": {
+            "url": "https://download.jetbrains.com/go/goland-2025.1.2-aarch64.exe",
+            "hash": "3629434dce01c6159c053b1014c36a1e02c63d2e1cf53c8f85a044df02b61e24"
         }
     },
-    "persist": [
-        "IDE\\bin\\idea.properties",
-        "IDE\\bin\\goland.exe.vmoptions",
-        "IDE\\bin\\goland64.exe.vmoptions",
-        "profile"
+    "bin": [
+        [
+            "App\\bin\\goland64.exe",
+            "GoLand"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "App\\bin\\goland64.exe",
+            "GoLand 2025.1.2"
+        ]
+    ],
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreInstall",
+        "$LogLocation = '\"' + \"$env:TEMP\\scoop-$app-logs\" + '\"'",
+        "A-Install-Exe -ArgumentList @('/S', \"/LOG=$LogLocation\", \"/D=$dir\\App\") -SuccessFile 'App\\bin\\Uninstall.exe'"
+    ],
+    "post_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostInstall",
+        "$versionPart = $version -split '\\.'",
+        "$versionShort = \"$($versionPart[0]).$($versionPart[1])\"",
+        "$DataDir = \"GoLand$versionShort\"",
+        "$LinkPaths = @(\"$env:AppData\\JetBrains\\$DataDir\")",
+        "$LinkTargets = @(\"$persist_dir\\JetBrains\\$DataDir\")",
+        "A-New-LinkDirectory $LinkPaths $LinkTargets"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreUninstall",
+        "A-Stop-Process",
+        "A-Uninstall-Exe -Uninstaller 'App\\bin\\Uninstall.exe' -ArgumentList @('/S')",
+        "A-Remove-Link",
+        "$versionPart = $version -split '\\.'",
+        "$versionShort = \"$($versionPart[0]).$($versionPart[1])\"",
+        "$DataDir = \"GoLand$versionShort\"",
+        "A-Remove-TempData @(\"$env:LocalAppData\\JetBrains\\$DataDir\")"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostUninstall"
     ],
     "checkver": {
-        "url": "https://data.services.jetbrains.com/products/releases?code=GO&latest=true&platform=zip&type=release",
-        "regex": "version\":\"(?<ver>[\\d.]+)\".*\"build\":\"(?<build>[\\d.]+)\"",
-        "replace": "${ver}-${build}"
+        "script": [
+            ". \"$pwd\\bin\\utils.ps1\"",
+            "$InstallerInfo = A-Get-InstallerInfoFromWinget 'JetBrains.GoLand' 'exe'",
+            "\"ver:$($InstallerInfo.PackageVersion);\"",
+            "\"x64:$($InstallerInfo.x64_user.InstallerUrl);\"",
+            "\"x86:$($InstallerInfo.x86_user.InstallerUrl);\"",
+            "\"arm64:$($InstallerInfo.arm64_user.InstallerUrl);\""
+        ],
+        "regex": "ver:(?<version>[^;]+)(?:; x64:(?<x64>[^;]*))?(?:; x86:(?<x86>[^;]*))?(?:; arm64:(?<arm64>[^;]*))?"
     },
     "autoupdate": {
-        "url": "https://download.jetbrains.com/go/goland-$matchVer.win.zip",
-        "hash": {
-            "url": "$url.sha256"
-        }
+        "architecture": {
+            "64bit": {
+                "url": "$matchX64",
+                "hash": {
+                    "url": "bin/scoop-auto-check-update-temp-data.jsonc",
+                    "jsonpath": "$.x64_user.InstallerSha256"
+                }
+            },
+            "arm64": {
+                "url": "$matchArm64",
+                "hash": {
+                    "url": "bin/scoop-auto-check-update-temp-data.jsonc",
+                    "jsonpath": "$.arm64_user.InstallerSha256"
+                }
+            }
+        },
+        "shortcuts": [
+            [
+                "App\\bin\\goland64.exe",
+                "GoLand $version"
+            ]
+        ]
     }
 }
