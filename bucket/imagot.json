@@ -1,0 +1,115 @@
+{
+    "version": "0.2.6",
+    "description": "Imagot - An image viewer built with Godot Engine. Supports PNG, JPG, JPEG, WebP, BMP, TGA, SVG, EXR, HDR and more.",
+    "homepage": "https://github.com/mlm-games/imagot",
+    "license": "GPL3",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/mlm-games/imagot/releases/download/0.2.6/imagot.exe",
+            "hash": "0c7cee3ddf715d19180480de8694b8c0cd5597cb095a0682de5a4b5f2584912c"
+        }
+    },
+    "bin": [
+        [
+            "imagot.exe",
+            "imagot"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "imagot.exe",
+            "Imagot Image Viewer",
+            "",
+            "imagot.ico"
+        ]
+    ],
+    "pre_install": [
+        "# Create config directory if it doesn't exist",
+        "if (!(Test-Path \"$dir\\config\")) {",
+        "    New-Item -ItemType Directory -Path \"$dir\\config\" | Out-Null",
+        "}",
+        "",
+        "# Download icon if not present",
+        "if (!(Test-Path \"$dir\\imagot.ico\")) {",
+        "    Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/mlm-games/imagot/main/icon.ico' -OutFile \"$dir\\imagot.ico\"",
+        "}"
+    ],
+    "post_install": [
+        "# Register file associations",
+        "$exePath = \"$dir\\imagot.exe\"",
+        "",
+        "# Create registry entries for Imagot",
+        "New-Item -Path 'HKCU:\\Software\\Classes\\Imagot.Image' -Force | Out-Null",
+        "Set-ItemProperty -Path 'HKCU:\\Software\\Classes\\Imagot.Image' -Name '(Default)' -Value 'Imagot Image File'",
+        "Set-ItemProperty -Path 'HKCU:\\Software\\Classes\\Imagot.Image' -Name 'FriendlyTypeName' -Value 'Imagot Image File'",
+        "",
+        "# Set icon",
+        "New-Item -Path 'HKCU:\\Software\\Classes\\Imagot.Image\\DefaultIcon' -Force | Out-Null",
+        "Set-ItemProperty -Path 'HKCU:\\Software\\Classes\\Imagot.Image\\DefaultIcon' -Name '(Default)' -Value \"$dir\\imagot.ico\"",
+        "",
+        "# Set open command",
+        "New-Item -Path 'HKCU:\\Software\\Classes\\Imagot.Image\\shell\\open\\command' -Force | Out-Null",
+        "Set-ItemProperty -Path 'HKCU:\\Software\\Classes\\Imagot.Image\\shell\\open\\command' -Name '(Default)' -Value \"`\"$exePath`\" `\"%1`\"\"",
+        "",
+        "# Associate common image extensions",
+        "$extensions = @('.png', '.jpg', '.jpeg', '.webp', '.bmp', '.tga', '.svg', '.exr', '.hdr')",
+        "foreach ($ext in $extensions) {",
+        "    New-Item -Path \"HKCU:\\Software\\Classes\\$ext\" -Force | Out-Null",
+        "    Set-ItemProperty -Path \"HKCU:\\Software\\Classes\\$ext\" -Name '(Default)' -Value 'Imagot.Image'",
+        "}",
+        "",
+        "Write-Host 'Imagot has been installed!' -ForegroundColor Green",
+        "Write-Host 'File associations have been registered for common image formats.' -ForegroundColor Cyan",
+        "Write-Host 'You may need to restart Explorer or log out for changes to take effect.' -ForegroundColor Yellow"
+    ],
+    "uninstaller": {
+        "script": [
+            "# Remove file associations",
+            "$extensions = @('.png', '.jpg', '.jpeg', '.webp', '.bmp', '.tga', '.svg', '.exr', '.hdr')",
+            "foreach ($ext in $extensions) {",
+            "    Remove-Item -Path \"HKCU:\\Software\\Classes\\$ext\" -Force -ErrorAction SilentlyContinue",
+            "}",
+            "",
+            "# Remove Imagot registry entries",
+            "Remove-Item -Path 'HKCU:\\Software\\Classes\\Imagot.Image' -Recurse -Force -ErrorAction SilentlyContinue",
+            "",
+            "Write-Host 'Imagot file associations have been removed.' -ForegroundColor Yellow"
+        ]
+    },
+    "persist": [
+        "config"
+    ],
+    "checkver": {
+        "github": "https://github.com/mlm-games/imagot"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/mlm-games/imagot/releases/download/$version/imagot.exe"
+            }
+        }
+    },
+    "notes": [
+        "Imagot has been installed and file associations have been set up.",
+        "",
+        "Supported formats: PNG, JPG, JPEG, WebP, BMP, TGA, SVG, KTX, EXR, HDR",
+        "",
+        "Keyboard shortcuts:",
+        "  Ctrl+O        : Open file",
+        "  Ctrl+Z/Y      : Undo/Redo",
+        "  Ctrl++/-      : Zoom in/out",
+        "  Ctrl+0        : Fit to window",
+        "  Ctrl+1        : Actual size",
+        "  Ctrl+L/R      : Rotate left/right",
+        "  H/V           : Flip horizontal/vertical",
+        "  Ctrl + Arrow keys    : Navigate images",
+        "  Mouse wheel   : Zoom at cursor",
+        "  Middle mouse  : Pan image",
+        "",
+        "To manually set as default image viewer:",
+        "  Settings > Apps > Default apps > Photo viewer > Imagot"
+    ],
+    "suggest": {
+        "vcredist": "extras/vcredist2022"
+    }
+}
