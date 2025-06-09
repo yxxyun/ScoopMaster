@@ -1,42 +1,43 @@
 {
-    "version": "3.8.0.0",
+    "version": "3.9.1",
+    "description": "一款帮助用户整理文件和文件夹的现代文件管理器。A modern file manager that helps users organize their files and folders.",
     "homepage": "https://files.community/",
-    "description": "A modern file explorer that pushes the boundaries of the Windows platform.",
-    "license": "MIT",
-    "architecture": {
-        "64bit": {
-            "url": "https://cdn.files.community/files/stable/Files.Package_3.8.0.0_Stable_Test/Files.Package_3.8.0.0_x64_arm64_Stable.msixbundle",
-            "hash": "794e64ce18adab1206095b2fa887ace179eed609a656d5248d95470e0301253e"
-        },
-        "arm64": {
-            "url": "https://cdn.files.community/files/stable/Files.Package_3.8.0.0_Stable_Test/Files.Package_3.8.0.0_x64_arm64_Stable.msixbundle",
-            "hash": "794e64ce18adab1206095b2fa887ace179eed609a656d5248d95470e0301253e"
-        }
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/files-community/Files/blob/main/LICENSE"
     },
+    "url": "https://cdn.files.community/files/stable/Files.Package_3.9.1.0_Test/Files.Package_3.9.1.0_x64_arm64.msixbundle",
+    "hash": "f7080a54255254f2b99815f91c84b1af57a7599eafa60a4ae0a0ca79f1271cbf",
     "pre_install": [
-        "$WindowsVersion=[Environment]::OSVersion.Version",
-        "if (($WindowsVersion.Major -ne '10') -and ($WindowsVersion.Build -lt '18362')) {",
-        " Throw 'This Package requires at least Windows 10 Build 18362 or newer.'",
-        "  }"
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreInstall"
     ],
-    "installer": {
-        "script": "Add-AppxPackage -DeferRegistrationWhenPackagesAreInUse -ForceUpdateFromAnyVersion -Path \"$dir\\Files.Package_$version.0_x64_arm64_Stable.msixbundle\""
-    },
-    "uninstaller": {
-        "script": "Get-AppxPackage -Name Files | Remove-AppxPackage -Confirm:$false -PreserveApplicationData:$false"
-    },
+    "post_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostInstall",
+        "$PackageFamilyName = 'Files_1y0xx7n9077q4'",
+        "A-Add-MsixPackage",
+        "$LinkPaths = @(\"$env:LocalAppData\\Packages\\$PackageFamilyName\\LocalState\")",
+        "$LinkTargets = @(\"$persist_dir\\$PackageFamilyName\\LocalState\")",
+        "A-New-LinkDirectory $LinkPaths $LinkTargets"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreUninstall",
+        "A-Stop-Process",
+        "A-Remove-Link",
+        "A-Remove-MsixPackage"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostUninstall"
+    ],
     "checkver": {
-        "url": "https://raw.githubusercontent.com/files-community/Files/main/src/Files.App%20(Package)/Package.appxmanifest",
-        "regex": "Version=\"([\\d.]+)\""
+        "github": "https://github.com/files-community/Files"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://cdn.files.community/files/stable/Files.Package_$version_Stable_Test/Files.Package_$version_x64_arm64_Stable.msixbundle"
-            },
-            "arm64": {
-                "url": "https://cdn.files.community/files/stable/Files.Package_$version_Stable_Test/Files.Package_$version_x64_arm64_Stable.msixbundle"
-            }
-        }
+        "url": "https://cdn.files.community/files/stable/Files.Package_$version.0_Test/Files.Package_$version.0_x64_arm64.msixbundle"
     }
 }
