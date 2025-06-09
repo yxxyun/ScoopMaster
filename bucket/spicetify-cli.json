@@ -1,34 +1,63 @@
 {
-    "version": "2.40.10",
+    "version": "2.40.11",
     "description": "Tool for customizing the Spotify client.",
-    "homepage": "https://spicetify.app/",
-    "license": "LGPL-2.1-only",
-    "notes": "Make sure to set 'spotify_path' to the directory of your Spotify installation in the Spicetify config",
+    "homepage": "https://github.com/khanhas/spicetify-cli",
+    "license": "GPL-3.0-only",
     "suggest": {
-        "Spotify": "extras/spotify"
+        "Spotify": [
+            "spotify-latest",
+            "spotify-with-blockthespot"
+        ]
     },
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/spicetify/cli/releases/download/v2.40.10/spicetify-2.40.10-windows-x64.zip",
-            "hash": "e5b1a4c636390e639ed44783d8751dbcbdb533e2ce64a734f9b964c5cbde80e6"
-        },
-        "32bit": {
-            "url": "https://github.com/spicetify/cli/releases/download/v2.40.10/spicetify-2.40.10-windows-x32.zip",
-            "hash": "b7f61fbaa78424c373a4e5d12b577edabed7c431c4bf0d8addfbef839c97403c"
-        }
+    "url": "https://github.com/khanhas/spicetify-cli/releases/download/v2.40.11/spicetify-2.40.11-windows-x64.zip",
+    "hash": "e134521b623f9c344d995376fa52f280e02917b3dcf427c7c3753fd7636f16c7",
+    "notes": [
+        "Run `spicetify-apply` instead of `spicetify apply` to ensure changes are applied correctly, especially if `blockthespot` is also installed.",
+        "For similar reasons, `spicetify-enable-devtool` and `spicetify-disable-devtool` should be run instead of `spicetify enable-devtool` and `spicetify disable-devtool`.",
+        "--purge should be used to fully uninstall this package."
+    ],
+    "installer": {
+        "script": [
+            "if ($global) {",
+            "    Write-Host \"$app cannot be installed globally.\" -Foreground Red",
+            "    exit 1",
+            "}",
+            "",
+            "$null, $bucket = find_manifest($app)",
+            "$bucketdir = Find-BucketDirectory($bucket)",
+            "'get-spotify-path', 'init-spicetify-config', 'init-spicetify-config-and-apply', 'spicetify-apply', 'spicetify-disable-devtool', 'spicetify-enable-devtool' | ForEach-Object { Copy-Item \"$bucketdir\\..\\scripts\\$_.ps1\" -Destination $dir }",
+            "",
+            "if (-not (Test-Path (& \"$dir\\get-spotify-path.ps1\"))) {",
+            "    Write-Host \"Spotify must be installed to install $app.\" -Foreground Red",
+            "    exit 1",
+            "}",
+            "",
+            "& \"$dir\\init-spicetify-config-and-apply.ps1\""
+        ]
     },
-    "bin": "spicetify.exe",
+    "uninstaller": {
+        "script": [
+            "$spotify_running = Get-Process -ErrorAction Ignore -Name Spotify",
+            "Stop-Process -ErrorAction Ignore -Name Spotify",
+            "spicetify restore --quiet --no-restart",
+            "if (installed blockthespot) { blockthespot }",
+            "if ($spotify_running) { Start-Process \"$(scoop which Spotify)\" }",
+            "if ($purge) { Remove-Item -ErrorAction Ignore -Recurse \"$env:USERPROFILE\\.spicetify\" }"
+        ]
+    },
+    "bin": [
+        "get-spotify-path.ps1",
+        "init-spicetify-config.ps1",
+        "init-spicetify-config-and-apply.ps1",
+        "spicetify.exe",
+        "spicetify-apply.ps1",
+        "spicetify-disable-devtool.ps1",
+        "spicetify-enable-devtool.ps1"
+    ],
     "checkver": {
-        "github": "https://github.com/spicetify/cli"
+        "github": "https://github.com/khanhas/spicetify-cli"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/spicetify/cli/releases/download/v$version/spicetify-$version-windows-x64.zip"
-            },
-            "32bit": {
-                "url": "https://github.com/spicetify/cli/releases/download/v$version/spicetify-$version-windows-x32.zip"
-            }
-        }
+        "url": "https://github.com/khanhas/spicetify-cli/releases/download/v$version/spicetify-$version-windows-x64.zip"
     }
 }
