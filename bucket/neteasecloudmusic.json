@@ -1,26 +1,78 @@
 {
-  "homepage": "https://music.163.com/",
-  "description": "The official NetEase Cloud Music client.",
-  "version": "2.10.8.200945",
-  "license": {
-    "identifier": "EULA",
-    "url": "https://music.163.com/html/web2/service.html"
-  },
-  "url": "https://d1.music.126.net/dmusic/NeteaseCloudMusic_Music_official_2.10.8.200945.exe#/dl.7z",
-  "hash": "18bafe22b23db781cfb66380973e53f2ddf856cc11d283711b8876ec4c0b176e",
-  "installer": "Get-ChildItem \"$dir\\redist_packages\" | Move-Item -Destination \"$dir\" -Force",
-  "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\redist_packages\" -Force -Recurse",
-  "shortcuts": [
-    [
-      "cloudmusic.exe",
-      "网易云音乐"
-    ]
-  ],
-  "checkver": {
-    "script": "return (iwr -useb 'https://music.163.com/api/pc/package/download/latest' -Method Head).Headers['x-nos-object-name']",
-    "regex": "(?<version>[\\d.]+\\d).exe"
-  },
-  "autoupdate": {
-    "url": "https://d1.music.126.net/dmusic/NeteaseCloudMusic_Music_official_$version.exe#/dl.7z"
-  }
+    "version": "3.1.11.203994",
+    "description": "网易云音乐，网易的一个音乐平台。A music platform by NetEase.",
+    "homepage": "https://music.163.com/",
+    "license": "Freemium",
+    "architecture": {
+        "64bit": {
+            "url": "https://d1.music.126.net/dmusic/NeteaseCloudMusic_Music_official_3.1.11.203994_64.exe",
+            "hash": "76a737f4b54ba3174822e2b8b6db96a011a8a1b6e9ee356a176c9fc06de7d97a"
+        },
+        "32bit": {
+            "url": "https://d1.music.126.net/dmusic/NeteaseCloudMusic_Music_official_3.1.11.203994_32.exe",
+            "hash": "3c038239e2e16491710976d4b9c580d639c47de9af9c491e0d4fd85ba1983317"
+        }
+    },
+    "shortcuts": [
+        [
+            "cloudmusic.exe",
+            "网易云音乐"
+        ]
+    ],
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreInstall",
+        "A-Require-Admin",
+        "$LinkPaths = @(\"$env:LocalAppData\\Netease\\CloudMusic\")",
+        "$LinkTargets = @(\"$persist_dir\\Netease\\CloudMusic\")",
+        "A-New-LinkDirectory $LinkPaths $LinkTargets",
+        "A-Install-Exe -ArgumentList @('/S', \"/D=$dir\")"
+    ],
+    "post_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostInstall"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreUninstall",
+        "A-Require-Admin",
+        "A-Stop-Process",
+        "A-Remove-Link",
+        "A-Uninstall-Exe -Uninstaller 'UnInstall.exe' -ArgumentList @('/S')"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostUninstall"
+    ],
+    "checkver": {
+        "script": [
+            ". \"$pwd\\bin\\utils.ps1\"",
+            "$InstallerInfo = A-Get-InstallerInfoFromWinget 'NetEase.CloudMusic' 'exe'",
+            "\"ver:$($InstallerInfo.PackageVersion);\"",
+            "\"x64:$($InstallerInfo.x64_machine.InstallerUrl);\"",
+            "\"x86:$($InstallerInfo.x86_machine.InstallerUrl);\"",
+            "\"arm64:$($InstallerInfo.arm64_machine.InstallerUrl);\""
+        ],
+        "regex": "ver:(?<version>[^;]+)(?:; x64:(?<x64>[^;]*))?(?:; x86:(?<x86>[^;]*))?(?:; arm64:(?<arm64>[^;]*))?"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "$matchX64",
+                "hash": {
+                    "url": "bin/scoop-auto-check-update-temp-data.jsonc",
+                    "jsonpath": "$.x64_machine.InstallerSha256"
+                }
+            },
+            "32bit": {
+                "url": "$matchX86",
+                "hash": {
+                    "url": "bin/scoop-auto-check-update-temp-data.jsonc",
+                    "jsonpath": "$.x86_machine.InstallerSha256"
+                }
+            }
+        }
+    }
 }
