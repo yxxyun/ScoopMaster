@@ -1,57 +1,100 @@
 {
     "version": "2025.1.1.1",
-    "description": "由 JetBrains 开发的适用于纯 Python 开发的 IDE。Cross-Platform IDE for Python by JetBrains.",
+    "description": "JetBrains 的 IDE 产品，用于 Python 开发。A IDE by JetBrains for Python development.",
     "homepage": "https://www.jetbrains.com/pycharm/",
     "license": {
-        "identifier": "Shareware",
+        "identifier": "Unknown",
         "url": "https://www.jetbrains.com/store/license.html"
     },
-    "url": "https://download.jetbrains.com/python/pycharm-professional-2025.1.1.1.exe#/abgo_bucket_installer.exe",
-    "hash": "936c14ef1ce90d470255663fbfbd8f345125edc8d2edf22c62e2cd8303db8c83",
+    "architecture": {
+        "64bit": {
+            "url": "https://download.jetbrains.com/python/pycharm-2025.1.1.1.exe",
+            "hash": "936c14ef1ce90d470255663fbfbd8f345125edc8d2edf22c62e2cd8303db8c83"
+        },
+        "arm64": {
+            "url": "https://download.jetbrains.com/python/pycharm-2025.1.1.1-aarch64.exe",
+            "hash": "fb31fe5a47cda26c3bed22911af2650d8cfa9f8d719fde3f8b1415f75888f1cc"
+        }
+    },
     "bin": [
         [
-            "IDE\\bin\\pycharm64.exe",
+            "App\\bin\\pycharm64.exe",
             "PyCharm"
         ]
     ],
     "shortcuts": [
         [
-            "IDE\\bin\\pycharm64.exe",
-            "PyCharm"
+            "App\\bin\\pycharm64.exe",
+            "PyCharm 2025.1.1.1"
         ]
     ],
     "pre_install": [
         ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "$verPart = $version -split '\\.'",
-        "$verRes = \"$($verPart[0]).$($verPart[1])\"",
-        "persist_file -dir @(\"$user_AppData\\JetBrains\\PyCharm$($verRes)\",\"$user_LocalAppData\\JetBrains\\PyCharm$($verRes)\") @(\"$persist_dir\\PyCharm\",\"$persist_dir\\PyCharm_LocalAppData\")",
-        "$path_installer=\"$dir\\abgo_bucket_installer.exe\"",
-        "& $path_installer /S /D=\"$dir\\IDE\"",
-        "sleep_install \"$dir\\IDE\\bin\\idea.properties\"",
-        "handle_app_lnk",
-        "do_some_things"
+        "A-Start-PreInstall",
+        "A-Require-Admin",
+        "$LogLocation = '\"' + \"$env:TEMP\\scoop-$app-logs\" + '\"'",
+        "A-Install-Exe -ArgumentList @('/S', \"/LOG=$LogLocation\", \"/D=$dir\\App\") -SuccessFile 'App\\bin\\Uninstall.exe'"
+    ],
+    "post_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostInstall",
+        "$versionPart = $version -split '\\.'",
+        "$versionShort = \"$($versionPart[0]).$($versionPart[1])\"",
+        "$DataDir = \"PyCharm$versionShort\"",
+        "$LinkPaths = @(\"$env:AppData\\JetBrains\\$DataDir\")",
+        "A-New-LinkDirectory $LinkPaths"
     ],
     "pre_uninstall": [
-        "$bucket = (Get-Content \"$dir\\install.json\" | ConvertFrom-Json).bucket",
+        "$bucket = $install.bucket",
         ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "stop_process $false",
-        "$preName = \"PyCharm\"",
-        "$remove_list = @(\"$user_AppData\\JetBrains\", \"$user_LocalAppData\\JetBrains\") | ForEach-Object {",
-        "   Get-ChildItem $_ | Where-Object { $_.Name -match \"$preName[\\d\\.]+\" } | ForEach-Object { $_.FullName }",
-        "}",
-        "remove_files $remove_list",
-        "$ui_exe=\"$dir\\IDE\\bin\\Uninstall.exe\"",
-        "try{ & $ui_exe /S }catch{}",
-        "sleep_uninstall $ui_exe"
+        "A-Start-PreUninstall",
+        "A-Require-Admin",
+        "A-Stop-Process",
+        "A-Uninstall-Exe -Uninstaller 'App\\bin\\Uninstall.exe' -ArgumentList @('/S')",
+        "A-Remove-Link",
+        "$versionPart = $version -split '\\.'",
+        "$versionShort = \"$($versionPart[0]).$($versionPart[1])\"",
+        "$DataDir = \"PyCharm$versionShort\"",
+        "A-Remove-TempData @(\"$env:LocalAppData\\JetBrains\\$DataDir\")"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostUninstall"
     ],
     "checkver": {
-        "url": "https://data.services.jetbrains.com/products/releases?code=PCP&latest=true",
-        "jsonpath": "$.PCP[0].version"
+        "script": [
+            ". \"$pwd\\bin\\utils.ps1\"",
+            "$InstallerInfo = A-Get-InstallerInfoFromWinget 'JetBrains.PyCharm' 'exe'",
+            "\"ver:$($InstallerInfo.PackageVersion);\"",
+            "\"x64:$($InstallerInfo.x64_user.InstallerUrl);\"",
+            "\"x86:$($InstallerInfo.x86_user.InstallerUrl);\"",
+            "\"arm64:$($InstallerInfo.arm64_user.InstallerUrl);\""
+        ],
+        "regex": "ver:(?<version>[^;]+)(?:; x64:(?<x64>[^;]*))?(?:; x86:(?<x86>[^;]*))?(?:; arm64:(?<arm64>[^;]*))?"
     },
     "autoupdate": {
-        "url": "https://download.jetbrains.com/python/pycharm-professional-$version.exe#/abgo_bucket_installer.exe",
-        "hash": {
-            "url": "$url.sha256"
-        }
+        "architecture": {
+            "64bit": {
+                "url": "$matchX64",
+                "hash": {
+                    "url": "bin/scoop-auto-check-update-temp-data.jsonc",
+                    "jsonpath": "$.x64_user.InstallerSha256"
+                }
+            },
+            "arm64": {
+                "url": "$matchArm64",
+                "hash": {
+                    "url": "bin/scoop-auto-check-update-temp-data.jsonc",
+                    "jsonpath": "$.arm64_user.InstallerSha256"
+                }
+            }
+        },
+        "shortcuts": [
+            [
+                "App\\bin\\pycharm64.exe",
+                "PyCharm $version"
+            ]
+        ]
     }
 }
