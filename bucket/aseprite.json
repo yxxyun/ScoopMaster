@@ -1,59 +1,54 @@
 {
     "version": "1.3.14.1",
-    "description": "Animated sprite editor & pixel art tool",
-    "homepage": "https://github.com/aseprite/aseprite",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://github.com/aseprite/aseprite/blob/main/EULA.txt"
-    },
-    "notes": "As per the EULA, binaries built using this scoop package cannot be distributed.",
+    "description": "aseprite: Animated sprite editor & pixel art tool",
+    "homepage": "https://www.aseprite.org/",
+    "license": "https://github.com/aseprite/aseprite/blob/main/EULA.txt",
+    "depends": [
+        "libskia-aseprite",
+        "vswhere"
+    ],
     "architecture": {
         "64bit": {
             "url": "https://github.com/aseprite/aseprite/releases/download/v1.3.14.1/Aseprite-v1.3.14.1-Source.zip",
-            "hash": "7a8816a0989d9417b4ff554977cdef160eb89a4a905114b6a24ada97561269c1"
-        },
-        "32bit": {
-            "url": "https://github.com/aseprite/aseprite/releases/download/v1.3.14.1/Aseprite-v1.3.14.1-Source.zip",
-            "hash": "7a8816a0989d9417b4ff554977cdef160eb89a4a905114b6a24ada97561269c1"
+            "hash": "7a8816a0989d9417b4ff554977cdef160eb89a4a905114b6a24ada97561269c1",
+            "shortcuts": [
+                [
+                    "aseprite.exe",
+                    "Aseprite"
+                ]
+            ]
         }
     },
-    "depends": [
-        "aseprite-skia",
-        "vswhere"
-    ],
     "installer": {
         "script": [
             "$vspath=vswhere -version \"[17.0,18.0)\" -products * -requires Microsoft.Component.MSBuild -property installationPath",
-            "if (!$vspath) {scoop uninstall aseprite; throw \"missing dependency (visual studio 2022) please install visual studio 2022 for c++ development\"}",
-            "if ($env:SCOOP) { $skiapath=\"$env:SCOOP\\apps\\aseprite-skia\\current\" } else { $skiapath=\"$env:USERPROFILE\\scoop\\apps\\aseprite-skia\\current\" }",
-            "if ($architecture -eq \"64bit\") { $arch=64; $arch2=64 } elseif ($architecture -eq \"32bit\") { $arch=32; $arch2=86 }",
-            "cmd.exe /k \"`\"$vspath\\VC\\Auxiliary\\Build\\vcvars$arch.bat`\" & cd /d $dir & mkdir build & cd build & cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DLAF_BACKEND=skia -DSKIA_DIR=$skiapath -DSKIA_LIBRARY_DIR=$skiapath\\out\\Release-x$arch2 -DSKIA_LIBRARY=$skiapath\\out\\Release-x$arch2\\skia.lib -G Ninja .. & ninja aseprite & exit\"",
+            "if (!$vspath) {scoop uninstall aseprite --purge; scoop uninstall libskia-aseprite --purge; scoop uninstall vswhere --purge; throw \"missing dependency (visual studio 2022) please install visual studio 2022 for c++ development\"}",
+            "if ($env:SCOOP) { $skiapath=\"$env:SCOOP\\apps\\libskia-aseprite\\current\" } else { $skiapath=\"$env:USERPROFILE\\scoop\\apps\\libskia-aseprite\\current\" }",
+            "cmd.exe /k \"`\"$vspath\\VC\\Auxiliary\\Build\\vcvars64.bat`\" & cd /d $dir & mkdir build & cd build & cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DLAF_BACKEND=skia -DSKIA_DIR=$skiapath -DSKIA_LIBRARY_DIR=$skiapath\\out\\Release-x64 -DSKIA_LIBRARY=$skiapath\\out\\Release-x64\\skia.lib -G Ninja .. & ninja aseprite & exit\"",
             "$currPath=pwd",
             "cd $dir",
             "if ($dir -eq (Get-Location).Path) { Get-ChildItem -Path . -Force | Where-Object { $_.Name -ne \"build\" } | Remove-Item -Recurse -Force } else { throw \"Path was not updated successfully to $dir, please try again\" }",
-            "Move-Item build\\bin\\aseprite.exe .",
-            "Move-Item build\\bin\\data .",
+            "mv build\\bin\\aseprite.exe .",
+            "mv build\\bin\\data .",
             "Remove-Item -Recurse -Force build",
             "cd $currPath"
         ]
     },
-    "bin": "aseprite.exe",
-    "shortcuts": [
-        [
-            "aseprite.exe",
-            "Aseprite"
-        ]
-    ],
     "checkver": {
-        "github": "https://github.com/aseprite/aseprite",
-        "regex": "/releases/tag/v([\\d.]+)\""
+        "url": "https://github.com/aseprite/aseprite/tags",
+        "regex": "/releases/tag/v(\\d+(\\.\\d+)+)(?![\\.\\d-])"
     },
+    "notes": [
+        "By Installing You Agree To The Aseprite EULA",
+        "https://github.com/aseprite/aseprite/blob/main/EULA.txt",
+        "Pail Maintainers Take 0 Responsibility For Any Legal Issues",
+        "I Reccomend Buying First (It's Worth It)",
+        "I Will Only Use On PCS I Dont Install Steam On",
+        "You Should Do The Same"
+    ],
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/aseprite/aseprite/releases/download/v$version/Aseprite-v$version-Source.zip"
-            },
-            "32bit": {
                 "url": "https://github.com/aseprite/aseprite/releases/download/v$version/Aseprite-v$version-Source.zip"
             }
         }
