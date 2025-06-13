@@ -3,42 +3,52 @@
     "description": "Locate files and folders by name instantly.",
     "homepage": "https://www.voidtools.com",
     "license": "MIT",
-    "notes": "Run '$dir\\install-context.reg' to add Everything to right-click context menu.",
     "architecture": {
         "64bit": {
-            "url": "https://www.voidtools.com/Everything-1.5.0.1395a.x64.zip",
-            "hash": "d4b83d967dec26514437d7a4369577e3b73347fe6f7fc3b6a2dd122c0bd3d3f9"
-        },
-        "32bit": {
-            "url": "https://www.voidtools.com/Everything-1.5.0.1395a.x86.zip",
-            "hash": "ce75ecc0d32c649f309be547d7f5425156cd9cf93028e4e3bb73dc318d6e0325"
+            "url": [
+                "https://www.voidtools.com/Everything-1.5.0.1395a.x64.zip",
+                "https://www.voidtools.com/Everything.lng.zip"
+            ],
+            "hash": [
+                "d4b83d967dec26514437d7a4369577e3b73347fe6f7fc3b6a2dd122c0bd3d3f9",
+                "a514dcc2ab3101df96edd67476d772afa03a7daad09387d4949ed62eabb94836"
+            ]
         }
     },
     "pre_install": [
-        "ensure \"$persist_dir\" | Out-Null",
         "if (Test-Path \"$dir\\Everything64.exe\") { Rename-Item \"$dir\\Everything64.exe\" 'Everything.exe' }",
-        "if (!(Test-Path \"$persist_dir\\Everything*.ini\")) { Invoke-ExternalCommand \"$dir\\Everything.exe\" -Args @('-install-config null') | Out-Null }",
-        "Get-ChildItem \"$persist_dir\\*\" -Include 'Bookmarks.csv', 'Everything.db', 'Everything.ini', 'Filters.csv', 'Search History.csv' | Copy-Item -Destination \"$dir\" -ErrorAction SilentlyContinue",
-        "Copy-Item \"$bucketsdir\\apps\\scripts\\everything\\uninstall-context.reg\" \"$dir\\\""
+        "ensure \"$persist_dir\" | Out-Null",
+        "Copy-Item -Path \"$persist_dir\\*\" -Destination \"$dir\" -Recurse -ErrorAction SilentlyContinue"
     ],
     "post_install": [
-        "$app_path = \"$dir\\Everything.exe\".Replace('\\', '\\\\')",
-        "$reg_content = Get-Content \"$bucketsdir\\apps\\scripts\\everything\\install-context.reg\"",
-        "$reg_content = $reg_content.replace('$app_path', $app_path)",
-        "Set-Content \"$dir\\install-context.reg\" $reg_content -Encoding ASCII"
+        "$dir_escaped = \"$dir\".Replace('\\', '\\\\')",
+        "@('install-context.reg', 'uninstall-context.reg') | ForEach-Object {",
+        "    if (Test-Path \"$bucketsdir\\$bucket\\scripts\\$app\\$_\") {",
+        "        $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\$app\\$_\" -Encoding 936",
+        "        $content = $content.Replace('$install_dir', $dir_escaped)",
+        "        if ($global) {",
+        "            $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "        }",
+        "        Set-Content -Path \"$dir\\$_\" $content -Encoding 936",
+        "    }",
+        "}",
+        "reg import \"$dir\\install-context.reg\""
     ],
     "pre_uninstall": [
-        "Stop-Process -Name 'everything' -Force -ErrorAction SilentlyContinue",
-        "if ($(Get-Service -Name Everything -ErrorAction SilentlyContinue).Status -ne 'Stopped') {",
-        "    if (!(is_admin)) { error 'Admin rights are required to stop Everything service'; break }",
-        "    Stop-Service -Name 'Everything' -Force -ErrorAction SilentlyContinue | Out-Null",
+        "if ($cmd -eq 'uninstall') {",
+        "    Stop-Process -Name 'everything' -Force -ErrorAction SilentlyContinue",
+        "    $ServiceName = $(Get-Service -Name Everything* -ErrorAction SilentlyContinue).Name",
+        "    if ($ServiceName) {",
+        "        if (!(is_admin)) {",
+        "            Start-Process -Wait powershell.exe -ArgumentList \"-Command sc.exe stop '$ServiceName'; sc.exe delete '$ServiceName'\" -Verb RunAs -WindowStyle Hidden",
+        "        } else {",
+        "            sc.exe stop \"$ServiceName\"",
+        "            sc.exe delete \"$ServiceName\"",
+        "        }",
+        "    }",
+        "    reg import \"$dir\\uninstall-context.reg\"",
         "}",
-        "if ((Get-Service -Name Everything -ErrorAction SilentlyContinue) -and ($cmd -eq 'uninstall')) {",
-        "    if (!(is_admin)) { error 'Admin rights are required to remove Everything service'; break }",
-        "    sc.exe delete 'Everything'",
-        "}",
-        "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-context.reg\" }",
-        "Get-ChildItem \"$dir\\*\" -Include 'Bookmarks.csv', 'Everything.db', 'Everything.ini', 'Filters.csv', 'Search History.csv' | Copy-Item -Destination \"$persist_dir\" -ErrorAction SilentlyContinue -Force"
+        "Get-ChildItem \"$dir\\*\" -Exclude 'Everything.exe', 'Everything.lng', 'install-context.reg', 'uninstall-context.reg', 'install.json', 'manifest.json' | Copy-Item -Destination \"$persist_dir\" -ErrorAction SilentlyContinue -Force"
     ],
     "bin": "Everything.exe",
     "shortcuts": [
@@ -49,15 +59,12 @@
     ],
     "checkver": {
         "url": "https://www.voidtools.com/forum/viewtopic.php?f=12&t=9787",
-        "regex": "Everything-([\\d.]+a)\\.x86"
+        "regex": "Everything-([\\d.]+a)\\.x64"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
                 "url": "https://www.voidtools.com/Everything-$version.x64.zip"
-            },
-            "32bit": {
-                "url": "https://www.voidtools.com/Everything-$version.x86.zip"
             }
         }
     }

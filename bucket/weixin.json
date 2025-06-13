@@ -1,18 +1,10 @@
 {
-    "##": [
-        "_edited_from:",
-        "https://github.com/xrgzs/sdoog/blob/master/bucket/weixin.json",
-        "https://github.com/DoveBoy/ScoopMaster/blob/master/bucket/weixin.json"
-    ],
     "version": "4.0.5.23",
     "description": "微信 QT多桌面端统一版",
     "homepage": "https://pc.weixin.qq.com/",
     "license": {
         "identifier": "Proprietary",
         "url": "https://www.wechat.com/en/service_terms.html"
-    },
-    "suggest": {
-        "revokemsgpatcher": "revokemsgpatcher"
     },
     "url": "https://dldir1v6.qq.com/weixin/Universal/Windows/WeChatWin.exe#/dl.7z",
     "hash": "c597442ff939d42763ba251db8204c4ceb2f7abf0f10ba3296b8b66e1ec7462d",
@@ -22,38 +14,37 @@
             "微信"
         ]
     ],
-    "extract_to": "Temp",
+    "extract_to": "Deploy",
     "pre_install": [
-        "Expand-7zipArchive \"$dir\\Temp\\install.7z\" $dir",
-        "New-Item -Path \"HKCU:\\Software\\Tencent\\Weixin\" -Name \"InstallPath\" -Value \"$dir\" -Force -ErrorAction SilentlyContinue | Out-Null",
-        "Remove-Item \"$dir\\Temp\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null"
+        "Expand-7zipArchive \"$dir\\Deploy\\install.7z\" $dir",
+        "Remove-Item \"$dir\\Deploy\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null"
     ],
     "post_install": [
-        "# 设置微信文件保存位置",
-        "$configpath = ensure \"$env:APPDATA\\Tencent\\xwechat\\config\"",
-        "$FileSavePath = if (Test-Path \"E:\\微信聊天记录\") { \"E:\\微信聊天记录\" } else { ensure \"$persist_dir\" }",
-        "Set-Content -NoNewline -Path \"$configpath\\51a1fffea11325a1e4104c6b3de47af7.ini\" -Value \"$FileSavePath\""
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "New-PersistDirectory \"$env:APPDATA\\Tencent\\xwechat\" \"$persist_dir\\AppData\" -Migrate",
+        "New-PersistDirectory \"$([Environment]::GetFolderPath('Personal'))\\xwechat_files\" \"$persist_dir\\xwechat_files\" -Migrate",
+        "New-Item -Path \"HKCU:\\Software\\Tencent\\Weixin\" -Name \"InstallPath\" -Value \"$dir\" -Force -ErrorAction SilentlyContinue | Out-Null"
     ],
     "pre_uninstall": [
-        "Remove-Item -Path \"$env:APPDATA\\Tencent\\xwechat\\config\\51a1fffea11325a1e4104c6b3de47af7.ini\" -Force | Out-Null",
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\Tencent\\xwechat\"",
+        "Remove-Junction \"$([Environment]::GetFolderPath('Personal'))\\xwechat_files\"",
         "Remove-Item -Path \"HKCU:\\Software\\Tencent\\Weixin\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null"
     ],
     "checkver": {
         "script": [
-            "$prefix = 'https://github.com/SpecterShell/Dumplings/raw/refs/heads/main/Tasks/Tencent.WeChat.Universal'",
+            "$prefix = 'https://raw.githubusercontent.com/SpecterShell/Dumplings/refs/heads/main/Tasks/Tencent.WeChat.Universal'",
             "$stateYamlUrl = $prefix + '/State.yaml'",
             "$stateContent = (Invoke-WebRequest -Uri $stateYamlUrl).Content",
             "$logFileUrl = \"$prefix/$stateContent\"",
-            "$logContent = Invoke-RestMethod -Uri $logFileUrl -UseBasicParsing",
-            "Write-Output $logContent"
+            "$logContent = Invoke-RestMethod -Uri $logFileUrl | ConvertFrom-Yaml",
+            "return $logContent.Version"
         ],
-        "regex": "Version:\\s*([0-9.]+)"
+        "regex": "(.*)"
     },
     "autoupdate": {
-        "url": "https://dldir1v6.qq.com/weixin/Universal/Windows/WeChatWin.exe#/dl.7z",
-        "hash": {
-            "url": "https://github.com/microsoft/winget-pkgs/raw/refs/heads/master/manifests/t/Tencent/WeChat/Universal/$version/Tencent.WeChat.Universal.installer.yaml",
-            "regex": "InstallerSha256:\\s+([a-fA-F0-9]{64})"
-        }
+        "url": "https://dldir1v6.qq.com/weixin/Universal/Windows/WeChatWin.exe#/dl.7z"
     }
 }
