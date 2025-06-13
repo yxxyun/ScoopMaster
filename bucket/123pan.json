@@ -1,58 +1,41 @@
 {
     "version": "2.4.0.0",
-    "description": "123 云盘，一款云存储服务产品。A cloud storage service product.",
+    "description": "The official client for 123 cloud dirve service",
     "homepage": "https://www.123pan.com/",
-    "license": "Freemium",
-    "url": "https://app.123957.com/pc-pro/windows/240/123pan_2.4.0.exe",
+    "license": "Proprietary",
+    "url": "https://app.123957.com/pc-pro/windows/240/123pan_2.4.0.exe#/dl.7z",
     "hash": "1c8f1fb3e484ffc4205211ec885028db68d2acc031183aa3ac54de64208a2a25",
     "shortcuts": [
         [
-            "123pan\\123pan.exe",
+            "123pan.exe",
             "123云盘"
         ]
     ],
     "pre_install": [
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "A-Start-PreInstall",
-        "A-Require-Admin",
-        "$LinkPaths = @(\"$env:AppData\\123pan\")",
-        "A-New-LinkDirectory $LinkPaths",
-        "A-Install-Exe -SuccessFile '123pan\\uninst.exe'"
+        "Expand-7zipArchive \"$dir\\app.7z\" \"$dir\"",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\app.7z\" -Force -Recurse"
     ],
-    "post_install": [
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "A-Start-PostInstall"
-    ],
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "A-Start-PreUninstall",
-        "A-Require-Admin",
-        "A-Stop-Process",
-        "A-Remove-Link",
-        "A-Uninstall-Exe -Uninstaller '123pan\\uninst.exe'"
-    ],
-    "post_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "A-Start-PostUninstall"
-    ],
+    "uninstaller": {
+        "script": [
+            "$runtimeCache = \"$env:APPDATA\\123pan\"",
+            "Write-Host \"`nRemoving RuntimeCacheCache:$runtimeCache\"",
+            "Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue"
+        ]
+    },
     "checkver": {
         "script": [
             ". \"$pwd\\bin\\utils.ps1\"",
-            "$InstallerInfo = A-Get-InstallerInfoFromWinget '123.123pan' 'exe'",
-            "\"ver:$($InstallerInfo.PackageVersion);\"",
-            "\"x64:$($InstallerInfo.x64_machine.InstallerUrl);\"",
-            "\"x86:$($InstallerInfo.x86_machine.InstallerUrl);\"",
-            "\"arm64:$($InstallerInfo.arm64_machine.InstallerUrl);\""
+            "$dl_info = get_installer_info '123/123pan'",
+            "\"ver:$($dl_info.PackageVersion);\"",
+            "\"x64:$($dl_info.x64_exe.InstallerUrl);\""
         ],
-        "regex": "ver:(?<version>[^;]+)(?:; x64:(?<x64>[^;]*))?(?:; x86:(?<x86>[^;]*))?(?:; arm64:(?<arm64>[^;]*))?"
+        "regex": "ver:(?<version>.+?); x64:(?<x64>.+?);"
     },
     "autoupdate": {
-        "url": "$matchX64",
+        "url": "$matchX64#/dl.7z",
         "hash": {
-            "url": "bin/scoop-auto-check-update-temp-data.jsonc",
-            "jsonpath": "$.x64_machine.InstallerSha256"
+            "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/1/123/123pan/$version/123.123pan.installer.yaml",
+            "regex": "Architecture: x64[\\s\\S]+?InstallerSha256:\\s?(.+)"
         }
     }
 }
