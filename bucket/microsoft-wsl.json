@@ -8,17 +8,28 @@
     "checkver": "github",
     "pre_install": [
         "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+        "# Enable WSL 2 and Virtual Machine Platform features",
         "# The LimitAccess parameter prevents access to Windows Update as a Source for restoring features to online images.",
         "# The All parameter enables all parent features of the specified feature before enabling the specified feature.",
         "Enable-WindowsOptionalFeature -FeatureName 'VirtualMachinePlatform' -All -Online -NoRestart -LimitAccess",
-        "Enable-WindowsOptionalFeature -FeatureName 'Microsoft-Windows-Subsystem-Linux' -All -Online -NoRestart -LimitAccess",
+        "Enable-WindowsOptionalFeature -FeatureName 'Microsoft-Windows-Subsystem-Linux' -All -Online -NoRestart -LimitAccess"
+    ],
+    "installer": {
+        "script": [
+            "# Wsl",
+            "Invoke-ExternalCommand 'msiexec' -RunAs -ArgumentList @('/i', \"$dir\\wsl.$version.0.x64.msi\", '/quiet', '/norestart')",
+            "# wsb",
+            "if($env:USERNAME -ne 'WDAGUtilityAccount') {",
+            "    Enable-WindowsOptionalFeature -FeatureName 'Containers-DisposableClientVM' -All -Online",
+            "}"
+        ]
+    },
+    "post_install": [
+        "# Set network",
         "Set-NetFirewallHyperVVMSetting -Name '{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}' -DefaultInboundAction Allow",
         "Set-NetFirewallHyperVVMSetting -Name '{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}' -Enabled False",
         "CheckNetIsolation LoopbackExempt -a -n='MicrosoftCorporationII.WindowsSubsystemForLinux_8wekyb3d8bbwe'"
     ],
-    "installer": {
-        "script": "Invoke-ExternalCommand 'msiexec' -RunAs -ArgumentList @('/i', \"$dir\\wsl.$version.0.x64.msi\", '/quiet', '/norestart')"
-    },
     "autoupdate": {
         "url": "https://github.com/microsoft/WSL/releases/download/$version/wsl.$version.0.x64.msi"
     }

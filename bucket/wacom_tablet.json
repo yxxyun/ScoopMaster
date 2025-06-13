@@ -1,36 +1,22 @@
 {
-    "##": "FixMe:",
     "version": "6.4.10.3",
     "description": "Wacom Tablet. Drivers for Wacom Tablet",
     "homepage": "https://www.wacom.com/en-us/support/product-support/drivers",
     "license": "Proprietary",
+    "notes": "安装完成，需要重启才能使用",
     "url": "https://cdn.wacom.com/u/productsupport/drivers/win/professional/WacomTablet_6.4.10-3.exe#/setup.exe",
     "hash": "413fe72bcebd0fd9487c00dc5987cdc5cba81fff2857cae22126c6b49b758c90",
     "pre_install": [
-        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
-        "$filepath = Join-Path $env:ProgramFiles 'Tablet\\Wacom\\WacomCenter\\WacomCenterUI.exe'",
-        "$installed = Test-Path -Path $filepath -PathType Leaf",
-        "$targetVersion = [System.Version]$version",
-        "if ($installed) {",
-        "    $installedVersion = (Get-Command $filepath).Version",
-        "    if ($installedVersion -ge $targetVersion) {",
-        "        warn \"$app is already installed. Version: $installedVersion\"",
-        "    }",
-        "}",
-        "$processname = \"WacomDesktopCenter\"",
-        "$process = Get-Process $processname -ErrorAction SilentlyContinue",
-        "if ($process) {",
-        "   $process.CloseMainWindow()",
-        "   Start-Sleep -Seconds 5",
-        "   if (!$process.HasExited) {",
-        "       Start-Sleep -Seconds 25",
-        "       $process | Stop-Process -Force",
-        "   }",
-        "}"
+        "# wacom tablet need admin rights to install from command line",
+        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }"
     ],
     "installer": {
-        "file": "setup.exe",
-        "args": "/S"
+        "script": [
+            "# wacom tablet 从命令行安装时exit code 为 2 ,需要忽略",
+            "# 所以不能用 Invoke-ExternalCommand",
+            "Start-Process -FilePath \"$dir\\setup.exe\" -ArgumentList '/S' -Wait -NoNewWindow",
+            "Remove-Item \"$dir\\setup.exe\" -Force"
+        ]
     },
     "checkver": {
         "url": "https://www.wacom.com/en-us/support/product-support/drivers",
