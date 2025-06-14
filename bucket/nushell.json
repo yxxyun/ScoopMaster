@@ -1,26 +1,50 @@
 {
     "version": "0.105.1",
-    "description": "A new type of shell",
-    "homepage": "https://www.nushell.sh/",
-    "license": "MIT",
+    "description": "一种用 Rust 编写的新型 shell。A new type of shell written in Rust.",
+    "homepage": "https://www.nushell.sh",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/nushell/nushell/blob/main/LICENSE"
+    },
     "architecture": {
         "64bit": {
             "url": "https://github.com/nushell/nushell/releases/download/0.105.1/nu-0.105.1-x86_64-pc-windows-msvc.zip",
             "hash": "92dad600dc684da77a413e29732f2abb2fd15ccacc1d4059ad230ba0380c52a7"
+        },
+        "arm64": {
+            "url": "https://github.com/nushell/nushell/releases/download/0.105.1/nu-0.105.1-aarch64-pc-windows-msvc.zip",
+            "hash": "d1a9e394b2e75ea35665c064bbe27a3c3c59d51f064a1451da37e1f9e9c211e3"
         }
     },
+    "bin": "nu.exe",
     "shortcuts": [
         [
             "nu.exe",
-            "Nushell"
+            "Nushell",
+            "--execute \"cd ~\""
         ]
     ],
-    "bin": "nu.exe",
-    "post_install": " [System.Drawing.Icon]::ExtractAssociatedIcon(\"$dir\\nu.exe\" ).ToBitmap().Save(\"$dir\\nu.bmp\")",
-    "persist": [
-        "env.nu",
-        "config.nu",
-        "history.txt"
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreInstall"
+    ],
+    "post_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostInstall",
+        "$LinkPaths = @(\"$env:AppData\\nushell\")",
+        "A-New-LinkDirectory $LinkPaths"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreUninstall",
+        "A-Stop-Process",
+        "A-Remove-Link"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostUninstall"
     ],
     "checkver": {
         "github": "https://github.com/nushell/nushell"
@@ -29,7 +53,13 @@
         "architecture": {
             "64bit": {
                 "url": "https://github.com/nushell/nushell/releases/download/$version/nu-$version-x86_64-pc-windows-msvc.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/nushell/nushell/releases/download/$version/nu-$version-aarch64-pc-windows-msvc.zip"
             }
+        },
+        "hash": {
+            "url": "$baseurl/SHA256SUMS"
         }
     }
 }
