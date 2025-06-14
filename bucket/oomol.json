@@ -1,0 +1,55 @@
+{
+    "version": "1.2.4",
+    "description": "AI 可编程工作流平台 - 基于 VSCode 的工作流 IDE",
+    "homepage": "https://oomol.com/zh-CN/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://oomol.com/zh-CN/"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://static.oomol.com/release/stable/win32/x64/OOMOL%20Studio-1.2.4-2025-06-13.10.exe",
+            "hash": "cfe83f21579f7cc0d97a505807eb7cc09f9a5e2fe5a7a1fbe89d82026fd9b11d"
+        }
+    },
+    "innosetup": true,
+    "extract_dir": "{code_GetDestDir}",
+    "shortcuts": [
+        [
+            "OOMOL Studio.exe",
+            "OOMOL Studio",
+            "--user-data-dir=\"%SCOOP%\\apps\\oomol\\current\\data\\user-data\" --extensions-dir=\"%SCOOP%\\apps\\oomol\\current\\data\\extensions\""
+        ]
+    ],
+    "post_install": [
+        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.oomol\\extensions\")) {",
+        "  info '[Portable Mode] Copying extensions...'",
+        "  Copy-Item \"$env:USERPROFILE\\.oomol\\extensions\" \"$dir\\data\" -Recurse",
+        "}",
+        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\OOMOL Studio\")) {",
+        "  info '[Portable Mode] Copying user data...'",
+        "  Copy-Item \"$env:AppData\\OOMOL Studio\" \"$dir\\data\\user-data\" -Recurse",
+        "}",
+        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
+        "if ((Test-Path \"$extensions_file\")) {",
+        "  info 'Adjusting path in extensions file...'",
+        "    (Get-Content \"$extensions_file\") -replace '(?<=oomol(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
+        "}"
+    ],
+    "persist": "data",
+    "checkver": {
+        "script": [
+            "$response = Invoke-WebRequest -Uri 'https://update.oomol.com/latest/win32-x64-user/stable' -MaximumRedirection 0 -ErrorAction SilentlyContinue",
+            "$url = $response.Headers.Location",
+            "if ($url -match 'Studio-([0-9.]+)-') { $url }"
+        ],
+        "regex": "(?<url>.*Studio-(?<version>[\\d.]+)-.*\\.exe)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "$matchUrl"
+            }
+        }
+    }
+}
