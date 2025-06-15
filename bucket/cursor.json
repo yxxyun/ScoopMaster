@@ -1,8 +1,12 @@
 {
     "version": "1.1.2",
-    "description": "一个 AI 代码编辑器。The AI Code Editor.",
-    "homepage": "https://cursor.sh/",
-    "license": "Unknown",
+    "description": "The AI Code Editor",
+    "homepage": "https://www.cursor.com",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.cursor.com/terms-of-service"
+    },
+    "innosetup": true,
     "architecture": {
         "64bit": {
             "url": "https://downloads.cursor.com/production/87ea1604be1f602f173c5fb67582e647fcef6c48/win32/x64/user-setup/CursorUserSetup-x64-1.1.2.exe",
@@ -13,68 +17,49 @@
             "hash": "4e597f2c6545d1e1a5d6884ead1157d8e3f4cc6f8344a6fbde5e94c99f0d76fa"
         }
     },
-    "innosetup": true,
+    "extract_dir": "{code_GetDestDir}",
+    "post_install": [
+        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Recurse",
+        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.cursor\\extensions\")) {",
+        "    info '[Portable Mode] Copying extensions...'",
+        "    Copy-Item \"$env:USERPROFILE\\.cursor\\extensions\" \"$dir\\data\" -Recurse",
+        "}",
+        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Cursor\")) {",
+        "    info '[Portable Mode] Copying user data...'",
+        "    Copy-Item \"$env:AppData\\Cursor\" \"$dir\\data\\user-data\" -Recurse",
+        "}",
+        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
+        "if ((Test-Path \"$extensions_file\")) {",
+        "    info 'Adjusting path in extensions file...'",
+        "    (Get-Content \"$extensions_file\") -replace '(?<=cursor(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
+        "}"
+    ],
     "bin": [
         [
             "resources\\app\\bin\\cursor.cmd",
-            "cursor"
+            "",
+            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
         ]
     ],
     "shortcuts": [
         [
             "Cursor.exe",
-            "Cursor"
+            "Cursor",
+            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
         ]
     ],
-    "extract_dir": "{code_GetDestDir}",
-    "pre_install": [
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "A-Start-PreInstall"
-    ],
-    "post_install": [
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "A-Start-PostInstall",
-        "$LinkPaths = @(\"$env:AppData\\Cursor\", \"$env:UserProfile\\.cursor\")",
-        "A-New-LinkDirectory $LinkPaths"
-    ],
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "A-Start-PreUninstall",
-        "A-Stop-Process",
-        "A-Remove-Link"
-    ],
-    "post_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "A-Start-PostUninstall"
-    ],
+    "persist": "data",
     "checkver": {
-        "script": [
-            ". \"$pwd\\bin\\utils.ps1\"",
-            "$InstallerInfo = A-Get-InstallerInfoFromWinget 'Anysphere.Cursor' 'exe'",
-            "\"ver:$($InstallerInfo.PackageVersion);\"",
-            "\"x64:$($InstallerInfo.x64_user.InstallerUrl);\"",
-            "\"x86:$($InstallerInfo.x86_user.InstallerUrl);\"",
-            "\"arm64:$($InstallerInfo.arm64_user.InstallerUrl);\""
-        ],
-        "regex": "ver:(?<version>[^;]+)(?:; x64:(?<x64>[^;]*))?(?:; x86:(?<x86>[^;]*))?(?:; arm64:(?<arm64>[^;]*))?"
+        "url": "https://www.cursor.com/api/download?platform=win32-x64-user&releaseTrack=latest",
+        "regex": "version\":\"([\\d.]+).*production/(?<Code>[\\w]+)/win32"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "$matchX64",
-                "hash": {
-                    "url": "bin/scoop-auto-check-update-temp-data.jsonc",
-                    "jsonpath": "$.x64_user.InstallerSha256"
-                }
+                "url": "https://downloads.cursor.com/production/$matchCode/win32/x64/user-setup/CursorUserSetup-x64-$version.exe"
             },
             "arm64": {
-                "url": "$matchArm64",
-                "hash": {
-                    "url": "bin/scoop-auto-check-update-temp-data.jsonc",
-                    "jsonpath": "$.arm64_user.InstallerSha256"
-                }
+                "url": "https://downloads.cursor.com/production/$matchCode/win32/arm64/user-setup/CursorUserSetup-arm64-$version.exe"
             }
         }
     }
