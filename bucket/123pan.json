@@ -1,41 +1,58 @@
 {
     "version": "2.4.0.0",
-    "description": "123云盘是一款空间大、不限速、专注大文件传输分发的云存储服务产品。",
+    "description": "123 云盘，一款云存储服务产品。A cloud storage service product.",
     "homepage": "https://www.123pan.com/",
-    "license": "Proprietary",
-    "url": "https://app.123957.com/pc-pro/windows/240/123pan_2.4.0.exe#/dl.7z",
+    "license": "Freemium",
+    "url": "https://app.123957.com/pc-pro/windows/240/123pan_2.4.0.exe",
     "hash": "1c8f1fb3e484ffc4205211ec885028db68d2acc031183aa3ac54de64208a2a25",
     "shortcuts": [
         [
-            "123pan.exe",
+            "123pan\\123pan.exe",
             "123云盘"
         ]
     ],
-    "installer": {
-        "script": [
-            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-            "New-PersistDirectory \"$env:APPDATA\\123pan\" \"$persist_dir\\AppData\" -Migrate",
-            "Expand-7zipArchive \"$dir\\app.7z\" \"$dir\" -Removal",
-            "Remove-Item \"$dir\\`$*\" -Recurse -Force"
-        ]
-    },
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreInstall",
+        "A-Require-Admin",
+        "$LinkPaths = @(\"$env:AppData\\123pan\")",
+        "A-New-LinkDirectory $LinkPaths",
+        "A-Install-Exe -SuccessFile '123pan\\uninst.exe'"
+    ],
+    "post_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostInstall"
+    ],
     "pre_uninstall": [
         "$bucket = $install.bucket",
         ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App",
-        "Remove-Junction \"$env:APPDATA\\123pan\""
+        "A-Start-PreUninstall",
+        "A-Require-Admin",
+        "A-Stop-Process",
+        "A-Remove-Link",
+        "A-Uninstall-Exe -Uninstaller '123pan\\uninst.exe'"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostUninstall"
     ],
     "checkver": {
         "script": [
-            "Import-Module \"$pwd\\bin\\WinGet.psm1\"",
-            "$Manifest = Get-WinGetManifest -Id '123.123pan'",
-            "$version  = $Manifest.PackageVersion",
-            "$url      = $Manifest.Installers.InstallerUrl",
-            "return \"$version=====$url\""
+            ". \"$pwd\\bin\\utils.ps1\"",
+            "$InstallerInfo = A-Get-InstallerInfoFromWinget '123.123pan' 'exe'",
+            "\"ver:$($InstallerInfo.PackageVersion);\"",
+            "\"x64:$($InstallerInfo.x64_machine.InstallerUrl);\"",
+            "\"x86:$($InstallerInfo.x86_machine.InstallerUrl);\"",
+            "\"arm64:$($InstallerInfo.arm64_machine.InstallerUrl);\""
         ],
-        "regex": "(.*)=====(?<url>.*)"
+        "regex": "ver:(?<version>[^;]+)(?:; x64:(?<x64>[^;]*))?(?:; x86:(?<x86>[^;]*))?(?:; arm64:(?<arm64>[^;]*))?"
     },
     "autoupdate": {
-        "url": "$matchUrl#/dl.7z"
+        "url": "$matchX64",
+        "hash": {
+            "url": "bin/scoop-auto-check-update-temp-data.jsonc",
+            "jsonpath": "$.x64_machine.InstallerSha256"
+        }
     }
 }
