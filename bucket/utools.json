@@ -1,29 +1,53 @@
 {
-    "homepage": "https://u.tools/",
-    "description": "Your productive tools set and launcher.",
-    "license": "Freeware",
     "version": "7.1.1",
+    "description": "Your productive tools set and launcher.",
+    "homepage": "https://u.tools/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "http://u.tools/agreement.html"
+    },
     "architecture": {
         "64bit": {
             "url": "https://open.u-tools.cn/download/uTools-7.1.1.exe#/dl.7z",
             "hash": "9b135fb53d6dd5403be8174aec17440814600e19a095f9af68c4b8df68b41c37",
             "installer": {
-                "script": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR/app-64.7z\" \"$dir\\utools\""
+                "script": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR/app-64.7z\" \"$dir\""
+            }
+        },
+        "32bit": {
+            "url": "https://open.u-tools.cn/download/uTools-7.1.1-ia32.exe#/dl.7z",
+            "hash": "94fe89432f9678e955a7fa7378f0aa5fa9dec38d8cf8dbf726015fadf072c78c",
+            "installer": {
+                "script": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR/app-32.7z\" \"$dir\""
             }
         }
     },
-    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\" -Force -Recurse",
+    "post_install": [
+        "@('$PLUGINSDIR') | ForEach-Object { Remove-Item \"$dir\\$_\" -Recurse -Force -ErrorAction SilentlyContinue }",
+        "if (!(Test-Path \"$dir\\User Data\\*\") -and (Test-Path \"$env:AppData\\uTools\")) {",
+        "    info '[Portable Mode]: Copying user data...'",
+        "    Copy-Item \"$env:AppData\\uTools\\*\" \"$dir\\User Data\" -Recurse",
+        "}"
+    ],
     "shortcuts": [
         [
-            "utools\\uTools.exe",
+            "uTools.exe",
             "uTools"
         ]
     ],
+    "persist": "User Data",
     "checkver": {
-        "url": "https://u.tools/download",
+        "url": "https://u.tools/download/",
         "regex": "uTools-([\\d.]+).exe"
     },
     "autoupdate": {
-        "url": "https://open.u-tools.cn/download/uTools-$version.exe#/dl.7z"
+        "architecture": {
+            "64bit": {
+                "url": "https://open.u-tools.cn/download/uTools-$version.exe#/dl.7z"
+            },
+            "32bit": {
+                "url": "https://open.u-tools.cn/download/uTools-$version-ia32.exe#/dl.7z"
+            }
+        }
     }
 }
