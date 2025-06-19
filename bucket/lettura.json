@@ -1,44 +1,51 @@
 {
-  "version": "0.1.22",
-  "description": "another rss reader",
-  "homepage": "https://zhanglun.github.io/lettura/",
-  "license": "Unknown",
-  "architecture": {
-    "64bit": {
-      "url": "https://github.com/zhanglun/lettura/releases/download/v0.1.22/Lettura_0.1.22_x64-setup.exe#/dl.7z",
-      "hash": "533ae33f2a4237cf9cac115f5d8a2aa735d070724174d834c2746c6be74dc2c9"
-    }
-  },
-  "pre_install": "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\uninst*\" -Force -Recurse",
-  "installer": {
-    "script": [
-      "ensure \"$persist_dir\" | Out-Null",
-      "New-Item \"$env:APPDATA\\com.lettura.dev\" -ItemType Junction -Target \"$persist_dir\" | Out-Null",
-      "New-Item \"$env:LOCALAPPDATA\\com.lettura.dev\" -ItemType Junction -Target \"$persist_dir\" | Out-Null"
-    ]
-  },
-  "uninstaller": {
-    "script": [
-      "Remove-Item \"$env:APPDATA\\com.lettura.dev\" -Recurse -Force -ErrorAction 'SilentlyContinue'",
-      "Remove-Item \"$env:LOCALAPPDATA\\com.lettura.dev\" -Recurse -Force -ErrorAction 'SilentlyContinue'"
-    ]
-  },
-  "shortcuts": [
-    [
-      "Lettura.exe",
-      "Lettura"
-    ]
-  ],
-  "checkver": {
-    "url": "https://api.github.com/repos/zhanglun/lettura/releases",
-    "jsonpath": "$[0].assets[*].browser_download_url",
-    "regex": "Lettura_([\\d.-]+)_x64-setup\\.exe"
-  },
-  "autoupdate": {
+    "version": "0.1.22",
+    "description": "一款免费开源的 RSS 阅读器。A free and open-source feed reader.",
+    "homepage": "https://github.com/zhanglun/lettura",
+    "license": "Unknown",
     "architecture": {
-      "64bit": {
-        "url": "https://github.com/zhanglun/lettura/releases/download/v$version/Lettura_$version_x64-setup.exe#/dl.7z"
-      }
+        "64bit": {
+            "url": "https://github.com/zhanglun/lettura/releases/download/v0.1.22/Lettura_0.1.22_x64-setup.exe",
+            "hash": "533ae33f2a4237cf9cac115f5d8a2aa735d070724174d834c2746c6be74dc2c9"
+        }
+    },
+    "shortcuts": [
+        [
+            "Lettura.exe",
+            "Lettura"
+        ]
+    ],
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreInstall",
+        "A-Install-Exe"
+    ],
+    "post_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostInstall",
+        "$LinkPaths = @(\"$env:UserProfile\\.lettura\")",
+        "A-New-LinkDirectory $LinkPaths"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreUninstall",
+        "A-Stop-Process",
+        "A-Remove-Link",
+        "A-Uninstall-Exe -Uninstaller 'uninstall.exe'",
+        "A-Remove-TempData @(\"$env:AppData\\com.lettura.dev\",\"$env:LocalAppData\\com.lettura.dev\")"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostUninstall"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/zhanglun/lettura/releases/download/v$version/Lettura_$version_x64-setup.exe"
+            }
+        }
     }
-  }
 }
