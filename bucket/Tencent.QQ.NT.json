@@ -1,0 +1,92 @@
+{
+    "version": "9.9.20.36330",
+    "description": "(NT 版本) QQ，腾讯的一款聊天通讯工具。(NT version) A chat communication tool by Tencent.",
+    "homepage": "https://im.qq.com/",
+    "license": "Unknown",
+    "notes": [
+        "QQ will not be installed in Scoop directory, the installation directory: C:\\Program Files\\Tencent\\QQNT",
+        "Scoop only manages QQ's data persist, installation, update, and uninstallation operations."
+    ],
+    "notes-cn": [
+        "QQ 不会安装在 Scoop 目录下，QQ 的实际安装目录: C:\\Program Files\\Tencent\\QQNT",
+        "Scoop 只管理 QQ 的数据(通过 Link)，安装、更新、卸载操作"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_9.9.20_250616_x64_01.exe",
+            "hash": "fa77bc3328820c6185a3dee438b48193c0df3e811f4610a2aff27b7d0ea2e9b5"
+        },
+        "32bit": {
+            "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_9.9.20_250616_x86_01.exe",
+            "hash": "beb758cc400244b9da2ed9973da472a3d619480086c0019c08226f0529615050"
+        }
+    },
+    "shortcuts": [
+        [
+            "C:\\Program Files\\Tencent\\QQNT\\QQ.exe",
+            "QQ"
+        ]
+    ],
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreInstall",
+        "A-Require-Admin",
+        "A-Install-Exe -ArgumentList @('/S')"
+    ],
+    "post_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostInstall",
+        "$DataDir = \"$env:UserProfile\\Documents\\Tencent Files\"",
+        "$SubDir1 = Get-ChildItem $DataDir -Directory -Depth 2 | ForEach-Object { if ($_.FullName -like \"$DataDir\\*\\nt_qq\") { Split-Path (Split-Path $_.FullName -Parent) -Leaf } }",
+        "$PersistDir = $DataDir.Replace($env:UserProfile, $persist_dir)",
+        "$SubDir2 = Get-ChildItem $PersistDir -Directory -Depth 2 | ForEach-Object { if ($_.FullName -like \"$PersistDir\\*\\nt_qq\") { Split-Path (Split-Path $_.FullName -Parent) -Leaf } }",
+        "$SubDir = [array]$SubDir1 + [array]$SubDir2 | Select-Object -Unique",
+        "$LinkPaths = @()",
+        "$SubDir | ForEach-Object { $LinkPaths += Join-Path $DataDir \"$_\\nt_qq\" }",
+        "$LinkPaths += Join-Path $DataDir \"nt_qq\"",
+        "A-New-LinkDirectory $LinkPaths"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreUninstall",
+        "A-Require-Admin",
+        "A-Stop-Process @(\"C:\\Program Files\\Tencent\\QQNT\")",
+        "A-Uninstall-Exe -Uninstaller 'C:\\Program Files\\Tencent\\QQNT\\Uninstall.exe' -NoSilent",
+        "A-Remove-Link"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostUninstall"
+    ],
+    "checkver": {
+        "script": [
+            ". \"$pwd\\bin\\utils.ps1\"",
+            "$InstallerInfo = A-Get-InstallerInfoFromWinget 'Tencent.QQ.NT' 'exe'",
+            "\"ver:$($InstallerInfo.PackageVersion);\"",
+            "\"x64:$($InstallerInfo.x64_machine.InstallerUrl);\"",
+            "\"x86:$($InstallerInfo.x86_machine.InstallerUrl);\"",
+            "\"arm64:$($InstallerInfo.arm64_machine.InstallerUrl);\""
+        ],
+        "regex": "ver:(?<version>[^;]+)(?:; x64:(?<x64>[^;]*))?(?:; x86:(?<x86>[^;]*))?(?:; arm64:(?<arm64>[^;]*))?"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "$matchX64",
+                "hash": {
+                    "url": "bin/scoop-auto-check-update-temp-data.jsonc",
+                    "jsonpath": "$.x64_machine.InstallerSha256"
+                }
+            },
+            "32bit": {
+                "url": "$matchX86",
+                "hash": {
+                    "url": "bin/scoop-auto-check-update-temp-data.jsonc",
+                    "jsonpath": "$.x86_machine.InstallerSha256"
+                }
+            }
+        }
+    }
+}

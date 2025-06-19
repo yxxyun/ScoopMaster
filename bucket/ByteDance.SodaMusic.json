@@ -1,0 +1,75 @@
+{
+    "version": "2.4.2",
+    "description": "汽水音乐，字节跳动的音乐平台。A music platform by ByteDance.",
+    "homepage": "https://music.douyin.com/",
+    "license": "Freemium",
+    "architecture": {
+        "64bit": {
+            "url": "https://lf-luna-release.qishui.com/obj/luna-release/2.4.2/162542811/SodaMusic-v2.4.2-official-win32_x64.exe",
+            "hash": "f55ac964058c79b430e9fbc7cc7aa1cd07d70d8ec3b58f7d62b37a267faa3071"
+        },
+        "32bit": {
+            "url": "https://lf-luna-release.qishui.com/obj/luna-release/2.4.2/162542811/SodaMusic-v2.4.2-official-win32_ia32.exe",
+            "hash": "73c8097cff782418f36405a405a2c327d51969e1233056638b11acb351d1c693"
+        }
+    },
+    "shortcuts": [
+        [
+            "Soda Music\\SodaMusicLauncher.exe",
+            "Soda Music (汽水音乐)"
+        ]
+    ],
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreInstall",
+        "A-Install-Exe"
+    ],
+    "post_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostInstall",
+        "$LinkPaths = @(\"$env:AppData\\SodaMusic\")",
+        "A-New-LinkDirectory $LinkPaths"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PreUninstall",
+        "A-Stop-Process",
+        "A-Remove-Link",
+        "A-Uninstall-Exe -Uninstaller 'Soda Music\\unins000.exe'"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "A-Start-PostUninstall"
+    ],
+    "checkver": {
+        "script": [
+            ". \"$pwd\\bin\\utils.ps1\"",
+            "$InstallerInfo = A-Get-InstallerInfoFromWinget 'ByteDance.SodaMusic' 'exe'",
+            "\"ver:$($InstallerInfo.PackageVersion);\"",
+            "\"x64:$($InstallerInfo.x64_user.InstallerUrl);\"",
+            "\"x86:$($InstallerInfo.x86_user.InstallerUrl);\"",
+            "\"arm64:$($InstallerInfo.arm64_user.InstallerUrl);\""
+        ],
+        "regex": "ver:(?<version>[^;]+)(?:; x64:(?<x64>[^;]*))?(?:; x86:(?<x86>[^;]*))?(?:; arm64:(?<arm64>[^;]*))?"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "$matchX64",
+                "hash": {
+                    "url": "bin/scoop-auto-check-update-temp-data.jsonc",
+                    "jsonpath": "$.x64_user.InstallerSha256"
+                }
+            },
+            "32bit": {
+                "url": "$matchX86",
+                "hash": {
+                    "url": "bin/scoop-auto-check-update-temp-data.jsonc",
+                    "jsonpath": "$.x86_user.InstallerSha256"
+                }
+            }
+        }
+    }
+}
