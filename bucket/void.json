@@ -1,24 +1,44 @@
 {
     "version": "1.99.30039",
-    "description": "The open source AI code editor.",
+    "description": "Void is an open source Cursor alternative.",
     "homepage": "https://voideditor.com/",
     "license": "Apache-2.0",
+    "notes": [
+        "Add Void as a context menu option by running 'reg import \"$dir\\install-context.reg\"'",
+        "For file associations, run 'reg import \"$dir\\install-associations.reg\"'"
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/voideditor/binaries/releases/download/1.99.30039/VoidSetup-x64-1.99.30039.exe",
-            "hash": "ee951715461b6d5a638413ae5b21132e907b6eacd3cf85eb82aa205c2960e6c1",
-            "extract_dir": "{code_GetDestDir}"
+            "url": "https://github.com/voideditor/binaries/releases/download/1.99.30039/Void-win32-x64-1.99.30039.zip",
+            "hash": "bc2797a17c6e1f0f7c365dab04645f2c66b513bb5768d58a217b120f57618222"
+        },
+        "arm64": {
+            "url": "https://github.com/voideditor/binaries/releases/download/1.99.30039/Void-win32-arm64-1.99.30039.zip",
+            "hash": "276b364b14489231eac28cf71c1bdf6cee32061c1afd6f46a49fef42bc2a0a2c"
         }
     },
-    "innosetup": true,
     "post_install": [
-        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.void-editor\\extensions\")) {",
-        "    info '[Portable Mode] Copying extensions...'",
-        "    Copy-Item \"$env:USERPROFILE\\.void-editor\\extensions\" \"$dir\\data\" -Recurse",
+        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
+        "$exepath = \"$dir\\Void.exe\".Replace('\\', '\\\\')",
+        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context' | ForEach-Object {",
+        "  if (Test-Path \"$bucketsdir\\extras\\scripts\\vscode\\$_.reg\") {",
+        "    $content = Get-Content \"$bucketsdir\\extras\\scripts\\vscode\\$_.reg\"",
+        "    $content = $content.Replace('$codedir', $dirpath)",
+        "    $content = $content.Replace('$code', $exepath)",
+        "    $content = $content.Replace('&Code', '&Void')",
+        "    if ($global) {",
+        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
+        "  }",
         "}",
-        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\void-editor\")) {",
+        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.vscode-oss\\extensions\")) {",
+        "    info '[Portable Mode] Copying extensions...'",
+        "    Copy-Item \"$env:USERPROFILE\\.vscode-oss\\extensions\" \"$dir\\data\" -Recurse",
+        "}",
+        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Void\")) {",
         "    info '[Portable Mode] Copying user data...'",
-        "    Copy-Item \"$env:AppData\\void-editor\" \"$dir\\data\\user-data\" -Recurse",
+        "    Copy-Item \"$env:AppData\\Void\" \"$dir\\data\\user-data\" -Recurse",
         "}",
         "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
         "if ((Test-Path \"$extensions_file\")) {",
@@ -26,19 +46,28 @@
         "    (Get-Content \"$extensions_file\") -replace '(?<=void(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
         "}"
     ],
+    "env_add_path": "bin",
     "shortcuts": [
         [
             "Void.exe",
-            "Void",
-            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
+            "Void"
         ]
     ],
     "persist": "data",
+    "checkver": {
+        "github": "https://github.com/voideditor/binaries"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/voideditor/binaries/releases/download/$version/VoidSetup-x64-$version.exe"
+                "url": "https://github.com/voideditor/binaries/releases/download/$version/Void-win32-x64-$version.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/voideditor/binaries/releases/download/$version/Void-win32-arm64-$version.zip"
             }
+        },
+        "hash": {
+            "url": "$url.sha256"
         }
     }
 }
