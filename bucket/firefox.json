@@ -1,60 +1,78 @@
 {
-    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
     "version": "140.0",
     "description": "Popular open source web browser.",
     "homepage": "https://www.mozilla.org/firefox/",
-    "license": {
-        "identifier": "MPL-2.0",
-        "url": "https://www.mozilla.org/en-US/MPL/2.0/"
-    },
-    "notes": "For details about switching Firefox profiles, refer to https://support.mozilla.org/en-US/kb/profile-manager-create-remove-switch-firefox-profiles",
+    "license": "MPL-2.0",
+    "notes": [
+        "To set profile 'Scoop' as *DEFAULT*, or profiles/settings was lost after update:",
+        "  - Run 'Firefox Profile Manager', choose 'Scoop' then click 'Start Firefox'.",
+        "  - Visit 'about:profiles' page in Firefox to check *DEFAULT* profile.",
+        "For details: https://support.mozilla.org/en-US/kb/profile-manager-create-remove-switch-firefox-profiles"
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://archive.mozilla.org/pub/firefox/releases/140.0/win64/en-US/Firefox%20Setup%20140.0.exe#/dl.7z",
-            "hash": "sha512:fb0fae86e8aa375e447613d48b82f36b4f87d1943e0f6aa26a21c6a352d70c76c7044f32ed345a8abfbbbcb9d9fc74800435dcf15903137d5dd9655a46762982"
+            "url": "https://archive.mozilla.org/pub/firefox/releases/140.0/win64/zh-CN/Firefox%20Setup%20140.0.exe#/dl.7z",
+            "hash": "sha512:1be61dcd0e70053756ec7b9adf597967c4e0f5db9504557ae513100138df28fca45c93cdb0821fa30602af658ab7eed40d13fa46a3d1392757a5ac682d4a4fe2"
         },
         "32bit": {
-            "url": "https://archive.mozilla.org/pub/firefox/releases/140.0/win32/en-US/Firefox%20Setup%20140.0.exe#/dl.7z",
-            "hash": "sha512:606671a7d6d7eb0e35ae1378185bdfb36cba96b8d68969a4cdf93e2a5a542c3f2d0460e7e40da46600c365e4edf518be0a1c6be9ea884097d36846ab7f11cc72"
+            "url": "https://archive.mozilla.org/pub/firefox/releases/140.0/win32/zh-CN/Firefox%20Setup%20140.0.exe#/dl.7z",
+            "hash": "sha512:cfe3d14bdedeb52b4a70c7961b6972e428e511185155317663ffc83123ae9bec903caefe4842cefb3c820ff301fa51b9ee9f5e17efd7936c86bd569850799bba"
+        },
+        "arm64": {
+            "url": "https://archive.mozilla.org/pub/firefox/releases/140.0/win64-aarch64/zh-CN/Firefox%20Setup%20140.0.exe#/dl.7z",
+            "hash": "sha512:3406029bf3daa454c0e2ac95107ff66fe4c74779b023c397f5f02b761e2d495aec6da01aaadcb8d0650909cd4d52b319e9de49bd4521be2af835d2a1b50c301c"
         }
     },
     "extract_dir": "core",
+    "post_install": [
+        "firefox -CreateProfile \"Scoop $persist_dir\\profile\"",
+        "$Addition = \"$persist_dir\\addition\"",
+        "if (Test-Path $Addition) {",
+        "  info 'Copying additional items...'",
+        "  Copy-Item -Path $Addition\\* -Destination $dir -Force -Recurse -ErrorAction SilentlyContinue",
+        "}"
+    ],
+    "bin": "firefox.exe",
     "shortcuts": [
         [
             "firefox.exe",
             "Firefox"
+        ],
+        [
+            "firefox.exe",
+            "Firefox Profile Manager",
+            "-P"
         ]
     ],
-    "pre_install": [
-        "'defaults\\pref\\channel-prefs.js' | ForEach-Object {",
-        "  if (!(Test-Path \"$persist_dir\\$_\")) {",
-        "    Write-Host -ForegroundColor Green \"Disabling the auto-update...\"",
-        "    Set-Content -Encoding Ascii -Path \"$dir\\$_\" -Value 'pref(\"app.update.channel\", \"default\");'",
-        "  }",
-        "}"
-    ],
     "persist": [
-        "defaults\\pref\\channel-prefs.js",
-        "distribution"
+        "distribution",
+        "profile"
     ],
     "checkver": {
-        "url": "https://www.mozilla.org/en-US/firefox/notes/",
-        "regex": "class=\"c-release-version\">([\\d.]+)</"
+        "url": "https://product-details.mozilla.org/1.0/firefox_versions.json",
+        "jsonpath": "$.LATEST_FIREFOX_VERSION"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://archive.mozilla.org/pub/firefox/releases/$version/win64/en-US/Firefox%20Setup%20$version.exe#/dl.7z",
+                "url": "https://archive.mozilla.org/pub/firefox/releases/$version/win64/zh-CN/Firefox%20Setup%20$version.exe#/dl.7z",
                 "hash": {
                     "url": "https://archive.mozilla.org/pub/firefox/releases/$version/SHA512SUMS",
-                    "regex": "$sha512\\s+win64/en-US/$basename"
+                    "regex": "$sha512\\s+win64/zh-CN/$basename"
                 }
             },
             "32bit": {
-                "url": "https://archive.mozilla.org/pub/firefox/releases/$version/win32/en-US/Firefox%20Setup%20$version.exe#/dl.7z",
+                "url": "https://archive.mozilla.org/pub/firefox/releases/$version/win32/zh-CN/Firefox%20Setup%20$version.exe#/dl.7z",
                 "hash": {
                     "url": "https://archive.mozilla.org/pub/firefox/releases/$version/SHA512SUMS",
-                    "regex": "$sha512\\s+win32/en-US/$basename"
+                    "regex": "$sha512\\s+win32/zh-CN/$basename"
+                }
+            },
+            "arm64": {
+                "url": "https://archive.mozilla.org/pub/firefox/releases/$version/win64-aarch64/zh-CN/Firefox%20Setup%20$version.exe#/dl.7z",
+                "hash": {
+                    "url": "https://archive.mozilla.org/pub/firefox/releases/$version/SHA512SUMS",
+                    "regex": "$sha512\\s+win64-aarch64/zh-CN/$basename"
                 }
             }
         }
