@@ -1,54 +1,87 @@
 {
-    "version": "138.0.7204.35",
+    "version": "138.0.7204.50",
     "description": "Fast, secure, and free web browser, built for the modern web.",
-    "homepage": "https://www.google.com/chrome/beta",
+    "homepage": "https://www.google.com/chrome/",
     "license": {
         "identifier": "Freeware",
         "url": "https://www.google.com/chrome/privacy/eula_text.html"
     },
     "architecture": {
         "64bit": {
-            "url": "https://dl.google.com/release2/chrome/oibfro54kn72m2sumr5y4h4js4_138.0.7204.35/138.0.7204.35_chrome_installer.exe#/dl.7z",
-            "hash": "3d16a1e0237c806a376355f59c759263538cc2addd9592cf54e9d2c32f71e9b9"
+            "url": "https://dl.google.com/release2/chrome/o6dbyytvo73aj3atmz5ua7m6ry_138.0.7204.50/138.0.7204.50_chrome_installer_uncompressed.exe#/dl.7z",
+            "hash": "22a8c81eebedbfa9cdb61a14a717e693864fe9626faf4fd1f587ea266cc22616"
         },
         "32bit": {
-            "url": "https://dl.google.com/release2/chrome/acrcfsb3gpxu7z7hx4nfczynth3q_138.0.7204.35/138.0.7204.35_chrome_installer.exe#/dl.7z",
-            "hash": "25bb814cbd28f76cef342a94666682dd07d5624d9f9b6e978c1cb65343d343fa"
+            "url": "https://dl.google.com/release2/chrome/j3u7wrnak5a2hjrnzarf4cas3i_138.0.7204.50/138.0.7204.50_chrome_installer_uncompressed.exe#/dl.7z",
+            "hash": "6d9ebac78fa97531721765ad395e678fea57ca8fa5c79ab9176b97d53c33ca7b"
+        },
+        "arm64": {
+            "url": "https://dl.google.com/release2/chrome/adtve3x6tqsoe3rytq733divpmlq_138.0.7204.50/138.0.7204.50_chrome_installer_uncompressed.exe#/dl.7z",
+            "hash": "441d68de52fae6ab6626dc8dc9be1468a689b9d756d316125098a6f196aab856"
         }
     },
-    "installer": {
-        "script": "Expand-7zipArchive \"$dir\\chrome.7z\" -ExtractDir 'Chrome-bin' -Removal"
-    },
-    "bin": [
-        [
-            "chrome.exe",
-            "chrome"
-        ]
-    ],
+    "extract_dir": "Chrome-bin",
+    "bin": "chrome.exe",
     "shortcuts": [
         [
             "chrome.exe",
             "Google Chrome"
         ]
     ],
+    "env_set": {
+        "CHROME_EXECUTABLE": "$dir\\chrome.exe"
+    },
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:LocalAppData\\Google\\Chrome\\User Data\" \"$persist_dir\\User Data\" -Migrate"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:LocalAppData\\Google\\Chrome\\User Data\""
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    Remove-Item -Path \"$env:LOCALAPPDATA\\Google\\Chrome\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+            "    Remove-Item -Path HKCU:\\SOFTWARE\\Google\\Chrome -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+            "}"
+        ]
+    },
     "checkver": {
-        "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
-        "regex": "(?sm)<beta32><version>(?<version>[\\d.]+)</version>.+release2/chrome/(?<32>[\\w-]+)_.+<beta64>.+release2/chrome/(?<64>[\\w-]+)_.+</beta64>"
+        "script": [
+            "$data = Invoke-RestMethod -Uri \"https://raw.githubusercontent.com/Bush2021/chrome_installer/refs/heads/main/data.json\"",
+            "\"=====version=====\" + $data.win_stable_x64.version +",
+            "\"=====x64=====\" + ($data.win_stable_x64.urls | Where-Object { $_ -match \"^https://dl.google.com\" } | Select-Object -First 1) +",
+            "\"=====x86=====\" + ($data.win_stable_x86.urls | Where-Object { $_ -match \"^https://dl.google.com\" } | Select-Object -First 1) +",
+            "\"=====arm64=====\" + ($data.win_stable_arm64.urls | Where-Object { $_ -match \"^https://dl.google.com\" } | Select-Object -First 1)"
+        ],
+        "regex": "=====version=====(.+)=====x64=====(?<x64>.+)=====x86=====(?<x86>.+)=====arm64=====(?<arm64>.+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://dl.google.com/release2/chrome/$match64_$version/$version_chrome_installer.exe#/dl.7z",
+                "url": "$matchX64#/dl.7z",
                 "hash": {
-                    "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
-                    "xpath": "/chromechecker/beta64[version='$version']/sha256"
+                    "url": "https://raw.githubusercontent.com/Bush2021/chrome_installer/refs/heads/main/data.json",
+                    "jsonpath": "$.win_stable_x64.sha256"
                 }
             },
             "32bit": {
-                "url": "https://dl.google.com/release2/chrome/$match32_$version/$version_chrome_installer.exe#/dl.7z",
+                "url": "$matchX86#/dl.7z",
                 "hash": {
-                    "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
-                    "xpath": "/chromechecker/beta32[version='$version']/sha256"
+                    "url": "https://raw.githubusercontent.com/Bush2021/chrome_installer/refs/heads/main/data.json",
+                    "jsonpath": "$.win_stable_x86.sha256"
+                }
+            },
+            "arm64": {
+                "url": "$matchArm64#/dl.7z",
+                "hash": {
+                    "url": "https://raw.githubusercontent.com/Bush2021/chrome_installer/refs/heads/main/data.json",
+                    "jsonpath": "$.win_stable_arm64.sha256"
                 }
             }
         }
