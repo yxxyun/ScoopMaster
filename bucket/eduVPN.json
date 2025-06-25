@@ -1,16 +1,92 @@
 {
-  "version": "latest",
-  "description": "eduVPN client",
-  "homepage": "https://www.eduvpn.org",
-  "license": "GPL-3.0",
-  "url": "https://app.eduvpn.org/windows/eduVPNClient_latest.exe",
-  "hash": "807fe22f318a18c19630120e28faa6458fa15b5501ce2b4588fe3d7e3f1ba478",
-  "installer": {
-    "script": "Start-Process -Wait -FilePath \"$dir\\eduVPNClient_latest.exe\" -ArgumentList \"/S\""
-  },
-  "bin": "eduVPNClient_latest.exe",
-  "checkver": "github",
-  "autoupdate": {
-    "url": "https://app.eduvpn.org/windows/eduVPNClient_latest.exe"
-  }
+    "version": "4.4",
+    "description": "Access your institute's network or the Internet using an encrypted connection.",
+    "homepage": "https://www.eduvpn.org/",
+    "license": "GPL-3.0-or-later",
+    "architecture": {
+        "32bit": {
+            "url": "https://codeberg.org/eduVPN/windows/releases/download/4.4/eduVPNClient_4.4_x86.msi",
+            "hash": "e7bc8fd9b314897a6d293e0abb873945ef05d5dba8acbc81f1973b2da5ff68e8"
+        },
+        "64bit": {
+            "url": "https://codeberg.org/eduVPN/windows/releases/download/4.4/eduVPNClient_4.4_x64.msi",
+            "hash": "a1059a53c2a3329937803c16218a2e01ad91eae2cf619d7946bef31a2d1bdfbc"
+        },
+        "arm64": {
+            "url": "https://codeberg.org/eduVPN/windows/releases/download/4.4/eduVPNClient_4.4_ARM64.msi",
+            "hash": "20d7a11a81e2bc13c7004bc5b67a9bed9a6440017fdde957d2efb3177b14457b"
+        }
+    },
+    "extract_dir": "eduVPN",
+    "pre_install": [
+        "if (!(is_admin)) { throw 'Administrator privileges are required' }",
+        "ensure \"$dir\\OpenVPN\\config\"",
+        "ensure \"$dir\\WireGuard\\config\"",
+        "Stop-Service -Name 'OpenVPNServiceInteractive$eduVPN' -ErrorAction SilentlyContinue;",
+        "Stop-Service -Name 'eduWGManager$eduVPN' -ErrorAction SilentlyContinue;"
+    ],
+    "post_install": [
+        "function register {",
+        "    param(",
+        "        [string]$name,",
+        "        [string]$display,",
+        "        [string]$description,",
+        "        [string]$executable,",
+        "        [string]$arguments",
+        "    );",
+        "    if (-not (Get-Service -Name $name -ErrorAction SilentlyContinue)) {",
+        "        New-Service -Name $name -DisplayName $display -Description $description -BinaryPathName \"`\"$executable`\" $arguments\" -StartupType Automatic -DependsOn Dhcp | Out-Null;",
+        "    }",
+        "    Start-Service -Name $name;",
+        "}",
+        "REG ADD 'HKLM\\Software\\OpenVPN$eduVPN' /f > nul;",
+        "Set-ItemProperty -Path 'HKLM:\\Software\\OpenVPN$eduVPN' -Name '(Default)' -Value \"$dir\\OpenVPN\";",
+        "Set-ItemProperty -Path 'HKLM:\\Software\\OpenVPN$eduVPN' -Name 'exe_path' -Value \"$dir\\OpenVPN\\openvpn.exe\";",
+        "Set-ItemProperty -Path 'HKLM:\\Software\\OpenVPN$eduVPN' -Name 'config_dir' -Value \"$dir\\OpenVPN\\config\";",
+        "Set-ItemProperty -Path 'HKLM:\\Software\\OpenVPN$eduVPN' -Name 'config_ext' -Value \"ovpn.dpapi\";",
+        "Set-ItemProperty -Path 'HKLM:\\Software\\OpenVPN$eduVPN' -Name 'log_dir' -Value \"$dir\\OpenVPN\\config\";",
+        "Set-ItemProperty -Path 'HKLM:\\Software\\OpenVPN$eduVPN' -Name 'log_append' -Value \"0\";",
+        "Set-ItemProperty -Path 'HKLM:\\Software\\OpenVPN$eduVPN' -Name 'priority' -Value \"NORMAL_PRIORITY_CLASS\";",
+        "Set-ItemProperty -Path 'HKLM:\\Software\\OpenVPN$eduVPN' -Name 'ovpn_admin_group' -Value \"Users\";",
+        "register 'OpenVPNServiceInteractive$eduVPN' 'OpenVPN Interactive Service (eduVPN)' 'Enables OpenVPN connection network configuration management. If stopped or disabled, eduVPN client will not function.' \"$dir\\OpenVPN\\openvpnserv.exe\" '-instance interactive $eduVPN';",
+        "REG ADD 'HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog\\Application\\eduWGSvcHost$eduVPN' /f > nul;",
+        "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Eventlog\\Application\\eduWGSvcHost$eduVPN' -Name 'EventMessageFile' -Value \"$dir\\WireGuard\\eduWGSvcHost.exe\";",
+        "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Eventlog\\Application\\eduWGSvcHost$eduVPN' -Name 'TypesSupported' -Value 7;",
+        "register 'eduWGManager$eduVPN' 'WireGuard Manager Service (eduVPN)' 'WireGuard tunnel manager for eduVPN client. If stopped or disabled, eduVPN client will not function.' \"$dir\\WireGuard\\eduWGSvcHost.exe\" 'eduVPN Manager';"
+    ],
+    "pre_uninstall": [
+        "Stop-Service -Name 'OpenVPNServiceInteractive$eduVPN';",
+        "Remove-Service -Name 'OpenVPNServiceInteractive$eduVPN';",
+        "Stop-Service -Name 'eduWGManager$eduVPN';",
+        "Remove-Service -Name 'eduWGManager$eduVPN';",
+        "REG DELETE 'HKLM\\Software\\OpenVPN$eduVPN' /f > nul;",
+        "REG DELETE 'HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog\\Application\\eduWGSvcHost$eduVPN' /f > nul;"
+    ],
+    "persist": [
+        "OpenVPN\\config",
+        "WireGuard\\config"
+    ],
+    "shortcuts": [
+        [
+            "Core/eduVPN.Client.exe",
+            "eduVPN"
+        ]
+    ],
+    "checkver": {
+        "url": "https://codeberg.org/api/v1/repos/eduVPN/windows/releases",
+        "jsonpath": "$[0].tag_name"
+    },
+    "autoupdate": {
+        "architecture": {
+            "32bit": {
+                "url": "https://codeberg.org/eduVPN/windows/releases/download/$version/eduVPNClient_$version_x86.msi"
+            },
+            "64bit": {
+                "url": "https://codeberg.org/eduVPN/windows/releases/download/$version/eduVPNClient_$version_x64.msi"
+            },
+            "arm64": {
+                "url": "https://codeberg.org/eduVPN/windows/releases/download/$version/eduVPNClient_$version_ARM64.msi"
+            }
+        }
+    }
 }
