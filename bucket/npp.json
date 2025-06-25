@@ -1,0 +1,144 @@
+{
+    "version": "8.8.1",
+    "description": "一款非常有特色的文本编辑器",
+    "homepage": "https://notepad-plus-plus.org",
+    "license": "GPL-3.0-or-later",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.8.1/npp.8.8.1.portable.x64.zip",
+            "hash": "a123ba8c547f62dcb48617acf8fff928117e7e8bc13b5fa5fd160d7bc9807817"
+        },
+        "32bit": {
+            "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.8.1/npp.8.8.1.portable.zip",
+            "hash": "c5834051a8a21c51cfba961cd5b4e9939b849a54cffa8d880a0e0fb37d3fd003"
+        },
+        "arm64": {
+            "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.8.1/npp.8.8.1.portable.arm64.zip",
+            "hash": "d2709ba35c32cd393f8503e0719b460500467af3fcebc2d5564e6391213ec493"
+        }
+    },
+    "pre_install": [
+        "'session.xml', 'userDefineLang.xml' | ForEach-Object {",
+        "    if (!(Test-Path \"$persist_dir\\$_\")) { New-Item \"$dir\\$_\" -ItemType File | Out-Null }",
+        "}",
+        "if (!(Test-Path \"$persist_dir\\stylers.xml\")) { Copy-Item \"$dir\\stylers.model.xml\" \"$dir\\stylers.xml\" }"
+    ],
+    "post_install": [
+        "# Update shipped plugins",
+        "if (Test-Path \"$dir\\plugins.original\") {",
+        "    Copy-Item -Recurse \"$dir\\plugins.original\\*\" \"$dir\\plugins\\\" -Force",
+        "}",
+        "# Disable Updater",
+        "Remove-Item \"$dir\\updater\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+        "",
+        "# Add Context Menu",
+        "if ($global) {",
+        "    $registry_scope = \"HKEY_LOCAL_MACHINE\"",
+        "} else {",
+        "    $registry_scope = \"HKEY_CURRENT_USER\"",
+        "}",
+        "",
+        "@\"",
+        "Windows Registry Editor Version 5.00",
+        "",
+        "[$registry_scope\\SOFTWARE\\Classes\\*\\shell\\Notepad++]",
+        "@=\"使用 &Notepad++ 编辑\"",
+        "\"icon\"=\"$($dir -replace '\\\\','\\\\')\\\\Notepad++.exe\"",
+        "",
+        "[$registry_scope\\SOFTWARE\\Classes\\*\\shell\\Notepad++\\command]",
+        "@=\"\\\"$($dir -replace '\\\\','\\\\')\\\\Notepad++.exe\\\" \\\"%1\\\"\"",
+        "",
+        "[$registry_scope\\SOFTWARE\\Classes\\Directory\\shell\\Notepad++]",
+        "@=\"使用 &Notepad++ 打开\"",
+        "\"icon\"=\"$($dir -replace '\\\\','\\\\')\\\\Notepad++.exe\"",
+        "",
+        "[$registry_scope\\SOFTWARE\\Classes\\Directory\\shell\\Notepad++\\command]",
+        "@=\"\\\"$($dir -replace '\\\\','\\\\')\\\\Notepad++.exe\\\" -openFoldersAsWorkspace \\\"%1\\\"\"",
+        "",
+        "[$registry_scope\\SOFTWARE\\Classes\\Directory\\Background\\shell\\Notepad++]",
+        "@=\"使用 &Notepad++ 打开\"",
+        "\"icon\"=\"$($dir -replace '\\\\','\\\\')\\\\Notepad++.exe\"",
+        "",
+        "[$registry_scope\\SOFTWARE\\Classes\\Directory\\Background\\shell\\Notepad++\\command]",
+        "@=\"\\\"$($dir -replace '\\\\','\\\\')\\\\Notepad++.exe\\\" -openFoldersAsWorkspace \\\"%V\\\"\"",
+        "",
+        "\"@ | Set-Content -Path \"$dir\\install-notepad++.reg\" -Encoding Unicode",
+        "",
+        "reg.exe import \"$dir\\install-notepad++.reg\"",
+        "",
+        "# Optimize configuration",
+        "$xml = New-Object System.Xml.XmlDocument",
+        "$xml.Load(\"$persist_dir\\config.xml\")",
+        "$xml.SelectNodes(\"NotepadPlus/GUIConfigs/GUIConfig[@name='searchEngine']\").SetAttribute('searchEngineChoice', '0')",
+        "$xml.SelectNodes(\"NotepadPlus/GUIConfigs/GUIConfig[@name='searchEngine']\").SetAttribute('searchEngineCustom', 'https://cn.bing.com/search?q=$(CURRENT_WORD)')",
+        "$xml.SelectNodes(\"NotepadPlus/GUIConfigs/GUIConfig[@name='SmartHighLight']\").SetAttribute('wholeWordOnly', 'no')",
+        "try {",
+        "    $xml.SelectNodes(\"NotepadPlus/GUIConfigs/GUIConfig[@name='DarkMode']\").SetAttribute('enableWindowsMode', 'yes')",
+        "} catch {",
+        "    warn 'DarkMode will not be enabled util the next update.'",
+        "}",
+        "$xml.Save(\"$persist_dir\\config.xml\")",
+        "Copy-Item \"$dir\\localization\\chineseSimplified.xml\" \"$dir\\nativeLang.xml\" -Force"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($global) {",
+            "    $registry_scope = \"HKLM\"",
+            "} else {",
+            "    $registry_scope = \"HKCU\"",
+            "}",
+            "reg.exe delete \"$registry_scope\\SOFTWARE\\Classes\\*\\shell\\Notepad++\" /f",
+            "reg.exe delete \"$registry_scope\\SOFTWARE\\Classes\\Directory\\shell\\Notepad++\" /f",
+            "reg.exe delete \"$registry_scope\\SOFTWARE\\Classes\\Directory\\Background\\shell\\Notepad++\" /f"
+        ]
+    },
+    "bin": [
+        "notepad++.exe",
+        [
+            "notepad++.exe",
+            "npp"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "notepad++.exe",
+            "Notepad++"
+        ]
+    ],
+    "persist": [
+        "backup",
+        "cloud",
+        "plugins",
+        "themes",
+        "userDefineLangs",
+        "config.xml",
+        "session.xml",
+        "shortcuts.xml",
+        "stylers.xml",
+        "userDefineLang.xml"
+    ],
+    "checkver": {
+        "github": "https://github.com/notepad-plus-plus/notepad-plus-plus"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v$version/npp.$version.portable.x64.zip"
+            },
+            "32bit": {
+                "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v$version/npp.$version.portable.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v$version/npp.$version.portable.arm64.zip"
+            }
+        },
+        "hash": {
+            "url": "$baseurl/npp.$version.checksums.sha256"
+        }
+    }
+}

@@ -1,0 +1,64 @@
+{
+    "version": "5.2.1505",
+    "description": "微云是腾讯公司为用户精心打造的一项智能云服务, 您可以通过微云方便地在手机和电脑之间同步文件、推送照片和传输数据。",
+    "homepage": "https://www.weiyun.com/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "http://www.weiyun.com/xy.html"
+    },
+    "shortcuts": [
+        [
+            "WeiyunApp.exe",
+            "腾讯微云"
+        ]
+    ],
+    "architecture": {
+        "64bit": {
+            "hash": "47a8a0b293a9d20378f6da666f3a4ccb0ab3b5d91e25f708225691ab46489b51",
+            "url": "https://dldir1.qq.com/weiyun/electron-update/release/5.2.1505/WeiyunApp-Setup-X64-5.2.1505.exe#/dl.7z",
+            "installer": {
+                "script": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
+            }
+        },
+        "32bit": {
+            "hash": "eea49c105ad9b8fc6839972e773d4e08da4aa22e58176315742041c41578e433",
+            "url": "https://dldir1.qq.com/weiyun/electron-update/release/5.2.1505/WeiyunApp-Setup-WIN32-5.2.1505.exe#/dl.7z",
+            "installer": {
+                "script": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-32.7z\" \"$dir\""
+            }
+        }
+    },
+    "post_install": [
+        "Remove-Item -Recurse -Force \"$dir\\`$*\" -ErrorAction SilentlyContinue | Out-Null",
+        "",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "New-PersistDirectory \"$env:APPDATA\\WeiyunApp\" \"$persist_dir\\AppData\" -Migrate"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\WeiyunApp\""
+    ],
+    "checkver": {
+        "script": [
+            "$url = 'https://www.weiyun.com/download.html'",
+            "$resp = Invoke-WebRequest -Uri $url -TimeoutSec 10",
+            "$cont = $resp.Content",
+            "$pattern = 'https://jsonschema.qpic.cn.*/config'",
+            "$jsUrl = [regex]::Match($cont, $pattern).Value",
+            "(Invoke-WebRequest -Uri $jsUrl -TimeoutSec 10).Content"
+        ],
+        "jsonpath": "$.electron_win64.version"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://dldir1.qq.com/weiyun/electron-update/release/$version/WeiyunApp-Setup-X64-$version.exe#/dl.7z"
+            },
+            "32bit": {
+                "url": "https://dldir1.qq.com/weiyun/electron-update/release/$version/WeiyunApp-Setup-WIN32-$version.exe#/dl.7z"
+            }
+        }
+    }
+}

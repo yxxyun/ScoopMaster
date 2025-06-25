@@ -1,30 +1,50 @@
 {
-    "version": "9.2.2000.2408",
+    "version": "10.7.1000.2505",
     "description": "星愿浏览器（Twinkstar Browser）是一款好用，可靠，时尚的浏览器，兼容Chrome插件，提供漫画阅读模式，视频下载，鼠标手势，超级拖拽等功能",
     "homepage": "https://www.twinkstar.com/",
     "license": "Freeware",
     "architecture": {
         "64bit": {
-            "url": "https://d1.twinkstar.com/more_pkg/win/Twinkstar_v9.2.2000.2408_Release_portable.7z",
-            "hash": "3ea7b253417897d04c43bacf5e20bccac97f60ab27ed2c7cb9690334ab574cab"
+            "url": "https://d1.twinkstar.com/win/Twinkstar_v10.7.1000.2505_Release.exe#/dl.7z",
+            "hash": "4592c2d8a1d190c57710d920de37e842ac7f17250703135ee3ab71b6b60cbe83"
         }
     },
-    "post_install": "Remove-Item \"$dir\\Uninstall*\", \"$dir\\tsupdater*\"  -Force -Recurse",
-    "bin": "twinkstar.exe",
+    "extract_dir": "$PLUGINSDIR\\tw_data",
     "shortcuts": [
         [
             "twinkstar.exe",
             "星愿浏览器"
         ]
     ],
-    "persist": "User Data",
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:LOCALAPPDATA\\Twinkstar\\User Data\" \"$persist_dir\\User Data\" -Migrate",
+            "Remove-Item \"$dir\\Uninstall*\", \"$dir\\tsupdater*\"  -Force -Recurse -ErrorAction SilentlyContinue | Out-Null"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:LOCALAPPDATA\\Twinkstar\\User Data\""
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    Remove-Item -Path \"$env:LOCALAPPDATA\\Twinkstar\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+            "    Remove-Item -Path HKCU:\\SOFTWARE\\Twinkstar -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+            "}"
+        ]
+    },
     "checkver": {
-        "regex": "Twinkstar_v([\\d.]+)_Release(?<release>[A-Z]?)"
+        "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.95 Safari/537.36",
+        "regex": "Twinkstar_v([\\d.]+)_(?<release>\\w+)\\.exe"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://d1.twinkstar.com/more_pkg/win/Twinkstar_v$version_Release$matchRelease64_portable.7z"
+                "url": "https://d1.twinkstar.com/win/Twinkstar_v$version_$matchRelease.exe#/dl.7z"
             }
         }
     }

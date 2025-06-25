@@ -1,0 +1,70 @@
+{
+    "description": "An optimized BLAS library",
+    "homepage": "https://github.com/OpenMathLib/OpenBLAS",
+    "license": "BSD-3-Clause",
+    "version": "0.3.29",
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/OpenMathLib/OpenBLAS/releases/download/v$version/OpenBLAS-$version_x64_64.zip"
+            },
+            "32bit": {
+                "url": "https://github.com/OpenMathLib/OpenBLAS/releases/download/v$version/OpenBLAS-$version_x86.zip"
+            }
+        },
+        "hash": {
+            "mode": "download"
+        }
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.29/OpenBLAS-0.3.29_x64_64.zip",
+            "hash": "29fdc3989bb935a866fc31e897bbe105269e62754b49577b4ff29ccb1fae352b"
+        },
+        "32bit": {
+            "url": "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.29/OpenBLAS-0.3.29_x86.zip",
+            "hash": "fe656e5244dd3d8d4e58d5609c8bab2acde9281c16cee8e406a3ba381b1d5204"
+        }
+    },
+    "post_install": [
+        "$target = 'User'; if($global) { $target = 'Machine' }",
+        "$include_paths = [environment]::getEnvironmentVariable(\"CPATH\", $target)",
+        "if ($null -eq $include_paths) { $include_paths = '' }",
+        "$include_paths = $include_paths.Trim(';').Split(';')",
+        "$include_path = Join-Path -Path $dir -ChildPath 'include'",
+        "if ($include_paths -notcontains $include_path) {",
+        "   $include_paths += $include_path",
+        "   [environment]::setEnvironmentVariable(\"CPATH\", $include_paths -join ';', $target)",
+        "}",
+        "$lib_paths = [environment]::getEnvironmentVariable(\"LIBRARY_PATH\", $target)",
+        "if ($null -eq $lib_paths) { $lib_paths = '' }",
+        "$lib_paths = $lib_paths.Trim(';').Split(';')",
+        "$lib_path = Join-Path -Path $dir -ChildPath 'lib'",
+        "if ($lib_paths -notcontains $lib_path) {",
+        "   $lib_paths += $lib_path",
+        "   [environment]::setEnvironmentVariable(\"LIBRARY_PATH\", $lib_paths -join ';', $target)",
+        "}"
+    ],
+    "post_uninstall": [
+        "$target = 'User'; if($global) { $target = 'Machine' }",
+        "$include_paths = [environment]::getEnvironmentVariable(\"CPATH\", $target)",
+        "if ($null -ne $include_paths) {",
+        "   $include_paths = [System.Collections.ArrayList]$include_paths.Trim(';').Split(';')",
+        "   $include_path = Join-Path -Path $dir -ChildPath 'include'",
+        "   while ($include_paths -contains $include_path) {",
+        "       $include_paths.Remove($include_path)",
+        "   }",
+        "   [environment]::setEnvironmentVariable(\"CPATH\", $include_paths -join ';', $target)",
+        "}",
+        "$lib_paths = [environment]::getEnvironmentVariable(\"LIBRARY_PATH\", $target)",
+        "if ($null -ne $lib_paths) {",
+        "   $lib_paths = [System.Collections.ArrayList]$lib_paths.Trim(';').Split(';')",
+        "   $lib_path = Join-Path -Path $dir -ChildPath 'lib'",
+        "   while ($lib_paths -contains $lib_path) {",
+        "       $lib_paths.Remove($lib_path)",
+        "   }",
+        "   [environment]::setEnvironmentVariable(\"LIBRARY_PATH\", $lib_paths -join ';', $target)",
+        "}"
+    ]
+}
