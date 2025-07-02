@@ -1,24 +1,26 @@
 {
     "version": "3.32.0.510",
-    "homepage": "https://voovmeeting.com",
-    "description": "Backed by Tencent's years of experience in audiovisual communications",
+    "description": "Cloud meeting solutions covering 100+ countries and regions.",
+    "homepage": "https://voovmeeting.com/",
     "license": {
-        "identifier": "Freeware",
+        "identifier": "Proprietary",
         "url": "https://voovmeeting.com/df/en/service-agreement.html"
     },
-    "url": "https://updatecdn.meeting.qq.com/cos/72e1c303457978c95755ef8c2d8754b5/VooVMeeting_1410000197_3.32.0.510.publish.exe#/dl.7z",
+    "url": "https://updatecdnv6.meeting.qq.com/cos/72e1c303457978c95755ef8c2d8754b5/VooVMeeting_1410000197_3.32.0.510.publish.exe#/dl.7z",
     "hash": "md5:72e1c303457978c95755ef8c2d8754b5",
+    "pre_install": "Rename-Item -Path \"$dir\\`$_*\" -NewName \"$version\" -Force",
     "installer": {
         "script": [
-            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name ox) scripts/DoradoUtils.psm1)",
-            "Mount-ExternalRuntimeData -Source \"$persist_dir\" -Target \"$env:APPDATA\\Tencent\\VooVMeeting\"",
-            "Remove-Module -Name DoradoUtils",
-            "Get-ChildItem \"$dir\\`$_*\" | Rename-Item -NewName \"$version\" -Force",
-            "Remove-Item \"$dir\\`$*\" -Recurse -Force -ErrorAction SilentlyContinue",
-            "Remove-Item \"$dir\\voovmeetingapp_new.exe\" -Force -ErrorAction SilentlyContinue",
-            "create_startmenu_shortcuts $manifest $original_dir $global $architecture",
-            "$manifest.shortcuts = @()"
+            "ensure \"$persist_dir\" | Out-Null",
+            "New-Item \"$env:APPDATA\\Tencent\\VooVMeeting\" -ItemType Junction -Target \"$persist_dir\" | Out-Null"
         ]
+    },
+    "post_install": [
+        "Remove-Item \"$dir\\`$*\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item \"$dir\\voovmeetingapp_new.exe\" -Force -ErrorAction SilentlyContinue"
+    ],
+    "uninstaller": {
+        "script": "Remove-Item \"$env:APPDATA\\Tencent\\VooVMeeting\" -ErrorAction 'SilentlyContinue' -Force -Recurse"
     },
     "shortcuts": [
         [
@@ -26,27 +28,16 @@
             "VooV Meeting"
         ]
     ],
-    "uninstaller": {
-        "script": [
-            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name ox) scripts/DoradoUtils.psm1)",
-            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\Tencent\\VooVMeeting\"",
-            "Remove-Module -Name DoradoUtils"
-        ]
-    },
     "checkver": {
-        "script": [
-            "$script:ver = json_path $page '$.info-list[0].version' -single $true",
-            "$script:matchesHashtable = @{'url' = json_path $page '$.info-list[0].url' -single $true}",
-            "$script:regexp = $null"
-        ],
-        "url": "https://voovmeeting.com/web-service/query-download-info?q=%5B%7B%22package-type%22:%22app%22,%22channel%22:%221410000197%22,%22platform%22:%22windows%22,%22decorators%22:%5B%22intl%22%5D%7D%5D&nonce=AAAAAAAAAAAAAAAA"
+        "url": "https://voovmeeting.com/web-service/query-download-info?q=%5B%7B%22package-type%22:%22app%22,%22channel%22:%221410000197%22,%22platform%22:%22windows%22,%22decorators%22:%5B%22intl%22%5D%7D%5D&nonce=AAAAAAAAAAAAAAAA",
+        "regex": "\"md5\":\"(?<hash>[a-f0-9]+)\".+\"version\":\"([\\d\\.]+)\""
     },
     "autoupdate": {
-        "url": "$matchUrl#/dl.7z",
+        "url": "https://updatecdnv6.meeting.qq.com/cos/$matchHash/VooVMeeting_1410000197_$version.publish.exe#/dl.7z",
         "hash": {
-            "jsonpath": "$.info-list[0].md5",
+            "url": "https://voovmeeting.com/web-service/query-download-info?q=%5B%7B%22package-type%22:%22app%22,%22channel%22:%221410000197%22,%22platform%22:%22windows%22,%22decorators%22:%5B%22intl%22%5D%7D%5D&nonce=AAAAAAAAAAAAAAAA",
             "mode": "json",
-            "url": "https://voovmeeting.com/web-service/query-download-info?q=%5B%7B%22package-type%22:%22app%22,%22channel%22:%221410000197%22,%22platform%22:%22windows%22,%22decorators%22:%5B%22intl%22%5D%7D%5D&nonce=AAAAAAAAAAAAAAAA"
+            "jsonpath": "$.info-list[0].md5"
         }
     }
 }
