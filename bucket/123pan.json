@@ -1,6 +1,6 @@
 {
     "version": "2.4.0.0",
-    "description": "123云盘是一款空间大、不限速、专注大文件传输分发的云存储服务产品。",
+    "description": "The official client for 123 cloud dirve service",
     "homepage": "https://www.123pan.com/",
     "license": "Proprietary",
     "url": "https://app.123957.com/pc-pro/windows/240/123pan_2.4.0.exe#/dl.7z",
@@ -11,31 +11,31 @@
             "123云盘"
         ]
     ],
-    "installer": {
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\app.7z\" \"$dir\"",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\app.7z\" -Force -Recurse"
+    ],
+    "uninstaller": {
         "script": [
-            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-            "New-PersistDirectory \"$env:APPDATA\\123pan\" \"$persist_dir\\AppData\" -Migrate",
-            "Expand-7zipArchive \"$dir\\app.7z\" \"$dir\" -Removal",
-            "Remove-Item \"$dir\\`$*\" -Recurse -Force"
+            "$runtimeCache = \"$env:APPDATA\\123pan\"",
+            "Write-Host \"`nRemoving RuntimeCacheCache:$runtimeCache\"",
+            "Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue"
         ]
     },
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App",
-        "Remove-Junction \"$env:APPDATA\\123pan\""
-    ],
     "checkver": {
         "script": [
-            "Import-Module \"$pwd\\bin\\WinGet.psm1\"",
-            "$Manifest = Get-WinGetManifest -Id '123.123pan'",
-            "$version  = $Manifest.PackageVersion",
-            "$url      = $Manifest.Installers.InstallerUrl",
-            "return \"$version=====$url\""
+            ". \"$pwd\\bin\\utils.ps1\"",
+            "$dl_info = get_installer_info '123/123pan'",
+            "\"ver:$($dl_info.PackageVersion);\"",
+            "\"x64:$($dl_info.x64_exe.InstallerUrl);\""
         ],
-        "regex": "(.*)=====(?<url>.*)"
+        "regex": "ver:(?<version>.+?); x64:(?<x64>.+?);"
     },
     "autoupdate": {
-        "url": "$matchUrl#/dl.7z"
+        "url": "$matchX64#/dl.7z",
+        "hash": {
+            "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/1/123/123pan/$version/123.123pan.installer.yaml",
+            "regex": "Architecture: x64[\\s\\S]+?InstallerSha256:\\s?(.+)"
+        }
     }
 }
