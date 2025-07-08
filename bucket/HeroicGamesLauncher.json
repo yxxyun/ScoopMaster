@@ -1,27 +1,53 @@
 {
     "version": "2.17.2",
-    "homepage": "http://heroicgameslauncher.com/",
-    "description": "An Open Source Game Launcher for Linux, Windows and MacOS",
-    "url": "https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher/releases/download/v2.17.2/Heroic-2.17.2-Setup-x64.exe#/dl.7z",
-    "hash": "df48cab1537ed2a9cc5a754ab9b4516d3680c3bb2a3a6791beabf988ed18b256",
-    "license": "GPL-3.0",
-    "architecture": {
-        "64bit": {
-            "installer": {
-                "script": [
-                    "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-                    "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\Uninst*\" -Force -Recurse"
-                ]
-            }
-        },
-        "32bit": {
-            "installer": {
-                "script": [
-                    "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-32.7z\" \"$dir\"",
-                    "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\Uninst*\" -Force -Recurse"
-                ]
-            }
-        }
+    "description": "A games launcher for GOG, Amazon and Epic Games for Linux, Windows and macOS. ",
+    "homepage": "https://heroicgameslauncher.com/",
+    "license": "GPL-3.0-only",
+    "url": "https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher/releases/download/v2.17.2/Heroic-2.17.2-Portable-x64.exe#/Heroic.exe",
+    "hash": "c4f43d988fcfea0a2c0d2d124ff94cb8e8614ce64a723d316ef3b9a404adfea9",
+    "checkver": {
+        "github": "https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher"
+    },
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\doge\\scripts\\utils.ps1\"",
+            "Ensure-Junction -Source \"$persist_dir\\AppData\" -Target \"$env:APPDATA\\heroic\""
+        ]
+    },
+    "persist": "Games",
+    "post_install": [
+        "$configPath = \"$persist_dir\\AppData\\config.json\"",
+        "if (Test-Path -Path $configPath) {",
+        "    exit 0",
+        "}",
+        "$steamPath = Get-ItemProperty -Path \"HKCU:\\Software\\Valve\\Steam\" -Name \"SteamPath\" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty SteamPath -ErrorAction SilentlyContinue",
+        "if (-not $steamPath) {",
+        "    $steamPath = \"C:\\Program Files (x86)\\Steam\"",
+        "} else {",
+        "    $steamPath = (Get-Item -Path $steamPath).FullName",
+        "    $caption = \"当前检测到的Steam路径: $steamPath\"",
+        "    $message = \"是否需要我们为您修改Heroic配置? 您之后可以手动设置它 [Y/N]\"",
+        "    $yes = New-Object System.Management.Automation.Host.ChoiceDescription '&Yes', '是'",
+        "    $no = New-Object System.Management.Automation.Host.ChoiceDescription '&No', '否'",
+        "    $options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)",
+        "    $result = $host.UI.PromptForChoice($caption, $message, $options, 1)",
+        "    if ($result -eq 1) {",
+        "       $steamPath = \"C:\\Program Files (x86)\\Steam\"",
+        "    }",
+        "}",
+        "$jsonConfig = @{",
+        "    defaultSettings = @{",
+        "        defaultInstallPath = \"$persist_dir\\Games\"",
+        "        defaultSteamPath   = \"$steamPath\"",
+        "    }",
+        "} | ConvertTo-Json -Depth 3 | Out-File -FilePath \"$configPath\" -Encoding UTF8",
+        "# MARK:PowerShell Json UTF8 BOM"
+    ],
+    "uninstaller": {
+        "script": [
+            ". \"$bucketsdir\\doge\\scripts\\utils.ps1\"",
+            "Remove-Junction -Path \"$env:APPDATA\\heroic\""
+        ]
     },
     "shortcuts": [
         [
@@ -29,10 +55,7 @@
             "Heroic"
         ]
     ],
-    "checkver": {
-        "github": "https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher"
-    },
     "autoupdate": {
-        "url": "https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher/releases/download/v$version/Heroic-$version-Setup-x64.exe#/dl.7z"
+        "url": "https://github.com/Heroic-Games-Launcher/HeroicGamesLauncher/releases/download/v$version/Heroic-$version-Portable-x64.exe#/Heroic.exe"
     }
 }
