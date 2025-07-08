@@ -4,9 +4,11 @@
     "homepage": "https://golang.org",
     "license": "BSD-3-Clause",
     "notes": [
-        "Your GOROOT has been set to: $dir",
+        "Your \"GOROOT\" has been set to: \"$dir\"",
         "You can run 'go env GOROOT' to view this at any time.",
-        "\"$env:USERPROFILE\\go\\bin\" has been added to your PATH."
+        "\"$env:USERPROFILE\\go\\bin\" has been added to your PATH.",
+        "If you want to use another PATH than \"$env:USERPROFILE\\go\",",
+        "ensure that the \"GOPATH\" environment variable is set prior to installing go."
     ],
     "architecture": {
         "64bit": {
@@ -16,14 +18,28 @@
         "32bit": {
             "url": "https://dl.google.com/go/go1.24.5.windows-386.zip",
             "hash": "f1eba3975419b0b693bb24064f8bd775ec0b7f3755413fb64d133b48f517279e"
+        },
+        "arm64": {
+            "url": "https://dl.google.com/go/go1.24.5.windows-arm64.zip",
+            "hash": "cd2955c4e3166a0cef4b76830025e4cc6e9ecccff32c02979a63f534d83c2e66"
         }
     },
     "extract_dir": "go",
     "installer": {
-        "script": "add_first_in_path \"$env:USERPROFILE\\go\\bin\" $global"
+        "script": [
+            "$envgopath = \"$env:USERPROFILE\\go\"",
+            "if ($env:GOPATH) { $envgopath = $env:GOPATH }",
+            "info \"Adding '$envgopath\\bin' to PATH...\"",
+            "Add-Path -Path \"$envgopath\\bin\" -Global:$global -Force"
+        ]
     },
     "uninstaller": {
-        "script": "remove_from_path \"$env:USERPROFILE\\go\\bin\" $global"
+        "script": [
+            "$envgopath = \"$env:USERPROFILE\\go\"",
+            "if ($env:GOPATH) { $envgopath = $env:GOPATH }",
+            "info \"Removing '$envgopath\\bin' from PATH...\"",
+            "Remove-Path -Path \"$envgopath\\bin\" -Global:$global"
+        ]
     },
     "bin": [
         "bin\\go.exe",
@@ -43,6 +59,9 @@
             },
             "32bit": {
                 "url": "https://dl.google.com/go/go$version.windows-386.zip"
+            },
+            "arm64": {
+                "url": "https://dl.google.com/go/go$version.windows-arm64.zip"
             }
         },
         "hash": {
