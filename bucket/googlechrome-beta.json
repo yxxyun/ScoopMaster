@@ -1,5 +1,5 @@
 {
-    "version": "139.0.7258.5",
+    "version": "139.0.7258.31",
     "description": "Fast, secure, and free web browser, built for the modern web.",
     "homepage": "https://www.google.com/chrome/beta",
     "license": {
@@ -8,15 +8,13 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://dl.google.com/release2/chrome/glalroi5kayh3wnz4wnniuoviu_139.0.7258.5/139.0.7258.5_chrome_installer_uncompressed.exe#/dl.7z",
-            "hash": "c69354b786678e62672714144f25c03bb5ce57f749e33a898baf8a2d1ab031d1"
-        },
-        "32bit": {
-            "url": "https://dl.google.com/release2/chrome/acraf2e343ghxgypyqaxpfnewhfq_139.0.7258.5/139.0.7258.5_chrome_installer_uncompressed.exe#/dl.7z",
-            "hash": "c48c98f2659bc3c850f4bdd72bdf3c5f92e6727c916470d7cb2f0f3619563c26"
+            "url": "https://dl.google.com/release2/chrome/dlxhgpbq27egjzh2o6bjxxwh34_139.0.7258.31/139.0.7258.31_chrome_installer.exe#/dl.7z",
+            "hash": "183d15a4ca872a5785c0c66ea41b8177ece48df50f343d3b83fb11b6d703f48b"
         }
     },
-    "extract_dir": "Chrome-bin",
+    "installer": {
+        "script": "Expand-7zipArchive \"$dir\\chrome.7z\" -ExtractDir 'Chrome-bin' -Removal"
+    },
     "bin": [
         [
             "chrome.exe",
@@ -26,9 +24,25 @@
     "shortcuts": [
         [
             "chrome.exe",
-            "Google Chrome (Beta)"
+            "Google Chrome (Beta)",
+            "--force-device-scale-factor=1.5"
         ]
     ],
+    "post_install": [
+        "$runtimeCache = \"$env:LocalAppData\\Google\\Chrome\\User Data\"",
+        "$runtimeCachePersist = \"$persist_dir\\User Data\"",
+        "if (Test-Path $runtimeCachePersist) {",
+        "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+        "} elseif (Test-Path $runtimeCache) {",
+        "    Move-Item -Path $runtimeCache -Destination $runtimeCachePersist -Force",
+        "}",
+        "New-DirectoryJunction $runtimeCache $runtimeCachePersist | Out-Null"
+    ],
+    "post_uninstall": [
+        "$runtimeCache = \"$env:LocalAppData\\Google\\Chrome\\User Data\"",
+        "Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue"
+    ],
+    "persist": "User Data",
     "checkver": {
         "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
         "regex": "(?sm)<beta32><version>(?<version>[\\d.]+)</version>.+release2/chrome/(?<32>[\\w-]+)_.+<beta64>.+release2/chrome/(?<64>[\\w-]+)_.+</beta64>"
@@ -36,17 +50,10 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://dl.google.com/release2/chrome/$match64_$version/$version_chrome_installer_uncompressed.exe#/dl.7z",
+                "url": "https://dl.google.com/release2/chrome/$match64_$version/$version_chrome_installer.exe#/dl.7z",
                 "hash": {
                     "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
                     "xpath": "/chromechecker/beta64[version='$version']/sha256"
-                }
-            },
-            "32bit": {
-                "url": "https://dl.google.com/release2/chrome/$match32_$version/$version_chrome_installer_uncompressed.exe#/dl.7z",
-                "hash": {
-                    "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
-                    "xpath": "/chromechecker/beta32[version='$version']/sha256"
                 }
             }
         }
