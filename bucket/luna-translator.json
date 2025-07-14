@@ -1,20 +1,27 @@
 {
-  "version": "10.7.6.10",
-  "description": "A Visual Novel translate tool featuring clipboard / OCR / HOOK modes.",
+  "version": "9.0.3.1+04282025160857",
+  "description": "Translation tool for Visual Novel (Galgame), with varies OCR/Hook/Clipboard support",
   "homepage": "https://github.com/HIllya51/LunaTranslator",
   "license": "GPL-3.0-only",
+  "extract_to": "install_tmp",
   "architecture": {
-    "64bit": {
-      "url": "https://github.com/HIllya51/LunaTranslator/releases/download/v10.7.6.10/LunaTranslator_x64_win10.zip",
-      "extract_dir": "LunaTranslator_x64_win10",
-      "hash": "ded2446b30def0b4c235069bf208a2bad3a28135f3a8d48f9de1c0954078f89a"
-    },
     "32bit": {
-      "url": "https://github.com/HIllya51/LunaTranslator/releases/download/v10.7.6.10/LunaTranslator_x86_win7.zip",
-      "extract_dir": "LunaTranslator_x86_win7",
-      "hash": "b7b5229119ebd1de5dac8ee0bbec6329d028ba6453f97f0cb977d9d79b14a4d6"
+      "url": "https://github.com/HIllya51/LunaTranslator/releases/download/v9.0.3.1/LunaTranslator_x86.zip",
+      "hash": "2bbf1e1f4a29a6385f73d80d7eb21e11470f9075afeb77cc1e0a74ec1a863a94"
+    },
+    "64bit": {
+      "url": "https://github.com/HIllya51/LunaTranslator/releases/download/v9.0.3.1/LunaTranslator.zip",
+      "hash": "e878396d81b97a0fe916bf1c33df14a2ea3cd48fa37425b4115c80cf5468b2df"
     }
   },
+  "pre_install": [
+    "if ($architecture -eq \"32bit\") {",
+    "   Move-Item -Path \"$dir\\install_tmp\\LunaTranslator_x86\\*\" -Destination \"$dir\" -Force",
+    "} else {",
+    "   Move-Item -Path \"$dir\\install_tmp\\LunaTranslator\\*\" -Destination \"$dir\" -Force",
+    "}",
+    "Remove-Item \"$dir\\install_tmp\" -Force -Recurse"
+  ],
   "shortcuts": [
     [
       "LunaTranslator.exe",
@@ -26,14 +33,23 @@
     ]
   ],
   "persist": "userconfig",
-  "checkver": "github",
+  "checkver": {
+    "script": [
+      "$rel_info = Invoke-RestMethod -Uri 'https://api.github.com/repos/HIllya51/LunaTranslator/releases'",
+      "$latest = $rel_info | Sort-Object {$_.published_at} | Select-Object -last 1",
+      "$latest_asset = $latest.assets | Where-Object { $_.name -eq 'LunaTranslator.zip' } | Select-Object -first 1",
+      "$latest_asset_updated_at = $latest_asset.updated_at -replace ('[^\\d]', '')",
+      "Write-Output (\"{0} {0}+{1}\" -f ($latest.tag_name, $latest_asset_updated_at))"
+    ],
+    "regex": "(?<tag>[\\d.]+)\\sv?(?<version>.+)"
+  },
   "autoupdate": {
     "architecture": {
-      "64bit": {
-        "url": "https://github.com/HIllya51/LunaTranslator/releases/download/v$version/LunaTranslator_x64_win10.zip"
-      },
       "32bit": {
-        "url": "https://github.com/HIllya51/LunaTranslator/releases/download/v$version/LunaTranslator_x86_win7.zip"
+        "url": "https://github.com/HIllya51/LunaTranslator/releases/download/v$matchTag/LunaTranslator_x86.zip"
+      },
+      "64bit": {
+        "url": "https://github.com/HIllya51/LunaTranslator/releases/download/v$matchTag/LunaTranslator.zip"
       }
     }
   }
