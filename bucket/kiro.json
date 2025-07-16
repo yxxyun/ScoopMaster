@@ -1,0 +1,64 @@
+{
+    "version": "0.1.6",
+    "description": "Kiro is Amazon's agentic IDE built for working with AWS, powered by Claude AI",
+    "homepage": "https://kiro.dev/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://kiro.dev/license/"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://prod.download.desktop.kiro.dev/releases/202507160015-Kiro-win32-x64.exe",
+            "hash": "00d4881d21c1668c863d747d6b125011a630d4e487d8634675ba92a95a7de5ed"
+        }
+    },
+    "innosetup": true,
+    "extract_dir": "{code_GetDestDir}",
+    "shortcuts": [
+        [
+            "Kiro.exe",
+            "Kiro",
+            "--user-data-dir=\"%SCOOP%\\apps\\kiro\\current\\data\\user-data\" --extensions-dir=\"%SCOOP%\\apps\\kiro\\current\\data\\extensions\""
+        ]
+    ],
+    "post_install": [
+        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.kiro\\extensions\")) {",
+        "  info '[Portable Mode] Copying extensions...'",
+        "  Copy-Item \"$env:USERPROFILE\\.kiro\\extensions\" \"$dir\\data\" -Recurse",
+        "}",
+        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Kiro\")) {",
+        "  info '[Portable Mode] Copying user data...'",
+        "  Copy-Item \"$env:AppData\\Kiro\" \"$dir\\data\\user-data\" -Recurse",
+        "}",
+        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
+        "if ((Test-Path \"$extensions_file\")) {",
+        "  info 'Adjusting path in extensions file...'",
+        "    (Get-Content \"$extensions_file\") -replace '(?<=kiro(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
+        "}",
+        ""
+    ],
+    "persist": "data",
+    "checkver": {
+        "script": [
+            "# Fetch metadata from API with debug info",
+            "Write-Host \"Debug: Fetching metadata from API...\" -ForegroundColor Yellow",
+            "$response = Invoke-RestMethod -Uri 'https://prod.download.desktop.kiro.dev/stable/metadata-win32-x64-user-stable.json'",
+            "Write-Host \"Debug: Current release: $($response.currentRelease)\" -ForegroundColor Green",
+            "Write-Host \"Debug: Release version: $($response.releases[0].version)\" -ForegroundColor Green",
+            "Write-Host \"Debug: Release URL: $($response.releases[0].updateTo.url)\" -ForegroundColor Green",
+            "# Convert to JSON string for regex processing",
+            "$json = $response | ConvertTo-Json -Depth 10 -Compress",
+            "Write-Host \"Debug: JSON prepared for regex processing\" -ForegroundColor Green",
+            "Write-Output $json"
+        ],
+        "regex": "\"version\":\"(?<version>[\\d.]+)\".*?\"url\":\"(?<url>[^\"]*Kiro-win32-x64\\.exe)\"",
+        "replace": "${version}"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "$matchUrl"
+            }
+        }
+    }
+}
