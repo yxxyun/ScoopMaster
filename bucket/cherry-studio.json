@@ -6,19 +6,13 @@
     "architecture": {
         "64bit": {
             "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.5.3/Cherry-Studio-1.5.3-x64-setup.exe#/dl.7z",
-            "hash": "f5c906b7b78f358a74189d424b2e8844558cbdee69cc0a5c399fb8e6b9b012f0",
-            "pre_install": [
-                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\", \"$dir\\Unintall*\" -Recurse"
-            ]
+            "hash": "sha512:0c368a5abb19d295f16e6010ea391d30db4f1069e6e8daffa89128e63470ddcc50e43c4b3e3512823cb1f83cfa9ea19db56f2fd6d93f8b248a2318164f630bdf",
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
         },
         "arm64": {
             "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.5.3/Cherry-Studio-1.5.3-arm64-setup.exe#/dl.7z",
-            "hash": "c1f1937b8fbd4aaa2df8cc15113236b552135c66d72131dcbad2e16d8a0dce36",
-            "pre_install": [
-                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\", \"$dir\\Unintall*\" -Recurse"
-            ]
+            "hash": "30009321546694758a1c925d631258d7c8a98e2febcc224bb26a44cb9f2a9ab5",
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\""
         }
     },
     "shortcuts": [
@@ -27,14 +21,29 @@
             "Cherry Studio"
         ]
     ],
-    "persist": "data",
+    "post_install": [
+        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse",
+        "# Remove the following lines in 2026-01-01:",
+        "# Compatible with incorrect persistence method",
+        "if (Test-Path \"$persist_dir\\data\") {",
+        "  ensure \"$env:APPDATA\\CherryStudio\" | Out-Null",
+        "  Move-Item \"$persist_dir\\data\\*\" \"$env:APPDATA\\CherryStudio\" -Recurse",
+        "  Remove-Item \"$persist_dir\" -Recurse -Force",
+        "  info \"This manifest no longer provides persistence.\"",
+        "  info \"Your data has been moved to '$env:APPDATA\\CherryStudio'(default location).\"",
+        "}"
+    ],
     "checkver": {
         "github": "https://github.com/CherryHQ/cherry-studio"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-x64-setup.exe#/dl.7z"
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-x64-setup.exe#/dl.7z",
+                "hash": {
+                    "url": "$baseurl/latest.yml",
+                    "regex": "sha512: $base64"
+                }
             },
             "arm64": {
                 "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-arm64-setup.exe#/dl.7z"
