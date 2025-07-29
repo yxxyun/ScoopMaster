@@ -1,30 +1,25 @@
 {
-    "version": "15.0.0",
-    "description": "向日葵远程控制",
-    "homepage": "https://github.com/gendloop/Sun",
-    "license": "LGPL-2.1-or-later",
-    "notes": [
-        "<Installer>"
-    ],
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/gendloop/Sun/releases/download/v15.0.0/Sun-15.0.0-win64.7z",
-            "hash": "dd1e72e991587131747ebb6009066ecc4f3e0cd0e0ad9ed33c493baed9ff5484"
-        }
+    "version": "15.8.0.17603",
+    "description": "远程: 向日葵",
+    "homepage": "https://sunlogin.oray.com/",
+    "license": "Unknown",
+    "url": "https://webcdn.m.qq.com/spcmgr/download/SunloginClient_15.8.0.17603.exe#/dl.7z",
+    "hash": "0f9204b0c1959fa76475ceaf40e2c1b0d843b50d8a76d0301fec32d137ee13e9",
+    "pre_install": "Invoke-ExternalCommand \"$dir\\setup.exe\" -RunAs -ContinueExitcodes @{1 = 'Click on the dialog box to proceed'} | Out-Null",
+    "uninstaller": {
+        "script": "Invoke-ExternalCommand \"$dir\\setup.exe\" -ArgumentList '--mod=uninstall' -RunAs -ContinueExitcodes @{1 = 'Click on the dialog box to proceed'} | Out-Null"
     },
-    "installer": {
+    "checkver": {
         "script": [
-            "Push-Location \"$dir\"",
-            "Start-Process Sun-$version-win64.exe",
-            "Pop-Location"
-        ]
+            "$res = Invoke-WebRequest -UseBasicParsing -Uri 'https://luban.m.qq.com/api/public/software-manager/softwareProxy' -Body 'cmdid=3318&jprxReq[req][soft_id_list]=13068' -Method 'POST'",
+            "$content = $res.Content | ConvertFrom-Json",
+            "$verName = $content.resp.soft_list[0].ver_name",
+            "$fileName = $content.resp.soft_list[0].file_name",
+            "Write-Output \"$verName|$fileName\""
+        ],
+        "regex": "(?<version>[\\d.]+)\\|(?<id>.*)"
     },
-    "checkver": "github",
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/gendloop/Sun/releases/download/v$version/Sun-$version-win64.7z"
-            }
-        }
+        "url": "https://webcdn.m.qq.com/spcmgr/download/$matchId#/dl.7z"
     }
 }
