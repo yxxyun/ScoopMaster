@@ -1,0 +1,73 @@
+{
+    "description": "PeerBanHelper: Automatically block unwanted, leeches and abnormal BT peers with support for customized and cloud rules.",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/PBH-BTN/PeerBanHelper/releases/download/v8.0.10/PeerBanHelper_windows-x64_8.0.10.exe",
+            "hash": "6411808b49f27144a7012992fcfe585102c744dbe867b1473a2af9f2c41f70e6"
+        },
+        "arm64": {
+            "url": "https://github.com/PBH-BTN/PeerBanHelper/releases/download/v8.0.10/PeerBanHelper_windows-arm64_8.0.10.exe",
+            "hash": "1f71efa37ba21ba560c6a534b87923631f2ce87f9f28178901a0d881f77a906c"
+        }
+    },
+    "homepage": "https://github.com/PBH-BTN/PeerBanHelper",
+    "license": "GPL-3.0-only",
+    "version": "8.0.10",
+    "checkver": "github",
+    "shortcuts": [
+        [
+            "PeerBanHelper-GUI.exe",
+            "PeerBanHelper-GUI"
+        ],
+        [
+            "PeerBanHelper-GUI-Silent.exe",
+            "PeerBanHelper-GUI(Silent)"
+        ],
+        [
+            "PeerBanHelper-NoGUI.exe",
+            "PeerBanHelper-NoGUI"
+        ],
+        [
+            "PeerBanHelper-NoGUI-LowRAM.exe",
+            "PeerBanHelper-NoGUI(LowRAM)"
+        ]
+    ],
+    "installer": {
+        "script": [
+            "Start-Process \"$dir\\$fname\" -ArgumentList @('-q', '-c', '-overwrite', '-dir', \"$dir\") -Wait -Verb RunAs | Out-Null",
+            "Remove-Item \"$dir\\$fname\"",
+            "ensure \"$persist_dir\" | Out-Null",
+            "$targetPath = \"$env:LOCALAPPDATA\\PeerBanHelper\"",
+            "$linkType = (Get-Item -Path $targetPath -ErrorAction SilentlyContinue).LinkType",
+            "if (Test-Path $targetPath) {",
+            "    if ($linkType -eq 'Junction') {",
+            "        Remove-Item -Path $targetPath -Force",
+            "    } else {",
+            "        Get-ChildItem -Path $targetPath -Force | Move-Item -Destination $persist_dir -Force",
+            "        Remove-Item -Path $targetPath -Force -Recurse",
+            "    }",
+            "}",
+            "New-Item \"$env:LOCALAPPDATA\\PeerBanHelper\" -ItemType Junction -Target \"$persist_dir\" | Out-Null"
+        ]
+    },
+    "post_install": [
+        "Remove-Item \"$dir\\PeerBanHelper-Updater.exe\"",
+        "Remove-Item -Recurse \"$([Environment]::GetFolderPath('commonstartmenu'))\\Programs\\PeerBanHelper\""
+    ],
+    "uninstaller": {
+        "script": [
+            "Start-Process \"$dir\\uninstall.exe\" -ArgumentList @('-q', '-c') -Wait -Verb RunAs | Out-Null",
+            "Remove-Item \"$env:LOCALAPPDATA\\PeerBanHelper\" -Recurse -Force -ErrorAction 'SilentlyContinue'"
+        ]
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/PBH-BTN/PeerBanHelper/releases/download/v$version/PeerBanHelper_windows-x64_$version.exe"
+            },
+            "arm64": {
+                "url": "https://github.com/PBH-BTN/PeerBanHelper/releases/download/v$version/PeerBanHelper_windows-arm64_$version.exe"
+            }
+        }
+    }
+}

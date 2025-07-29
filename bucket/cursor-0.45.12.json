@@ -1,0 +1,58 @@
+{
+    "version": "0.45.12",
+    "description": "The AI Code Editor",
+    "homepage": "https://www.cursor.com",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.cursor.com/terms-of-service"
+    },
+    "architecture": {
+        "32bit": {
+            "url": "https://download.todesktop.com/230313mzl4w4u92/Cursor%20Setup%200.45.12%20-%20Build%202502180s4ios0dk.exe#/dl.7z",
+            "hash": "sha512:47c8bbe49c7360fb60140684461e34bec22eb75b097f92030acbd5dff59576370d83f5a1f9ec3d31f16ecf6879cf8d998fcf73505735e9599c45f5c572b932b2",
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-32.7z\" \"$dir\""
+        },
+        "64bit": {
+            "url": "https://download.todesktop.com/230313mzl4w4u92/Cursor%20Setup%200.45.12%20-%20Build%202502180s4ios0dk-x64.exe#/dl.7z",
+            "hash": "sha512:3911bdcb1f366477471da6f2abc4cc22162a227aa2b1e1b100a7370c3ba8062279ea2eaa694efc4d7096396f0e68ac2ae32e62fe4733fe3026d8b66efd46160f",
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
+        },
+        "arm64": {
+            "url": "https://download.todesktop.com/230313mzl4w4u92/Cursor%20Setup%200.45.12%20-%20Build%202502180s4ios0dk-arm64.exe#/dl.7z",
+            "hash": "sha512:88cab072218687236ab7f3a88a0e0db64af66b9facbcabd09cd13ed8915160b47a3145732ac844ff484dbbaa0123e9ffa0fc0cc208e2172871e393747e05aa82",
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\""
+        }
+    },
+    "post_install": [
+        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Recurse",
+        "Set-Content \"$dir\\resources\\app-update.yml\" '' -Encoding utf8",
+        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.cursor\\extensions\")) {",
+        "    info '[Portable Mode] Copying extensions...'",
+        "    Copy-Item \"$env:USERPROFILE\\.cursor\\extensions\" \"$dir\\data\" -Recurse",
+        "}",
+        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Cursor\")) {",
+        "    info '[Portable Mode] Copying user data...'",
+        "    Copy-Item \"$env:AppData\\Cursor\" \"$dir\\data\\user-data\" -Recurse",
+        "}",
+        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
+        "if ((Test-Path \"$extensions_file\")) {",
+        "    info 'Adjusting path in extensions file...'",
+        "    (Get-Content \"$extensions_file\") -replace '(?<=cursor(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
+        "}"
+    ],
+    "bin": [
+        [
+            "resources\\app\\bin\\cursor.cmd",
+            "cursor_0.45.12",
+            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
+        ]
+    ],
+    "shortcuts": [
+        [
+            "Cursor.exe",
+            "Cursor 0.45.12",
+            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
+        ]
+    ],
+    "persist": "data"
+}
