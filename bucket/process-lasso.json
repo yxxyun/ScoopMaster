@@ -1,36 +1,48 @@
 {
-    "homepage": "https://bitsum.com/",
-    "description": "Real-Time CPU Optimization and Automation",
-    "version": "16.0.1-beta+rel.31.07.2025",
-    "license": "Freemium",
-    "url": "https://dl.bitsum.com/files/beta/processlassosetup64.exe#/dl.7z",
-    "hash": "5834375bc15afc787709a3f6f6b25d8dbea4f57cbb0a6e28b09f6e4b081f5d99",
-    "extract_to": "Process Lasso",
+    "##": "Based on https://github.com/jonisb/Misc-scoops/blob/master/bucket/ProcessLasso.json",
+    "version": "16.0.1.16",
+    "description": "Real-Time CPU Optimization and Automation.",
+    "homepage": "https://bitsum.com/processlasso/",
+    "license": {
+        "identifier": "Shareware",
+        "url": "https://bitsum.com/howfree/"
+    },
+    "url": "https://dl.bitsum.com/files/processlassosetup64.exe#/dl.7z",
+    "hash": "afa901f0954f05039c8cc8e4afba4bcdd28b943ea40c6524453ae83843605fc9",
+    "extract_to": "ProcessLasso",
+    "installer": {
+        "script": [
+            "Remove-Item \"$dir\\ProcessLasso\\`$PLUGINSDIR\" -Force -Recurse",
+            "Move-Item \"$dir\\ProcessLasso\\*\" -Destination \"$dir\"",
+            "Remove-Item \"$dir\\ProcessLasso\" -Force -Recurse"
+        ]
+    },
+    "post_install": [
+        "$config = \"${env:LOCALAPPDATA}\\ProcessLasso\\config\\prolasso.ini\"",
+        "If (!(Test-Path $config)) { New-Item $config -ItemType File -Force | Out-Null }",
+        "\"[Advanced]`nAutomaticUpdate=false\" | Out-File -File \"$config\" -Encoding utf8"
+    ],
     "shortcuts": [
         [
-            "Process Lasso/ProcessLassoLauncher.exe",
+            "ProcessLassoLauncher.exe",
             "Process Lasso"
         ]
     ],
     "persist": [
-        "Process Lasso/config",
-        "Process Lasso/logs"
+        "config",
+        "logs"
     ],
-    "installer": {
-        "script": "Remove-Item \"$dir/Process Lasso/`$PLUGINSDIR\" -Recurse"
-    },
+    "post_uninstall": [
+        "If ($cmd -eq 'uninstall') {",
+        "  Remove-Item \"${env:LOCALAPPDATA}\\ProcessLasso\\config\\prolasso.ini\"",
+        "  Remove-Item \"${env:LOCALAPPDATA}\\ProcessLasso\\logs\\*\" -Force -Recurse",
+        "}"
+    ],
     "checkver": {
-        "script": [
-            "$changes = Invoke-WebRequest -Uri 'https://bitsum.com/changes/processlasso'",
-            "$latest_vers = $changes.Links | ForEach-Object {$_.outerHTML | Select-String \"([\\d.]+[^-]+) - ([^<]+)\"}",
-            "$latest = $latest_vers | Sort-Object {Get-Date $_.Matches.Groups[2].Value} | Select-Object -last 1",
-            "$semver = \"$($latest.Matches.Groups[1].Value.ToLower() -replace \"\\s\", \"-\")+rel.$(Get-Date $latest.Matches.Groups[2].Value -Format \"dd.MM.yyyy\")\"",
-            "$url_segment = If ($semver -match 'beta') {'beta/'} Else {''}",
-            "Write-Output $url_segment $semver"
-        ],
-        "regex": "(?<url>[\\w/]*)\\s(?<version>[\\d\\w\\.\\-\\+]+)"
+        "url": "https://bitsum.com/changes/processlasso/",
+        "regex": "<strong>v([\\d.]+)"
     },
     "autoupdate": {
-        "url": "https://dl.bitsum.com/files/$matchUrlprocesslassosetup64.exe#/dl.7z"
+        "url": "https://dl.bitsum.com/files/processlassosetup64.exe#/dl.7z"
     }
 }
