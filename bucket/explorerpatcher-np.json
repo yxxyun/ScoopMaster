@@ -1,32 +1,25 @@
 {
-    "##": "Modified from 'https://github.com/ACooper81/scoop-apps/'",
     "version": "22631.5335.68.2",
-    "description": "Bring back Win10-style taskbar on Windows 11",
+    "description": "An open-source project that aims to restore the working environment on Windows 11.",
     "homepage": "https://github.com/valinet/ExplorerPatcher",
-    "license": "GPL-2.0-or-later",
-    "url": "https://github.com/valinet/ExplorerPatcher/releases/latest/download/ep_setup.exe#/setup.exe",
+    "license": "GPL-2.0",
+    "url": "https://github.com/valinet/ExplorerPatcher/releases/latest/download/ep_setup.exe",
     "hash": "3680aa912d3ed60fd4762b349701e280a3d34771b659f14809d3882ababd64f0",
-    "pre_install": "if(!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
-    "installer": {
-        "script": [
-            "$programname = \"programname*\"",
-            "$ProgramFiles = [Environment]::GetFolderPath(\"ProgramFiles\")",
-            "$filepath = \"$ProgramFiles\\ExplorerPatcher\\ep_setup.exe\"",
-            "if(((Test-Path -Path $filepath -PathType Leaf) -eq $false) -or ((Get-Command $filepath).Version -lt [System.Version]\"$version\"))",
-            "{",
-            "   &\"$dir\\setup.exe\" /S | Out-Null",
-            "   if(((Test-Path -Path $filepath -PathType Leaf) -eq $false) -or ((Get-Command $filepath).Version -lt [System.Version]\"$version\"))",
-            "   {",
-            "       exit 1",
-            "   }",
-            "}",
-            "if (Test-Path -Path \"$dir\\setup.exe\") { Remove-Item \"$dir\\setup.exe\" -Force }"
-        ]
-    },
+    "pre_install": [
+        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+        "Start-Process \"$dir\\ep_setup.exe\" -Wait -Verb 'RunAs'"
+    ],
+    "pre_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+        "    Start-Process \"$dir\\ep_setup.exe\" -Wait -Verb 'RunAs' -Args '/uninstall'; Stop-Process -Name 'explorer'",
+        "    Start-Sleep -Seconds 2",
+        "}"
+    ],
     "checkver": {
         "github": "https://github.com/valinet/ExplorerPatcher"
     },
     "autoupdate": {
-        "url": "https://github.com/valinet/ExplorerPatcher/releases/latest/download/ep_setup.exe#/setup.exe"
+        "url": "https://github.com/valinet/ExplorerPatcher/releases/latest/download/ep_setup.exe"
     }
 }
