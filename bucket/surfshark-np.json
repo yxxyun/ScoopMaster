@@ -18,7 +18,15 @@
         ]
     },
     "uninstaller": {
-        "script": "msiexec /x \"{7EE9BB2A-53F5-4A6B-9D02-686C1C2284E4}\" /qn"
+        "script": [
+            "if (!(is_admin)) { \"$app requires admin rights to $cmd\"; break }",
+            "$path = 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+            "$key = Get-ChildItem $path | Where-Object { $_.PSChildName -like 'Surfshark*' }",
+            "if ($key) {",
+            "  $u = (Get-ItemProperty $key.PSPath).UninstallString",
+            "  if ($u -match '{[0-9A-Fa-f-]+}') { Start-Process msiexec.exe -ArgumentList \"/x $($matches[0]) /qn\" -Wait }",
+            "}"
+        ]
     },
     "checkver": {
         "url": "https://downloads2.surfshark.com/windows/stable64/meta/windows-changelog.txt",
