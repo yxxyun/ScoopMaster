@@ -1,0 +1,94 @@
+{
+    "version": "1.1.7.0",
+    "description": "Labeless is a multipurpose IDA Pro plugin system for labels/comments synchronization with a debugger backend, with complex memory dumping and interactive Python scripting capabilities.",
+    "homepage": "https://github.com/a1ext/labeless",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://github.com/a1ext/labeless/raw/devel/LICENSE.txt"
+    },
+    "url": "https://github.com/a1ext/labeless/releases/download/v_1_1_7_0/labeless_release_full_1.1.7.0.zip",
+    "hash": "252a4baa3901920159aede3ef416d0874072be4fba92efc975f72670f62d70f6",
+    "extract_dir": "labeless_release_full_1.1.7.0",
+    "pre_install": [
+        "# Check if $env:IDA_PRO_DIR\\ida64.exe exists",
+        "if (-not (Test-Path \"$env:IDA_PRO_DIR\\ida64.exe\")) {",
+        "    Write-Host \"[ERROR] IDA Pro not found at `$env:IDA_PRO_DIR, run following to set it: \" -ForegroundColor Red",
+        "    Write-Host \"`$env:IDA_PRO_DIR = ''`n[Environment]::SetEnvironmentVariable('IDA_PRO_DIR', `$env:IDA_PRO_DIR, 'User')\"",
+        "    exit 1",
+        "}",
+        "# Check if C:\\Python27\\python.exe exists",
+        "if (-not (Test-Path \"C:\\Python27\\python.exe\")) {",
+        "    Write-Host \"[ERROR] Python 2.7 not found at C:\\Python27, Please install it first\" -ForegroundColor Red",
+        "    Write-Host \"Download from https://www.python.org/ftp/python/2.7.10/python-2.7.10.msi\" -ForegroundColor Red",
+        "    exit 1",
+        "}",
+        "# Check if C:\\Python27x64\\python.exe exists",
+        "if (-not (Test-Path \"C:\\Python27x64\\python.exe\")) {",
+        "    Write-Host \"[ERROR] Python 2.7 x64 not found at C:\\Python27x64, Please install it first\" -ForegroundColor Red",
+        "    Write-Host \"Download from https://www.python.org/ftp/python/2.7.10/python-2.7.10.amd64.msi\" -ForegroundColor Red",
+        "    exit 1",
+        "}",
+        "# Check if C:\\Windows\\System32\\python27.dll exists",
+        "if (-not (Test-Path \"C:\\Windows\\System32\\python27.dll\")) {",
+        "    Write-Host \"[ERROR] Python27.dll not found at C:\\Windows\\System32, Please check your Python installation\" -ForegroundColor Red",
+        "    exit 1",
+        "}",
+        "# Check if C:\\Windows\\SysWOW64\\python27.dll exists",
+        "if (-not (Test-Path \"C:\\Windows\\SysWOW64\\python27.dll\")) {",
+        "    Write-Host \"[ERROR] 32 bit version Python27.dll not found at C:\\Windows\\SysWOW64, Please check your Python installation\" -ForegroundColor Red",
+        "    exit 1",
+        "}"
+    ],
+    "pre_uninstall": [
+        "# Check if $env:IDA_PRO_DIR\\ida64.exe exists",
+        "if (-not (Test-Path \"$env:IDA_PRO_DIR\\ida64.exe\")) {",
+        "    Write-Host \"[ERROR] IDA Pro not found at `$env:IDA_PRO_DIR, run following to set it: \" -ForegroundColor Red",
+        "    Write-Host \"`$env:IDA_PRO_DIR = ''`n[Environment]::SetEnvironmentVariable('IDA_PRO_DIR', `$env:IDA_PRO_DIR, 'User')\"",
+        "    exit 1",
+        "}"
+    ],
+    "installer": {
+        "script": [
+            "$originWorkingDir = Get-Location",
+            "cd $dir\\deploy",
+            "& c:\\Python27\\python.exe setup_protobuf.py",
+            "& c:\\Python27x64\\python.exe setup_protobuf.py",
+            "& c:\\Python27\\Scripts\\pip.exe install (Get-Item labeless-*-py2.py3-none-any.whl).Name",
+            "& c:\\Python27x64\\Scripts\\pip.exe install (Get-Item labeless-*-py2.py3-none-any.whl).Name",
+            "cd $originWorkingDir",
+            "# Copy file $dir\\IDA7X\\plugins\\labeless_ida_70*.dll to $env:IDA_PRO_DIR\\plugins\\",
+            "Copy-Item -Path \"$dir\\IDA7X\\plugins\\labeless_ida_70*.dll\" -Destination \"$env:IDA_PRO_DIR\\plugins\\\" -Force",
+            "if (Test-Path \"$(appdir x64dbg)\\current\\release\") {",
+            "    # Copy file $dir\\x64dbg\\x64\\plugins\\labeless_x64dbg.dp64 to \"$(appdir x64dbg)\\current\\release\\x64\\plugins\"",
+            "    Copy-Item -Path \"$dir\\x64dbg\\x64\\plugins\\labeless_x64dbg.dp64\" -Destination \"$(appdir x64dbg)\\current\\release\\x64\\plugins\" -Force",
+            "    # Copy file $dir\\x64dbg\\x32\\plugins\\labeless_x64dbg.dp32 to \"$(appdir x64dbg)\\current\\release\\x32\\plugins\"",
+            "    Copy-Item -Path \"$dir\\x64dbg\\x32\\plugins\\labeless_x64dbg.dp32\" -Destination \"$(appdir x64dbg)\\current\\release\\x32\\plugins\" -Force",
+            "} else {",
+            "    Write-Host \"[WARNING] x64dbg not found at $(appdir x64dbg)\\current\\release, skipping x64dbg plugin installation\" -ForegroundColor Yellow",
+            "}"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "& c:\\Python27\\Scripts\\pip.exe uninstall -y labeless",
+            "& c:\\Python27x64\\Scripts\\pip.exe uninstall -y labeless",
+            "# Remove file $env:IDA_PRO_DIR\\plugins\\labeless_ida_70*.dll",
+            "Remove-Item -Path \"$env:IDA_PRO_DIR\\plugins\\labeless_ida_70*.dll\" -Force",
+            "if (Test-Path \"$(appdir x64dbg)\\current\\release\") {",
+            "    # Remove file \"$(appdir x64dbg)\\current\\release\\x64\\plugins\\labeless_x64dbg.dp64\"",
+            "    Remove-Item -Path \"$(appdir x64dbg)\\current\\release\\x64\\plugins\\labeless_x64dbg.dp64\" -Force",
+            "    # Remove file \"$(appdir x64dbg)\\current\\release\\x32\\plugins\\labeless_x64dbg.dp32\"",
+            "    Remove-Item -Path \"$(appdir x64dbg)\\current\\release\\x32\\plugins\\labeless_x64dbg.dp32\" -Force",
+            "}"
+        ]
+    },
+    "checkver": {
+        "url": "https://github.com/a1ext/labeless/releases/latest",
+        "regex": "/releases/tag/(?:v|V)_(\\d+)_(\\d+)_(\\d+)_(\\d+)",
+        "replace": "${1}.${2}.${3}.${4}"
+    },
+    "autoupdate": {
+        "url": "https://github.com/a1ext/labeless/releases/download/v_$underscoreVersion/labeless_release_full_$version.zip",
+        "extract_dir": "labeless_release_full_$version"
+    }
+}

@@ -1,13 +1,19 @@
 {
-    "version": "10.2.1712",
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
     "homepage": "https://www.emclient.com/",
+    "version": "10.3.2619",
     "description": "A full featured email client with a modern and easy to use interface.",
-    "license": {
-        "identifier": "Freeware",
-        "url": "https://www.emclient.com/docs/em-client-terms-of-use.pdf"
-    },
-    "url": "https://www.emclient.com/dist/v10.2.1712/setup.msi",
-    "hash": "97779a766e8c3c0620c18f75369ae55889d667808f59be08582646dcaeaf2213",
+    "license": "Freeware",
+    "notes": [
+        "Scoop doesn't persist your EmClient data, by default they are stored in:",
+        "'%AppData%\\eM Client'.",
+        "You can point to the persist storage in 'Settings > General > Storage'.",
+        "",
+        "Register eM Client to open supported files and mail links (as root):",
+        "'reg import \"$dir\\install-handlers.reg\"'"
+    ],
+    "url": "https://www.emclient.com/dist/v10.3.2619/setup.msi",
+    "hash": "56f36386783eecb2fe64d1247ff9632cbcb4100b5cf8ef255de3981913ad55df",
     "extract_dir": "PFiles\\eM Client",
     "shortcuts": [
         [
@@ -15,6 +21,30 @@
             "eM Client"
         ]
     ],
+    "post_install": [
+        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
+        "$exepath = \"$dir\\MailClient.exe\".Replace('\\', '\\\\')",
+        "'install-handlers', 'uninstall-handlers' | ForEach-Object {",
+        "  if (Test-Path \"$bucketsdir\\$bucket\\scripts\\em-client\\$_.reg\") {",
+        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\em-client\\$_.reg\"",
+        "    $content = $content.Replace('$exeDir', $dirpath)",
+        "    $content = $content.Replace('$exePath', $exepath)",
+        "    if ($global) {",
+        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
+        "  }",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall')",
+            "{",
+            "   reg import \"$dir\\uninstall-handlers.reg\" ",
+            "}"
+        ]
+    },
+    "persist": "data",
     "checkver": {
         "url": "https://www.emclient.com/release-history?os=win",
         "regex": "\\<strong\\>\\s+.*?([\\d.]+)\\.0"

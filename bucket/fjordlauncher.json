@@ -1,0 +1,86 @@
+{
+    "version": "9.2.4",
+    "description": "Prism Launcher fork with support for alternative auth servers",
+    "homepage": "https://github.com/hero-persson/FjordLauncherUnlocked",
+    "license": "GPL-3.0-only",
+    "notes": [
+        "To add Fjord Launcher file association options for .ZIPs and .MRPACKS, run this: \"$dir\\install-associations.reg\"",
+        "",
+        "This package is now using the portable version of Fjord Launcher, and data should have been migrated automatically.",
+        "If you are using a global install on a system with more than one user, you will need to copy a user's data from %appdata% to the new Scoop FjordLauncher persist directory"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/hero-persson/FjordLauncherUnlocked/releases/download/9.2.4/FjordLauncher-Windows-MSVC-Portable-9.2.4.zip",
+            "hash": "a86eea52198a3241fd333f3e26ae4bacad3f660cd6fb5c28b4ae2cdd4bb3e899"
+        }
+    },
+    "suggest": {
+        "Microsoft Visual C++ Redistributables": "extras/vcredist2022"
+    },
+    "pre_install": [
+        "$migration = $true",
+        "$visibleUserAccounts = Get-LocalUser | Where-Object { $_.Enabled -eq $true }",
+        "if ($global -and $visibleUserAccounts.Count -gt 1) { $migration = $false }",
+        "",
+        "$appdataPath = \"$HOME\\AppData\\Roaming\\FjordLauncher\"",
+        "if ((Test-Path -Path $appdataPath\\*) -and (!(Test-Path -Path $persist_dir\\*)) -and $migration) {",
+        "    Write-Warning \"Migrating data from $appdataPath to $persist_dir (this may take a while)\"",
+        "    New-Item -Type Directory -Path $persist_dir | Out-Null",
+        "    Copy-Item -Recurse -Force $appdataPath\\* $persist_dir\\",
+        "} elseif (!($migration)) {",
+        "    Write-Warning \"A global Scoop installation was detected with multiple user accounts. Please see the notes at the end of the install process.\"",
+        "}",
+        "",
+        "'accounts.json', 'metacache', 'fjordlauncher.cfg' | ForEach-Object {",
+        "    if (!(Test-Path -Path $persist_dir\\$_)) {",
+        "        New-Item -Type File $persist_dir/$_ | Out-Null",
+        "    }",
+        "    New-Item -Type SymbolicLink -Value $persist_dir/$_ -Path $dir/$_ | Out-Null",
+        "}",
+        "if (!(Get-Content $persist_dir/metacache)) {",
+        "    Add-Content $persist_dir/metacache '{}'",
+        "}"
+    ],
+    "post_install": [
+        "'install-associations', 'uninstall-associations' | ForEach-Object {",
+        "    if (Test-Path \"$bucketsdir\\games\\scripts\\fjordlauncher\\$_.reg\") {",
+        "        $exePath = \"$dir\\fjordlauncher.exe\".Replace('\\', '\\\\')",
+        "        $content = (Get-Content \"$bucketsdir\\games\\scripts\\fjordlauncher\\$_.reg\").Replace('$EXEPATH', $exePath)",
+        "        if ($global) { $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE') }",
+        "        Set-Content \"$dir\\$_.reg\" $content -Encoding Ascii -Force",
+        "    }",
+        "}"
+    ],
+    "bin": "fjordlauncher.exe",
+    "shortcuts": [
+        [
+            "fjordlauncher.exe",
+            "Fjord Launcher"
+        ]
+    ],
+    "persist": [
+        "assets",
+        "cache",
+        "catpacks",
+        "icons",
+        "iconthemes",
+        "instances",
+        "libraries",
+        "logs",
+        "meta",
+        "mods",
+        "themes",
+        "translations"
+    ],
+    "checkver": {
+        "github": "https://github.com/hero-persson/FjordLauncherUnlocked"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/hero-persson/FjordLauncherUnlocked/releases/download/$version/FjordLauncher-Windows-MSVC-Portable-$version.zip"
+            }
+        }
+    }
+}

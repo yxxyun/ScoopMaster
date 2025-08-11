@@ -1,0 +1,43 @@
+{
+    "version": "2025.8-beta3",
+    "homepage": "https://mullvad.net/en/",
+    "description": "The official desktop client for Mullvad VPN, a privacy-respecting VPN service.",
+    "license": "GPL-3.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/mullvad/mullvadvpn-app/releases/download/2025.8-beta3/MullvadVPN-2025.8-beta3_x64.exe#/setup.exe",
+            "hash": "604d38e32efac7fd4f852e3f645cfb188f03516c9ec8726f4e277c661835b0fc"
+        },
+        "arm64": {
+            "url": "https://github.com/mullvad/mullvadvpn-app/releases/download/2025.8-beta3/MullvadVPN-2025.8-beta3_arm64.exe#/setup.exe",
+            "hash": "87b5f2adaa45ba9888d9f42ce35aaf750cd2d922d691ff7ffe80c1306a63e37e"
+        }
+    },
+    "pre_install": [
+        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+        "Start-Process \"$dir\\setup.exe\" -Verb 'RunAs' -Args @('/allusers', '/S')",
+        "while (!(Get-Process -Name 'mullvad-daemon' -ErrorAction 'SilentlyContinue')) { Start-Sleep -Seconds 5 }",
+        "Remove-Item \"$dir\\setup.exe\""
+    ],
+    "post_install": "Remove-Item \"$Env:Public\\Desktop\\Mullvad VPN.lnk\"",
+    "pre_uninstall": [
+        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+        "Stop-Service -Name 'MullvadVPN' -ErrorAction 'SilentlyContinue' -Force; Stop-Process -Name 'Mullvad VPN' -ErrorAction 'SilentlyContinue' -Force",
+        "Start-Process \"$env:ProgramFiles\\Mullvad VPN\\Uninstall Mullvad VPN.exe\" -Wait -Verb 'RunAs' -Args @('/allusers', '/S')",
+        "Start-Sleep -Seconds 2"
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/mullvad/mullvadvpn-app/releases",
+        "regex": "MullvadVPN-([\\d.]+(-beta[\\d]+)?)(_x64)?\\.exe"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/mullvad/mullvadvpn-app/releases/download/$version/MullvadVPN-$version_x64.exe#/setup.exe"
+            },
+            "arm64": {
+                "url": "https://github.com/mullvad/mullvadvpn-app/releases/download/$version/MullvadVPN-$version_arm64.exe#/setup.exe"
+            }
+        }
+    }
+}

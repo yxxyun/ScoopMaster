@@ -1,0 +1,46 @@
+{
+	"version": "1.19.13",
+	"description": "An open source programming language that makes it easy to build simple, reliable, and efficient software.",
+	"homepage": "https://golang.org",
+	"license": "BSD-3-Clause",
+	"extract_dir": "go",
+	"pre_install": [
+		"# GOPATH",
+		"# respect USER value, if defined",
+		"if ($env:GOPATH) { } else {",
+		"# otherwise, 1st existing known default; otherwise, 1st of known defaults",
+		"$default_dirs = @( \"$env:USERPROFILE\\go\", \"$env:USERPROFILE\\.go\" )",
+		"$val = $( @($default_dirs |% { get-item $_ -ea silent }) + $default_dirs[0] ) | select -first 1",
+		"# ensure directory exists",
+		"new-item $val -type directory -force | out-null",
+		"env GOPATH -t $global $val",
+		"env GOPATH $val",
+		"}"
+	],
+	"post_install": [
+		"$default_dirs = @( $env:GOPATH, \"$env:USERPROFILE\\go\", \"$env:USERPROFILE\\.go\" )",
+		"$val = $( @($default_dirs |% { get-item $_ -ea silent }) + $default_dirs[0] ) | select -first 1",
+		"ensure_in_path \"$val\\bin\" $global"
+	],
+	"bin": ["bin/go.exe", "bin/gofmt.exe"],
+	"architecture": {
+		"64bit": {
+			"url": "https://go.dev/dl/go1.19.13.windows-amd64.zip",
+			"hash": "sha256:908cba438f6f34fdf5ec8572f5f8759cb85b87f5c0b4fc4a389249bf92b86736"
+		},
+		"32bit": {
+			"url": "https://go.dev/dl/go1.19.13.windows-386.zip",
+			"hash": "sha256:9aba3b0f79883313e833263ffef4610980c2818786ee65d5382b659d05a55d3f"
+		}
+	},
+	"checkver": { "url": "https://golang.org/dl/", "regex": "go([\\d.]+)\\.windows-" },
+	"autoupdate": {
+		"architecture": {
+			"64bit": { "url": "https://dl.google.com/go/go$version.windows-amd64.zip" },
+			"32bit": { "url": "https://dl.google.com/go/go$version.windows-386.zip" }
+		},
+		"hash": { "url": "$url.sha256" }
+	}
+	// "installer": { "script": "add_first_in_path \"$env:USERPROFILE\\go\\bin\" $global" },
+	// "uninstaller": { "script": "remove_from_path \"$env:USERPROFILE\\go\\bin\" $global" }
+}

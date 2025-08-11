@@ -1,0 +1,38 @@
+{
+    "version": "2.5.10",
+    "description": "启用并更新wsl",
+    "homepage": "https://github.com/microsoft/WSL",
+    "license": "Freeware",
+    "url": "https://github.com/microsoft/WSL/releases/download/2.5.10/wsl.2.5.10.0.x64.msi#/wsl.msi_",
+    "hash": "1b3e238f39afab2040907c616df101d63181579d68b3260d5147fb3985b37872",
+    "depends": [
+        "ChuckieChen945_Chuckie_s/v2rayn-core-self-contained",
+        "main/gsudo"
+    ],
+    "pre_install": [
+        "# Enable WSL 2 and Virtual Machine Platform features",
+        "gsudo Enable-WindowsOptionalFeature -FeatureName 'VirtualMachinePlatform' -All -Online -NoRestart -LimitAccess",
+        "gsudo Enable-WindowsOptionalFeature -FeatureName 'Microsoft-Windows-Subsystem-Linux' -All -Online -NoRestart -LimitAccess"
+    ],
+    "installer": {
+        "script": [
+            "# Wsl",
+            "Invoke-ExternalCommand 'msiexec' -ArgumentList @('/i', \"$dir\\wsl.msi_\", '/passive', '/norestart')",
+            "# wsb",
+            "if($env:USERNAME -ne 'WDAGUtilityAccount') {",
+            "    gsudo Enable-WindowsOptionalFeature -FeatureName 'Containers-DisposableClientVM' -All -Online -NoRestart -LimitAccess",
+            "}"
+        ]
+    },
+    "post_install": [
+        "# Set network",
+        "Set-NetFirewallHyperVVMSetting -Name '{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}' -DefaultInboundAction Allow",
+        "Set-NetFirewallHyperVVMSetting -Name '{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}' -Enabled False",
+        "# 为 WSL 应用启用“回环网络访问”权限, 适配 tun 模式",
+        "EnableLoopback -all"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/microsoft/WSL/releases/download/$version/wsl.$version.0.x64.msi#/wsl.msi_"
+    }
+}
