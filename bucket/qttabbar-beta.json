@@ -1,23 +1,45 @@
 {
-  "version": "2048",
+  "version": "2048-beta2",
   "description": "Shell extension for the File Explorer that transforms it into a tabbed browser.",
   "homepage": "http://qttabbar.wikidot.com/",
   "license": "Freeware",
   "url": "http://qttabbar.wdfiles.com/local--files/qttabbar1/QTTabBar%202048%20Beta2.zip",
   "hash": "4a8aac9bf84d9b3c09ec099363c1d0a5afe8532d3540e16cf869a4319b7b7185",
-  "pre_install": "if (!$global) { Write-Host -Foreground Red \"$app should be installed globally.\"; break }",
   "installer": {
-    "script": "Start-Process \"$dir/QTTabBar.exe\" -ArgumentList '/QI' -Wait -NoNewWindow",
+    "script": [
+        "if (!(is_admin)) { error \"$app requires administrator rights to $cmd\"; break }",
+        "# Remove previous installations to avoid error",
+        "Get-ChildItem \"$env:TEMP\\QTTabBar_*.*\" | ForEach-Object { Remove-Item -ErrorAction Ignore -Recurse $_ }",
+        "sudo Start-Process \"$dir/QTTabBar.exe\" -ArgumentList '/QI' -Wait -NoNewWindow"
+    ],
     "keep": true
   },
   "uninstaller": {
-    "script": "Start-Process \"$dir/QTTabBar.exe\" -ArgumentList '/QU' -Wait -NoNewWindow"
+    "script": [
+      "if (!(is_admin)) { error \"$app requires administrator rights to $cmd\"; break }",
+      "sudo Start-Process \"$dir/QTTabBar.exe\" -ArgumentList '/QU' -Wait -NoNewWindow"
+    ]
   },
   "checkver": {
-    "url": "http://qttabbar.wikidot.com",
-    "regex": "http://qttabbar\\.wdfiles\\.com/local--files/qttabbar1/QTTabBar%20(\\d+)%20Beta(?<betaver>\\d*)\\.zip"
+    "script": [
+        "# Using script to solve download url issues ('%20', 'beta->Beta')",
+        "$url = 'http://qttabbar.wikidot.com/'",
+        "$cont = (Invoke-WebRequest $url).Content",
+        "$regex = '>QTTabBar ver (\\d+)( beta (\\d+))?'",
+        "",
+        "# match regex in reverse order",
+        "$regexp = New-Object System.Text.RegularExpressions.Regex($regex)",
+        "$match = $regexp.Matches($cont) | Select-Object -Last 1",
+        "if (!$match) { error \"Could not match '$regex' in '$url'\" ; break}",
+        "$main_ver = $match.Groups[1].Value",
+        "$beta_ver = $match.Groups[3].Value",
+        "if ($beta_ver) { $app_ver = \"$main_ver-beta$beta_ver\"; $filename = \"QTTabBar%20$main_ver%20Beta$beta_ver.zip\" }",
+        "else {  $app_ver = \"$main_ver\"; $filename = \"QTTabBar%20$main_ver.zip\"  }",
+        "Write-Output $app_ver $filename"
+    ],
+    "regex": "(\\d+-beta\\d+) (?<filename>.*)"
   },
   "autoupdate": {
-    "url": "http://qttabbar.wdfiles.com/local--files/qttabbar1/QTTabBar%20$version%20Beta$betaver.zip"
+    "url": "http://qttabbar.wdfiles.com/local--files/qttabbar1/$matchFilename"
   }
 }
