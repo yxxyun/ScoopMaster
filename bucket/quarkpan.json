@@ -1,36 +1,49 @@
 {
     "version": "3.22.0",
-    "description": "夸克网盘",
-    "homepage": "https://pan.quark.cn/",
-    "license": "Proprietary",
-    "url": "https://pdds.quark.cn/download/stfile/ppvupqvuypqtprxrf/QuarkCloudDrive_v3.22.0_release_(Build2332243-20250729105429).exe",
-    "hash": "2e963b0efff0c6e968cdb712068009addfa843a6be6f7b6e431b5e0b8a52db48",
+    "description": "夸克网盘是夸克推出的一款云服务产品，功能包括云存储、高清看剧、文件在线解压、PDF一键转换等。通过夸克网盘可随时随地管理和使用照片、文档、手机资料，目前支持Android、iOS、PC、iPad。",
+    "homepage": "https://pan.quark.cn",
+    "license": "https://b.quark.cn/apps/quark_icloud_pay/routes/service_help",
+    "url": "https://pdds.quark.cn/download/stfile/iionijmjqijmikqkc/QuarkCloudDrive_v3.22.0_release_(Build2330231-20250728145934).exe#/dl.exe",
+    "hash": "d21ee9b3bbb20da9a011435c1a25e950a98c9d0d8c47fd80047359450011dd97",
+    "depends": "innounp",
     "innosetup": true,
+    "installer": {
+        "script": [
+            "$PersistCache = \"$persist_dir\\Cache\"",
+            "$AppCache = \"$env:APPDATA\\quark-cloud-drive\"",
+            "if(!(Test-Path $PersistCache)) { New-Item $PersistCache -Type Directory -Force | Out-Null }",
+            "if(Test-Path $AppCache) {",
+            "    $AppDir = Get-Item $AppCache",
+            "    if($AppDir.Attributes -ne \"Directory, ReparsePoint\") { ",
+            "        Move-Item $AppCache $PersistCache -Force",
+            "        Remove-Item $AppCache -Force -Recurse -ErrorAction SilentlyContinue",
+            "        New-Item -Type Junction -Path $AppCache -Target $PersistCache | Out-Null",
+            "    }",
+            "} else {",
+            "    New-Item -Type Junction -Path $AppCache -Target $PersistCache | Out-Null",
+            "}",
+            "Move-Item -Path \"$dir\\app-$version\\*\" -Destination $dir -Force"
+        ]
+    },
+    "bin": "QuarkCloudDrive.exe",
     "shortcuts": [
         [
             "QuarkCloudDrive.exe",
             "QuarkCloudDrive"
         ]
     ],
-    "pre_install": [
-        "Move-Item -Force -Path \"$dir\\app-$version\\*\" -Destination \"$dir\"",
-        "Remove-Item -Force -Recurse -Path \"$dir\\app-$version\""
-    ],
-    "uninstaller": {
-        "script": [
-            "$runtimeCache = \"$env:APPDATA\\quark-cloud-drive\"",
-            "$runtimeData = \"$env:APPDATA\\Quark\"",
-            "Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
-            "Remove-Item $runtimeData -Force -Recurse -ErrorAction SilentlyContinue"
-        ]
-    },
     "checkver": {
-        "url": "https://pan.quark.cn/api/client_version",
-        "jsonpath": "$.data.clouddrive_backup_packages[1].winInstallerUrl",
-        "re": "pdds.quark.cn/download/stfile/(?<release>\\w+)/QuarkCloudDrive_v(?<version>[\\d.]+)_release_\\(Build(?<build>\\d+)-(?<timestamp>\\d+)\\).exe",
-        "replace": "${version}"
+        "script": [
+            "$latestVerUrl = Invoke-WebRequest -Uri 'https://pan.quark.cn/api/client_version' -UseBasicParsing",
+            "$json_data = ConvertFrom-Json $latestVerUrl",
+            "$url = $json_data.data.origin_winInstallerUrl",
+            "$latestVer = $json_data.data.origin_version",
+            "$str = $latestVer + '//-//' + $url",
+            "echo $str"
+        ],
+        "regex": "(?<version>[\\d.]+)//-//(?<url>[\\s\\w\\d_@():./-]+)"
     },
     "autoupdate": {
-        "url": "https://pdds.quark.cn/download/stfile/$matchRelease/QuarkCloudDrive_v$matchVersion_release_(Build$matchBuild-$matchTimestamp).exe"
+        "url": "$matchUrl#/dl.exe"
     }
 }
