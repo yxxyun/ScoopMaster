@@ -1,71 +1,48 @@
 {
     "version": "4.5.66.0",
     "description": "Graphical GREP tool to search across text files, Word and Excel documents, PDFs and archives",
-    "homepage": "http://dngrep.github.io/",
+    "homepage": "https://dngrep.github.io/",
     "license": "GPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/dnGrep/dnGrep/releases/download/v4.5.66.0/dnGREP.4.5.66.0.x64.zip",
-            "hash": "11f1e44ee88e060d373f67f33e8d66665ec2c0ea4fa0362cca55004e6ca64769"
+            "url": "https://github.com/dnGrep/dnGrep/releases/download/v4.5.66.0/dnGREP.4.5.66.x64.msi",
+            "hash": "da45e7baf3620674dd924628ff630b1c43652d7f4b0bb122e105a982d2564876"
         },
         "32bit": {
-            "url": "https://github.com/dnGrep/dnGrep/releases/download/v4.5.66.0/dnGREP.4.5.66.0.x86.zip",
-            "hash": "16e069f6378ba46aef7caeae485c3bccb2c63f53703cc55b4646765963358119"
+            "url": "https://github.com/dnGrep/dnGrep/releases/download/v4.5.66.0/dnGREP.4.5.66.x86.msi",
+            "hash": "e0ac69d5b4a60b5e62c599dad07c2a8fb50076d876fe35cd628a74cdd724e9af"
         }
     },
-    "bin": [
-        [
-            "dnGREP.exe",
-            "dngrep"
-        ]
+    "pre_install": [
+        "$cont = '<?xml version=\"1.0\" encoding=\"utf-8\"?><dictionary version=\"2\"></dictionary>'",
+        "if (!(Test-Path \"$persist_dir\\dnGREP.Settings.dat\")) { Set-Content \"$dir\\dnGREP.Settings.dat\" $cont -Encoding 'ascii' }",
+        "Copy-Item \"$persist_dir\\Themes\\*\" \"$dir\\Themes\" -ErrorAction 'SilentlyContinue' -Recurse"
     ],
+    "extract_dir": "dnGREP",
+    "bin": "dnGREP.exe",
     "shortcuts": [
         [
             "dnGREP.exe",
-            "dnGrep"
+            "dnGREP"
         ]
     ],
-    "pre_install": [
-        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name air) scripts/AirUtils.psm1)",
-        "$bookmarks_path = \"$persist_dir\\bookmarks.xml\"",
-        "if (!(Test-Path $bookmarks_path)) {",
-        "    $bookmarks_content = '<?xml version=\"1.0\" encoding=\"utf-8\"?><BookmarkEntity xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Bookmarks></Bookmarks></BookmarkEntity>'",
-        "    EnsureSetContent $bookmarks_path $bookmarks_content",
-        "}",
-        "$settings_path = \"$persist_dir\\dnGREP.Settings.dat\"",
-        "if (!(Test-Path $settings_path)) {",
-        "    $setting_content = '<?xml version=\"1.0\" encoding=\"utf-8\"?><dictionary version=\"3\" xmlns:xml=\"http://www.w3.org/XML/1998/namespace\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"></dictionary>'",
-        "    EnsureSetContent $settings_path $setting_content",
-        "}",
-        "Remove-Module -Name AirUtils"
-    ],
-    "persist": [
-        "Filters",
-        "logs",
-        "Scripts",
-        "Themes",
-        "bookmarks.xml",
-        "dnGREP.Settings.dat"
-    ],
+    "persist": "dnGREP.Settings.dat",
+    "pre_uninstall": "Copy-Item \"$dir\\Themes\\*\" \"$persist_dir\\Themes\" -ErrorAction 'SilentlyContinue' -Recurse",
     "checkver": {
         "github": "https://github.com/dnGrep/dnGrep"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/dnGrep/dnGrep/releases/download/v$version/dnGREP.$version.x64.zip",
-                "hash": {
-                    "url": "https://github.com/dnGrep/dnGrep/releases/v$version",
-                    "regex": "x64.zip[<>/\\w\\n: \\(\\)]+SHA256: ($sha256)"
-                }
+                "url": "https://github.com/dnGrep/dnGrep/releases/download/v$version/dnGREP.$matchHead.x64.msi"
             },
             "32bit": {
-                "url": "https://github.com/dnGrep/dnGrep/releases/download/v$version/dnGREP.$version.x86.zip",
-                "hash": {
-                    "url": "https://github.com/dnGrep/dnGrep/releases/v$version",
-                    "find": "x86.zip[<>/\\w\\n: \\(\\)]+SHA256: ($sha256)"
-                }
+                "url": "https://github.com/dnGrep/dnGrep/releases/download/v$version/dnGREP.$matchHead.x86.msi"
             }
+        },
+        "hash": {
+            "url": "https://github.com/dnGrep/dnGrep/releases/v$version",
+            "regex": "(?sm)$basename.*?SHA-256: $sha256"
         }
     }
 }
