@@ -1,17 +1,33 @@
 {
-    "version": "2.4.0",
+    "version": "2.5.0",
     "description": "A dedicated scratchpad for developers",
     "homepage": "https://heynote.com/",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/heyman/heynote/releases/download/v2.4.0/Heynote_2.4.0.exe#/dl.7z",
-            "hash": "sha512:083dc2684b72fdb59fd814046d5720fa0dde350dcee717219421959518784810a72886c521fd63b81b0662a01b70101e7bb262808128ed6df5c289f5cb7f45a6"
+            "url": "https://github.com/heyman/heynote/releases/download/v2.5.0/Heynote_2.5.0.exe#/dl.7z",
+            "hash": "sha512:95a2e96b13c7dba8e8200d319ef9c48e10582ee79a7654f43281ae90179094d5bdf7aab1d13ce6eedfa72630d409f7edd21d2e4b17d6cb1a3e59d8a660d965f7"
         }
     },
     "pre_install": [
         "Expand-7ZipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
         "Remove-Item \"$dir\\`$*\" -Recurse"
+    ],
+    "##": [
+        "hard links on config.json break when updating settings",
+        "would link the whole folder if it wasn't full of chromium junk"
+    ],
+    "post_install": [
+        "$appdata = \"$env:APPDATA\\Heynote\"",
+        "ensure \"$appdata\" | Out-Null",
+        "if (!(Test-Path \"$appdata\\config.json\")) {",
+        "   if (Test-Path \"$persist_dir\\config.json\") {",
+        "      Copy-Item \"$persist_dir\\config.json\" \"$appdata\"",
+        "   } else {",
+        "      $notes = \"$dir/notes\".Replace('\\', '/')",
+        "      Set-Content \"$appdata\\config.json\" \"{\"\"settings\"\":{\"\"autoUpdate\"\":false,\"\"bufferPath\"\":\"\"$notes\"\"}}\"",
+        "   }",
+        "}"
     ],
     "shortcuts": [
         [
@@ -19,6 +35,14 @@
             "Heynote"
         ]
     ],
+    "persist": "notes",
+    "pre_uninstall": [
+        "$config = \"$env:APPDATA\\Heynote\\config.json\"",
+        "if (Test-Path \"$config\") {",
+        "    Copy-Item \"$config\" \"$persist_dir\" -Force",
+        "}"
+    ],
+    "post_uninstall": "Remove-Item \"$env:APPDATA\\Heynote\" -Recurse 2>&1 | Out-Null",
     "checkver": {
         "github": "https://github.com/heyman/heynote"
     },
