@@ -1,0 +1,69 @@
+{
+    "version": "1.5.6",
+    "description": "A desktop client that supports for multiple LLM providers.",
+    "notes": "You'd better turn off update detection in Settings->About Us in Cherry Studio and use scoop to manage updates, otherwise it will cause some errors.",
+    "homepage": "https://cherry-ai.com",
+    "license": "Apache-2.0",
+    "depends": "extras/vcredist2022",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.5.6/Cherry-Studio-1.5.6-x64-portable.exe#/cherry-studio.exe",
+            "hash": "sha512:53ac4ce98e6a135ce23696c0c466976472bf3691bfc0ec6eb4f336bb7e43e2b83a79621459be0ef0ee3f435a4cc4af424ab7e445054bbd16cc130d25c46eaa9b",
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
+        },
+        "arm64": {
+            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.5.6/Cherry-Studio-1.5.6-arm64-portable.exe#/cherry-studio.exe",
+            "hash": "d86af4a3c5b4d22c41093514665eba5ecb85e1e3768f81f12328e5cf7fcdf84e",
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\""
+        }
+    },
+    "shortcuts": [
+        [
+            "cherry-studio.exe",
+            "Cherry Studio Test"
+        ]
+    ],
+    "post_install": [
+        "# Handle data directory migration",
+        "if (Test-Path \"$persist_dir\\data\") {",
+        "  $dataItems = Get-ChildItem \"$persist_dir\\data\" -ErrorAction SilentlyContinue",
+        "  if (-not $dataItems) {",
+        "    # persist_dir\\data exists but is empty, check if we need to copy from APPDATA",
+        "    if ((Test-Path \"$env:APPDATA\\CherryStudio\") -and (Get-ChildItem \"$env:APPDATA\\CherryStudio\" -ErrorAction SilentlyContinue)) {",
+        "      Copy-Item \"$env:APPDATA\\CherryStudio\\*\" \"$persist_dir\\data\" -Recurse -Force",
+        "      info \"Data copied from '$env:APPDATA\\CherryStudio' to persist directory.\"",
+        "    }",
+        "  }",
+        "} else {",
+        "  # persist_dir\\data does not exist",
+        "  if ((Test-Path \"$env:APPDATA\\CherryStudio\") -and (Get-ChildItem \"$env:APPDATA\\CherryStudio\" -ErrorAction SilentlyContinue)) {",
+        "    ensure \"$persist_dir\\data\" | Out-Null",
+        "    Copy-Item \"$env:APPDATA\\CherryStudio\\*\" \"$persist_dir\\data\" -Recurse -Force",
+        "    info \"Data copied from '$env:APPDATA\\CherryStudio' to persist directory.\"",
+        "  }",
+        "}"
+    ],
+    "persist": [
+        "data"
+    ],
+    "checkver": {
+        "github": "https://github.com/CherryHQ/cherry-studio"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-x64-portable.exe#/cherry-studio.exe",
+                "hash": {
+                    "url": "$baseurl/latest.yml",
+                    "regex": "sha512: $base64"
+                }
+            },
+            "arm64": {
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-arm64-portable.exe#/cherry-studio.exe"
+            }
+        }
+    },
+    "suggest": {
+        "vcredist": "extras/vcredist2022"
+    }
+}
