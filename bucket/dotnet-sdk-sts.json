@@ -3,8 +3,22 @@
     "description": ".NET is a free, cross-platform, open source developer platform for building many different types of applications.",
     "homepage": "https://www.microsoft.com/net/",
     "license": "MIT",
+    "notes": [
+        "You can switch to the required dotnet SDK version at any time.",
+        "To do so, use the 'scoop reset' command with similar examples as shown below:",
+        "# Reseting to the latest .NET SDK (LTS) version",
+        "'scoop reset dotnet-sdk'",
+        "# Reseting to a specific .NET SDK version",
+        "'scoop reset dotnet-sdk-sts@9.0.100'",
+        "# Reseting to the current .NET SDK (STS) version",
+        "'scoop reset dotnet-sdk-sts'",
+        "# Resetting to the latest .NET SDK (Preview) version",
+        "'scoop reset dotnet-sdk-preview'"
+    ],
     "suggest": {
-        "Visual C++ Redistributable": "vcredist"
+        "Visual C++ Redistributable": "vcredist",
+        ".NET SDK (LTS)": "dotnet-sdk",
+        ".NET SDK (LTS - preview)": "dotnet-sdk-preview"
     },
     "architecture": {
         "64bit": {
@@ -32,6 +46,51 @@
         "DOTNET_CLI_TELEMETRY_OPTOUT": true,
         "MSBuildSDKsPath": "$dir\\sdk\\$version\\Sdks"
     },
+    "pre_install": [
+        "# Move .NET SDK files only if the shared persist directory already exists",
+        "Write-Host",
+        "$sharedPersist = Join-Path (Resolve-Path \"$persist_dir\\..\").Path \"dotnet\"",
+        "Write-Host The \"$sharedPersist\" folder will be used to shared all dotnet-sdk* release",
+        "Write-Host \"   to add support to sdks and runtimes of dotnet installed by scoop\"",
+        "if (Test-Path \"$sharedPersist\") {",
+        "   (\"sdk\",\"sdk-manifests\",\"shared\") | ForEach-Object {",
+        "       $src = Join-Path $dir $_",
+        "       $dst = Join-Path $sharedPersist $_",
+        "       Write-Host \"Sharing the $_ folder into $sharedPersist\"",
+        "       New-Item -ItemType Directory -Path $dst -Force | Out-Null",
+        "       Copy-Item -Path (Join-Path $src \"*\") -Destination $dst -Recurse -Force",
+        "       Remove-Item -Path $src -Recurse -Force",
+        "   }",
+        "} else {",
+        "   Write-Host \"$sharedPersist\" does not exist. It will be created...",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$major = ($version -split '\\.')[0]",
+        "$sharedRoot = Join-Path (Resolve-Path \"$persist_dir\\..\").Path \"dotnet\"",
+        "if (Test-Path $sharedRoot) {",
+        "   Write-Host Removing any shared dotnet-sdk files for version $major.*",
+        "   (\"sdk\",\"sdk-manifests\",\"shared\") | ForEach-Object {",
+        "      $root = Join-Path $sharedRoot $_",
+        "      if (Test-Path $root) {",
+        "         if ($_ -eq 'shared') {",
+        "            Get-ChildItem -LiteralPath $root -Directory -Force -ErrorAction SilentlyContinue | ForEach-Object {",
+        "               Get-ChildItem -LiteralPath $_.FullName -Directory -Force -ErrorAction SilentlyContinue | Where-Object { $_.Name -like \"$major.*\" } | ForEach-Object {",
+        "                  Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue",
+        "               }",
+        "            }",
+        "         } else {",
+        "            Get-ChildItem -LiteralPath $root -Directory -Force -ErrorAction SilentlyContinue | Where-Object { $_.Name -like \"$major.*\" } | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue }",
+        "         }",
+        "      }",
+        "   }",
+        "}"
+    ],
+    "persist": [
+        ["sdk", "../dotnet/sdk"],
+        ["sdk-manifests", "../dotnet/sdk-manifests"],
+        ["shared", "../dotnet/shared"]
+    ],
     "checkver": {
         "url": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json",
         "jsonpath": "$.releases-index[?(@.release-type == 'sts' && @.support-phase != 'eol')].latest-sdk"
