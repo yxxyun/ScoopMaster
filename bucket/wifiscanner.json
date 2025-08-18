@@ -6,22 +6,27 @@
     "url": "https://lizardsystems.com/download/wifiscanner_setup.exe",
     "hash": "sha1:823DAEC2CFFC802C182AB2742D5BFA6ABCED8B13",
     "installer": {
-        "args": [
-            "/VERYSILENT",
-            "/SP-",
-            "/NORESTART",
-            "/MERGETASKS=!desktopicon"
+        "script": [
+            "Start-Process \"$dir\\wifiscanner_setup.exe\" -ArgumentList '/VERYSILENT', '/SP-', '/NORESTART', '/MERGETASKS=!desktopicon' -Wait",
+            "$programFiles = ${env:ProgramFiles}",
+            "$wifiScannerPath = \"$programFiles\\LizardSystems\\WiFi Scanner\\WiFiScanner.exe\"",
+            "if (!(Test-Path $wifiScannerPath)) {",
+            "    $wifiScannerPath = \"${env:ProgramFiles(x86)}\\LizardSystems\\WiFi Scanner\\WiFiScanner.exe\"",
+            "}",
+            "$launcherScript = \"@echo off`nstart `\"$wifiScannerPath`\"`n\"",
+            "Set-Content -Path \"$dir\\wifiscanner.bat\" -Value $launcherScript"
         ]
     },
     "uninstaller": {
-        "file": "unins000.exe",
-        "args": "/VERYSILENT"
-    },
-    "bin": "WiFiScanner.exe",
-    "shortcuts": [
-        [
-            "WiFiScanner.exe",
-            "LizardSystems Wi-Fi Scanner"
+        "script": [
+            "$uninstaller = Get-ChildItem \"$env:ProgramFiles\\LizardSystems\\WiFi Scanner\" -Name 'unins*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1",
+            "if (!$uninstaller) {",
+            "    $uninstaller = Get-ChildItem \"${env:ProgramFiles(x86)}\\LizardSystems\\WiFi Scanner\" -Name 'unins*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1",
+            "}",
+            "if ($uninstaller) {",
+            "    Start-Process \"$uninstaller\" -ArgumentList '/VERYSILENT' -Wait",
+            "}"
         ]
-    ]
+    },
+    "bin": "wifiscanner.bat"
 }
