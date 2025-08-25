@@ -1,0 +1,44 @@
+{
+    "version": "1.12.0",
+    "description": "Jellyfin Desktop Client based on Plex Media Player ",
+    "homepage": "https://jellyfin.org",
+    "license": "GPL-2.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/jellyfin/jellyfin-media-player/releases/download/v1.12.0/JellyfinMediaPlayer-1.12.0-windows-x64-legacy.exe",
+            "hash": "53188099f8ac9a82b5ab8f28dcdb5f399dd6ea4e0c288268076f5bc4a26dd7cb"
+        }
+    },
+    "checkver": {
+        "github": "https://github.com/jellyfin/jellyfin-media-player"
+    },
+    "suggest": {
+        "vcredist": "extras/vcredist2022"
+    },
+    "shortcuts": [
+        [
+            "JellyfinMediaPlayer.exe",
+            "Jellyfin Media Player"
+        ]
+    ],
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/jellyfin/jellyfin-media-player/releases/download/v$version/JellyfinMediaPlayer-$version-windows-x64-legacy.exe"
+            }
+        }
+    },
+    "installer": {
+        "script": [
+            "$setup_file = (Get-ChildItem -Path $dir -Filter *.exe)[0].name",
+            "Expand-DarkArchive \"$dir\\$setup_file\" \"$dir\\_tmp\"",
+            "(Get-ChildItem \"$dir\\_tmp\\AttachedContainer\\*.msi\").FullName | ForEach-Object {",
+            "    # appendpath.msi does not contain any file, which causes 'msiexec /a' to fail",
+            "    if($((Get-Item $_).Basename) -eq 'appendpath') { return }",
+            "    Expand-MsiArchive $_ \"$dir\" ",
+            "}",
+            "Copy-Item -Path \"$dir\\Msi\\*\" -Destination $dir -Recurse -Force",
+            "Remove-Item \"$dir\\$setup_file\", \"$dir\\_tmp\", \"$dir\\Msi\" -Recurse -Force"
+        ]
+    }
+}
