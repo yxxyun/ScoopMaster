@@ -2,9 +2,9 @@
     "homepage": "https://www.remnote.com/",
     "description": "Build your Knowledge Base anywhere and without distractions.",
     "license": "unknown",
-    "version": "1.19.56",
-    "url": "https://download2.remnote.io/remnote-desktop2/RemNote-1.19.56-Setup.exe#/dl.7z",
-    "hash": "B979A049145C65B22E51EE713F0CC1920D757703D1CDAD661C617FD3C4F8CEC1",
+    "version": "1.20.0",
+    "url": "https://download2.remnote.io/remnote-desktop2/RemNote-1.20.0-Setup.exe#/dl.7z",
+    "hash": "bfb7734978172aa7bd3a27219b46084d092d4c14100a7fefc3bcbc83014f4430",
     "architecture": {
         "64bit": {
             "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
@@ -13,9 +13,7 @@
             "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-32.7z\" \"$dir\""
         }
     },
-    "post_install": [
-        "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\`$R0\"  -Force -Recurse"
-    ],
+    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\`$R0\"  -Force -Recurse",
     "bin": [
         "RemNote.exe",
         "RemNote"
@@ -27,8 +25,20 @@
         ]
     ],
     "checkver": {
-        "url": "https://feedback.remnote.com/rss/changelog.xml",
-        "regex": "<title>.*?([\\d\\.]+).*?</title>"
+        "script": [
+            "$redirectUrl = 'https://backend.remnote.com/desktop/windows'",
+            "try {",
+            "    Invoke-WebRequest -Uri $redirectUrl -MaximumRedirection 0 -UseBasicParsing -ErrorAction Stop",
+            "}",
+            "catch {",
+            "    $dl_url = $_.Exception.Response.Headers.Location.AbsoluteUri",
+            "}",
+            "if ($dl_url -match '.*RemNote-(.+)-Setup.*') {",
+            "    $ver = $matches[1]",
+            "}",
+            "$ver"
+        ],
+        "regex": "(.+)"
     },
     "autoupdate": {
         "url": "https://download2.remnote.io/remnote-desktop2/RemNote-$version-Setup.exe#/dl.7z"
