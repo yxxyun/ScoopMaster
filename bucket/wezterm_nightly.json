@@ -1,0 +1,70 @@
+{
+    "version": "nightly-2025.09.03.034533",
+    "description": "A GPU-accelerated cross-platform terminal emulator and multiplexer written by @wez and implemented in Rust",
+    "homepage": "https://github.com/wez/wezterm",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/wezterm/wezterm/blob/main/LICENSE.md"
+    },
+    "notes": [
+        "Add Open with Wezterm as a context menu option by running:",
+        "reg import \"$dir\\install-context.reg\""
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/wezterm/wezterm/releases/tags/nightly",
+        "jsonpath": "$.assets[?(@.name == 'WezTerm-windows-nightly.zip')]",
+        "regex": "(\\d+)-(\\d+)-(\\d+)T(\\d+):(\\d+):(\\d+)Z",
+        "replace": "nightly-${1}.${2}.${3}.${4}${5}${6}"
+    },
+    "autoupdate": {
+        "url": "https://github.com/wez/wezterm/releases/download/nightly/WezTerm-windows-nightly.zip",
+        "hash": {
+            "url": "$url.sha256"
+        }
+    },
+    "url": "https://github.com/wez/wezterm/releases/download/nightly/WezTerm-windows-nightly.zip",
+    "hash": "3f5674b87ba4a620f9c8800e2230e5badf222718a31017060eba929aa0639c62",
+    "pre_install": [
+        ". \"$bucketsdir\\doge\\scripts\\utils.ps1\"",
+        "Set-PersistFile -Name wezterm.lua -InitType Lua"
+    ],
+    "installer": {
+        "script": [
+            "$foldername = (Get-Item $dir\\WezTerm-windows-*).Name",
+            "Move-Item $dir\\$foldername\\* $dir",
+            "Remove-Item $dir\\$foldername"
+        ]
+    },
+    "post_install": [
+        "$weztermPath = \"$dir\\wezterm-gui.exe\".Replace('\\', '\\\\')",
+        "'install-context', 'uninstall-context' | ForEach-Object {",
+        "    if (Test-Path \"$bucketsdir\\doge\\scripts\\$app\\$_.reg\") {",
+        "        $content = Get-Content \"$bucketsdir\\doge\\scripts\\$app\\$_.reg\"",
+        "        $content = $content.Replace('$weztermPath', $weztermPath)",
+        "        if ($global) { $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE') }",
+        "        Set-Content \"$dir\\$_.reg\" $content -Encoding Ascii -Force",
+        "    }",
+        "}"
+    ],
+    "bin": [
+        [
+            "wezterm.exe",
+            "wezterm_nightly"
+        ],
+        [
+            "wezterm-gui.exe",
+            "wezterm-gui_nighlty"
+        ]
+    ],
+    "persist": [
+        "wezterm.lua",
+        "wezterm_modules",
+        "colors"
+    ],
+    "shortcuts": [
+        [
+            "wezterm-gui.exe",
+            "Wezterm Nightly"
+        ]
+    ]
+}
