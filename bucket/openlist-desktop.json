@@ -1,7 +1,7 @@
 {
     "version": "0.7.0",
     "description": "A desktop application for OpenList",
-    "homepage": "https://github.com/OpenListTeam/OpenList-Desktop",
+    "homepage": "https://oplist.org/",
     "license": "GPL-3.0-or-later",
     "architecture": {
         "64bit": {
@@ -9,40 +9,43 @@
             "hash": "b9ce745d161c1b81c4542adc1a3ad0ec2963f0e0572bbfbdf0c707c6973c8b96"
         },
         "arm64": {
-            "url": "https://github.com/OpenListTeam/OpenList-Desktop/releases/download/v0.7.0/OpenList.Desktop_0.7.0_arm64-setup.exe#/dl.7z",
-            "hash": "493c4f40895a520883f175771fdecdffcfaa280a1e653b16f39acfbedc7ebff9"
+            "url": "https://github.com/OpenListTeam/OpenList-Desktop/releases/download/v0.7.0/OpenList.Desktop_0.7.0_x64-setup.exe#/dl.7z",
+            "hash": "b9ce745d161c1b81c4542adc1a3ad0ec2963f0e0572bbfbdf0c707c6973c8b96"
         }
     },
-    "pre_install": [
-        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse",
-        "New-Item -ItemType Directory -Path \"$persist_dir\" -Force | Out-Null",
-        "if (!(Test-Path \"$persist_dir\\settings.json\")) {",
-        "    \"{}\" | Out-File -FilePath \"$persist_dir\\settings.json\" -Encoding utf8 -Force",
-        "}",
-        "if (!(Test-Path \"$persist_dir\\rclone.conf\")) {",
-        "    New-Item -ItemType File -Path \"$persist_dir\\rclone.conf\" | Out-Null",
-        "}",
-        "New-Item -ItemType SymbolicLink -Path \"$dir\\rclone.conf\" -Target \"$persist_dir\\rclone.conf\" | Out-Null"
-    ],
-    "persist": [
-        "data",
-        "logs",
-        "settings.json"
-    ],
     "shortcuts": [
         [
             "openlist-desktop.exe",
             "OpenList Desktop"
         ]
     ],
-    "checkver": "github",
+    "pre_install": [
+        "if (!(Test-Path \"$dir\\settings.json\") -or !(Get-Item \"$dir\\settings.json\").Length) {",
+        "    New-Item \"$dir\\settings.json\" -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null",
+        "    Set-Content -Path \"$dir\\settings.json\" -Value '{\"app\":{\"auto_update_enabled\":false}}'",
+        "}"
+    ],
+    "post_install": "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Force -Recurse",
+    "pre_uninstall": [
+        "while (Get-Service -Name 'openlist_desktop_service' -ErrorAction SilentlyContinue) {",
+        "    Invoke-ExternalCommand \"$dir\\uninstall-openlist-service.exe\" -RunAs -Quiet",
+        "}"
+    ],
+    "persist": [
+        "settings.json",
+        "logs",
+        "data"
+    ],
+    "checkver": {
+        "github": "https://github.com/OpenListTeam/OpenList-Desktop"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
                 "url": "https://github.com/OpenListTeam/OpenList-Desktop/releases/download/v$version/OpenList.Desktop_$version_x64-setup.exe#/dl.7z"
             },
             "arm64": {
-                "url": "https://github.com/OpenListTeam/OpenList-Desktop/releases/download/v$version/OpenList.Desktop_$version_arm64-setup.exe#/dl.7z"
+                "url": "https://github.com/OpenListTeam/OpenList-Desktop/releases/download/v$version/OpenList.Desktop_$version_x64-setup.exe#/dl.7z"
             }
         }
     }
