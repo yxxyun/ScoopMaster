@@ -2,23 +2,17 @@
     "version": "1.5.11",
     "description": "A desktop client that supports for multiple LLM providers.",
     "homepage": "https://cherry-ai.com",
-    "license": "User-Segmented Dual Licensing (AGPLv3 + Commercial License) https://github.com/CherryHQ/cherry-studio/blob/main/LICENSE",
+    "license": "Apache-2.0",
     "architecture": {
         "64bit": {
             "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.5.11/Cherry-Studio-1.5.11-x64-setup.exe#/dl.7z",
-            "hash": "1e4f1d7fee27722cb079972d48b994a94e98e701951bf28503f489e5b572ccd0",
-            "pre_install": [
-                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\", \"$dir\\Unintall*\" -Recurse"
-            ]
+            "hash": "sha512:394125e0537cb659e3f6f9e653bd24ace67dfcaea862c5d85f4703249c58fe00c7df21c7d11958a40442a76284a864e25bf697d5d723aae65a904cdd6c14d3a0",
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
         },
         "arm64": {
             "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.5.11/Cherry-Studio-1.5.11-arm64-setup.exe#/dl.7z",
             "hash": "2d493cd8dac456d391c9b098878a88f21fd12084ea857c00ee1bc1b012ba6580",
-            "pre_install": [
-                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\", \"$dir\\Unintall*\" -Recurse"
-            ]
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\""
         }
     },
     "shortcuts": [
@@ -27,14 +21,29 @@
             "Cherry Studio"
         ]
     ],
-    "persist": "data",
+    "post_install": [
+        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse",
+        "# Remove the following lines in 2026-01-01:",
+        "# Compatible with incorrect persistence method",
+        "if (Test-Path \"$persist_dir\\data\") {",
+        "  ensure \"$env:APPDATA\\CherryStudio\" | Out-Null",
+        "  Move-Item \"$persist_dir\\data\\*\" \"$env:APPDATA\\CherryStudio\" -Recurse",
+        "  Remove-Item \"$persist_dir\" -Recurse -Force",
+        "  info \"This manifest no longer provides persistence.\"",
+        "  info \"Your data has been moved to '$env:APPDATA\\CherryStudio'(default location).\"",
+        "}"
+    ],
     "checkver": {
         "github": "https://github.com/CherryHQ/cherry-studio"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-x64-setup.exe#/dl.7z"
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-x64-setup.exe#/dl.7z",
+                "hash": {
+                    "url": "$baseurl/latest.yml",
+                    "regex": "sha512: $base64"
+                }
             },
             "arm64": {
                 "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-arm64-setup.exe#/dl.7z"
