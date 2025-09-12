@@ -1,88 +1,133 @@
 {
-    "version": "0.1.34",
-    "description": "An AI-powered IDE that makes programming more enjoyable and efficient.",
+    "version": "0.2.2.6908185",
+    "description": "腾讯云代码助手 CodeBuddy - AI 时代的智能编程伙伴，集成设计到开发的全栈 IDE",
     "homepage": "https://www.codebuddy.ai/",
-    "license": "Proprietary",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.codebuddy.ai/genie/document/privacyPolicy"
+    },
     "notes": [
-        "For github integration, run:",
-        "'reg import \"$dir\\install-github-integration.reg\"'"
+        "CodeBuddy 是腾讯云推出的 AI 驱动的全栈开发 IDE，主要功能：",
+        "- AI 代码补全：智能实时代码预测和自动补全",
+        "- AI 设计生成：将手绘概念转换为高保真交互原型",
+        "- 设计转代码：将 Figma 设计转换为生产就绪代码",
+        "- AI 全栈开发：多文件代码生成和重构的完整软件开发代理",
+        "- 内置 BaaS 集成：零配置 Supabase 集成，提供即时数据库和身份验证",
+        "- 一键部署：从开发到实时演示，秒级完成",
+        "",
+        "首次使用需要登录腾讯云账号并获取邀请码。",
+        "邀请码申请：https://wj.qq.com/s2/22240515/0ac5"
     ],
     "architecture": {
         "64bit": {
-            "url": "https://codebuddy-1328495429.cos.accelerate.myqcloud.com/aiide/win32-x64-user/CodeBuddy-win32-x64-user-0.1.34.6203028-9e264377.exe",
-            "hash": "58bb895d35bb5e12018586fe9494d382ba700fa282ad00aada4424e50ba99329",
-            "extract_dir": "{code_GetDestDir}"
+            "url": "https://codebuddy-1328495429.cos.accelerate.myqcloud.com/aiide/win32-x64-user/CodeBuddy-win32-x64-user-0.2.2.6908185-65920868.exe",
+            "hash": "2deb26d110cef9114691bc9160cfc53f1a96acc164b06f64e3b408e0f723259f"
         }
     },
     "innosetup": true,
-    "pre_install": [
-        "# 处理用户配置目录",
-        "$config_dirs = @(",
-        "    '.codebuddy'",
-        ")",
-        "foreach ($config_dir in $config_dirs) {",
-        "    $target_dir = Join-Path $env:USERPROFILE $config_dir",
-        "    $link_dir = Join-Path $persist_dir $config_dir",
-        "    & \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $target_dir $link_dir",
-        "}",
-        "",
-        "# 链接 $env:APPDATA\\CodeBuddy 到 persist_dir/data",
-        "$appdata_dir = Join-Path $env:APPDATA \"CodeBuddy\"",
-        "$persist_data_dir = Join-Path $persist_dir data",
-        "& \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $appdata_dir $persist_data_dir"
-    ],
-    "post_install": [
-        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
-        "$exepath = \"$dir\\CodeBuddy.exe\".Replace('\\', '\\\\')",
-        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context', 'install-github-integration', 'uninstall-github-integration' | ForEach-Object {",
-        "  if (Test-Path \"$bucketsdir\\$bucket\\scripts\\codebuddy\\$_.reg\") {",
-        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\codebuddy\\$_.reg\"",
-        "    $content = $content.Replace('$codedir', $dirpath)",
-        "    $content = $content.Replace('$code', $exepath)",
-        "    if ($global) {",
-        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
-        "    }",
-        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
-        "  }",
-        "}",
-        "# 自动导入注册表（可选）",
-        "reg import \"$dir\\install-context.reg\"",
-        "reg import \"$dir\\install-associations.reg\""
-    ],
-    "uninstaller": {
-        "script": [
-            "if ($cmd -eq 'uninstall')",
-            "{",
-            "   reg import \"$dir\\uninstall-context.reg\" ",
-            "   reg import \"$dir\\uninstall-github-integration.reg\" ",
-            "}"
-        ]
-    },
-    "bin": [
-        [
-            "bin/buddy.cmd",
-            "buddy"
-        ]
-    ],
+    "extract_dir": "{code_GetDestDir}",
     "shortcuts": [
         [
             "CodeBuddy.exe",
             "CodeBuddy"
         ]
     ],
-    "persist": [
-        "data",
-        ".codebuddy"
+    "post_install": [
+        "# Create data directories",
+        "New-Item -ItemType Directory -Path \"$dir\\data\" -Force | Out-Null",
+        "New-Item -ItemType Directory -Path \"$dir\\data\\user-data\" -Force | Out-Null",
+        "New-Item -ItemType Directory -Path \"$dir\\data\\extension-data\" -Force | Out-Null",
+        "New-Item -ItemType Directory -Path \"$dir\\data\\codebuddy-config\" -Force | Out-Null",
+        "New-Item -ItemType Directory -Path \"$dir\\data\\codebuddy-config\" -Force | Out-Null",
+        "",
+        "# Copy existing data if present",
+        "if ((Test-Path \"$env:AppData\\CodeBuddy\") -and !(Test-Path \"$dir\\data\\user-data\\*\")) {",
+        "  info '[Portable Mode] Copying existing user data...'",
+        "  Copy-Item \"$env:AppData\\CodeBuddy\\*\" \"$dir\\data\\user-data\" -Recurse -Force",
+        "}",
+        "",
+        "if ((Test-Path \"$env:LocalAppData\\CodeBuddyExtension\") -and !(Test-Path \"$dir\\data\\extension-data\\*\")) {",
+        "  info '[Portable Mode] Copying existing extension data...'",
+        "  Copy-Item \"$env:LocalAppData\\CodeBuddyExtension\\*\" \"$dir\\data\\extension-data\" -Recurse -Force",
+        "}",
+        "",
+        "if ((Test-Path \"$env:USERPROFILE\\.codebuddy\") -and !(Test-Path \"$dir\\data\\codebuddy-config\\*\")) {",
+        "  info '[Portable Mode] Copying existing CodeBuddy config...'",
+        "  Copy-Item \"$env:USERPROFILE\\.codebuddy\\*\" \"$dir\\data\\codebuddy-config\" -Recurse -Force",
+        "}",
+        "",
+        "# Define paths for junction points",
+        "$appDataPath = \"$env:AppData\\CodeBuddy\"",
+        "$localAppDataPath = \"$env:LocalAppData\\CodeBuddyExtension\"",
+        "$userProfilePath = \"$env:USERPROFILE\\.codebuddy\"",
+        "",
+        "# Remove existing directories/links if they exist",
+        "if (Test-Path $appDataPath) {",
+        "  Remove-Item $appDataPath -Recurse -Force",
+        "}",
+        "if (Test-Path $localAppDataPath) {",
+        "  Remove-Item $localAppDataPath -Recurse -Force",
+        "}",
+        "if (Test-Path $userProfilePath) {",
+        "  Remove-Item $userProfilePath -Recurse -Force",
+        "}",
+        "",
+        "# Create junction points",
+        "try {",
+        "  New-Item -ItemType Junction -Path $appDataPath -Target \"$dir\\data\\user-data\" -Force | Out-Null",
+        "  info '[Portable Mode] Created junction: %APPDATA%\\CodeBuddy -> scoop\\data\\user-data'",
+        "} catch {",
+        "  warn 'Failed to create junction for user data: $_'",
+        "}",
+        "",
+        "try {",
+        "  New-Item -ItemType Junction -Path $localAppDataPath -Target \"$dir\\data\\extension-data\" -Force | Out-Null",
+        "  info '[Portable Mode] Created junction: %LOCALAPPDATA%\\CodeBuddyExtension -> scoop\\data\\extension-data'",
+        "} catch {",
+        "  warn 'Failed to create junction for extension data: $_'",
+        "}",
+        "",
+        "try {",
+        "  New-Item -ItemType Junction -Path $userProfilePath -Target \"$dir\\data\\codebuddy-config\" -Force | Out-Null",
+        "  info '[Portable Mode] Created junction: ~/.codebuddy -> scoop\\data\\codebuddy-config'",
+        "} catch {",
+        "  warn 'Failed to create junction for CodeBuddy config: $_'",
+        "}",
+        ""
     ],
+    "pre_uninstall": [
+        "# Clean up junction points",
+        "$appDataPath = \"$env:AppData\\CodeBuddy\"",
+        "$localAppDataPath = \"$env:LocalAppData\\CodeBuddyExtension\"",
+        "$userProfilePath = \"$env:USERPROFILE\\.codebuddy\"",
+        "",
+        "if (Test-Path $appDataPath) {",
+        "  Remove-Item $appDataPath -Force",
+        "  info '[Portable Mode] Removed junction: %APPDATA%\\CodeBuddy'",
+        "}",
+        "",
+        "if (Test-Path $localAppDataPath) {",
+        "  Remove-Item $localAppDataPath -Force",
+        "  info '[Portable Mode] Removed junction: %LOCALAPPDATA%\\CodeBuddyExtension'",
+        "}",
+        "",
+        "if (Test-Path $userProfilePath) {",
+        "  Remove-Item $userProfilePath -Force",
+        "  info '[Portable Mode] Removed junction: ~/.codebuddy'",
+        "}",
+        ""
+    ],
+    "persist": "data",
     "checkver": {
         "url": "https://www.codebuddy.ai/v2/update?platform=ide-win32-x64-user",
         "jsonpath": "$.url",
-        "regex": "user-(?<version>\\d+\\.\\d+\\.\\d+)\\.(?<build>\\d+)-(?<test>[a-f0-9]+)\\.exe"
+        "regex": "(?<url>.*CodeBuddy-win32-x64-user-(?<version>[\\d.]+)-.*\\.exe)",
+        "replace": "${version}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://codebuddy-1328495429.cos.accelerate.myqcloud.com/aiide/win32-x64-user/CodeBuddy-win32-x64-user-$matchVersion.$matchBuild-$matchTest.exe"
+                "url": "$matchUrl"
             }
         }
     }
