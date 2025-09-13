@@ -1,24 +1,55 @@
 {
     "version": "3.1.0",
-    "description": "A resource downloader",
+    "description": "支持视频号、小程序、抖音、快手、小红书、酷狗、QQ音乐等网络资源下载!",
     "homepage": "https://github.com/putyy/res-downloader",
-    "license": "Apache-2.0",
-    "url": "https://github.com/putyy/res-downloader/releases/download/3.1.0/res-downloader_3.1.0_win_amd64.exe",
-    "hash": "eaf37360cf86c3ea83c50750540e3f0079dbe67525dd8ce9a2ab2900d7bd826b",
-    "installer": {
-        "script": "Expand-7zipArchive -Path \"$dir\\$fname\" -Removal"
+    "license": {
+        "identifier": "MIT license",
+        "url": "https://github.com/putyy/res-downloader#MIT-1-ov-file"
     },
-    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
-    "bin": "res-downloader.exe",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/putyy/res-downloader/releases/download/3.1.0/res-downloader_3.1.0_win_amd64.exe",
+            "hash": "eaf37360cf86c3ea83c50750540e3f0079dbe67525dd8ce9a2ab2900d7bd826b"
+        },
+        "arm64": {
+            "url": "https://github.com/putyy/res-downloader/releases/download/3.1.0/res-downloader_3.1.0_win_arm64.exe",
+            "hash": "460f328d0efb52cb5e4ce70f8db6406401cd340fe9e2688e4179fd7c853b52f3"
+        }
+    },
+    "pre_install": "Get-ChildItem \"$dir\\res-downloader*.exe\" | Rename-Item -NewName 'res-downloader.exe'",
+    "installer": {
+        "script": [
+            "# handle runtime cache",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\" -Target \"$env:APPDATA\\res-downloader\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\res-downloader\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
     "shortcuts": [
         [
             "res-downloader.exe",
             "res-downloader"
         ]
     ],
-    "persist": "config",
-    "checkver": "github",
+    "checkver": {
+        "url": "https://api.github.com/repos/putyy/res-downloader/releases",
+        "regex": "/releases/tag/([\\d.]+)"
+    },
     "autoupdate": {
-        "url": "https://github.com/putyy/res-downloader/releases/download/$version/res-downloader_$version_win_amd64.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/putyy/res-downloader/releases/download/$version/res-downloader_$version_win_amd64.exe"
+            },
+            "arm64": {
+                "url": "https://github.com/putyy/res-downloader/releases/download/$version/res-downloader_$version_win_arm64.exe"
+            }
+        }
     }
 }

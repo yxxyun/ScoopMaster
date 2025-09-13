@@ -1,14 +1,18 @@
 {
+    "version": "7.51.10",
     "homepage": "https://www.feishu.cn/",
     "description": "Connect with teammates anytime and anywhere",
     "license": {
         "identifier": "EULA",
         "url": "https://www.feishu.cn/en/terms"
     },
-    "version": "7.51.10",
     "architecture": {
+        "32bit": {
+            "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/04c62cfb/Feishu-win32_ia32-7.51.10-signed.exe#/dl.7z",
+            "hash": "md5:e85068e089c4ec39a81f95e036649d01"
+        },
         "64bit": {
-            "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/ae252fa6/Feishu-win32_x64-7.51.10-signed.exe#/feishu-7.51.10.7z",
+            "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/ae252fa6/Feishu-win32_x64-7.51.10-signed.exe#/dl.7z",
             "hash": "md5:d97c47b52d8fef6e2b9058d25435500b"
         }
     },
@@ -16,95 +20,44 @@
     "shortcuts": [
         [
             "app/Feishu.exe",
-            "Feishu"
+            "飞书"
         ]
     ],
-    "post_install": [
-        "# Create data directories",
-        "New-Item -ItemType Directory -Path \"$dir\\data\" -Force | Out-Null",
-        "New-Item -ItemType Directory -Path \"$dir\\data\\larkshell-data\" -Force | Out-Null",
-        "New-Item -ItemType Directory -Path \"$dir\\data\\feishu-local\" -Force | Out-Null",
-        "",
-        "# Copy existing data if present",
-        "if ((Test-Path \"$env:AppData\\LarkShell\") -and !(Test-Path \"$dir\\data\\larkshell-data\\*\")) {",
-        "  info '[Portable Mode] Copying existing LarkShell data...'",
-        "  Copy-Item \"$env:AppData\\LarkShell\\*\" \"$dir\\data\\larkshell-data\" -Recurse -Force",
-        "}",
-        "",
-        "if ((Test-Path \"$env:LocalAppData\\Feishu\") -and !(Test-Path \"$dir\\data\\feishu-local\\*\")) {",
-        "  info '[Portable Mode] Copying existing Feishu local data...'",
-        "  Copy-Item \"$env:LocalAppData\\Feishu\\*\" \"$dir\\data\\feishu-local\" -Recurse -Force",
-        "}",
-        "",
-        "# Define paths for junction points",
-        "$larkShellPath = \"$env:AppData\\LarkShell\"",
-        "$feishuLocalPath = \"$env:LocalAppData\\Feishu\"",
-        "",
-        "# Remove existing directories/links if they exist",
-        "if (Test-Path $larkShellPath) {",
-        "  Remove-Item $larkShellPath -Recurse -Force",
-        "}",
-        "if (Test-Path $feishuLocalPath) {",
-        "  Remove-Item $feishuLocalPath -Recurse -Force",
-        "}",
-        "",
-        "# Create junction points",
-        "try {",
-        "  New-Item -ItemType Junction -Path $larkShellPath -Target \"$dir\\data\\larkshell-data\" -Force | Out-Null",
-        "  info '[Portable Mode] Created junction: %APPDATA%\\LarkShell -> scoop\\data\\larkshell-data'",
-        "} catch {",
-        "  warn 'Failed to create junction for LarkShell data: $_'",
-        "}",
-        "",
-        "try {",
-        "  New-Item -ItemType Junction -Path $feishuLocalPath -Target \"$dir\\data\\feishu-local\" -Force | Out-Null",
-        "  info '[Portable Mode] Created junction: %LOCALAPPDATA%\\Feishu -> scoop\\data\\feishu-local'",
-        "} catch {",
-        "  warn 'Failed to create junction for Feishu local data: $_'",
-        "}",
-        ""
-    ],
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:APPDATA\\LarkShell\" \"$persist_dir\\AppData\" -Migrate"
+        ]
+    },
     "pre_uninstall": [
-        "# Clean up junction points",
-        "$larkShellPath = \"$env:AppData\\LarkShell\"",
-        "$feishuLocalPath = \"$env:LocalAppData\\Feishu\"",
-        "",
-        "if (Test-Path $larkShellPath) {",
-        "  Remove-Item $larkShellPath -Force",
-        "  info '[Portable Mode] Removed junction: %APPDATA%\\LarkShell'",
-        "}",
-        "",
-        "if (Test-Path $feishuLocalPath) {",
-        "  Remove-Item $feishuLocalPath -Force",
-        "  info '[Portable Mode] Removed junction: %LOCALAPPDATA%\\Feishu'",
-        "}",
-        ""
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\LarkShell\""
     ],
-    "persist": "data",
     "checkver": {
-        "url": "https://www.feishu.cn/api/downloads",
-        "jsonpath": "$.versions.Windows_x64.download_link",
-        "regex": "(?<url>.*Feishu-win32_x64-(?<version>[\\d.]+)-signed\\.exe)",
-        "replace": "${version}"
+        "script": [
+            "$resp = Invoke-RestMethod 'https://www.feishu.cn/api/downloads'",
+            "return $resp.versions.Windows.version_number + '=====' + $resp.versions.Windows.download_link + '=====' + $resp.versions.Windows_x64.download_link"
+        ],
+        "regex": "Windows@V(.*)=====(?<url32>.*)=====(?<url64>.*)"
     },
     "autoupdate": {
         "architecture": {
+            "32bit": {
+                "url": "$matchUrl32#/dl.7z",
+                "hash": {
+                    "url": "https://www.feishu.cn/api/downloads",
+                    "jsonpath": "$.versions.Windows.hash"
+                }
+            },
             "64bit": {
-                "url": "$matchUrl#/feishu-$version.7z"
+                "url": "$matchUrl64#/dl.7z",
+                "hash": {
+                    "url": "https://www.feishu.cn/api/downloads",
+                    "jsonpath": "$.versions.Windows_x64.hash"
+                }
             }
-        },
-        "hash": {
-            "url": "https://www.feishu.cn/api/downloads",
-            "jsonpath": "$.versions.Windows_x64.hash"
         }
-    },
-    "notes": [
-        "飞书 (Feishu) - 字节跳动旗下的企业协作平台",
-        "",
-        "便携化配置：",
-        "- 用户数据：%APPDATA%\\LarkShell -> data/larkshell-data",
-        "- 本地数据：%LOCALAPPDATA%\\Feishu -> data/feishu-local",
-        "",
-        "所有用户设置、聊天记录、缓存等数据都保存在便携目录中。"
-    ]
+    }
 }
