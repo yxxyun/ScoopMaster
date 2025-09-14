@@ -1,111 +1,71 @@
 {
     "version": "0.2.1",
-    "description": "Qoder - The Agentic Coding Platform，AI 驱动的智能编程平台，专为真实软件开发而设计",
+    "description": "Agentic Coding Platform for Real Software",
     "homepage": "https://qoder.com/",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://qoder.com/product-service"
-    },
+    "license": "Proprietary",
     "notes": [
-        "Qoder 是一个 AI 驱动的智能编程平台，主要功能：",
-        "- 智能代码生成和补全",
-        "- AI 驱动的代码重构和优化",
-        "- 智能调试和错误修复",
-        "- 项目级别的代码理解和分析",
-        "- 多语言支持和跨平台开发",
-        "",
-        "数据目录：",
-        "- 用户数据：%APPDATA%\\Qoder",
-        "- 扩展配置：~\\.qoder",
-        "",
-        "首次使用可能需要登录账号以获得完整功能。"
+        "For github integration, run:",
+        "'reg import \"$dir\\install-github-integration.reg\"'"
     ],
     "architecture": {
         "64bit": {
-            "url": "https://qoder-ide.oss-accelerate.aliyuncs.com/release/0.2.1/QoderUserSetup-x64.exe",
-            "hash": "c44750849ed3675d7539a4917059549469ad181e3abbc1499194523cb5c752f4"
+            "url": "https://download.qoder.com/release/latest/QoderUserSetup-x64.exe",
+            "hash": "c44750849ed3675d7539a4917059549469ad181e3abbc1499194523cb5c752f4",
+            "extract_dir": "{code_GetDestDir}"
         }
     },
     "innosetup": true,
-    "extract_dir": "{code_GetDestDir}",
-    "shortcuts": [
-        [
-            "Qoder.exe",
-            "Qoder"
-        ]
+    "pre_install": [
+        "# 处理用户配置目录",
+        "$config_dirs = @(",
+        "    '.qoder'",
+        ")",
+        "foreach ($config_dir in $config_dirs) {",
+        "    $target_dir = Join-Path $env:USERPROFILE $config_dir",
+        "    $link_dir = Join-Path $persist_dir $config_dir",
+        "    & \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $target_dir $link_dir",
+        "}",
+        "",
+        "# 链接 $env:APPDATA\\Qoder 到 persist_dir/data",
+        "$appdata_dir = Join-Path $env:APPDATA \"Qoder\"",
+        "$persist_data_dir = Join-Path $persist_dir data",
+        "& \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $appdata_dir $persist_data_dir"
     ],
     "post_install": [
-        "# Create data directories",
-        "New-Item -ItemType Directory -Path \"$dir\\data\" -Force | Out-Null",
-        "New-Item -ItemType Directory -Path \"$dir\\data\\user-data\" -Force | Out-Null",
-        "New-Item -ItemType Directory -Path \"$dir\\data\\qoder-config\" -Force | Out-Null",
-        "",
-        "# Copy existing data if present",
-        "if ((Test-Path \"$env:AppData\\Qoder\") -and !(Test-Path \"$dir\\data\\user-data\\*\")) {",
-        "  info '[Portable Mode] Copying existing user data...'",
-        "  Copy-Item \"$env:AppData\\Qoder\\*\" \"$dir\\data\\user-data\" -Recurse -Force",
+        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
+        "$exepath = \"$dir\\Qoder.exe\".Replace('\\', '\\\\')",
+        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context', 'install-github-integration', 'uninstall-github-integration' | ForEach-Object {",
+        "  if (Test-Path \"$bucketsdir\\$bucket\\scripts\\trae-cn\\$_.reg\") {",
+        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\trae-cn\\$_.reg\"",
+        "    $content = $content.Replace('$traedir', $dirpath)",
+        "    $content = $content.Replace('$trae', $exepath)",
+        "    if ($global) {",
+        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
+        "  }",
         "}",
-        "",
-        "if ((Test-Path \"$env:USERPROFILE\\.qoder\") -and !(Test-Path \"$dir\\data\\qoder-config\\*\")) {",
-        "  info '[Portable Mode] Copying existing Qoder config...'",
-        "  Copy-Item \"$env:USERPROFILE\\.qoder\\*\" \"$dir\\data\\qoder-config\" -Recurse -Force",
-        "}",
-        "",
-        "# Define paths for junction points",
-        "$appDataPath = \"$env:AppData\\Qoder\"",
-        "$userProfilePath = \"$env:USERPROFILE\\.qoder\"",
-        "",
-        "# Remove existing directories/links if they exist",
-        "if (Test-Path $appDataPath) {",
-        "  Remove-Item $appDataPath -Recurse -Force",
-        "}",
-        "if (Test-Path $userProfilePath) {",
-        "  Remove-Item $userProfilePath -Recurse -Force",
-        "}",
-        "",
-        "# Create junction points",
-        "try {",
-        "  New-Item -ItemType Junction -Path $appDataPath -Target \"$dir\\data\\user-data\" -Force | Out-Null",
-        "  info '[Portable Mode] Created junction: %APPDATA%\\Qoder -> scoop\\data\\user-data'",
-        "} catch {",
-        "  warn 'Failed to create junction for user data: $_'",
-        "}",
-        "",
-        "try {",
-        "  New-Item -ItemType Junction -Path $userProfilePath -Target \"$dir\\data\\qoder-config\" -Force | Out-Null",
-        "  info '[Portable Mode] Created junction: ~/.qoder -> scoop\\data\\qoder-config'",
-        "} catch {",
-        "  warn 'Failed to create junction for Qoder config: $_'",
-        "}",
-        ""
+        "# 自动导入注册表（可选）",
+        "reg import \"$dir\\install-context.reg\"",
+        "reg import \"$dir\\install-associations.reg\""
     ],
-    "pre_uninstall": [
-        "# Clean up junction points",
-        "$appDataPath = \"$env:AppData\\Qoder\"",
-        "$userProfilePath = \"$env:USERPROFILE\\.qoder\"",
-        "",
-        "if (Test-Path $appDataPath) {",
-        "  Remove-Item $appDataPath -Force",
-        "  info '[Portable Mode] Removed junction: %APPDATA%\\Qoder'",
-        "}",
-        "",
-        "if (Test-Path $userProfilePath) {",
-        "  Remove-Item $userProfilePath -Force",
-        "  info '[Portable Mode] Removed junction: ~/.qoder'",
-        "}",
-        ""
-    ],
-    "persist": "data",
-    "checkver": {
-        "url": "https://center.qoder.sh/algo/api/update/win32-x64-user/stable/0.0.0",
-        "jsonpath": "$.url",
-        "regex": "(?<url>.*release/(?<version>[\\d.]+)/QoderUserSetup-x64\\.exe)",
-        "replace": "${version}"
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall')",
+            "{",
+            "   reg import \"$dir\\uninstall-context.reg\" ",
+            "   reg import \"$dir\\uninstall-github-integration.reg\" ",
+            "}"
+        ]
     },
+    "bin": [["bin/qoder.cmd", "qoder"]],
+    "shortcuts": [["Qoder.exe", "Qoder"]],
+    "persist": ["data", ".qoder"],
+  
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "$matchUrl"
+                "url": "https://download.qoder.com/release/latest/QoderUserSetup-x64.exe"
             }
         }
     }
