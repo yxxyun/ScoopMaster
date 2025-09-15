@@ -1,25 +1,31 @@
 {
-    "homepage": "https://u.tools/",
-    "description": "Your productive tools set and launcher.",
-    "license": "Proprietary",
+    "##": "Downloading from the official source requires an auth-key.",
     "version": "7.2.1",
+    "description": "Next-generation productivity tool platform.",
+    "homepage": "https://www.u-tools.cn/",
+    "license": "Freeware",
     "architecture": {
         "64bit": {
             "url": "https://open.u-tools.cn/download/uTools-7.2.1.exe#/dl.7z",
             "hash": "7e9e3890a33e83225321f1b3d4f3daf4b5e04bd371dd3a148bf9911bdad1b952",
-            "installer": {
-                "script": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR/app-64.7z\" \"$dir\""
-            }
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal"
         },
         "32bit": {
             "url": "https://open.u-tools.cn/download/uTools-7.2.1-ia32.exe#/dl.7z",
             "hash": "e4ece27d833442e0802237c885228e5535656d95a6a3274fabfc2a13be59cdbd",
-            "installer": {
-                "script": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR/app-32.7z\" \"$dir\""
-            }
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-32.7z\" \"$dir\" -Removal"
         }
     },
-    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\" -Force -Recurse",
+    "post_install": [
+        "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\" -Recurse -Force",
+        "Remove-Item \"$env:LOCALAPPDATA/Programs/utools\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "Copy-Item \"$dir\" \"$env:LOCALAPPDATA/Programs/utools\" -Recurse",
+        "$shell = New-Object -ComObject WScript.Shell",
+        "$shortcutPath = \"$env:APPDATA/Microsoft/Windows/Start Menu/Programs/Scoop Apps/uTools.lnk\"",
+        "$shortcut = $shell.CreateShortcut($shortcutPath)",
+        "$shortcut.TargetPath = \"$env:LOCALAPPDATA\\Programs\\utools\\uTools.exe\"",
+        "$shortcut.Save()"
+    ],
     "shortcuts": [
         [
             "uTools.exe",
@@ -27,8 +33,8 @@
         ]
     ],
     "checkver": {
-        "url": "https://u.tools/download/",
-        "regex": "download/uTools-([\\d.]+).exe"
+        "url": "https://publish.u-tools.cn/version2/newest-version.json",
+        "jsonpath": "$.win32.x64"
     },
     "autoupdate": {
         "architecture": {
