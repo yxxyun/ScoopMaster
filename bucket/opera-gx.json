@@ -1,5 +1,5 @@
 {
-    "version": "121.0.5600.81",
+    "version": "122.0.5643.52",
     "description": "Opera GX is a special version of the Opera browser built specifically for gamers.",
     "homepage": "https://www.opera.com/gx",
     "license": {
@@ -8,29 +8,57 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://get.opera.com/pub/opera_gx/121.0.5600.81/win/Opera_GX_121.0.5600.81_Setup_x64.exe#/dl.7z",
-            "hash": "e08a35fd65951afe38ec9eb85603dbd4c256f96ff0ab37932235597d6b07926c"
+            "url": "https://get.opera.com/pub/opera_gx/122.0.5643.52/win/Opera_GX_122.0.5643.52_Setup_x64.exe#/dl.7z",
+            "hash": "30e8483ad1cafef55717ccaeb8e141906fabed8b4b7046df8ec5e3f018ff312e"
         },
         "32bit": {
-            "url": "https://get.opera.com/pub/opera_gx/121.0.5600.81/win/Opera_GX_121.0.5600.81_Setup.exe#/dl.7z",
-            "hash": "92b43957ebfc5f62f550eb23c4711c4321475e5ef2a2415b4c527418a46827d3"
+            "url": "https://get.opera.com/pub/opera_gx/122.0.5643.52/win/Opera_GX_122.0.5643.52_Setup.exe#/dl.7z",
+            "hash": "817f26102d7d559b94f764519fe6f21040a2019cd12a62d1fd0ff5cef59ea66c"
         }
     },
+    "pre_install": [
+        "$operagx_root = \"$dir\".Replace('\\', '\\\\')",
+        "'install-context.reg', 'uninstall-context.reg' | ForEach-Object {",
+        "    $content = Get-Content \"$bucketsdir\\business\\assets\\opera-gx\\$_\"",
+        "    $content = $content.Replace('$operagx_root', $operagx_root)",
+        "    if ($global) {",
+        "       $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    Set-Content \"$dir\\$_\" $content -Encoding Ascii",
+        "}"
+    ],
     "installer": {
         "script": [
             "Remove-Item -Path \"$dir\\*_list\" -Force",
-            "Move-Item -Path \"$dir\\*\" -Destination \"$dir\\$version\" -Exclude 'Assets', 'launcher*', 'Resources.pri' -ErrorAction Ignore",
-            "if (!(Test-Path \"$dir\\$version\\localization\")) {",
-            "   New-Item -Path \"$dir\\$version\\localization\" -ItemType Directory | Out-Null",
-            "   Move-Item -Path \"$dir\\$version\\*.pak\" -Destination \"$dir\\$version\\localization\" -Exclude 'opera*' -ErrorAction Ignore",
+            "if (!(Test-Path \"$dir\\localization\")) {",
+            "   New-Item -Path \"$dir\\localization\" -ItemType Directory | Out-Null",
+            "   Move-Item -Path \"$dir\\*.pak\" -Destination \"$dir\\localization\" -Exclude 'opera*' -ErrorAction Ignore",
             "}",
             "Set-Content -Path \"$dir\\installer_prefs.json\" -Value (@{ 'autoupdate'= $false; 'enable_stats' = $false; 'single_profile' = $true } | ConvertTo-Json) -Encoding ASCII"
         ]
     },
+    "post_install": [
+        "reg import \"$dir\\install-context.reg\"",
+        "Write-Host Registering the app with : \"$dir\\install-context.reg\""
+    ],
+    "uninstaller": {
+        "script": [
+            "reg import \"$dir\\uninstall-context.reg\"",
+            "Write-Host UnRegistering the app with : \"$dir\\uninstall-context.reg\""
+        ]
+    },
+    "bin": [
+        [
+            "opera.exe",
+            "Opera GX",
+            "--user-data-dir=$persist_dir\\profile\\data"
+        ]
+    ],
     "shortcuts": [
         [
-            "launcher.exe",
-            "Opera GX"
+            "opera.exe",
+            "Opera GX",
+            "--user-data-dir=$persist_dir\\profile\\data"
         ]
     ],
     "persist": "profile",
