@@ -1,79 +1,27 @@
 {
-    "version": "2.042R-u%2F1.062R-i%2F1.026R-vf",
-    "url": "https://github.com/adobe-fonts/source-code-pro/archive/refs/tags/2.042R-u/1.062R-i/1.026R-vf.zip",
-    "homepage": "https://github.com/adobe-fonts/source-code-pro",
-    "description": "Monospaced font family for user interface and coding environments.",
-    "hash": "dd26ee6e4110b762149fef5454cb6a2fc42a0f2cd07a74b8cfc6a334a92427a6",
+    "version": "2.038R-ro",
+    "description": "Monospaced font family for user interface and coding environments",
     "license": "OFL-1.1",
+    "homepage": "https://github.com/adobe-fonts/source-code-pro",
+    "url": "https://github.com/adobe-fonts/source-code-pro/releases/download/2.038R-ro%2F1.058R-it%2F1.018R-VAR/TTF-source-code-pro-2.038R-ro-1.058R-it.zip",
+    "hash": "5d53213eb7a4e1749daef33749fef8301bda4d302059054e2bbe88a9906d0a16",
     "installer": {
         "script": [
-            "$currentBuildNumber = [int] (Get-ItemProperty \"HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\").CurrentBuildNumber",
-            "$windows10Version1809BuildNumber = 17763",
-            "if ($currentBuildNumber -lt $windows10Version1809BuildNumber -and !$global) {",
-            "    Write-Host \"\"",
-            "    Write-Host \"For Windows versions prior to 1809, fonts can only be installed for all users.\" -Foreground DarkRed",
-            "    Write-Host \"Please run 'scoop install -g $app' to install this font globally.\" -Foreground DarkRed",
-            "    Write-Host \"\"",
-            "    exit 1",
-            "}",
-            "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
-            "if (-not (Test-Path $fontInstallDir)) { New-Item -ItemType Directory -Path $fontInstallDir -ErrorAction SilentlyContinue | Out-Null }",
-            "$registryRoot = if ($global) { \"HKLM\" } else { \"HKCU\" }",
-            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
-            "Get-ChildItem $dir -Recurse -Include '*.otf', '*.ttf' | ForEach-Object {",
-            "    $fontName = $_.Name",
-            "    $fontFile = \"$fontInstallDir\\$fontName\"",
-            "    Copy-Item $_.FullName -Destination $fontFile -Force",
-            "    $fontRegistryName = if ($_.Extension -eq '.otf') { \"$($_.BaseName) (OpenType)\" } else { \"$($_.BaseName) (TrueType)\" }",
-            "    $fontRegistryValue = if ($global) { $fontName } else { $fontFile }",
-            "    New-ItemProperty -Path $registryKey -Name $fontRegistryName -Value $fontRegistryValue -PropertyType String -Force | Out-Null",
+            "if(!(is_admin)) { error \"Admin rights are required.\"; exit 1 }",
+            "Get-ChildItem $dir -Filter '*.ttf' -Recurse | ForEach-Object {",
+            "  New-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts' -Name $_.Name.Replace($_.Extension, ' (TrueType)') -Value $_.Name -Force | Out-Null",
+            "  Copy-Item $_.FullName -destination \"$env:windir\\Fonts\"",
             "}"
         ]
     },
-    "pre_uninstall": [
-        "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
-        "Get-ChildItem $dir -Recurse -Include '*.otf', '*.ttf' | ForEach-Object {",
-        "    $fontFile = \"$fontInstallDir\\$($_.Name)\"",
-        "    if (-not (Test-Path $fontFile)) { return }",
-        "    try {",
-        "        Rename-Item -Path $fontFile -NewName $_.Name -ErrorAction Stop",
-        "    } catch {",
-        "        Write-Host \"\"",
-        "        Write-Host \" Error \" -Background DarkRed -Foreground White -NoNewline",
-        "        Write-Host \" Cannot uninstall '$app' font.\"",
-        "        Write-Host \" Reason \" -Background DarkCyan -Foreground White -NoNewline",
-        "        Write-Host \" The font is currently in use by an application.\"",
-        "        Write-Host \" Suggestion \" -Background Magenta -Foreground White -NoNewline",
-        "        Write-Host \" Close applications using the font (e.g., text editors) and try again.\"",
-        "        Write-Host \"\"",
-        "        exit 1",
-        "    }",
-        "}"
-    ],
     "uninstaller": {
         "script": [
-            "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
-            "$registryRoot = if ($global) { \"HKLM\" } else { \"HKCU\" }",
-            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
-            "Get-ChildItem $dir -Recurse -Include '*.otf', '*.ttf' | ForEach-Object {",
-            "    $fontName = $_.Name",
-            "    $fontRegistryName = if ($_.Extension -eq '.otf') { \"$($_.BaseName) (OpenType)\" } else { \"$($_.BaseName) (TrueType)\" }",
-            "    Remove-ItemProperty -Path $registryKey -Name $fontRegistryName -ErrorAction SilentlyContinue",
-            "    Remove-Item \"$fontInstallDir\\$fontName\" -Force -ErrorAction SilentlyContinue",
+            "if(!(is_admin)) { error \"Admin rights are required.\"; exit 1 }",
+            "Get-ChildItem $dir -filter '*.ttf' -Recurse | ForEach-Object {",
+            "  Remove-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts' -Name $_.Name.Replace($_.Extension, ' (TrueType)') -Force -ErrorAction SilentlyContinue",
+            "  Remove-Item \"$env:windir\\Fonts\\$($_.Name)\" -Force -ErrorAction SilentlyContinue",
             "}",
-            "if ($cmd -eq 'uninstall') {",
-            "    Write-Host \"The '$app' font family has been uninstalled.\" -Foreground Magenta",
-            "    Write-Host \"A system restart may be required for changes to take full effect.\" -Foreground Magenta",
-            "}"
+            "Write-Host \"'Source Code Pro' TTF files have been uninstalled and will not be present after restarting your computer.\" -Foreground Magenta"
         ]
-    },
-    "checkver": {
-        "github": "https://github.com/adobe-fonts/source-code-pro",
-        "regex": "(\\d+\\.\\d+R-u)/(\\d+\\.\\d+R-i)/(\\d+\\.\\d+R-vf)",
-        "replace": "$1%2F$2%2F$3",
-        "reverse": true
-    },
-    "autoupdate": {
-        "url": "https://github.com/adobe-fonts/source-code-pro/archive/refs/tags/$version.zip"
     }
 }
