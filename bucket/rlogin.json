@@ -1,8 +1,8 @@
 {
-    "version": "2.30.8",
-    "description": "Rlogin, SSH Terminal",
     "homepage": "https://kmiya-culti.github.io/RLogin/",
+    "version": "2.30.8",
     "license": "MIT",
+    "description": "RLogin",
     "architecture": {
         "64bit": {
             "url": "https://github.com/kmiya-culti/RLogin/releases/download/2.30.8/rlogin_x64.zip",
@@ -14,24 +14,43 @@
         }
     },
     "bin": "RLogin.exe",
-    "pre_install": [
-        "if(!(Test-Path(\"$persist_dir\"))) { New-Item \"$persist_dir\" -type directory | Out-Null }",
-        "if(!(Test-Path(\"$persist_dir\\RLogin.ini\"))) { New-Item \"$persist_dir\\RLogin.ini\" -type file | Out-Null }"
-    ],
-    "uninstaller": {
-        "script": "if (Test-Path \"$dir\\RLogin.ini\") { Copy-Item -Path \"$dir\\RLogin.ini\" -Destination \"$persist_dir\" -Force }"
-    },
-    "persist": "RLogin.ini",
     "shortcuts": [
         [
             "RLogin.exe",
             "RLogin"
         ]
     ],
+    "pre_install": [
+        "$ini = \"$dir\\RLogin.ini\"",
+        "if (!(Test-Path \"$ini\")) {",
+        "   # Using $dir instead of $persist_dir, causes this error:",
+        "   Add-Content -Path \"$ini\" -Value \"\"",
+        "}"
+    ],
+    "post_install": [
+        "",
+        "$shortcuts = @(arch_specific 'shortcuts' $manifest $arch)",
+        "$shortcutName = $shortcuts[0].item(1)",
+        "$scoop_startmenu_folder = shortcut_folder $global",
+        "$wsShell = New-Object -ComObject WScript.Shell",
+        "$shortcut = $wsShell.CreateShortcut(\"$scoop_startmenu_folder\\$shortcutName.lnk\")",
+        "$shortcut.WorkingDirectory = \"$dir\"",
+        "$shortcut.Save()",
+        ""
+    ],
+    "persist": [
+        "userdata",
+        [
+            "RLogin.ini",
+            "userdata\\RLogin.ini"
+        ]
+    ],
     "checkver": {
-        "github": "https://github.com/kmiya-culti/RLogin/"
+        "url": "https://github.com/kmiya-culti/RLogin/releases",
+        "re": "/releases/tag/([\\d.]+)"
     },
     "autoupdate": {
+        "source": "github",
         "architecture": {
             "64bit": {
                 "url": "https://github.com/kmiya-culti/RLogin/releases/download/$version/rlogin_x64.zip"
