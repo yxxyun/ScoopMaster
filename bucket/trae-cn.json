@@ -1,129 +1,37 @@
 {
     "version": "1.0.20672",
-    "description": "Trae 是国内首个 AI IDE，深度理解中文开发场景。AI 高度集成于 IDE 环境之中，为你带来比 AI 插件更加流畅、准确、优质的开发体验。",
-    "homepage": "https://www.trae.com.cn/",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://www.trae.com.cn/terms-of-service"
-    },
+    "description": "An AI-powered IDE that makes programming more enjoyable and efficient.",
+    "homepage": "https://www.trae.com.cn",
+    "license": "Proprietary",
     "architecture": {
         "64bit": {
             "url": "https://lf-cdn.trae.com.cn/obj/trae-com-cn/pkg/app/releases/stable/1.0.20672/win32/Trae%20CN-Setup-x64.exe",
-            "hash": "2094eca6b1d393b6a26ab5b963d74f4eb7dc8336e623b220205839cbb8d43cb1"
+            "hash": "2094eca6b1d393b6a26ab5b963d74f4eb7dc8336e623b220205839cbb8d43cb1",
+            "extract_dir": "{code_GetDestDir}"
         }
     },
     "innosetup": true,
-    "extract_dir": "{code_GetDestDir}",
+    "bin": [
+        [
+            "bin/trae.cmd",
+            "traecn"
+        ]
+    ],
     "shortcuts": [
         [
             "Trae CN.exe",
-            "Trae CN",
-            "--user-data-dir=\"%SCOOP%\\apps\\trae-cn\\current\\data\\user-data\""
+            "Trae CN"
         ]
-    ],
-    "post_install": [
-        "# Create data directories",
-        "New-Item -ItemType Directory -Path \"$dir\\data\" -Force | Out-Null",
-        "New-Item -ItemType Directory -Path \"$dir\\data\\user-data\" -Force | Out-Null",
-        "New-Item -ItemType Directory -Path \"$dir\\data\\local-programs\" -Force | Out-Null",
-        "",
-        "# Copy %USERPROFILE%\\.trae-cn to data (includes extensions and all config)",
-        "if ((Test-Path \"$env:USERPROFILE\\.trae-cn\") -and !(Test-Path \"$dir\\data\\*\")) {",
-        "  info '[Portable Mode] Copying existing user configuration...'",
-        "  Copy-Item \"$env:USERPROFILE\\.trae-cn\\*\" \"$dir\\data\" -Recurse -Force",
-        "}",
-        "",
-        "# Copy %APPDATA%\\Trae CN to user-data",
-        "if ((Test-Path \"$env:AppData\\Trae CN\") -and !(Test-Path \"$dir\\data\\user-data\\*\")) {",
-        "  info '[Portable Mode] Copying existing AppData configuration...'",
-        "  Copy-Item \"$env:AppData\\Trae CN\\*\" \"$dir\\data\\user-data\" -Recurse -Force",
-        "}",
-        "",
-        "# Copy %LOCALAPPDATA%\\Programs\\trae-cn to local-programs",
-        "if ((Test-Path \"$env:LocalAppData\\Programs\\trae-cn\") -and !(Test-Path \"$dir\\data\\local-programs\\*\")) {",
-        "  info '[Portable Mode] Copying existing local programs...'",
-        "  Copy-Item \"$env:LocalAppData\\Programs\\trae-cn\\*\" \"$dir\\data\\local-programs\" -Recurse -Force",
-        "}",
-        "",
-        "# Define paths for junction points",
-        "$appDataPath = \"$env:AppData\\Trae CN\"",
-        "$userProfilePath = \"$env:USERPROFILE\\.trae-cn\"",
-        "$localProgramsPath = \"$env:LocalAppData\\Programs\\trae-cn\"",
-        "",
-        "# Remove existing directories/links if they exist",
-        "if (Test-Path $appDataPath) {",
-        "  Remove-Item $appDataPath -Force",
-        "}",
-        "if (Test-Path $userProfilePath) {",
-        "  Remove-Item $userProfilePath -Force",
-        "}",
-        "if (Test-Path $localProgramsPath) {",
-        "  Remove-Item $localProgramsPath -Force",
-        "}",
-        "",
-        "# Create junction points",
-        "try {",
-        "  New-Item -ItemType Junction -Path $userProfilePath -Target \"$dir\\data\" -Force | Out-Null",
-        "  info '[Portable Mode] Created junction: ~/.trae-cn -> scoop\\data'",
-        "} catch {",
-        "  warn 'Failed to create junction for user profile configuration: $_'",
-        "}",
-        "",
-        "try {",
-        "  New-Item -ItemType Junction -Path $appDataPath -Target \"$dir\\data\\user-data\" -Force | Out-Null",
-        "  info '[Portable Mode] Created junction: %APPDATA%\\Trae CN -> scoop\\data\\user-data'",
-        "} catch {",
-        "  warn 'Failed to create junction for AppData configuration: $_'",
-        "}",
-        "",
-        "try {",
-        "  New-Item -ItemType Junction -Path $localProgramsPath -Target \"$dir\\data\\local-programs\" -Force | Out-Null",
-        "  info '[Portable Mode] Created junction: %LOCALAPPDATA%\\Programs\\trae-cn -> scoop\\data\\local-programs'",
-        "} catch {",
-        "  warn 'Failed to create junction for local programs: $_'",
-        "}",
-        "",
-        "# Adjust extensions path",
-        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
-        "if ((Test-Path \"$extensions_file\")) {",
-        "  info 'Adjusting path in extensions file...'",
-        "    (Get-Content \"$extensions_file\") -replace '(?<=trae-cn(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
-        "}",
-        ""
-    ],
-    "pre_uninstall": [
-        "# Clean up junction points",
-        "$appDataPath = \"$env:AppData\\Trae CN\"",
-        "$userProfilePath = \"$env:USERPROFILE\\.trae-cn\"",
-        "$localProgramsPath = \"$env:LocalAppData\\Programs\\trae-cn\"",
-        "",
-        "if (Test-Path $appDataPath) {",
-        "  Remove-Item $appDataPath -Force",
-        "  info '[Portable Mode] Removed junction: %APPDATA%\\Trae CN'",
-        "}",
-        "",
-        "if (Test-Path $userProfilePath) {",
-        "  Remove-Item $userProfilePath -Force",
-        "  info '[Portable Mode] Removed junction: ~/.trae-cn'",
-        "}",
-        "",
-        "if (Test-Path $localProgramsPath) {",
-        "  Remove-Item $localProgramsPath -Force",
-        "  info '[Portable Mode] Removed junction: %LOCALAPPDATA%\\Programs\\trae-cn'",
-        "}",
-        ""
     ],
     "persist": "data",
     "checkver": {
         "url": "https://api.trae.com.cn/icube/api/v1/native/version/trae/cn/latest",
-        "jsonpath": "$.data.manifest.win32.download[0].x64",
-        "regex": "(?<url>.*stable/(?<version>[\\d.]+)/win32.*.exe)",
-        "replace": "${version}"
+        "jsonpath": "$.data.manifest.win32.version"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "$matchUrl"
+                "url": "https://lf-cdn.trae.com.cn/obj/trae-com-cn/pkg/app/releases/stable/$version/win32/Trae%20CN-Setup-x64.exe"
             }
         }
     }
