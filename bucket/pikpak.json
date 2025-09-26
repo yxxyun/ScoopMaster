@@ -1,28 +1,54 @@
 {
-    "version": "2.7.26",
-    "description": "极速秒存的私人云盘，在电脑上轻松使用",
+    "version": "2.7.8",
+    "description": "PikPak is a private cloud drive that can save your favorite files at high speed.",
     "homepage": "https://mypikpak.com/",
-    "license": "Proprietary",
-    "url": "https://download.mypikpak.net/desktop/official_PikPak.exe#/dl.7z",
-    "hash": "ead9ef5a8bedc7393c44f56d581d454e49c854b1c79353391a461104794c4463",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://mypikpak.com/policy/user-agreement"
+    },
+    "url": "https://static.mypikpak.com/desktop/official_PikPak.exe#/dl.7z",
+    "hash": "4662251c8a5ae0872b945abf804ecc4f4410534705e5c466b872813f6b9c6939",
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-32.7z\" \"$dir\"",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse"
+    ],
+    "installer": {
+        "script": [
+            "$runtimeCache = \"$env:APPDATA\\PikPak\"",
+            "$runtimeCachePersist = \"$persist_dir\\Cache\"",
+            "if (Test-Path $runtimeCachePersist) {",
+            "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+            "    New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
+            "} else {",
+            "    if (Test-Path $runtimeCache) {",
+            "        Move-Item $runtimeCache $runtimeCachePersist -Force",
+            "        New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
+            "    }",
+            "}"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$runtimeCache = \"$env:APPDATA\\PikPak\"",
+            "$runtimeCachePersist = \"$persist_dir\\Cache\"",
+            "if (!(Test-Path $runtimeCachePersist)) {",
+            "    Move-Item $runtimeCache $runtimeCachePersist -Force -ErrorAction SilentlyContinue",
+            "} else {",
+            "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+            "}"
+        ]
+    },
     "shortcuts": [
         [
             "PikPak.exe",
             "PikPak"
         ]
     ],
-    "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-32.7z\" \"$dir\"",
-    "post_install": "Remove-Item \"$dir\\uninstall*\", \"$dir\\`$*\" -Force -Recurse -ErrorAction SilentlyContinue",
-    "post_uninstall": "if ($purge) { Remove-Item \"$env:APPDATA\\PikPak\", \"$env:PUBLIC\\PikPak\" -Force -Recurse -ErrorAction SilentlyContinue }",
-    "notes": [
-        "PikPak is NOT portable.",
-        "Settings are stored in '%APPDATA%\\PikPak', and will be purged during uninstallation."
-    ],
     "checkver": {
-        "script": "try { & $dir\\..\\bin\\Get-DumplingsVersion.ps1 -Verbose -PreferRealVersion -AppName 'PIKCLOUD.PikPak' } catch { \"\" }",
-        "regex": "^([\\d.]+)"
+        "url": "https://apps.microsoft.com/detail/xp9kcxf3r7hxvw",
+        "regex": "PikPak\\sV(\\d+\\.\\d+\\.\\d+)"
     },
     "autoupdate": {
-        "url": "https://download.mypikpak.net/desktop/official_PikPak.exe#/dl.7z"
+        "url": "https://static.mypikpak.com/desktop/official_PikPak.exe#/dl.7z"
     }
 }
