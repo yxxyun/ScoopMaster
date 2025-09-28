@@ -1,34 +1,52 @@
 {
     "version": "0.6.30+104",
-    "description": "v2ray, xray, ... GUI for Windows, macOS, Linux, Android",
+    "description": "v2ray, xray, sing-box, clash, mihomo... GUI for Windows, macOS, Linux, Android",
     "homepage": "https://github.com/AnyPortal/AnyPortal",
-    "license": "Unknown",
-    "url": "https://github.com/AnyPortal/AnyPortal/releases/download/v0.6.30%2B104/anyportal-windows.zip",
-    "hash": "fe7c98bc6eab61e931126d1cb927f7c02992546f1a8413b486fa74f2de575934",
-    "extract_dir": "anyportal-windows",
+    "license": {
+        "identifier": "Unknown"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/AnyPortal/AnyPortal/releases/download/v0.6.30+104/anyportal-windows-setup.exe",
+            "hash": "308c0663387f88cd467b9d3ec3cb6d1a17e18b64d7e3a680ee6fb95496627b34"
+        }
+    },
+    "innosetup": true,
+    "installer": {
+        "script": [
+            "# handle runtime cache",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:APPDATA\\com.github.anyportal\"",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\userdata\" -Target \"$env:LOCALAPPDATA\\com.github.anyportal\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\com.github.anyportal\"",
+            "Dismount-ExternalRuntimeData -Target \"$env:LOCALAPPDATA\\com.github.anyportal\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "bin": "anyportal.exe",
     "shortcuts": [
         [
             "anyportal.exe",
             "AnyPortal"
         ]
     ],
-    "installer": {
-        "script": [
-            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-            "New-PersistDirectory \"$env:APPDATA\\com.github.anyportal\" \"$persist_dir\\AppData\" -Migrate"
-        ]
-    },
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App",
-        "Remove-Junction \"$env:APPDATA\\com.github.anyportal\""
-    ],
     "checkver": {
-        "regex": "/releases/tag/v(?<rawver>(?<ver>[\\d.]+)%2B(?<build>\\d+))",
-        "replace": "${ver}+${build}"
+        "url": "https://api.github.com/repos/AnyPortal/AnyPortal/releases",
+        "jp": "$[0].assets[*].browser_download_url",
+        "regex": "/releases/download/v([\\d.]+)%2B([\\d.]+)/anyportal-windows",
+        "replace": "${1}+${2}"
     },
     "autoupdate": {
-        "url": "https://github.com/AnyPortal/AnyPortal/releases/download/v$matchRawver/anyportal-windows.zip"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/AnyPortal/AnyPortal/releases/download/v$version/anyportal-windows-setup.exe"
+            }
+        }
     }
 }
