@@ -1,33 +1,145 @@
 {
-	"homepage": "https://www.oracle.com/jp/database/sqldeveloper/",
-	"version": "24.3.1.347.1826",
-	"license": "https://www.oracle.com/downloads/licenses/oracle-free-license.html",
-	"url": "https://download.oracle.com/otn_software/java/sqldeveloper/sqldeveloper-24.3.1.347.1826-no-jre.zip",
+    "homepage": "https://www.oracle.com/jp/database/sqldeveloper/",
+    "version": "24.3.1.347.1826",
+    "description": "Oracle SQL Developer - Database development and administration tool",
+    "license": "https://www.oracle.com/downloads/licenses/oracle-free-license.html",
+    "depends": "java/temurin17-jdk",
+    "suggest": {
+        "Oracle Database drivers": "oracle-database-drivers"
+    },
+    "url": "https://download.oracle.com/otn_software/java/sqldeveloper/sqldeveloper-24.3.1.347.1826-no-jre.zip",
     "hash": "3390ef58972f1f255077c49e66b171b8664773bb16e37570a7ca16acc5afb8cb",
-	"cookie": {
-		"oraclelicense": "accept-securebackup-cookie"
-	},
-	"bin": [
-		[
-			"sqldeveloper/sqldeveloper.exe",
-			"sqldeveloper"
-		]
-	],
-	"shortcuts": [
-		[
-			"sqldeveloper/sqldeveloper.exe",
-			"SQL Developer"
-		]
-	],
-	"checkver": {
-		"url": "https://www.oracle.com/jp/database/sqldeveloper/technologies/download/",
-		"re": "Version ([\\d.]+)"
-	},
-	"autoupdate": {
-		"url": "https://download.oracle.com/otn_software/java/sqldeveloper/sqldeveloper-$version-no-jre.zip",
-		"extract_dir": "sqldeveloper",
-		"hash": {
-			"url": "$url.sha256"
-		}
-	}
+    "extract_dir": "sqldeveloper",
+    "cookie": {
+        "oraclelicense": "accept-securebackup-cookie"
+    },
+    "pre_install": [
+        "if (!(Get-Command 'java.exe' -ErrorAction SilentlyContinue)) {",
+        "    Write-Host 'Java not found in PATH. Temurin JDK 17 will be installed automatically.' -ForegroundColor Yellow",
+        "} else {",
+        "    $javaVersion = & java -version 2>&1 | Select-String 'version'",
+        "    if ($javaVersion -match '\"(\\d+)') {",
+        "        $majorVersion = [int]$matches[1]",
+        "        if ($majorVersion -lt 17) {",
+        "            Write-Host \"Current Java version ($majorVersion) is below required minimum (17)\" -ForegroundColor Yellow",
+        "        } else {",
+        "            Write-Host \"Java $majorVersion detected - compatible with SQL Developer\" -ForegroundColor Green",
+        "        }",
+        "    }",
+        "}",
+        "$configDir = \"$env:APPDATA\\sqldeveloper\"",
+        "if (!(Test-Path $configDir)) {",
+        "    New-Item -ItemType Directory -Path $configDir -Force | Out-Null",
+        "}"
+    ],
+    "post_install": [
+        "$javaHome = \"$env:USERPROFILE\\scoop\\apps\\temurin17-jdk\\current\"",
+        "if (Test-Path \"$javaHome\\bin\\java.exe\") {",
+        "    Write-Host 'Using Scoop Temurin JDK 17' -ForegroundColor Green",
+        "} else {",
+        "    $javaPaths = @(",
+        "        \"$env:USERPROFILE\\scoop\\apps\\openjdk17\\current\",",
+        "        \"$env:USERPROFILE\\scoop\\apps\\openjdk\\current\"",
+        "    )",
+        "    foreach ($path in $javaPaths) {",
+        "        if (Test-Path \"$path\\bin\\java.exe\") {",
+        "            $javaHome = $path",
+        "            Write-Host \"Using alternative Java: $javaHome\" -ForegroundColor Green",
+        "            break",
+        "        }",
+        "    }",
+        "}",
+        "",
+        "$shortVersion = ($version -split '\\.' | Select-Object -First 3) -join '.'",
+        "$versionConfig = \"$env:APPDATA\\sqldeveloper\\$shortVersion\"",
+        "if (!(Test-Path $versionConfig)) {",
+        "    New-Item -ItemType Directory -Path $versionConfig -Force | Out-Null",
+        "}",
+        "",
+        "if ($javaHome) {",
+        "    $productConf = \"$versionConfig\\product.conf\"",
+        "    $newJavaHomeLine = \"SetJavaHome $javaHome\"",
+        "    $temurinPath = \"$env:USERPROFILE\\scoop\\apps\\temurin17-jdk\\current\"",
+        "    ",
+        "    if (!(Test-Path $productConf)) {",
+        "        @('# JavaHome', $newJavaHomeLine) | Out-File -FilePath $productConf -Encoding UTF8",
+        "        Write-Host 'Java configuration created' -ForegroundColor Green",
+        "    } else {",
+        "        try {",
+        "            $content = Get-Content $productConf -Encoding UTF8",
+        "        } catch {",
+        "            $content = Get-Content $productConf",
+        "        }",
+        "        ",
+        "        $setJavaHomeLines = @()",
+        "        foreach ($line in $content) {",
+        "            if ($line -and $line.Trim() -match '^SetJavaHome\\s+') {",
+        "                $setJavaHomeLines += $line.Trim()",
+        "            }",
+        "        }",
+        "        ",
+        "        if ($setJavaHomeLines.Count -eq 0) {",
+        "            @('', '# JavaHome', $newJavaHomeLine) | Add-Content -Path $productConf -Encoding UTF8",
+        "            Write-Host 'Java configuration added' -ForegroundColor Green",
+        "        } else {",
+        "            $currentSetJavaHome = $setJavaHomeLines[0]",
+        "            if ($currentSetJavaHome -match '^SetJavaHome\\s+(.+)$') {",
+        "                $currentPath = $matches[1].Trim().TrimEnd('\\').TrimEnd('/').Replace('/', '\\\\')",
+        "                $temurinPathNorm = $temurinPath.TrimEnd('\\').TrimEnd('/').Replace('/', '\\\\')",
+        "                ",
+        "                if ($currentPath -eq $temurinPathNorm) {",
+        "                    Write-Host 'Java configuration is up to date' -ForegroundColor Green",
+        "                } else {",
+        "                    $newContent = @()",
+        "                    $processed = $false",
+        "                    foreach ($line in $content) {",
+        "                        if ($line -and $line.Trim() -match '^SetJavaHome\\s+' -and !$processed) {",
+        "                            $newContent += \"# $line\"",
+        "                            $newContent += $newJavaHomeLine",
+        "                            $processed = $true",
+        "                        } else {",
+        "                            $newContent += $line",
+        "                        }",
+        "                    }",
+        "                    $newContent | Out-File -FilePath $productConf -Encoding UTF8",
+        "                    Write-Host 'Java configuration updated' -ForegroundColor Green",
+        "                }",
+        "            }",
+        "        }",
+        "    }",
+        "} else {",
+        "    Write-Host 'Warning: Java not found. SQL Developer may prompt for Java path on first run.' -ForegroundColor Yellow",
+        "}",
+        "",
+        "Write-Host 'SQL Developer installation completed!' -ForegroundColor Green"
+    ],
+    "bin": [
+        [
+            "sqldeveloper.exe",
+            "sqldeveloper"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "sqldeveloper.exe",
+            "Oracle SQL Developer"
+        ]
+    ],
+    "notes": [
+        "SQL Developer requires JDK 17 or later, which will be installed automatically if not present.",
+        "On first launch, SQL Developer may prompt to configure database connections.",
+        "Configuration files are stored in %APPDATA%\\sqldeveloper\\",
+        "Extension Pack and additional drivers can be installed via Tools > Preferences > Database > Third Party JDBC Drivers"
+    ],
+    "checkver": {
+        "url": "https://www.oracle.com/jp/database/sqldeveloper/technologies/download/",
+        "regex": "Version ([\\d.]+)"
+    },
+    "autoupdate": {
+        "url": "https://download.oracle.com/otn_software/java/sqldeveloper/sqldeveloper-$version-no-jre.zip",
+        "hash": {
+            "url": "https://www.oracle.com/technetwork/developer-tools/sql-developer/downloads/sqldev-downloads-5207377.html",
+            "regex": "(?sm)$basename.*?SHA-256.*?([A-Fa-f\\d]{64})"
+        }
+    }
 }
