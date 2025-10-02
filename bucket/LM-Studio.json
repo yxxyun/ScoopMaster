@@ -1,30 +1,140 @@
 {
-    "version": "0.3.27-4",
-    "description": "LM Studio",
-    "homepage": "https://lmstudio.ai",
-    "license": "Freeware",
+    "version": "0.3.28-2",
+    "description": "LM Studio is an easy-to-use desktop app for experimenting with local and open-source Large Language Models (LLMs).",
+    "homepage": "https://lmstudio.ai/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://lmstudio.ai/terms"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://installers.lmstudio.ai/win32/x64/0.3.27-4/LM-Studio-0.3.27-4-x64.exe#/dl.7z",
-            "hash": "626f9b8aa269fd7d35bbc65d5624a117a01befa93ab815d6f9d08ab0f837cf67"
+            "url": "https://installers.lmstudio.ai/win32/x64/0.3.28-2/LM-Studio-0.3.28-2-x64.exe",
+            "hash": "1397091fffd739d746b3fa1a6da3bb7b3502cf4177e9c660b9d074267093beb2"
         }
     },
-    "pre_install": [
-        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
-        "Remove-Item \"$dir\\`$R0\" -Force -Recurse"
-    ],
+    "installer": {
+        "script": [
+            "# Extract NSIS installer",
+            "7z x \"$dir\\$fname\" -o\"$dir\\extracted\" -y | Out-Null",
+            "# Move app files from extracted directory",
+            "Move-Item \"$dir\\extracted\\`$PLUGINSDIR\\app-64.7z\" \"$dir\\app.7z\"",
+            "7z x \"$dir\\app.7z\" -o\"$dir\" -y | Out-Null",
+            "# Clean up",
+            "Remove-Item \"$dir\\extracted\", \"$dir\\app.7z\", \"$dir\\$fname\" -Recurse -Force"
+        ]
+    },
     "shortcuts": [
         [
             "LM Studio.exe",
             "LM Studio"
         ]
     ],
+    "post_install": [
+        "# Create data directories",
+        "New-Item -ItemType Directory -Path \"$dir\\data\" -Force | Out-Null",
+        "New-Item -ItemType Directory -Path \"$dir\\data\\user-data\" -Force | Out-Null",
+        "New-Item -ItemType Directory -Path \"$dir\\data\\lm-studio\" -Force | Out-Null",
+        "New-Item -ItemType Directory -Path \"$dir\\data\\local-data\" -Force | Out-Null",
+        "",
+        "# Handle Local AppData directory (copy and junction)",
+        "$localAppDataPath = \"$env:LOCALAPPDATA\\LM-Studio\"",
+        "if (Test-Path $localAppDataPath) {",
+        "  if (!(Test-Path \"$dir\\data\\local-data\\*\")) {",
+        "    info '[Portable Mode] Copying existing local data...'",
+        "    Copy-Item \"$localAppDataPath\\*\" \"$dir\\data\\local-data\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "  }",
+        "  Remove-Item $localAppDataPath -Recurse -Force -ErrorAction SilentlyContinue",
+        "}",
+        "",
+        "# Prevent updater directory creation",
+        "$updaterPath = \"$env:LOCALAPPDATA\\lm-studio-updater\"",
+        "if (Test-Path $updaterPath) {",
+        "  Remove-Item $updaterPath -Recurse -Force -ErrorAction SilentlyContinue",
+        "  info '[Portable Mode] Removed existing updater directory'",
+        "}",
+        "# Create a file with the same name to prevent directory creation",
+        "New-Item -ItemType File -Path $updaterPath -Force | Out-Null",
+        "info '[Portable Mode] Created blocker file to prevent updater'",
+        "",
+        "# Copy %APPDATA%\\LM Studio to user-data and create junction",
+        "if (Test-Path \"$env:AppData\\LM Studio\") {",
+        "  if (!(Test-Path \"$dir\\data\\user-data\\*\")) {",
+        "    info '[Portable Mode] Copying existing user configuration...'",
+        "    Copy-Item \"$env:AppData\\LM Studio\\*\" \"$dir\\data\\user-data\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "  }",
+        "  Remove-Item \"$env:AppData\\LM Studio\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "}",
+        "",
+        "# Create junction points for portable mode",
+        "$homePointerPath = \"$env:USERPROFILE\\.lmstudio-home-pointer\"",
+        "$appDataPath = \"$env:AppData\\LM Studio\"",
+        "",
+        "# Create home pointer file only if it doesn't exist",
+        "if (!(Test-Path $homePointerPath)) {",
+        "  \"$dir\\data\\lm-studio\" | Out-File -FilePath $homePointerPath -Encoding utf8 -Force",
+        "  info '[Portable Mode] Created home pointer: ~/.lmstudio-home-pointer'",
+        "} else {",
+        "  info '[Portable Mode] Home pointer already exists, keeping existing configuration'",
+        "}",
+        "",
+        "# Create junction for AppData",
+        "if (!(Test-Path $appDataPath)) {",
+        "  New-Item -ItemType Junction -Path $appDataPath -Target \"$dir\\data\\user-data\" -Force | Out-Null",
+        "  info '[Portable Mode] Created junction: %APPDATA%\\LM Studio'",
+        "}",
+        "",
+        "# Create junction for Local AppData",
+        "if (!(Test-Path $localAppDataPath)) {",
+        "  New-Item -ItemType Junction -Path $localAppDataPath -Target \"$dir\\data\\local-data\" -Force | Out-Null",
+        "  info '[Portable Mode] Created junction: %LOCALAPPDATA%\\LM-Studio'",
+        "}"
+    ],
+    "pre_uninstall": [
+        "# Clean up junction points, pointer file and blocker file",
+        "$homePointerPath = \"$env:USERPROFILE\\.lmstudio-home-pointer\"",
+        "$appDataPath = \"$env:AppData\\LM Studio\"",
+        "$localAppDataPath = \"$env:LOCALAPPDATA\\LM-Studio\"",
+        "$updaterPath = \"$env:LOCALAPPDATA\\lm-studio-updater\"",
+        "",
+        "if (Test-Path $homePointerPath) {",
+        "  $currentPointer = Get-Content $homePointerPath -ErrorAction SilentlyContinue",
+        "  if ($currentPointer -eq \"$dir\\data\\lm-studio\") {",
+        "    Remove-Item $homePointerPath -Force",
+        "    info '[Portable Mode] Removed home pointer: ~/.lmstudio-home-pointer'",
+        "  } else {",
+        "    info '[Portable Mode] Home pointer points to different location, keeping it'",
+        "  }",
+        "}",
+        "",
+        "if (Test-Path $appDataPath) {",
+        "  Remove-Item $appDataPath -Force",
+        "  info '[Portable Mode] Removed junction: %APPDATA%\\LM Studio'",
+        "}",
+        "",
+        "# Remove Local AppData junction",
+        "if (Test-Path $localAppDataPath) {",
+        "  Remove-Item $localAppDataPath -Force",
+        "  info '[Portable Mode] Removed junction: %LOCALAPPDATA%\\LM-Studio'",
+        "}",
+        "",
+        "# Remove updater blocker file",
+        "if (Test-Path $updaterPath -PathType Leaf) {",
+        "  Remove-Item $updaterPath -Force",
+        "  info '[Portable Mode] Removed updater blocker file'",
+        "}",
+        ""
+    ],
+    "persist": "data",
     "checkver": {
-        "url": "https://lmstudio.ai",
-        "regex": "LM-Studio-([\\d-.]+)-x64.exe"
+        "url": "https://lmstudio.ai/download",
+        "regex": "win32.*?x64.*?version.*?([\\d.]+).*?build.*?([\\d]+)",
+        "replace": "${1}-${2}"
     },
     "autoupdate": {
-        "url": "https://installers.lmstudio.ai/win32/x64/$version/LM-Studio-$version-x64.exe#/dl.7z"
+        "architecture": {
+            "64bit": {
+                "url": "https://installers.lmstudio.ai/win32/x64/$version/LM-Studio-$version-x64.exe"
+            }
+        }
     }
 }
