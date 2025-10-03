@@ -1,77 +1,24 @@
 {
     "version": "0.17.4",
-    "description": "基於 中州韻輸入法引擎／Rime Input Method Engine 等開源技術",
     "homepage": "https://rime.im/",
-    "license": "GPL-3.0-only",
-    "notes": "",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/rime/weasel/releases/download/0.17.4/weasel-0.17.4.0-installer.exe#/dl.7z",
-            "hash": "cf509534a8f5f8af9c98ed7cbb8f135439f145a8cbe7e50ede42bb5b5ab45c29"
-        }
-    },
-    "persist": "data",
-    "installer": {
-        "script": [
-            "$REG_PATH='HKCU:\\Software\\Rime\\Weasel'",
-            "if (!(Test-Path \"$REG_PATH\\Updates\")) { New-Item -Path \"$REG_PATH\\Updates\" -Force | Out-Null }",
-            "Set-ItemProperty -Path \"$REG_PATH\\Updates\" -Name 'CheckForUpdates' -Value 0 -Type String -Force",
-            "Set-ItemProperty -Path \"$REG_PATH\" -Name 'RimeUserDir' -Value \"$persist_dir\" -Type String -Force",
-            "$LOCALE=(Get-WinSystemLocale).Name",
-            "$LANG_OPT=$(if ($LOCALE -eq 'zh-CN') { '/s' } elseif ($LOCALE -like 'zh-*') { '/t' } else { '/i' })",
-            "Start-Process \"$dir\\WeaselSetup.exe\" -ArgumentList $LANG_OPT -Wait"
-        ]
-    },
-    "post_install": [
-        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
-        "Start-Process \"$dir\\WeaselDeployer.exe\" -ArgumentList '/deploy' -Wait"
+    "license": "GPL-3.0-or-later",
+    "description": "【小狼毫】Rime for Windows",
+    "url": "https://github.com/rime/weasel/releases/download/0.17.4/weasel-0.17.4.0-installer.exe#/dl.7z",
+    "hash": "cf509534a8f5f8af9c98ed7cbb8f135439f145a8cbe7e50ede42bb5b5ab45c29",
+    "pre_install": [
+        "if(!(Test-Path \"$dir\\Rime\")) {New-Item \"$dir\\Rime\" -ItemType Directory | Out-Null} ",
+        "& \"$dir\\WeaselSetup.exe\" /i",
+        "& \"$dir\\WeaselDeployer.exe\" /install",
+        "& \"$dir\\WeaselServer.exe\""
     ],
-    "bin": [
-        [
-            "WeaselSetup.exe",
-            "WeaselSetup"
-        ],
-        [
-            "WeaselServer.exe",
-            "WeaselServer"
-        ],
-        [
-            "WeaselDeployer.exe",
-            "WeaselDeployer"
-        ]
-    ],
-    "shortcuts": [
-        [
-            "WeaselSetup.exe",
-            "WeaselSetup"
-        ],
-        [
-            "WeaselServer.exe",
-            "WeaselServer"
-        ],
-        [
-            "WeaselDeployer.exe",
-            "WeaselDeployer"
-        ]
-    ],
-    "pre_uninstall": [
-        "Stop-Process -Name 'WeaselServer' -ErrorAction SilentlyContinue",
-        "Wait-Process -Name 'WeaselServer' -ErrorAction SilentlyContinue -Timeout 30"
-    ],
+    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse",
     "uninstaller": {
-        "script": [
-            "Start-Process \"$dir\\WeaselSetup.exe\" -ArgumentList '/u' -Wait",
-            "Remove-Item -Path 'HKCU:\\Software\\Rime\\Weasel' -Force -Recurse | Out-Null"
-        ]
+        "script": "Invoke-ExternalCommand \"$dir/uninstall.exe\" -ArgumentList '/S' -RunAs | Out-Null"
     },
     "checkver": {
         "github": "https://github.com/rime/weasel"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/rime/weasel/releases/download/$version/weasel-$version.0-installer.exe#/dl.7z"
-            }
-        }
+        "url": "https://github.com/rime/weasel/releases/download/$version/weasel-$version.0-installer.exe#/dl.7z"
     }
 }
