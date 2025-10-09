@@ -1,33 +1,81 @@
 {
-    "version": "0.50.6-alpha",
-    "description": "Anytype is a local-first, P2P and open-source note-taking application",
-    "homepage": "https://anytype.io",
+    "version": "0.50.7-alpha",
+    "description": "Local-first, E2E encrypted software for creating and storing tasks, notes, ideas, documents, workflows, and more.",
+    "homepage": "https://anytype.io/",
     "license": {
-        "identifier": "Any Source Available License 1.0",
-        "url": "https://github.com/anyproto/anytype-ts/blob/main/LICENSE.md"
+        "identifier": "Freeware",
+        "url": "https://anytype.io/terms_of_use"
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/anyproto/anytype-ts/releases/download/v0.50.6-alpha/Anytype.Setup.0.50.6-alpha.exe#/dl.7z",
-            "hash": "4ef8e9bc12ad3d668fc63fc2f282626c73c1966a06ce56006fc1ea79fd051331",
+            "url": "https://github.com/anyproto/anytype-ts/releases/download/v0.50.7-alpha/Anytype.Setup.0.50.7-alpha.exe#/dl.7z",
+            "hash": "d26ce07c839ff70d7938a258cba95fe52cc87f9fbbb7def38bf6c44c55dcc533",
             "pre_install": [
+                "Remove-Item \"$dir\\resources\" -Recurse",
                 "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
                 "Remove-Item \"$dir\\`$*\" -Recurse"
+            ],
+            "post_install": [
+                "Write-Host '正在配置 Anytype 便携化...' -ForegroundColor Yellow",
+                "$dataDir = \"$persist_dir\\data\"",
+                "$appDataPath = \"$env:APPDATA\\anytype\"",
+                "$updaterPath = \"$env:LOCALAPPDATA\\anytype-updater\"",
+                "if (-not (Test-Path $dataDir)) { New-Item -ItemType Directory -Path $dataDir -Force | Out-Null }",
+                "if (Test-Path $appDataPath) {",
+                "    if (-not (Get-Item $appDataPath).LinkType) {",
+                "        Write-Host '备份现有数据到便携化目录...' -ForegroundColor Cyan",
+                "        Copy-Item -Path \"$appDataPath\\*\" -Destination $dataDir -Recurse -Force",
+                "        Remove-Item $appDataPath -Recurse -Force",
+                "    }",
+                "}",
+                "try {",
+                "    New-Item -ItemType Junction -Path $appDataPath -Target $dataDir -Force | Out-Null",
+                "    Write-Host 'Anytype 便携化配置完成！' -ForegroundColor Green",
+                "} catch {",
+                "    Write-Host '创建junction失败，可能需要管理员权限或开发者模式' -ForegroundColor Red",
+                "    Write-Host '请以管理员身份运行或启用开发者模式' -ForegroundColor Yellow",
+                "}",
+                "if (Test-Path $updaterPath) {",
+                "    if (-not (Get-Item $updaterPath).LinkType) {",
+                "        Remove-Item $updaterPath -Recurse -Force",
+                "    }",
+                "}",
+                "try {",
+                "    New-Item -ItemType File -Path $updaterPath -Force | Out-Null",
+                "    Write-Host '已创建阻止文件防止anytype-updater目录生成' -ForegroundColor Green",
+                "} catch {",
+                "    Write-Host '创建阻止文件失败: $_' -ForegroundColor Yellow",
+                "}"
             ]
         }
     },
-    "bin": "Anytype.exe",
+    "persist": "data",
+    "uninstaller": {
+        "script": [
+            "$appDataPath = \"$env:APPDATA\\anytype\"",
+            "$updaterPath = \"$env:LOCALAPPDATA\\anytype-updater\"",
+            "if (Test-Path $appDataPath) {",
+            "    if ((Get-Item $appDataPath).LinkType -eq 'Junction') {",
+            "        Remove-Item $appDataPath -Force",
+            "        Write-Host 'Anytype 便携化junction已清理' -ForegroundColor Green",
+            "    }",
+            "}",
+            "if (Test-Path $updaterPath -PathType Leaf) {",
+            "    Remove-Item $updaterPath -Force",
+            "    Write-Host 'anytype-updater阻止文件已清理' -ForegroundColor Green",
+            "}"
+        ]
+    },
     "shortcuts": [
         [
             "Anytype.exe",
-            "Anytype",
-            "--user-data-dir=\"$dir\\User Data\""
+            "Anytype"
         ]
     ],
-    "persist": "User Data",
     "checkver": {
-        "url": "https://github.com/anyproto/anytype-ts/releases.atom",
-        "regex": "/releases/tag/v([\\d.]+(-(alpha|beta))?)\""
+        "url": "https://api.github.com/repos/anyproto/anytype-ts/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "v([\\d.]+(?:-[A-Za-z0-9.-]+)?)"
     },
     "autoupdate": {
         "architecture": {
