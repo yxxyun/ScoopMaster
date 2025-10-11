@@ -1,54 +1,112 @@
 {
-  "version": "0.2.4",
-  "description": "Agentic Coding Platform",
-  "homepage": "https://qoder.com/",
-  "license": "Proprietary",
-  "architecture": {
-    "64bit": {
-      "url": "https://download.qoder.com/release/latest/QoderUserSetup-x64.exe",
-      "hash": "a65d791f242698f71b0599936700e5095da179e489278f7dcff3344b927547f4",
-      "extract_dir": "{code_GetDestDir}"
-    }
-  },
-  "innosetup": true,
-  "post_install": [
-    "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.qoder\\extensions\")) {",
-    "    info '[Portable Mode] Copying extensions...'",
-    "    Copy-Item \"$env:USERPROFILE\\.qoder\\extensions\" \"$dir\\data\" -Recurse",
-    "}",
-    "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Qoder\")) {",
-    "    info '[Portable Mode] Copying user data...'",
-    "    Copy-Item \"$env:AppData\\Qoder\" \"$dir\\data\\user-data\" -Recurse",
-    "}",
-    "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
-    "if ((Test-Path \"$extensions_file\")) {",
-    "    info 'Adjusting path in extensions file...'",
-    "    (Get-Content \"$extensions_file\") -replace '(?<=qoder(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
-    "}"
-  ],
-  "bin": [
-    [
-      "bin/qoder.cmd",
-      "qoder",
-      "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
-    ]
-  ],
-  "shortcuts": [
-    [
-      "Qoder.exe",
-      "Qoder",
-      "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
-    ]
-  ],
-  "persist": "data",
-  "checkver": {
-    "url": "https://qoder.com/changelog"
-  },
-  "autoupdate": {
+    "version": "0.2.5",
+    "description": "Qoder - The Agentic Coding Platform，AI 驱动的智能编程平台，专为真实软件开发而设计",
+    "homepage": "https://qoder.com/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://qoder.com/product-service"
+    },
+    "notes": [
+        "Qoder 是一个 AI 驱动的智能编程平台，主要功能：",
+        "- 智能代码生成和补全",
+        "- AI 驱动的代码重构和优化",
+        "- 智能调试和错误修复",
+        "- 项目级别的代码理解和分析",
+        "- 多语言支持和跨平台开发",
+        "",
+        "数据目录：",
+        "- 用户数据：%APPDATA%\\Qoder",
+        "- 扩展配置：~\\.qoder",
+        "",
+        "首次使用可能需要登录账号以获得完整功能。"
+    ],
     "architecture": {
-      "64bit": {
-        "url": "https://download.qoder.com/release/latest/QoderUserSetup-x64.exe"
-      }
+        "64bit": {
+            "url": "https://qoder-ide.oss-accelerate.aliyuncs.com/release/0.2.5/QoderUserSetup-x64.exe",
+            "hash": "fca828190fb80c1bcdd7aacb65beb5a48ba40e00184e713462e23a67a9283046"
+        }
+    },
+    "innosetup": true,
+    "extract_dir": "{code_GetDestDir}",
+    "shortcuts": [
+        [
+            "Qoder.exe",
+            "Qoder"
+        ]
+    ],
+    "post_install": [
+        "# Create data directories",
+        "New-Item -ItemType Directory -Path \"$dir\\data\" -Force | Out-Null",
+        "New-Item -ItemType Directory -Path \"$dir\\data\\user-data\" -Force | Out-Null",
+        "New-Item -ItemType Directory -Path \"$dir\\data\\qoder-config\" -Force | Out-Null",
+        "",
+        "# Copy existing data if present",
+        "if ((Test-Path \"$env:AppData\\Qoder\") -and !(Test-Path \"$dir\\data\\user-data\\*\")) {",
+        "  info '[Portable Mode] Copying existing user data...'",
+        "  Copy-Item \"$env:AppData\\Qoder\\*\" \"$dir\\data\\user-data\" -Recurse -Force",
+        "}",
+        "",
+        "if ((Test-Path \"$env:USERPROFILE\\.qoder\") -and !(Test-Path \"$dir\\data\\qoder-config\\*\")) {",
+        "  info '[Portable Mode] Copying existing Qoder config...'",
+        "  Copy-Item \"$env:USERPROFILE\\.qoder\\*\" \"$dir\\data\\qoder-config\" -Recurse -Force",
+        "}",
+        "",
+        "# Define paths for junction points",
+        "$appDataPath = \"$env:AppData\\Qoder\"",
+        "$userProfilePath = \"$env:USERPROFILE\\.qoder\"",
+        "",
+        "# Remove existing directories/links if they exist",
+        "if (Test-Path $appDataPath) {",
+        "  Remove-Item $appDataPath -Recurse -Force",
+        "}",
+        "if (Test-Path $userProfilePath) {",
+        "  Remove-Item $userProfilePath -Recurse -Force",
+        "}",
+        "",
+        "# Create junction points",
+        "try {",
+        "  New-Item -ItemType Junction -Path $appDataPath -Target \"$dir\\data\\user-data\" -Force | Out-Null",
+        "  info '[Portable Mode] Created junction: %APPDATA%\\Qoder -> scoop\\data\\user-data'",
+        "} catch {",
+        "  warn 'Failed to create junction for user data: $_'",
+        "}",
+        "",
+        "try {",
+        "  New-Item -ItemType Junction -Path $userProfilePath -Target \"$dir\\data\\qoder-config\" -Force | Out-Null",
+        "  info '[Portable Mode] Created junction: ~/.qoder -> scoop\\data\\qoder-config'",
+        "} catch {",
+        "  warn 'Failed to create junction for Qoder config: $_'",
+        "}",
+        ""
+    ],
+    "pre_uninstall": [
+        "# Clean up junction points",
+        "$appDataPath = \"$env:AppData\\Qoder\"",
+        "$userProfilePath = \"$env:USERPROFILE\\.qoder\"",
+        "",
+        "if (Test-Path $appDataPath) {",
+        "  Remove-Item $appDataPath -Force",
+        "  info '[Portable Mode] Removed junction: %APPDATA%\\Qoder'",
+        "}",
+        "",
+        "if (Test-Path $userProfilePath) {",
+        "  Remove-Item $userProfilePath -Force",
+        "  info '[Portable Mode] Removed junction: ~/.qoder'",
+        "}",
+        ""
+    ],
+    "persist": "data",
+    "checkver": {
+        "url": "https://center.qoder.sh/algo/api/update/win32-x64-user/stable/0.0.0",
+        "jsonpath": "$.url",
+        "regex": "(?<url>.*release/(?<version>[\\d.]+)/QoderUserSetup-x64\\.exe)",
+        "replace": "${version}"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "$matchUrl"
+            }
+        }
     }
-  }
 }
