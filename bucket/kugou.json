@@ -1,36 +1,73 @@
 {
-    "version": "20.0.61",
-    "description": "Hello, KuGou!",
+    "version": "20.0.70",
+    "description": "酷狗音乐，就是歌多",
     "homepage": "https://www.kugou.com/",
-    "license": {
-        "identifier": "Unknown"
-    },
-    "url": "http://download.kugou.com/download/kugou_pc#/dl.7z",
+    "license": "Proprietary",
+    "url": "http://api.xrgzs.top/360baoku/?appid=72#/dl.7z",
+    "hash": "f679d1b50eb1955bc176c9a262a838e79b27f8fec38601c747b23d79a51327e2",
     "installer": {
         "script": [
-            "Get-ChildItem -Path  \"$dir\\`$PLUGINSDIR\" -Recurse -Exclude KuGou.7z | Remove-Item -Recurse -Force",
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "# Do not migrate settings",
+            "if (Test-Path \"$env:APPDATA\\KuGou8\\KuGou.ini\") {",
+            "    Remove-Item \"$env:APPDATA\\KuGou8\\KuGou.ini\" -Force -ErrorAction SilentlyContinue | Out-Null",
+            "}",
+            "New-PersistDirectory \"$env:APPDATA\\KuGou8\" \"$persist_dir\\AppData\" -Migrate",
             "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\KuGou.7z\" \"$dir\"",
-            "New-Item -ItemType Junction -Path \"$dir\\$([System.Diagnostics.FileVersionInfo]::GetVersionInfo(\"$dir\\KuGou.exe\").FileVersion)\" -Target \"$dir\"",
-            "Remove-Item -Recurse -Force \"$dir\\`$PLUGINSDIR\""
-        ],
-        "keep": false
+            "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\AppData.7z\" \"$persist_dir\\AppData\" -Overwrite 'Skip'",
+            "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+            "",
+            "if (-not (Test-Path \"$persist_dir\\AppData\\KuGou.ini\")) {",
+            "    @\"",
+            "[DownloadConfigSection]",
+            "DownloadPath=$persist_dir\\KuGou",
+            "TempPath=$persist_dir\\KuGou\\Temp",
+            "",
+            "[Fanxing]",
+            "PlayingRecommend=0",
+            "",
+            "[GeneralConfigSection]",
+            "AutoRunDlnaKey=0",
+            "DynamicDesktopUsageDenominator=2",
+            "RegisterRestart=0",
+            "",
+            "[LyricConfigSection]",
+            "LyricPath=$persist_dir\\KuGou\\Lyric\\",
+            "",
+            "[MP3Copy]",
+            "SyncPrompt=0",
+            "",
+            "[Player]",
+            "SystemMediaControl=1",
+            "\"@ | Set-Content \"$persist_dir\\AppData\\KuGou.ini\" -Encoding unicode -Force",
+            "    success \"[New install] The download folder have been set to $persist_dir\\KuGou successfully!\"",
+            "}"
+        ]
     },
+    "persist": [
+        "KuGou\\Temp",
+        "KuGou\\Lyric"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\KuGou8\"",
+        "reg.exe delete \"HKCU\\SOFTWARE\\kugou\" /f *>$null",
+        "reg.exe delete \"HKCU\\SOFTWARE\\KuGou8\" /f *>$null",
+        "reg.exe delete \"HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\" /v \"KuGou8\" /f *>$null"
+    ],
     "shortcuts": [
         [
             "KuGou.exe",
-            "KuGou"
+            "酷狗音乐"
         ]
     ],
-    "bin": "kugou.exe",
-    "persist": [
-        "Lyric",
-        "Download"
-    ],
     "checkver": {
-        "url": "https://download.kugou.com/",
-        "regex": "V([\\d.]+)"
+        "url": "https://soft-api.safe.360.cn/main/v1/soft/info?softid=72",
+        "jsonpath": "$.data.version"
     },
     "autoupdate": {
-        "version": "$version"
+        "url": "http://api.xrgzs.top/360baoku/?appid=72#/dl.7z"
     }
 }
