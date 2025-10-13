@@ -1,87 +1,111 @@
 {
     "version": "0.2.5",
-    "description": "Agentic Coding Platform for Real Software",
+    "description": "Qoder - The Agentic Coding Platform，AI 驱动的智能编程平台，专为真实软件开发而设计",
     "homepage": "https://qoder.com/",
-    "license": "Proprietary",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://qoder.com/product-service"
+    },
     "notes": [
-        "For github integration, run:",
-        "'reg import \"$dir\\install-github-integration.reg\"'"
+        "Qoder 是一个 AI 驱动的智能编程平台，主要功能：",
+        "- 智能代码生成和补全",
+        "- AI 驱动的代码重构和优化",
+        "- 智能调试和错误修复",
+        "- 项目级别的代码理解和分析",
+        "- 多语言支持和跨平台开发",
+        "",
+        "数据目录：",
+        "- 用户数据：%APPDATA%\\Qoder",
+        "- 扩展配置：~\\.qoder",
+        "",
+        "首次使用可能需要登录账号以获得完整功能。"
     ],
     "architecture": {
         "64bit": {
-            "url": "https://download.qoder.com/release/0.2.5/QoderUserSetup-x64.exe",
-            "hash": "fca828190fb80c1bcdd7aacb65beb5a48ba40e00184e713462e23a67a9283046",
-            "extract_dir": "{code_GetDestDir}"
+            "url": "https://qoder-ide.oss-accelerate.aliyuncs.com/release/0.2.5/QoderUserSetup-x64.exe",
+            "hash": "fca828190fb80c1bcdd7aacb65beb5a48ba40e00184e713462e23a67a9283046"
         }
     },
     "innosetup": true,
-    "pre_install": [
-        "# 处理用户配置目录",
-        "$config_dirs = @(",
-        "    '.qoder'",
-        ")",
-        "foreach ($config_dir in $config_dirs) {",
-        "    $target_dir = Join-Path $env:USERPROFILE $config_dir",
-        "    $link_dir = Join-Path $persist_dir $config_dir",
-        "    & \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $target_dir $link_dir",
-        "}",
-        "",
-        "# 链接 $env:APPDATA\\Qoder 到 persist_dir/data",
-        "$appdata_dir = Join-Path $env:APPDATA \"Qoder\"",
-        "$persist_data_dir = Join-Path $persist_dir data",
-        "& \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $appdata_dir $persist_data_dir"
-    ],
-    "post_install": [
-        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
-        "$exepath = \"$dir\\Qoder.exe\".Replace('\\', '\\\\')",
-        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context', 'install-github-integration', 'uninstall-github-integration' | ForEach-Object {",
-        "  if (Test-Path \"$bucketsdir\\$bucket\\scripts\\qoder\\$_.reg\") {",
-        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\qoder\\$_.reg\"",
-        "    $content = $content.Replace('$qoderdir', $dirpath)",
-        "    $content = $content.Replace('$qoder', $exepath)",
-        "    if ($global) {",
-        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
-        "    }",
-        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
-        "  }",
-        "}",
-        "# 自动导入注册表（可选）",
-        "reg import \"$dir\\install-context.reg\"",
-        "reg import \"$dir\\install-associations.reg\""
-    ],
-    "uninstaller": {
-        "script": [
-            "if ($cmd -eq 'uninstall')",
-            "{",
-            "   reg import \"$dir\\uninstall-context.reg\" ",
-            "   reg import \"$dir\\uninstall-github-integration.reg\" ",
-            "}"
-        ]
-    },
-    "bin": [
-        [
-            "bin/qoder.cmd",
-            "qoder"
-        ]
-    ],
+    "extract_dir": "{code_GetDestDir}",
     "shortcuts": [
         [
             "Qoder.exe",
             "Qoder"
         ]
     ],
-    "persist": [
-        "data",
-        ".qoder"
+    "post_install": [
+        "# Create data directories",
+        "New-Item -ItemType Directory -Path \"$dir\\data\" -Force | Out-Null",
+        "New-Item -ItemType Directory -Path \"$dir\\data\\user-data\" -Force | Out-Null",
+        "New-Item -ItemType Directory -Path \"$dir\\data\\qoder-config\" -Force | Out-Null",
+        "",
+        "# Copy existing data if present",
+        "if ((Test-Path \"$env:AppData\\Qoder\") -and !(Test-Path \"$dir\\data\\user-data\\*\")) {",
+        "  info '[Portable Mode] Copying existing user data...'",
+        "  Copy-Item \"$env:AppData\\Qoder\\*\" \"$dir\\data\\user-data\" -Recurse -Force",
+        "}",
+        "",
+        "if ((Test-Path \"$env:USERPROFILE\\.qoder\") -and !(Test-Path \"$dir\\data\\qoder-config\\*\")) {",
+        "  info '[Portable Mode] Copying existing Qoder config...'",
+        "  Copy-Item \"$env:USERPROFILE\\.qoder\\*\" \"$dir\\data\\qoder-config\" -Recurse -Force",
+        "}",
+        "",
+        "# Define paths for symbolic links",
+        "$appDataPath = \"$env:AppData\\Qoder\"",
+        "$userProfilePath = \"$env:USERPROFILE\\.qoder\"",
+        "",
+        "# Remove existing directories/links if they exist",
+        "if (Test-Path $appDataPath) {",
+        "  Remove-Item $appDataPath -Recurse -Force",
+        "}",
+        "if (Test-Path $userProfilePath) {",
+        "  Remove-Item $userProfilePath -Recurse -Force",
+        "}",
+        "",
+        "# Create symbolic links",
+        "try {",
+        "  New-Item -ItemType SymbolicLink -Path $appDataPath -Target \"$dir\\data\\user-data\" -Force | Out-Null",
+        "  info '[Portable Mode] Created symbolic link: %APPDATA%\\Qoder -> scoop\\data\\user-data'",
+        "} catch {",
+        "  warn 'Failed to create symbolic link for user data: $_'",
+        "}",
+        "",
+        "try {",
+        "  New-Item -ItemType SymbolicLink -Path $userProfilePath -Target \"$dir\\data\\qoder-config\" -Force | Out-Null",
+        "  info '[Portable Mode] Created symbolic link: ~/.qoder -> scoop\\data\\qoder-config'",
+        "} catch {",
+        "  warn 'Failed to create symbolic link for Qoder config: $_'",
+        "}",
+        ""
     ],
+    "pre_uninstall": [
+        "# Clean up symbolic links",
+        "$appDataPath = \"$env:AppData\\Qoder\"",
+        "$userProfilePath = \"$env:USERPROFILE\\.qoder\"",
+        "",
+        "if (Test-Path $appDataPath) {",
+        "  Remove-Item $appDataPath -Force",
+        "  info '[Portable Mode] Removed symbolic link: %APPDATA%\\Qoder'",
+        "}",
+        "",
+        "if (Test-Path $userProfilePath) {",
+        "  Remove-Item $userProfilePath -Force",
+        "  info '[Portable Mode] Removed symbolic link: ~/.qoder'",
+        "}",
+        ""
+    ],
+    "persist": "data",
     "checkver": {
-        "url": "https://g.alicdn.com/qbase/qoder-blog/0.0.43/js/index.js",
-        "regex": "\"version\":\"(\\d+\\.\\d+\\.\\d+)\""
+        "url": "https://center.qoder.sh/algo/api/update/win32-x64-user/stable/0.0.0",
+        "jsonpath": "$.url",
+        "regex": "(?<url>.*release/(?<version>[\\d.]+)/QoderUserSetup-x64\\.exe)",
+        "replace": "${version}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://download.qoder.com/release/$version/QoderUserSetup-x64.exe"
+                "url": "$matchUrl"
             }
         }
     }
