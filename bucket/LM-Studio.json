@@ -1,120 +1,30 @@
 {
     "version": "0.3.30-1",
-    "description": "LM Studio is an easy-to-use desktop app for experimenting with local and open-source Large Language Models (LLMs).",
-    "homepage": "https://lmstudio.ai/",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://lmstudio.ai/terms"
-    },
+    "description": "LM Studio",
+    "homepage": "https://lmstudio.ai",
+    "license": "Freeware",
     "architecture": {
         "64bit": {
-            "url": "https://installers.lmstudio.ai/win32/x64/0.3.30-1/LM-Studio-0.3.30-1-x64.exe",
+            "url": "https://installers.lmstudio.ai/win32/x64/0.3.30-1/LM-Studio-0.3.30-1-x64.exe#/dl.7z",
             "hash": "037510c93ff7e2e8f3de7acd20e46198d736c0cb5dd6306834dd71a9900a5639"
         }
     },
-    "installer": {
-        "script": [
-            "# Extract NSIS installer",
-            "7z x \"$dir\\$fname\" -o\"$dir\\extracted\" -y | Out-Null",
-            "# Move app files from extracted directory",
-            "Move-Item \"$dir\\extracted\\`$PLUGINSDIR\\app-64.7z\" \"$dir\\app.7z\"",
-            "7z x \"$dir\\app.7z\" -o\"$dir\" -y | Out-Null",
-            "# Clean up",
-            "Remove-Item \"$dir\\extracted\", \"$dir\\app.7z\", \"$dir\\$fname\" -Recurse -Force"
-        ]
-    },
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
+        "Remove-Item \"$dir\\`$R0\" -Force -Recurse"
+    ],
     "shortcuts": [
         [
             "LM Studio.exe",
             "LM Studio"
         ]
     ],
-    "post_install": [
-        "$persistDir = $persist_dir",
-        "function Ensure-PortableDirectory { param([string]$Path) if (-not (Test-Path $Path)) { New-Item -ItemType Directory -Path $Path -Force | Out-Null } }",
-        "function New-PortableSymlink { param([string]$Link,[string]$Target) if (Test-Path $Link) { Remove-Item $Link -Force -Recurse -ErrorAction SilentlyContinue } New-Item -ItemType SymbolicLink -Path $Link -Target $Target -Force | Out-Null }",
-        "$homeConfig = Join-Path $persistDir 'home\\config'",
-        "$roamingDir = Join-Path $persistDir 'roaming'",
-        "$localDir = Join-Path $persistDir 'local'",
-        "$lmStudioDir = Join-Path $homeConfig 'lm-studio'",
-        "Ensure-PortableDirectory $homeConfig",
-        "Ensure-PortableDirectory $roamingDir",
-        "Ensure-PortableDirectory $localDir",
-        "Ensure-PortableDirectory $lmStudioDir",
-        "$legacyData = Join-Path $dir 'data'",
-        "if (Test-Path $legacyData) {",
-        "  $legacyRoaming = Join-Path $legacyData 'user-data'",
-        "  if (Test-Path $legacyRoaming) { Copy-Item \"$legacyRoaming\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  $legacyLocal = Join-Path $legacyData 'local-data'",
-        "  if (Test-Path $legacyLocal) { Copy-Item \"$legacyLocal\\*\" $localDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  $legacyHome = Join-Path $legacyData 'lm-studio'",
-        "  if (Test-Path $legacyHome) { Copy-Item \"$legacyHome\\*\" $lmStudioDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  Remove-Item $legacyData -Recurse -Force -ErrorAction SilentlyContinue",
-        "}",
-        "$localAppDataPath = Join-Path $env:LocalAppData 'LM-Studio'",
-        "if (Test-Path $localAppDataPath) {",
-        "  if (-not (Get-Item $localAppDataPath).LinkType) { Copy-Item \"$localAppDataPath\\*\" $localDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  Remove-Item $localAppDataPath -Recurse -Force -ErrorAction SilentlyContinue",
-        "}",
-        "$updaterPath = Join-Path $env:LocalAppData 'lm-studio-updater'",
-        "$updaterBlocker = Join-Path $localDir 'lm-studio-updater'",
-        "if (Test-Path $updaterPath) {",
-        "  Remove-Item $updaterPath -Recurse -Force -ErrorAction SilentlyContinue",
-        "}",
-        "if (-not (Test-Path $updaterBlocker)) {",
-        "  New-Item -ItemType File -Path $updaterBlocker -Force | Out-Null",
-        "}",
-        "New-PortableSymlink $updaterPath $updaterBlocker",
-        "$appDataPath = Join-Path $env:AppData 'LM Studio'",
-        "if (Test-Path $appDataPath) {",
-        "  if (-not (Get-Item $appDataPath).LinkType) { Copy-Item \"$appDataPath\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  Remove-Item $appDataPath -Recurse -Force -ErrorAction SilentlyContinue",
-        "}",
-        "New-PortableSymlink $appDataPath $roamingDir",
-        "$homePointerPath = Join-Path $env:USERPROFILE '.lmstudio-home-pointer'",
-        "$homePointerContent = $lmStudioDir",
-        "$homePointerContent | Out-File -FilePath $homePointerPath -Encoding utf8 -Force",
-        "New-PortableSymlink $localAppDataPath $localDir"
-    ],
-    "pre_uninstall": [
-        "# Clean up symbolic links, pointer file and blocker file",
-        "$homePointerPath = \"$env:USERPROFILE\\.lmstudio-home-pointer\"",
-        "$appDataPath = \"$env:AppData\\LM Studio\"",
-        "$localAppDataPath = \"$env:LOCALAPPDATA\\LM-Studio\"",
-        "$updaterPath = \"$env:LOCALAPPDATA\\lm-studio-updater\"",
-        "",
-        "if (Test-Path $homePointerPath) {",
-        "  Remove-Item $homePointerPath -Force",
-        "  info '[Portable Mode] Removed home pointer: ~/.lmstudio-home-pointer'",
-        "}",
-        "",
-        "if (Test-Path $appDataPath) {",
-        "  Remove-Item $appDataPath -Force",
-        "  info '[Portable Mode] Removed symbolic link: %APPDATA%\\LM Studio'",
-        "}",
-        "",
-        "if (Test-Path $localAppDataPath) {",
-        "  Remove-Item $localAppDataPath -Force",
-        "  info '[Portable Mode] Removed symbolic link: %LOCALAPPDATA%\\LM-Studio'",
-        "}",
-        "",
-        "if (Test-Path $updaterPath) {",
-        "  Remove-Item $updaterPath -Force",
-        "  info '[Portable Mode] Removed updater blocker link'",
-        "}",
-        ""
-    ],
-    "persist": "data",
     "checkver": {
-        "url": "https://lmstudio.ai/download",
-        "regex": "win32.*?x64.*?version.*?([\\d.]+).*?build.*?([\\d]+)",
-        "replace": "${1}-${2}"
+        "url": "https://lmstudio.ai",
+        "regex": "LM-Studio-([\\d-.]+)-x64.exe"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://installers.lmstudio.ai/win32/x64/$version/LM-Studio-$version-x64.exe"
-            }
-        }
+        "url": "https://installers.lmstudio.ai/win32/x64/$version/LM-Studio-$version-x64.exe#/dl.7z"
     }
 }
