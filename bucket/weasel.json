@@ -1,24 +1,112 @@
 {
-    "version": "0.17.4",
     "homepage": "https://rime.im/",
     "license": "GPL-3.0-or-later",
-    "description": "【小狼毫】Rime for Windows",
+    "version": "0.17.4",
     "url": "https://github.com/rime/weasel/releases/download/0.17.4/weasel-0.17.4.0-installer.exe#/dl.7z",
     "hash": "cf509534a8f5f8af9c98ed7cbb8f135439f145a8cbe7e50ede42bb5b5ab45c29",
-    "pre_install": [
-        "if(!(Test-Path \"$dir\\Rime\")) {New-Item \"$dir\\Rime\" -ItemType Directory | Out-Null} ",
-        "& \"$dir\\WeaselSetup.exe\" /i",
-        "& \"$dir\\WeaselDeployer.exe\" /install",
-        "& \"$dir\\WeaselServer.exe\""
-    ],
-    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse",
-    "uninstaller": {
-        "script": "Invoke-ExternalCommand \"$dir/uninstall.exe\" -ArgumentList '/S' -RunAs | Out-Null"
+    "installer": {
+        "script": [
+            "# prompt for setting user folder path",
+            "& \"$dir\\WeaselSetup.exe\" /i",
+            "# run install",
+            "& \"$dir\\WeaselDeployer.exe\" /install",
+            "# start server",
+            "& \"$dir\\WeaselServer.exe\""
+        ]
     },
+    "post_install": [
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse",
+        "# set autorun on Windows startup without registry editing",
+        "$lnkPath",
+        "if (!$global) {",
+        "    $lnkPath = \"$($env:APPDATA)\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\WeaselServer.lnk\"",
+        "}",
+        "else {",
+        "    $lnkPath = \"$($env:PROGRAMDATA)\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\WeaselServer.lnk\"",
+        "}",
+        "if (Test-Path $lnkPath) {",
+        "    Remove-Item $lnkPath",
+        "}",
+        "$wsShell = New-Object -ComObject WScript.Shell",
+        "$wsShell = $wsShell.CreateShortcut($lnkPath)",
+        "$wsShell.TargetPath = \"$dir\\WeaselServer.exe\"",
+        "$wsShell.WorkingDirectory = $dir",
+        "$wsShell.Save()"
+    ],
+    "shortcuts": [
+        [
+            "README.txt",
+            "【小狼毫】说明书"
+        ],
+        [
+            "WeaselDeployer.exe",
+            "【小狼毫】输入法设定"
+        ],
+        [
+            "WeaselDeployer.exe",
+            "【小狼毫】用户词典管理",
+            "/dict"
+        ],
+        [
+            "WeaselDeployer.exe",
+            "【小狼毫】用户资料同步",
+            "/sync"
+        ],
+        [
+            "WeaselDeployer.exe",
+            "【小狼毫】重新部署",
+            "/deploy"
+        ],
+        [
+            "WeaselServer.exe",
+            "小狼毫算法服务"
+        ],
+        [
+            "WeaselServer.exe",
+            "【小狼毫】用户文件夹",
+            "/userdir"
+        ],
+        [
+            "WeaselServer.exe",
+            "【小狼毫】程序文件夹",
+            "/weaseldir"
+        ],
+        [
+            "WeaselServer.exe",
+            "【小狼毫】检查新版本",
+            "/update"
+        ],
+        [
+            "WeaselSetup.exe",
+            "【小狼毫】安装选项"
+        ]
+    ],
+    "pre_uninstall": [
+        "# https://github.com/rime/weasel/blob/3c70aedf9ff6288be82041c580ff7f00c7f8e6f1/output/install.nsi#L362",
+        "Write-Output \"Stopping WeaselServer.exe...\"",
+        "Invoke-ExternalCommand \"$dir/WeaselServer.exe\" -ArgumentList '/quit' | Out-Null",
+        "Write-Output \"Uninstalling IME...\"",
+        "Invoke-ExternalCommand \"$dir/WeaselSetup.exe\" -ArgumentList '/u' -RunAs | Out-Null"
+    ],
+    "post_uninstall": [
+        "# remove autorun",
+        "$lnkPath",
+        "if (!$global) {",
+        "    $lnkPath = \"$($env:APPDATA)\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\WeaselServer.lnk\"",
+        "}",
+        "else {",
+        "    $lnkPath = \"$($env:PROGRAMDATA)\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\WeaselServer.lnk\"",
+        "}",
+        "if (Test-Path $lnkPath) {",
+        "    Remove-Item $lnkPath",
+        "}"
+    ],
     "checkver": {
-        "github": "https://github.com/rime/weasel"
+        "url": "https://api.github.com/repos/rime/weasel/releases/latest",
+        "jsonpath": "$..browser_download_url",
+        "regex": "download/([\\d.]+)/weasel-(?<build>[\\d.]+)"
     },
     "autoupdate": {
-        "url": "https://github.com/rime/weasel/releases/download/$version/weasel-$version.0-installer.exe#/dl.7z"
+        "url": "https://github.com/rime/weasel/releases/download/$version/weasel-$matchBuild-installer.exe#/dl.7z"
     }
 }
