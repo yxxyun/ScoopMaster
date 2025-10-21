@@ -1,32 +1,45 @@
 {
-    "version": "4.4.2",
-    "description": "A unified platform to organize your game collection, track gameplay, with real-time cloud sync across devices and detailed gameplay reports",
     "homepage": "https://github.com/ximu3/vnite",
-    "license": "GPL-3.0-or-later",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/ximu3/vnite/releases/download/v4.4.2/vnite-4.4.2-setup.exe#/dl.7z",
-            "hash": "756cbf6f6876229b0d42ff77f7fe57268a407c5c1a42d19926372d17c6caff9c"
-        }
-    },
-    "extract_to": "",
-    "pre_install": [
-        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse"
+    "license": "GPLv3",
+    "version": "4.4.2",
+    "description": "A unified platform to organize your game collection, track gameplay, with real-time cloud sync across devices and detailed gameplay reports.",
+    "url": "https://github.com/ximu3/vnite/releases/download/v4.4.2/vnite-4.4.2-setup.exe#/dl.7z",
+    "hash": "756cbf6f6876229b0d42ff77f7fe57268a407c5c1a42d19926372d17c6caff9c",
+    "bin": [
+        "vnite.exe",
+        "vnite"
     ],
     "shortcuts": [
         [
-            "Vnite.exe",
+            "vnite.exe",
             "Vnite"
         ]
     ],
-    "persist": "app",
-    "checkver": "github",
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\`$R0\"  -Force -Recurse"
+    ],
+    "installer": {
+        "script": [
+            "ensure \"$persist_dir\" | Out-Null",
+            "$targetPath = \"$env:APPDATA\\vnite\\app\"",
+            "$linkType = (Get-Item -Path $targetPath -ErrorAction SilentlyContinue).LinkType",
+            "if (Test-Path $targetPath) {",
+            "    if ($linkType -eq 'Junction') {",
+            "        Remove-Item -Path $targetPath -Force",
+            "    } else {",
+            "        Get-ChildItem -Path $targetPath -Force | Move-Item -Destination $persist_dir -Force",
+            "        Remove-Item -Path $targetPath -Force -Recurse",
+            "    }",
+            "}",
+            "New-Item \"$env:APPDATA\\vnite\\app\" -ItemType Junction -Target \"$persist_dir\" | Out-Null"
+        ]
+    },
+    "checkver": {
+        "url": "https://github.com/ximu3/vnite/tags",
+        "regex": "releases/tag/v([\\d\\.]+(?:-[a-z]+(?:\\.\\d+)?)?)"
+    },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/ximu3/vnite/releases/download/v$version/vnite-$version-setup.exe#/dl.7z"
-            }
-        }
+        "url": "https://github.com/ximu3/vnite/releases/download/v$version/vnite-$version-setup.exe#/dl.7z"
     }
 }
