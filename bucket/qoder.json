@@ -1,54 +1,96 @@
 {
-  "version": "0.2.6",
-  "description": "Agentic Coding Platform",
-  "homepage": "https://qoder.com/",
-  "license": "Proprietary",
-  "architecture": {
-    "64bit": {
-      "url": "https://download.qoder.com/release/latest/QoderUserSetup-x64.exe",
-      "hash": "8846dd314f7f821c00e6ca7150f89543af63ebb8f1d8547fca115a8a6929f3b3",
-      "extract_dir": "{code_GetDestDir}"
-    }
-  },
-  "innosetup": true,
-  "post_install": [
-    "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.qoder\\extensions\")) {",
-    "    info '[Portable Mode] Copying extensions...'",
-    "    Copy-Item \"$env:USERPROFILE\\.qoder\\extensions\" \"$dir\\data\" -Recurse",
-    "}",
-    "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Qoder\")) {",
-    "    info '[Portable Mode] Copying user data...'",
-    "    Copy-Item \"$env:AppData\\Qoder\" \"$dir\\data\\user-data\" -Recurse",
-    "}",
-    "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
-    "if ((Test-Path \"$extensions_file\")) {",
-    "    info 'Adjusting path in extensions file...'",
-    "    (Get-Content \"$extensions_file\") -replace '(?<=qoder(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
-    "}"
-  ],
-  "bin": [
-    [
-      "bin/qoder.cmd",
-      "qoder",
-      "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
-    ]
-  ],
-  "shortcuts": [
-    [
-      "Qoder.exe",
-      "Qoder",
-      "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
-    ]
-  ],
-  "persist": "data",
-  "checkver": {
-    "url": "https://qoder.com/changelog"
-  },
-  "autoupdate": {
+    "version": "0.2.6",
+    "description": "Qoder - The Agentic Coding Platform，AI 驱动的智能编程平台，专为真实软件开发而设计",
+    "homepage": "https://qoder.com/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://qoder.com/product-service"
+    },
+    "notes": [
+        "Qoder 是一个 AI 驱动的智能编程平台，主要功能：",
+        "- 智能代码生成和补全",
+        "- AI 驱动的代码重构和优化",
+        "- 智能调试和错误修复",
+        "- 项目级别的代码理解和分析",
+        "- 多语言支持和跨平台开发",
+        "",
+        "数据目录：",
+        "- 用户数据：%APPDATA%\\Qoder -> persist/qoder/roaming",
+        "- 扩展配置：~\\.qoder -> persist/qoder/home/config",
+        "",
+        "首次使用可能需要登录账号以获得完整功能。"
+    ],
     "architecture": {
-      "64bit": {
-        "url": "https://download.qoder.com/release/latest/QoderUserSetup-x64.exe"
-      }
+        "64bit": {
+            "url": "https://qoder-ide.oss-accelerate.aliyuncs.com/release/0.2.6/QoderUserSetup-x64.exe",
+            "hash": "8846dd314f7f821c00e6ca7150f89543af63ebb8f1d8547fca115a8a6929f3b3"
+        }
+    },
+    "innosetup": true,
+    "extract_dir": "{code_GetDestDir}",
+    "shortcuts": [
+        [
+            "Qoder.exe",
+            "Qoder"
+        ]
+    ],
+    "post_install": [
+        "$persistDir = $persist_dir",
+        "function Ensure-PortableDirectory { param([string]$Path) if (-not (Test-Path $Path)) { New-Item -ItemType Directory -Path $Path -Force | Out-Null } }",
+        "function New-PortableSymlink { param([string]$Link,[string]$Target) if (Test-Path $Link) { Remove-Item $Link -Force -Recurse -ErrorAction SilentlyContinue } New-Item -ItemType SymbolicLink -Path $Link -Target $Target -Force | Out-Null }",
+        "$homeConfig = Join-Path $persistDir 'home\\config'",
+        "$roamingDir = Join-Path $persistDir 'roaming'",
+        "Ensure-PortableDirectory $homeConfig",
+        "Ensure-PortableDirectory $roamingDir",
+        "$legacyData = Join-Path $dir 'data'",
+        "if (Test-Path $legacyData) {",
+        "  $legacyRoaming = Join-Path $legacyData 'user-data'",
+        "  if (Test-Path $legacyRoaming) { Copy-Item \"$legacyRoaming\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue }",
+        "  $legacyHome = Join-Path $legacyData 'qoder-config'",
+        "  if (Test-Path $legacyHome) { Copy-Item \"$legacyHome\\*\" $homeConfig -Force -Recurse -ErrorAction SilentlyContinue }",
+        "  Remove-Item $legacyData -Recurse -Force -ErrorAction SilentlyContinue",
+        "}",
+        "$appDataPath = Join-Path $env:AppData 'Qoder'",
+        "if (Test-Path $appDataPath) {",
+        "  if (-not (Get-Item $appDataPath).LinkType) { Copy-Item \"$appDataPath\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue }",
+        "  Remove-Item $appDataPath -Recurse -Force -ErrorAction SilentlyContinue",
+        "}",
+        "New-PortableSymlink $appDataPath $roamingDir",
+        "$userProfilePath = Join-Path $env:USERPROFILE '.qoder'",
+        "if (Test-Path $userProfilePath) {",
+        "  if (-not (Get-Item $userProfilePath).LinkType) { Copy-Item \"$userProfilePath\\*\" $homeConfig -Force -Recurse -ErrorAction SilentlyContinue }",
+        "  Remove-Item $userProfilePath -Recurse -Force -ErrorAction SilentlyContinue",
+        "}",
+        "New-PortableSymlink $userProfilePath $homeConfig"
+    ],
+    "pre_uninstall": [
+        "# Clean up symbolic links",
+        "$appDataPath = \"$env:AppData\\Qoder\"",
+        "$userProfilePath = \"$env:USERPROFILE\\.qoder\"",
+        "",
+        "if (Test-Path $appDataPath) {",
+        "  Remove-Item $appDataPath -Force",
+        "  info '[Portable Mode] Removed symbolic link: %APPDATA%\\Qoder'",
+        "}",
+        "",
+        "if (Test-Path $userProfilePath) {",
+        "  Remove-Item $userProfilePath -Force",
+        "  info '[Portable Mode] Removed symbolic link: ~/.qoder'",
+        "}",
+        ""
+    ],
+    "persist": "data",
+    "checkver": {
+        "url": "https://center.qoder.sh/algo/api/update/win32-x64-user/stable/0.0.0",
+        "jsonpath": "$.url",
+        "regex": "(?<url>.*release/(?<version>[\\d.]+)/QoderUserSetup-x64\\.exe)",
+        "replace": "${version}"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "$matchUrl"
+            }
+        }
     }
-  }
 }
