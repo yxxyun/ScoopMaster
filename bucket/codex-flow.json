@@ -1,0 +1,73 @@
+{
+    "version": "0.1.0",
+    "description": "Codex 历史会话与多项目协作的图形化工作流助手",
+    "homepage": "https://github.com/lulu-sk/CodexFlow",
+    "license": "Apache-2.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/lulu-sk/CodexFlow/releases/download/v0.1.0/CodexFlow-v0.1.0-win-x64-portable.zip",
+            "hash": "923a4c5868be6dc0b81427d9b775806a665ec2c16ccc96fcb495cbb44007bced"
+        }
+    },
+    "extract_dir": "CodexFlow-v0.1.0-win-x64-portable",
+    "shortcuts": [
+        [
+            "CodexFlow.exe",
+            "CodexFlow"
+        ]
+    ],
+    "post_install": [
+        "$persistDir = $persist_dir",
+        "function Ensure-PortableDirectory { param([string]$Path) if (-not (Test-Path $Path)) { New-Item -ItemType Directory -Path $Path -Force | Out-Null } }",
+        "function Sync-PortableDirectory { param([string]$Source,[string]$Destination) if (Test-Path $Source) { Ensure-PortableDirectory $Destination; Copy-Item \"$Source\\*\" $Destination -Force -Recurse -ErrorAction SilentlyContinue } }",
+        "function New-PortableSymlink { param([string]$Link,[string]$Target)",
+        "    if (Test-Path $Link) {",
+        "        $item = Get-Item $Link -ErrorAction SilentlyContinue",
+        "        if ($item -and $item.LinkType -and $item.Target -eq $Target) { return }",
+        "        Remove-Item $Link -Recurse -Force -ErrorAction SilentlyContinue",
+        "    }",
+        "    New-Item -ItemType SymbolicLink -Path $Link -Target $Target -Force | Out-Null",
+        "}",
+        "$roamingDir = Join-Path $persistDir 'roaming'",
+        "Ensure-PortableDirectory $roamingDir",
+        "$legacyData = Join-Path $dir 'userdata'",
+        "if (Test-Path $legacyData) {",
+        "    Sync-PortableDirectory $legacyData $roamingDir",
+        "    Remove-Item $legacyData -Recurse -Force -ErrorAction SilentlyContinue",
+        "}",
+        "$appDataPath = Join-Path $env:AppData 'codexflow'",
+        "if (Test-Path $appDataPath) {",
+        "    $item = Get-Item $appDataPath -ErrorAction SilentlyContinue",
+        "    if ($item -and (-not $item.LinkType)) { Sync-PortableDirectory $appDataPath $roamingDir }",
+        "    Remove-Item $appDataPath -Recurse -Force -ErrorAction SilentlyContinue",
+        "}",
+        "New-PortableSymlink $appDataPath $roamingDir",
+        "info '已将 CodexFlow 用户数据重定向到持久目录'"
+    ],
+    "pre_uninstall": [
+        "function Remove-PortableSymlink { param([string]$Link)",
+        "    if (Test-Path $Link) {",
+        "        $item = Get-Item $Link -ErrorAction SilentlyContinue",
+        "        if ($item -and $item.LinkType) {",
+        "            Remove-Item $Link -Force -ErrorAction SilentlyContinue",
+        "            info \"移除符号链接: $Link\"",
+        "        }",
+        "    }",
+        "}",
+        "Remove-PortableSymlink (Join-Path $env:AppData 'codexflow')",
+        "info '已移除 CodexFlow 便携化符号链接'"
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/lulu-sk/CodexFlow/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "v(?<version>[\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/lulu-sk/CodexFlow/releases/download/v$version/CodexFlow-v$version-win-x64-portable.zip"
+            }
+        },
+        "extract_dir": "CodexFlow-v$version-win-x64-portable"
+    }
+}
