@@ -1,33 +1,85 @@
 {
-    "version": "0.50.18-alpha",
-    "description": "Anytype is a local-first, P2P and open-source note-taking application",
-    "homepage": "https://anytype.io",
+    "version": "0.50.19-alpha",
+    "description": "Local-first, E2E encrypted software for creating and storing tasks, notes, ideas, documents, workflows, and more.",
+    "homepage": "https://anytype.io/",
     "license": {
-        "identifier": "Any Source Available License 1.0",
-        "url": "https://github.com/anyproto/anytype-ts/blob/main/LICENSE.md"
+        "identifier": "Freeware",
+        "url": "https://anytype.io/terms_of_use"
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/anyproto/anytype-ts/releases/download/v0.50.18-alpha/Anytype.Setup.0.50.18-alpha.exe#/dl.7z",
-            "hash": "ef5daddf75635befa4361ffaf975c6cf7884fae7ad0f62486a01ddca0ef2c7c1",
+            "url": "https://github.com/anyproto/anytype-ts/releases/download/v0.50.19-alpha/Anytype.Setup.0.50.19-alpha.exe#/dl.7z",
+            "hash": "ecabd5211474bbfe48f8e04744e34edf63ef43f9f53bcb6d73bbbef61bc35298",
             "pre_install": [
+                "Remove-Item \"$dir\\resources\" -Recurse",
                 "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
                 "Remove-Item \"$dir\\`$*\" -Recurse"
+            ],
+            "post_install": [
+                "$persistDir = $persist_dir",
+                "function Ensure-PortableDirectory { param([string]$Path) if (-not (Test-Path $Path)) { New-Item -ItemType Directory -Path $Path -Force | Out-Null } }",
+                "function New-PortableSymlink { param([string]$Link,[string]$Target) if (Test-Path $Link) { Remove-Item $Link -Force -Recurse -ErrorAction SilentlyContinue } New-Item -ItemType SymbolicLink -Path $Link -Target $Target -Force | Out-Null }",
+                "$roamingDir = Join-Path $persistDir 'roaming'",
+                "$localDir = Join-Path $persistDir 'local'",
+                "Ensure-PortableDirectory $roamingDir",
+                "Ensure-PortableDirectory $localDir",
+                "$legacyData = Join-Path $persistDir 'data'",
+                "$appDataPath = Join-Path $env:AppData 'anytype'",
+                "if (Test-Path $appDataPath) {",
+                "    if (-not (Get-Item $appDataPath).LinkType) {",
+                "        Copy-Item \"$appDataPath\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue",
+                "    }",
+                "    Remove-Item $appDataPath -Recurse -Force -ErrorAction SilentlyContinue",
+                "}",
+                "if (Test-Path (Join-Path $legacyData '')) {",
+                "    if (Test-Path $legacyData) {",
+                "        Copy-Item \"$legacyData\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue",
+                "        Remove-Item $legacyData -Recurse -Force -ErrorAction SilentlyContinue",
+                "    }",
+                "}",
+                "New-PortableSymlink $appDataPath $roamingDir",
+                "$updaterPath = Join-Path $env:LocalAppData 'anytype-updater'",
+                "$updaterBlocker = Join-Path $localDir 'anytype-updater'",
+                "if (Test-Path $updaterPath) {",
+                "    Remove-Item $updaterPath -Recurse -Force -ErrorAction SilentlyContinue",
+                "}",
+                "if (-not (Test-Path $updaterBlocker)) {",
+                "    New-Item -ItemType File -Path $updaterBlocker -Force | Out-Null",
+                "}",
+                "try {",
+                "    New-PortableSymlink $updaterPath $updaterBlocker",
+                "    info '[Portable Mode] Created blocker link: %LOCALAPPDATA%\\anytype-updater -> persist\\\\anytype\\\\local\\\\anytype-updater'",
+                "} catch {",
+                "    warn 'Failed to create blocker link for anytype-updater: $_'",
+                "}"
             ]
         }
     },
-    "bin": "Anytype.exe",
+    "persist": "data",
+    "uninstaller": {
+        "script": [
+            "$appDataPath = \"$env:APPDATA\\anytype\"",
+            "$updaterPath = \"$env:LOCALAPPDATA\\anytype-updater\"",
+            "if (Test-Path $appDataPath) {",
+            "    Remove-Item $appDataPath -Force",
+            "    Write-Host 'Anytype 便携化符号链接已清理' -ForegroundColor Green",
+            "}",
+            "if (Test-Path $updaterPath) {",
+            "    Remove-Item $updaterPath -Force",
+            "    Write-Host 'anytype-updater阻止文件已清理' -ForegroundColor Green",
+            "}"
+        ]
+    },
     "shortcuts": [
         [
             "Anytype.exe",
-            "Anytype",
-            "--user-data-dir=\"$dir\\User Data\""
+            "Anytype"
         ]
     ],
-    "persist": "User Data",
     "checkver": {
-        "url": "https://github.com/anyproto/anytype-ts/releases.atom",
-        "regex": "/releases/tag/v([\\d.]+(-(alpha|beta))?)\""
+        "url": "https://api.github.com/repos/anyproto/anytype-ts/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "v([\\d.]+(?:-[A-Za-z0-9.-]+)?)"
     },
     "autoupdate": {
         "architecture": {
