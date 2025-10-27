@@ -1,36 +1,23 @@
 {
     "version": "4.1.2.17",
-    "description": "Free messaging and calling app by Tencent",
-    "homepage": "https://pc.weixin.qq.com/",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://www.wechat.com/en/service_terms.html"
-    },
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/cscnk52/wechat-windows-versions/releases/download/v4.1.2.17/weixin_4.1.2.17.exe#/dl.7z",
-            "hash": "1186fa6f8510bde2e5859fb87e82c08b28974cb1d5a6980b21b2a13a7fefa8c6"
-        }
-    },
+    "description": "聊天: WeChat",
+    "homepage": "https://pc.weixin.qq.com",
+    "license": "Unknown",
+    "url": "https://webcdn.m.qq.com/spcmgr/download/WeChatWin_4.1.2.exe#/dl.7z",
+    "hash": "1186fa6f8510bde2e5859fb87e82c08b28974cb1d5a6980b21b2a13a7fefa8c6",
     "installer": {
         "script": [
             "Expand-7zipArchive \"$dir\\install.7z\" \"$dir\" -Removal",
             "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Force -Recurse",
-            "$config_path = \"$env:APPDATA\\Tencent\\xwechat\\config\"",
-            "ensure \"$config_path\" | Out-Null",
-            "Set-Content -NoNewline -Path \"$config_path\\51a1fffea11325a1e4104c6b3de47af7.ini\" -Value \"$persist_dir\"",
-            "$reg_path = \"HKCU:Software\\Tencent\\Wexin\"",
-            "if (!(Test-Path \"$reg_path\")) {",
-            "    New-Item -Path \"$reg_path\" -Type Directory -Force | Out-Null",
+            "$configpath = \"$env:APPDATA\\Tencent\\WeChat\\All Users\\config\"",
+            "ensure \"$configpath\" | Out-Null",
+            "Set-Content -NoNewline -Path \"$configpath\\3ebffe94.ini\" -Value \"$persist_dir\"",
+            "$regpath = \"HKCU:Software\\Tencent\\WeChat\"",
+            "if (!(Test-Path \"$regpath\")) {",
+            "    New-Item -Path \"$regpath\" -Type Directory -Force | Out-Null",
             "}",
-            "New-ItemProperty -Path $reg_path -Name \"FileSavePath\" -Value \"$persist_dir\" -Force | Out-Null",
-            "New-Item -Path $reg_path -Name \"InstallPath\" -Value \"$dir\" -Force -ErrorAction SilentlyContinue | Out-Null"
-        ]
-    },
-    "uninstaller": {
-        "script": [
-            "Remove-Item -Path \"$env:APPDATA\\Tencent\\xwechat\\config\\51a1fffea11325a1e4104c6b3de47af7.ini\" -Force | Out-Null",
-            "Remove-ItemProperty -Path \"HKCU:Software\\Tencent\\Wexin\" -Name \"FileSavePath\" -Force | Out-Null"
+            "New-ItemProperty -Path $regpath -Name \"FileSavePath\" -Value \"$persist_dir\" -Force | Out-Null",
+            "New-Item -Path $regpath -Name \"InstallPath\" -Value \"$dir\" -Force -ErrorAction SilentlyContinue | Out-Null"
         ]
     },
     "shortcuts": [
@@ -39,15 +26,24 @@
             "WeChat"
         ]
     ],
-    "persist": "xwechat_files",
+    "persist": "WeChat Files",
+    "uninstaller": {
+        "script": [
+            "Remove-Item -Path \"$env:APPDATA\\Tencent\\WeChat\\All Users\\config\\3ebffe94.ini\" -Force | Out-Null",
+            "Remove-ItemProperty -Path \"HKCU:Software\\Tencent\\WeChat\" -Name \"FileSavePath\" -Force | Out-Null"
+        ]
+    },
     "checkver": {
-        "github": "https://github.com/cscnk52/wechat-windows-versions"
+        "script": [
+            "$res = Invoke-WebRequest -UseBasicParsing -Uri 'https://luban.m.qq.com/api/public/software-manager/softwareProxy' -Body 'cmdid=3318&jprxReq[req][soft_id_list]=11488' -Method 'POST'",
+            "$content = $res.Content | ConvertFrom-Json",
+            "$verName = $content.resp.soft_list[0].ver_name",
+            "$fileName = $content.resp.soft_list[0].file_name",
+            "Write-Output \"$verName|$fileName\""
+        ],
+        "regex": "(?<version>[\\d.]+)\\|(?<id>.*)"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/cscnk52/wechat-windows-versions/releases/download/v$version/weixin_$version.exe#/dl.7z"
-            }
-        }
+        "url": "https://webcdn.m.qq.com/spcmgr/download/$matchId#/dl.7z"
     }
 }
