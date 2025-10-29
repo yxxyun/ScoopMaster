@@ -1,104 +1,93 @@
 {
-    "version": "1.1.2.10873356",
-    "description": "腾讯云代码助手 CodeBuddy - AI 时代的智能编程伙伴，集成设计到开发的全栈 IDE",
+    "version": "1.1.2",
+    "description": "An AI-powered IDE that makes programming more enjoyable and efficient.",
     "homepage": "https://www.codebuddy.ai/",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://www.codebuddy.ai/genie/document/privacyPolicy"
-    },
+    "license": "Proprietary",
     "notes": [
-        "CodeBuddy 是腾讯云推出的 AI 驱动的全栈开发 IDE，主要功能：",
-        "- AI 代码补全：智能实时代码预测和自动补全",
-        "- AI 设计生成：将手绘概念转换为高保真交互原型",
-        "- 设计转代码：将 Figma 设计转换为生产就绪代码",
-        "- AI 全栈开发：多文件代码生成和重构的完整软件开发代理",
-        "- 内置 BaaS 集成：零配置 Supabase 集成，提供即时数据库和身份验证",
-        "- 一键部署：从开发到实时演示，秒级完成",
-        "",
-        "首次使用需要登录腾讯云账号并获取邀请码。",
-        "邀请码申请：https://wj.qq.com/s2/22240515/0ac5"
+        "For github integration, run:",
+        "'reg import \"$dir\\install-github-integration.reg\"'"
     ],
     "architecture": {
         "64bit": {
-            "url": "https://codebuddy-1328495429.cos.accelerate.myqcloud.com/aiide/win32-x64-user/CodeBuddy-win32-x64-user-1.1.2.10873356-4d0813089-575c3cf4.exe",
-            "hash": "d8715bffb2adbc671426a591d5adb4abdf6bd87a5d14b6e824ed3db80af9d783"
+            "url": "https://acc-1258344699.cos.accelerate.myqcloud.com/aiide/win32-x64-user/CodeBuddy-win32-x64-user-1.1.2.10875164-8820ab8ce-575c3cf4-cn.exe",
+            "hash": "7eefeab9c56ee1432337a3202c1db814b3f550b38da886f6ae3fbe47b00b440c",
+            "extract_dir": "{code_GetDestDir}"
         }
     },
     "innosetup": true,
-    "extract_dir": "{code_GetDestDir}",
-    "shortcuts": [
-        [
-            "CodeBuddy.exe",
-            "CodeBuddy"
-        ]
+    "pre_install": [
+        "# 处理用户配置目录",
+        "$config_dirs = @(",
+        "    '.codebuddy'",
+        ")",
+        "foreach ($config_dir in $config_dirs) {",
+        "    $target_dir = Join-Path $env:USERPROFILE $config_dir",
+        "    $link_dir = Join-Path $persist_dir $config_dir",
+        "    & \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $target_dir $link_dir",
+        "}",
+        "",
+        "# 链接 $env:APPDATA\\CodeBuddy 到 persist_dir/data",
+        "$appdata_dir = Join-Path $env:APPDATA \"CodeBuddy\"",
+        "$persist_data_dir = Join-Path $persist_dir data",
+        "& \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $appdata_dir $persist_data_dir"
     ],
     "post_install": [
-        "$persistDir = $persist_dir",
-        "function Ensure-PortableDirectory { param([string]$Path) if (-not (Test-Path $Path)) { New-Item -ItemType Directory -Path $Path -Force | Out-Null } }",
-        "function New-PortableSymlink { param([string]$Link,[string]$Target) if (Test-Path $Link) { Remove-Item $Link -Force -Recurse -ErrorAction SilentlyContinue } New-Item -ItemType SymbolicLink -Path $Link -Target $Target -Force | Out-Null }",
-        "$homeConfig = Join-Path $persistDir 'home\\config'",
-        "$roamingDir = Join-Path $persistDir 'roaming'",
-        "$extensionsDir = Join-Path $persistDir 'local\\extensions'",
-        "Ensure-PortableDirectory $homeConfig",
-        "Ensure-PortableDirectory $roamingDir",
-        "Ensure-PortableDirectory $extensionsDir",
-        "$legacyData = Join-Path $dir 'data'",
-        "if (Test-Path $legacyData) {",
-        "  $legacyRoaming = Join-Path $legacyData 'user-data'",
-        "  if (Test-Path $legacyRoaming) { Copy-Item \"$legacyRoaming\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  $legacyExtensions = Join-Path $legacyData 'extension-data'",
-        "  if (Test-Path $legacyExtensions) { Copy-Item \"$legacyExtensions\\*\" $extensionsDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  $legacyHome = Join-Path $legacyData 'codebuddy-config'",
-        "  if (Test-Path $legacyHome) { Copy-Item \"$legacyHome\\*\" $homeConfig -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  Remove-Item $legacyData -Recurse -Force -ErrorAction SilentlyContinue",
+        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
+        "$exepath = \"$dir\\CodeBuddy.exe\".Replace('\\', '\\\\')",
+        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context', 'install-github-integration', 'uninstall-github-integration' | ForEach-Object {",
+        "  if (Test-Path \"$bucketsdir\\$bucket\\scripts\\codebuddy\\$_.reg\") {",
+        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\codebuddy\\$_.reg\"",
+        "    $content = $content.Replace('$buddydir', $dirpath)",
+        "    $content = $content.Replace('$buddy', $exepath)",
+        "    if ($global) {",
+        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
+        "  }",
         "}",
-        "$appDataPath = Join-Path $env:AppData 'CodeBuddy'",
-        "if (Test-Path $appDataPath) {",
-        "  if (-not (Get-Item $appDataPath).LinkType) { Copy-Item \"$appDataPath\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  Remove-Item $appDataPath -Recurse -Force -ErrorAction SilentlyContinue",
-        "}",
-        "New-PortableSymlink $appDataPath $roamingDir",
-        "$localAppDataPath = Join-Path $env:LocalAppData 'CodeBuddyExtension'",
-        "if (Test-Path $localAppDataPath) {",
-        "  if (-not (Get-Item $localAppDataPath).LinkType) { Copy-Item \"$localAppDataPath\\*\" $extensionsDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  Remove-Item $localAppDataPath -Recurse -Force -ErrorAction SilentlyContinue",
-        "}",
-        "New-PortableSymlink $localAppDataPath $extensionsDir",
-        "$userProfilePath = Join-Path $env:USERPROFILE '.codebuddy'",
-        "if (Test-Path $userProfilePath) {",
-        "  if (-not (Get-Item $userProfilePath).LinkType) { Copy-Item \"$userProfilePath\\*\" $homeConfig -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  Remove-Item $userProfilePath -Recurse -Force -ErrorAction SilentlyContinue",
-        "}",
-        "New-PortableSymlink $userProfilePath $homeConfig"
+        "# 自动导入注册表（可选）",
+        "reg import \"$dir\\install-context.reg\"",
+        "reg import \"$dir\\install-associations.reg\""
     ],
-    "pre_uninstall": [
-        "$appDataPath = Join-Path $env:AppData 'CodeBuddy'",
-        "if (Test-Path $appDataPath) {",
-        "  Remove-Item $appDataPath -Force",
-        "  info '[Portable Mode] Removed symbolic link: %APPDATA%\\CodeBuddy'",
-        "}",
-        "$localAppDataPath = Join-Path $env:LocalAppData 'CodeBuddyExtension'",
-        "if (Test-Path $localAppDataPath) {",
-        "  Remove-Item $localAppDataPath -Force",
-        "  info '[Portable Mode] Removed symbolic link: %LOCALAPPDATA%\\CodeBuddyExtension'",
-        "}",
-        "$userProfilePath = Join-Path $env:USERPROFILE '.codebuddy'",
-        "if (Test-Path $userProfilePath) {",
-        "  Remove-Item $userProfilePath -Force",
-        "  info '[Portable Mode] Removed symbolic link: ~/.codebuddy'",
-        "}"
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall')",
+            "{",
+            "   reg import \"$dir\\uninstall-context.reg\" ",
+            "   reg import \"$dir\\uninstall-github-integration.reg\" ",
+            "}"
+        ]
+    },
+    "bin": [
+        [
+            "bin/buddycn.cmd",
+            "buddycn"
+        ]
     ],
-    "persist": "data",
+    "shortcuts": [
+        [
+            "CodeBuddy CN.exe",
+            "CodeBuddy CN"
+        ]
+    ],
+    "persist": [
+        "data",
+        ".codebuddy"
+    ],
     "checkver": {
-        "url": "https://www.codebuddy.ai/v2/update?platform=ide-win32-x64-user",
+        "url": "https://copilot.tencent.com/v2/update?platform=ide-win32-x64-user",
         "jsonpath": "$.url",
-        "regex": "(?<url>.*CodeBuddy-win32-x64-user-(?<version>[\\d.]+)-.*\\.exe)",
-        "replace": "${version}"
+        "regex": "://(?<link>.*)-user-(?<version>\\d+\\.\\d+\\.\\d+)\\.(?<build>.+)\\.exe"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "$matchUrl"
+                "url": "https://$matchLink-user-$version.$matchBuild.exe",
+                "hash": {
+                    "url": "https://copilot.tencent.com/v2/update?platform=ide-win32-x64-user",
+                    "jsonpath": "$.sha256hash",
+                    "type": "sha256"
+                }
             }
         }
     }
