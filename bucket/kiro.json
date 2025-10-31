@@ -1,52 +1,105 @@
 {
     "version": "0.5.0",
-    "description": "The AI IDE for prototype to production",
-    "homepage": "https://kiro.dev",
-    "license": "Proprietary",
+    "description": "Kiro is Amazon's agentic IDE built for working with AWS, powered by Claude AI",
+    "homepage": "https://kiro.dev/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://kiro.dev/license/"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://prod.download.desktop.kiro.dev/releases/202510301715-Kiro-win32-x64.zip",
-            "hash": "6af79a498970a5df596755103cf95fa0620d48c1c53af2f3ce87a36523859441"
+            "url": "https://prod.download.desktop.kiro.dev/releases/202510301715-Kiro-win32-x64.exe",
+            "hash": "716216ab4b206780bb84351d3e4cc8a29eb4697e5ce14539648ecc953fed218a"
         }
     },
-    "post_install": [
-        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.kiro\\extensions\")) {",
-        "    info '[Portable Mode] Copying extensions...'",
-        "    Copy-Item \"$env:USERPROFILE\\.kiro\\extensions\" \"$dir\\data\" -Recurse",
-        "}",
-        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Kiro\")) {",
-        "    info '[Portable Mode] Copying user data...'",
-        "    Copy-Item \"$env:AppData\\Kiro\" \"$dir\\data\\user-data\" -Recurse",
-        "}",
-        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
-        "if ((Test-Path \"$extensions_file\")) {",
-        "    info 'Adjusting path in extensions file...'",
-        "    (Get-Content \"$extensions_file\") -replace '(?<=kiro(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
-        "}"
-    ],
-    "bin": [
-        [
-            "bin\\kiro.cmd",
-            "kiro",
-            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
-        ]
-    ],
+    "innosetup": true,
+    "extract_dir": "{code_GetDestDir}",
     "shortcuts": [
         [
             "Kiro.exe",
-            "Kiro",
-            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
+            "Kiro"
         ]
+    ],
+    "post_install": [
+        "$persistDir = $persist_dir",
+        "function Ensure-PortableDirectory { param([string]$Path) if (-not (Test-Path $Path)) { New-Item -ItemType Directory -Path $Path -Force | Out-Null } }",
+        "function New-PortableSymlink { param([string]$Link,[string]$Target) if (Test-Path $Link) { Remove-Item $Link -Force -Recurse -ErrorAction SilentlyContinue } New-Item -ItemType SymbolicLink -Path $Link -Target $Target -Force | Out-Null }",
+        "$homeConfig = Join-Path $persistDir 'home\\config'",
+        "$extensionsDir = Join-Path $homeConfig 'extensions'",
+        "$roamingDir = Join-Path $persistDir 'roaming'",
+        "$programsDir = Join-Path $persistDir 'programs'",
+        "Ensure-PortableDirectory $homeConfig",
+        "Ensure-PortableDirectory $extensionsDir",
+        "Ensure-PortableDirectory $roamingDir",
+        "Ensure-PortableDirectory $programsDir",
+        "$legacyData = Join-Path $dir 'data'",
+        "if (Test-Path $legacyData) {",
+        "  $legacyRoaming = Join-Path $legacyData 'user-data'",
+        "  if (Test-Path $legacyRoaming) { Copy-Item \"$legacyRoaming\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue }",
+        "  $legacyPrograms = Join-Path $legacyData 'local-programs'",
+        "  if (Test-Path $legacyPrograms) { Copy-Item \"$legacyPrograms\\*\" $programsDir -Force -Recurse -ErrorAction SilentlyContinue }",
+        "  foreach ($entry in Get-ChildItem $legacyData -Force) {",
+        "    if ($entry.Name -in @('user-data','local-programs')) { continue }",
+        "    Copy-Item $entry.FullName $homeConfig -Force -Recurse -ErrorAction SilentlyContinue",
+        "  }",
+        "  Remove-Item $legacyData -Recurse -Force -ErrorAction SilentlyContinue",
+        "}",
+        "$userProfilePath = Join-Path $env:USERPROFILE '.kiro'",
+        "if (Test-Path $userProfilePath) {",
+        "  if (-not (Get-Item $userProfilePath).LinkType) { Copy-Item \"$userProfilePath\\*\" $homeConfig -Force -Recurse -ErrorAction SilentlyContinue }",
+        "  Remove-Item $userProfilePath -Recurse -Force -ErrorAction SilentlyContinue",
+        "}",
+        "New-PortableSymlink $userProfilePath $homeConfig",
+        "$appDataPath = Join-Path $env:AppData 'Kiro'",
+        "if (Test-Path $appDataPath) {",
+        "  if (-not (Get-Item $appDataPath).LinkType) { Copy-Item \"$appDataPath\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue }",
+        "  Remove-Item $appDataPath -Recurse -Force -ErrorAction SilentlyContinue",
+        "}",
+        "New-PortableSymlink $appDataPath $roamingDir",
+        "$localProgramsPath = Join-Path $env:LocalAppData 'Programs\\kiro'",
+        "if (Test-Path $localProgramsPath) {",
+        "  if (-not (Get-Item $localProgramsPath).LinkType) { Copy-Item \"$localProgramsPath\\*\" $programsDir -Force -Recurse -ErrorAction SilentlyContinue }",
+        "  Remove-Item $localProgramsPath -Recurse -Force -ErrorAction SilentlyContinue",
+        "}",
+        "New-PortableSymlink $localProgramsPath $programsDir",
+        "$extensionsFile = Join-Path $extensionsDir 'extensions.json'",
+        "if (Test-Path $extensionsFile) {",
+        "  info 'Adjusting path in extensions file...'",
+        "  (Get-Content $extensionsFile) -replace '(?<=kiro(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)home(/|\\\\\\\\)config(/|\\\\\\\\)extensions)', $version | Set-Content $extensionsFile",
+        "}"
+    ],
+    "pre_uninstall": [
+        "# Clean up symbolic links",
+        "$appDataPath = \"$env:AppData\\Kiro\"",
+        "$userProfilePath = \"$env:USERPROFILE\\.kiro\"",
+        "$localProgramsPath = \"$env:LocalAppData\\Programs\\kiro\"",
+        "",
+        "if (Test-Path $appDataPath) {",
+        "  Remove-Item $appDataPath -Force",
+        "  info '[Portable Mode] Removed symbolic link: %APPDATA%\\Kiro'",
+        "}",
+        "",
+        "if (Test-Path $userProfilePath) {",
+        "  Remove-Item $userProfilePath -Force",
+        "  info '[Portable Mode] Removed symbolic link: ~/.kiro'",
+        "}",
+        "",
+        "if (Test-Path $localProgramsPath) {",
+        "  Remove-Item $localProgramsPath -Force",
+        "  info '[Portable Mode] Removed symbolic link: %LOCALAPPDATA%\\Programs\\kiro'",
+        "}",
+        ""
     ],
     "persist": "data",
     "checkver": {
         "url": "https://prod.download.desktop.kiro.dev/stable/metadata-win32-x64-user-stable.json",
-        "regex": "\"version\":\"(?<version>[\\d.]+)\".*?releases/(?<build>\\d+)"
+        "regex": "\"version\":\"(?<version>[\\d.]+)\".*?\"url\":\"(?<url>[^\"]*Kiro-win32-x64\\.exe)\"",
+        "replace": "${version}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://prod.download.desktop.kiro.dev/releases/$matchBuild-Kiro-win32-x64.zip"
+                "url": "$matchUrl"
             }
         }
     }
