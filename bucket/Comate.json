@@ -1,43 +1,79 @@
 {
-    "version": "0.4.1",
-    "description": "An AI-powered IDE",
-    "homepage": "https://comate.baidu.com/",
+    "version": "0.4.3",
+    "description": "码随心动，快人一步，更懂你的智能代码助手",
+    "homepage": "https://comate.baidu.com/zh/download/ai-ide",
     "license": "Proprietary",
+    "notes": [
+        "For github integration, run:",
+        "'reg import \"$dir\\install-github-integration.reg\"'"
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://comate-ide.cdn.bcebos.com/download/stable/6b0c296f78cf377dedf7e888a5bac274c4491633-224802404/Comate-win32-x64-user-setup.exe",
-            "hash": "72fc9dd1095914782f97ef445c7129e775551b89ac5029084a2e9b884099807d",
+            "url": "https://comate-ide.cdn.bcebos.com/download/stable/a331dd4f0896fe27327e3c5254dc5d2d35d15b3b-226042717/Comate-win32-x64-user-setup.exe",
+            "hash": "337ab57ab93c38183c3b4903f60d1e15bfc1812dee0d55e11ba4a3e774e547df",
             "extract_dir": "{code_GetDestDir}"
         }
     },
     "innosetup": true,
+    "pre_install": [
+        "# 处理用户配置目录",
+        "$config_dirs = @(",
+        "    '.comate'",
+        ")",
+        "foreach ($config_dir in $config_dirs) {",
+        "    $target_dir = Join-Path $env:USERPROFILE $config_dir",
+        "    $link_dir = Join-Path $persist_dir $config_dir",
+        "    & \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $target_dir $link_dir",
+        "}",
+        "",
+        "# 链接 $env:APPDATA\\Comate 到 persist_dir/data",
+        "$appdata_dir = Join-Path $env:APPDATA \"Comate\"",
+        "$persist_data_dir = Join-Path $persist_dir data",
+        "& \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $appdata_dir $persist_data_dir"
+    ],
     "post_install": [
-        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.comate\\extensions\")) {",
-        "    info '[Portable Mode] Copying extensions...'",
-        "    Copy-Item \"$env:USERPROFILE\\.comate\\extensions\" \"$dir\\data\" -Recurse",
+        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
+        "$exepath = \"$dir\\comate.exe\".Replace('\\', '\\\\')",
+        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context', 'install-github-integration', 'uninstall-github-integration' | ForEach-Object {",
+        "  if (Test-Path \"$bucketsdir\\$bucket\\scripts\\comate\\$_.reg\") {",
+        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\comate\\$_.reg\"",
+        "    $content = $content.Replace('$comatedir', $dirpath)",
+        "    $content = $content.Replace('$comate', $exepath)",
+        "    if ($global) {",
+        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
+        "  }",
         "}",
-        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Comate\")) {",
-        "    info '[Portable Mode] Copying user data...'",
-        "    Copy-Item \"$env:AppData\\Comate\" \"$dir\\data\\user-data\" -Recurse",
-        "}",
-        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
-        "if ((Test-Path \"$extensions_file\")) {",
-        "    info 'Adjusting path in extensions file...'",
-        "    (Get-Content \"$extensions_file\") -replace '(?<=comate(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
-        "}"
+        "# 自动导入注册表（可选）",
+        "reg import \"$dir\\install-context.reg\"",
+        "reg import \"$dir\\install-associations.reg\""
     ],
-    "bin": [
-        [
-            "bin/Comate.cmd",
-            "comate"
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall')",
+            "{",
+            "   reg import \"$dir\\uninstall-context.reg\" ",
+            "   reg import \"$dir\\uninstall-github-integration.reg\" ",
+            "}"
         ]
-    ],
-    "shortcuts": [
-        [
-            "Comate.exe",
-            "Comate",
-            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
-        ]
-    ],
-    "persist": "data"
+    },
+    "bin": [["bin/comate.cmd", "comate"]],
+    "shortcuts": [["comate.exe", "Comate"]],
+    "persist": ["data", ".qoder"],
+    "checkver": {
+        "url": "https://comate.baidu.com/api/aiIde/updates/stable/win32/x64/user/latest.json",
+        "re": "\"url\":.*\"https://(?<link>.*)\"[\\s\\S]*\"name\":.*\"(?<version>.*)\""
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://$matchLink",
+                "hash": {
+                    "url": "https://comate.baidu.com/api/aiIde/updates/stable/win32/x64/user/latest.json",
+                    "jp": "$[0].sha256hash"
+                }
+            }
+        }
+    }
 }
