@@ -1,0 +1,79 @@
+{
+    "version": "0.6.2510300",
+    "description": "灵感一闪，代码即现",
+    "homepage": "https://www.codeflicker.com.cn/",
+    "license": "Proprietary",
+    "notes": [
+        "For github integration, run:",
+        "'reg import \"$dir\\install-github-integration.reg\"'"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://h2.static.yximgs.com/kos/nlav11354/ai-ide/CodeFlicker-win32-x64-545b54560b6-20251031_215220-installer.exe",
+            "hash": "43245c6685a9333cc74c4d2217b76dd18ccdef78fbc8c18f0a579c009d72fd8d",
+            "extract_dir": "{code_GetDestDir}"
+        }
+    },
+    "innosetup": true,
+    "pre_install": [
+        "# 处理用户配置目录",
+        "$config_dirs = @(",
+        "    '.codeflicker'",
+        ")",
+        "foreach ($config_dir in $config_dirs) {",
+        "    $target_dir = Join-Path $env:USERPROFILE $config_dir",
+        "    $link_dir = Join-Path $persist_dir $config_dir",
+        "    & \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $target_dir $link_dir",
+        "}",
+        "",
+        "# 链接 $env:APPDATA\\CodeFlicker 到 persist_dir/data",
+        "$appdata_dir = Join-Path $env:APPDATA \"CodeFlicker\"",
+        "$persist_data_dir = Join-Path $persist_dir data",
+        "& \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $appdata_dir $persist_data_dir"
+    ],
+    "post_install": [
+        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
+        "$exepath = \"$dir\\CodeFlicker.exe\".Replace('\\', '\\\\')",
+        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context', 'install-github-integration', 'uninstall-github-integration' | ForEach-Object {",
+        "  if (Test-Path \"$bucketsdir\\$bucket\\scripts\\CodeFlicker\\$_.reg\") {",
+        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\CodeFlicker\\$_.reg\"",
+        "    $content = $content.Replace('$codeflickerdir', $dirpath)",
+        "    $content = $content.Replace('$codeflicker', $exepath)",
+        "    if ($global) {",
+        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
+        "  }",
+        "}",
+        "# 自动导入注册表（可选）",
+        "reg import \"$dir\\install-context.reg\"",
+        "reg import \"$dir\\install-associations.reg\""
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall')",
+            "{",
+            "   reg import \"$dir\\uninstall-context.reg\" ",
+            "   reg import \"$dir\\uninstall-github-integration.reg\" ",
+            "}"
+        ]
+    },
+    "bin": [["bin/codeflicker.cmd", "codeflicker"]],
+    "shortcuts": [["CodeFlicker.exe", "CodeFlicker"]],
+    "persist": ["data", ".codeflicker"],
+    "checkver": {
+        "url": "https://www.codeflicker.com.cn/api/proxy/update/api/update/win32-x64/stable/external/1",
+        "re": "\"url\":.*\"https://(?<link>.*)\"[\\s\\S]*\"productVersion\":.*\"(?<version>.*)\""
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://$matchLink",
+                "hash": {
+                    "url": "https://www.codeflicker.com.cn/api/proxy/update/api/update/win32-x64/stable/external/1",
+                    "jp": "$[0].sha256hash"
+                }
+            }
+        }
+    }
+}
