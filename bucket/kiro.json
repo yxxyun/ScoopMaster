@@ -1,127 +1,52 @@
 {
     "version": "0.5.0",
-    "description": "Kiro is Amazon's agentic IDE built for working with AWS, powered by Claude AI",
-    "homepage": "https://kiro.dev/",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://kiro.dev/license/"
-    },
+    "description": "The AI IDE for prototype to production",
+    "homepage": "https://kiro.dev",
+    "license": "Proprietary",
     "architecture": {
         "64bit": {
-            "url": "https://prod.download.desktop.kiro.dev/releases/202510301715-Kiro-win32-x64.exe",
-            "hash": "716216ab4b206780bb84351d3e4cc8a29eb4697e5ce14539648ecc953fed218a"
+            "url": "https://prod.download.desktop.kiro.dev/releases/202510301715-Kiro-win32-x64.zip",
+            "hash": "6af79a498970a5df596755103cf95fa0620d48c1c53af2f3ce87a36523859441"
         }
     },
-    "innosetup": true,
-    "extract_dir": "{code_GetDestDir}",
+    "post_install": [
+        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.kiro\\extensions\")) {",
+        "    info '[Portable Mode] Copying extensions...'",
+        "    Copy-Item \"$env:USERPROFILE\\.kiro\\extensions\" \"$dir\\data\" -Recurse",
+        "}",
+        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Kiro\")) {",
+        "    info '[Portable Mode] Copying user data...'",
+        "    Copy-Item \"$env:AppData\\Kiro\" \"$dir\\data\\user-data\" -Recurse",
+        "}",
+        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
+        "if ((Test-Path \"$extensions_file\")) {",
+        "    info 'Adjusting path in extensions file...'",
+        "    (Get-Content \"$extensions_file\") -replace '(?<=kiro(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
+        "}"
+    ],
+    "bin": [
+        [
+            "bin\\kiro.cmd",
+            "kiro",
+            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
+        ]
+    ],
     "shortcuts": [
         [
             "Kiro.exe",
-            "Kiro"
+            "Kiro",
+            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
         ]
-    ],
-    "post_install": [
-        "# Create data directories",
-        "New-Item -ItemType Directory -Path \"$dir\\data\" -Force | Out-Null",
-        "New-Item -ItemType Directory -Path \"$dir\\data\\user-data\" -Force | Out-Null",
-        "New-Item -ItemType Directory -Path \"$dir\\data\\local-programs\" -Force | Out-Null",
-        "",
-        "# Copy %USERPROFILE%\\.kiro to data (includes extensions and all config)",
-        "if ((Test-Path \"$env:USERPROFILE\\.kiro\") -and !(Test-Path \"$dir\\data\\*\")) {",
-        "  info '[Portable Mode] Copying existing user configuration...'",
-        "  Copy-Item \"$env:USERPROFILE\\.kiro\\*\" \"$dir\\data\" -Recurse -Force",
-        "}",
-        "",
-        "# Copy %APPDATA%\\Kiro to user-data",
-        "if ((Test-Path \"$env:AppData\\Kiro\") -and !(Test-Path \"$dir\\data\\user-data\\*\")) {",
-        "  info '[Portable Mode] Copying existing AppData configuration...'",
-        "  Copy-Item \"$env:AppData\\Kiro\\*\" \"$dir\\data\\user-data\" -Recurse -Force",
-        "}",
-        "",
-        "# Copy %LOCALAPPDATA%\\Programs\\kiro to local-programs",
-        "if ((Test-Path \"$env:LocalAppData\\Programs\\kiro\") -and !(Test-Path \"$dir\\data\\local-programs\\*\")) {",
-        "  info '[Portable Mode] Copying existing local programs...'",
-        "  Copy-Item \"$env:LocalAppData\\Programs\\kiro\\*\" \"$dir\\data\\local-programs\" -Recurse -Force",
-        "}",
-        "",
-        "# Define paths for junction points",
-        "$appDataPath = \"$env:AppData\\Kiro\"",
-        "$userProfilePath = \"$env:USERPROFILE\\.kiro\"",
-        "$localProgramsPath = \"$env:LocalAppData\\Programs\\kiro\"",
-        "",
-        "# Remove existing directories/links if they exist",
-        "if (Test-Path $appDataPath) {",
-        "  Remove-Item $appDataPath -Force",
-        "}",
-        "if (Test-Path $userProfilePath) {",
-        "  Remove-Item $userProfilePath -Force",
-        "}",
-        "if (Test-Path $localProgramsPath) {",
-        "  Remove-Item $localProgramsPath -Force",
-        "}",
-        "",
-        "# Create junction points",
-        "try {",
-        "  New-Item -ItemType Junction -Path $userProfilePath -Target \"$dir\\data\" -Force | Out-Null",
-        "  info '[Portable Mode] Created junction: ~/.kiro -> scoop\\data'",
-        "} catch {",
-        "  warn 'Failed to create junction for user profile configuration: $_'",
-        "}",
-        "",
-        "try {",
-        "  New-Item -ItemType Junction -Path $appDataPath -Target \"$dir\\data\\user-data\" -Force | Out-Null",
-        "  info '[Portable Mode] Created junction: %APPDATA%\\Kiro -> scoop\\data\\user-data'",
-        "} catch {",
-        "  warn 'Failed to create junction for AppData configuration: $_'",
-        "}",
-        "",
-        "try {",
-        "  New-Item -ItemType Junction -Path $localProgramsPath -Target \"$dir\\data\\local-programs\" -Force | Out-Null",
-        "  info '[Portable Mode] Created junction: %LOCALAPPDATA%\\Programs\\kiro -> scoop\\data\\local-programs'",
-        "} catch {",
-        "  warn 'Failed to create junction for local programs: $_'",
-        "}",
-        "",
-        "# Adjust extensions path",
-        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
-        "if ((Test-Path \"$extensions_file\")) {",
-        "  info 'Adjusting path in extensions file...'",
-        "    (Get-Content \"$extensions_file\") -replace '(?<=kiro(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
-        "}",
-        ""
-    ],
-    "pre_uninstall": [
-        "# Clean up junction points",
-        "$appDataPath = \"$env:AppData\\Kiro\"",
-        "$userProfilePath = \"$env:USERPROFILE\\.kiro\"",
-        "$localProgramsPath = \"$env:LocalAppData\\Programs\\kiro\"",
-        "",
-        "if (Test-Path $appDataPath) {",
-        "  Remove-Item $appDataPath -Force",
-        "  info '[Portable Mode] Removed junction: %APPDATA%\\Kiro'",
-        "}",
-        "",
-        "if (Test-Path $userProfilePath) {",
-        "  Remove-Item $userProfilePath -Force",
-        "  info '[Portable Mode] Removed junction: ~/.kiro'",
-        "}",
-        "",
-        "if (Test-Path $localProgramsPath) {",
-        "  Remove-Item $localProgramsPath -Force",
-        "  info '[Portable Mode] Removed junction: %LOCALAPPDATA%\\Programs\\kiro'",
-        "}",
-        ""
     ],
     "persist": "data",
     "checkver": {
         "url": "https://prod.download.desktop.kiro.dev/stable/metadata-win32-x64-user-stable.json",
-        "regex": "\"version\":\"(?<version>[\\d.]+)\".*?\"url\":\"(?<url>[^\"]*Kiro-win32-x64\\.exe)\"",
-        "replace": "${version}"
+        "regex": "\"version\":\"(?<version>[\\d.]+)\".*?releases/(?<build>\\d+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "$matchUrl"
+                "url": "https://prod.download.desktop.kiro.dev/releases/$matchBuild-Kiro-win32-x64.zip"
             }
         }
     }

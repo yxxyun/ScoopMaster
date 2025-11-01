@@ -1,8 +1,9 @@
 {
     "version": "25.01",
+    "description": "7-zip build and package script with nsis script decompiling using ms visual studio",
     "homepage": "https://github.com/myfreeer/7z-build-nsis",
-    "description": "7zip with NSIS script decompliling",
     "license": "LGPL-2.1-or-later",
+    "notes": "Add 7z-build-nsis as a context menu option by running: \"$dir\\install-context.reg\"",
     "architecture": {
         "64bit": {
             "url": "https://github.com/myfreeer/7z-build-nsis/releases/download/25.01/7z2501-x64.exe#/dl.7z",
@@ -13,6 +14,32 @@
             "hash": "45c7aa1a17dc26863bbf420d7ec0361888496cf7d74de10504bdcbf9394e7437"
         }
     },
+    "post_install": [
+        "$7zip_root = \"$dir\".Replace('\\', '\\\\')",
+        "'install-context.reg', 'uninstall-context.reg' | ForEach-Object {",
+        "    $content = Get-Content \"$bucketsdir\\main\\scripts\\7-zip\\$_\"",
+        "    $content = $content.Replace('$7zip_root', $7zip_root)",
+        "    if ($global) {",
+        "       $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    Set-Content \"$dir\\$_\" $content -Encoding Ascii",
+        "}"
+    ],
+    "bin": [
+        "7z.exe",
+        "7zFM.exe",
+        "7zG.exe"
+    ],
+    "shortcuts": [
+        [
+            "7zFM.exe",
+            "7-Zip"
+        ]
+    ],
+    "persist": [
+        "Codecs",
+        "Formats"
+    ],
     "checkver": "github",
     "autoupdate": {
         "architecture": {
