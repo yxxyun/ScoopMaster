@@ -1,37 +1,50 @@
 {
     "version": "0.15.7",
-    "description": "Starward is an open-source third-party launcher developed to address the aforementioned shortcomings. It supports all PC games on of HoYoverse and aims to completely replace the official launcher.",
-    "homepage": "https://starward.scighost.com/",
-    "license": "MIT license",
-    "url": "https://github.com/Scighost/Starward/releases/download/0.15.7/Starward_Portable_0.15.7_x64.7z",
-    "hash": "37c03e5258fdab364babd0e32b9cd34c511ed059581fd7f5c89307f6acb46a73",
-    "pre_install": [
-        "New-Item -Path \"$dir\" -Name \"config.ini\" -ItemType \"file\" -Force -ErrorAction SilentlyContinue | Out-Null",
-        "New-Item -Path \"$dir\" -Name \"StarwardDatabase.db\" -ItemType \"file\" -Force -ErrorAction SilentlyContinue | Out-Null"
-    ],
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App"
-    ],
+    "description": "Game Launcher for miHoYo/hoyoverse.",
+    "homepage": "https://github.com/Scighost/Starward",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/Scighost/Starward/blob/main/LICENSE"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Scighost/Starward/releases/download/0.15.7/Starward_Portable_0.15.7_x64.7z",
+            "hash": "f12375c83224f5fbf298f6710aa34faeba944cdc2eb03f4c74ba19b27373c8b2"
+        },
+        "arm64": {
+            "url": "https://github.com/Scighost/Starward/releases/download/0.15.7/Starward_Portable_0.15.7_arm64.7z",
+            "hash": "6e8832db2f58bd3daad81aad6ab9e92236eab63e684395ccd48b9f8f493dd0c5"
+        }
+    },
+    "checkver": {
+        "script": [
+            "$rel_info = Invoke-RestMethod -Uri 'https://api.github.com/repos/Scighost/Starward/releases'",
+            "$latest = $rel_info | Sort-Object {$_.published_at} | Select-Object -last 1",
+            "Write-Output $latest.tag_name"
+        ],
+        "regex": "(?<version>[\\d.]+(?:-[\\w\\-\\d\\.]+)?)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Scighost/Starward/releases/download/$version/Starward_Portable_$version_x64.7z"
+            },
+            "arm64": {
+                "url": "https://github.com/Scighost/Starward/releases/download/$version/Starward_Portable_$version_arm64.7z"
+            }
+        }
+    },
     "extract_dir": "Starward",
-    "bin": "Starward.exe",
     "shortcuts": [
         [
             "Starward.exe",
             "Starward"
         ]
     ],
+    "pre_install": "If (-not (Test-Path $dir\\config.ini)) {\"UserDataFolder=$dir\\data\" | Out-File $dir\\config.ini}",
     "persist": [
-        "config.ini",
-        "StarwardDatabase.db",
-        "DatabaseBackup",
-        "bg"
+        "data",
+        "config.ini"
     ],
-    "checkver": {
-        "github": "https://github.com/Scighost/Starward"
-    },
-    "autoupdate": {
-        "url": "https://github.com/Scighost/Starward/releases/download/$version/Starward_Portable_$version_x64.7z"
-    }
+    "notes": "Setup wizard would be skipped because of preset value of user data by pre-install scripts."
 }
