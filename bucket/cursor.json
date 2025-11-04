@@ -1,52 +1,65 @@
 {
     "version": "2.0.54",
-    "description": "Built to make you extraordinarily productive, Cursor is the best way to code with AI.",
+    "description": "The AI Code Editor",
     "homepage": "https://www.cursor.com/",
     "license": {
         "identifier": "Proprietary",
         "url": "https://www.cursor.com/terms-of-service"
     },
+    "innosetup": true,
     "architecture": {
         "64bit": {
             "url": "https://downloads.cursor.com/production/7a31bffd467aa2d9adfda69076eb924e9062cb27/win32/x64/user-setup/CursorUserSetup-x64-2.0.54.exe",
             "hash": "8e901f1cf2500a3b4e33e3f8743e2a99226c182d24e7402d62c63d0f476ca1e9"
+        },
+        "arm64": {
+            "url": "https://downloads.cursor.com/production/7a31bffd467aa2d9adfda69076eb924e9062cb27/win32/arm64/user-setup/CursorUserSetup-arm64-2.0.54.exe",
+            "hash": "625aea1e386efb961d5604c31c3ec09d4fa7213b981ed49707d07fced328828f"
         }
     },
-    "innosetup": true,
     "extract_dir": "{code_GetDestDir}",
+    "post_install": [
+        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Recurse",
+        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.cursor\\extensions\")) {",
+        "    info '[Portable Mode] Copying extensions...'",
+        "    Copy-Item \"$env:USERPROFILE\\.cursor\\extensions\" \"$dir\\data\" -Recurse",
+        "}",
+        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Cursor\")) {",
+        "    info '[Portable Mode] Copying user data...'",
+        "    Copy-Item \"$env:AppData\\Cursor\" \"$dir\\data\\user-data\" -Recurse",
+        "}",
+        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
+        "if ((Test-Path \"$extensions_file\")) {",
+        "    info 'Adjusting path in extensions file...'",
+        "    (Get-Content \"$extensions_file\") -replace '(?<=cursor(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
+        "}"
+    ],
+    "bin": [
+        [
+            "resources\\app\\bin\\cursor.cmd",
+            "",
+            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
+        ]
+    ],
     "shortcuts": [
         [
             "Cursor.exe",
             "Cursor",
-            "--user-data-dir=\"%SCOOP%\\apps\\cursor\\current\\data\\user-data\" --extensions-dir=\"%SCOOP%\\apps\\cursor\\current\\data\\extensions\""
+            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
         ]
-    ],
-    "post_install": [
-        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.cursor\\extensions\")) {",
-        "  info '[Portable Mode] Copying extensions...'",
-        "  Copy-Item \"$env:USERPROFILE\\.cursor\\extensions\" \"$dir\\data\" -Recurse",
-        "}",
-        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Cursor\")) {",
-        "  info '[Portable Mode] Copying user data...'",
-        "  Copy-Item \"$env:AppData\\Cursor\" \"$dir\\data\\user-data\" -Recurse",
-        "}",
-        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
-        "if ((Test-Path \"$extensions_file\")) {",
-        "  info 'Adjusting path in extensions file...'",
-        "    (Get-Content \"$extensions_file\") -replace '(?<=cursor(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
-        "}"
     ],
     "persist": "data",
     "checkver": {
-        "url": "https://api2.cursor.sh/updates/api/update/win32-x64-archive/cursor/0.0.0/stable",
-        "jsonpath": "$.url",
-        "regex": "(?<url>.*CursorUserSetup-x64-(?<version>[\\d.]+)\\.exe)",
-        "replace": "${version}"
+        "url": "https://www.cursor.com/api/download?platform=win32-x64-user&releaseTrack=stable",
+        "regex": "production/(?<Code>[\\w]+)/win32.*-([\\d.]+)\\.exe"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "$matchUrl"
+                "url": "https://downloads.cursor.com/production/$matchCode/win32/x64/user-setup/CursorUserSetup-x64-$version.exe"
+            },
+            "arm64": {
+                "url": "https://downloads.cursor.com/production/$matchCode/win32/arm64/user-setup/CursorUserSetup-arm64-$version.exe"
             }
         }
     }
