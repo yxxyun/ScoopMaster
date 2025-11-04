@@ -1,94 +1,52 @@
 {
-    "homepage": "https://www.feishu.cn/",
-    "description": "Connect with teammates anytime and anywhere",
-    "license": {
-        "identifier": "EULA",
-        "url": "https://www.feishu.cn/en/terms"
-    },
     "version": "7.54.8",
-    "architecture": {
-        "64bit": {
-            "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/85ac6f7d/Feishu-win32_x64-7.54.8-signed.exe#/feishu-7.54.8.7z",
-            "hash": "md5:b5334af4ff1657b218bae914a263aa22"
-        }
+    "description": "飞书",
+    "homepage": "https://www.feishu.cn/",
+    "license": {
+        "identifier": "Freeware"
     },
-    "extract_to": "app",
     "shortcuts": [
         [
-            "app/Feishu.exe",
-            "Feishu"
+            "Feishu.exe",
+            "飞书"
         ]
     ],
-    "post_install": [
-        "$persistDir = $persist_dir",
-        "function Ensure-PortableDirectory { param([string]$Path) if (-not (Test-Path $Path)) { New-Item -ItemType Directory -Path $Path -Force | Out-Null } }",
-        "function New-PortableSymlink { param([string]$Link,[string]$Target) if (Test-Path $Link) { Remove-Item $Link -Force -Recurse -ErrorAction SilentlyContinue } New-Item -ItemType SymbolicLink -Path $Link -Target $Target -Force | Out-Null }",
-        "$roamingDir = Join-Path $persistDir 'roaming'",
-        "$localDir = Join-Path $persistDir 'local'",
-        "Ensure-PortableDirectory $roamingDir",
-        "Ensure-PortableDirectory $localDir",
-        "$legacyData = Join-Path $dir 'data'",
-        "if (Test-Path $legacyData) {",
-        "  $legacyRoaming = Join-Path $legacyData 'larkshell-data'",
-        "  if (Test-Path $legacyRoaming) { Copy-Item \"$legacyRoaming\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  $legacyLocal = Join-Path $legacyData 'feishu-local'",
-        "  if (Test-Path $legacyLocal) { Copy-Item \"$legacyLocal\\*\" $localDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  Remove-Item $legacyData -Recurse -Force -ErrorAction SilentlyContinue",
-        "}",
-        "$larkShellPath = Join-Path $env:AppData 'LarkShell'",
-        "if (Test-Path $larkShellPath) {",
-        "  if (-not (Get-Item $larkShellPath).LinkType) { Copy-Item \"$larkShellPath\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  Remove-Item $larkShellPath -Recurse -Force -ErrorAction SilentlyContinue",
-        "}",
-        "New-PortableSymlink $larkShellPath $roamingDir",
-        "$feishuLocalPath = Join-Path $env:LocalAppData 'Feishu'",
-        "if (Test-Path $feishuLocalPath) {",
-        "  if (-not (Get-Item $feishuLocalPath).LinkType) { Copy-Item \"$feishuLocalPath\\*\" $localDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  Remove-Item $feishuLocalPath -Recurse -Force -ErrorAction SilentlyContinue",
-        "}",
-        "New-PortableSymlink $feishuLocalPath $localDir"
-    ],
-    "pre_uninstall": [
-        "# Clean up symbolic links",
-        "$larkShellPath = \"$env:AppData\\LarkShell\"",
-        "$feishuLocalPath = \"$env:LocalAppData\\Feishu\"",
-        "",
-        "if (Test-Path $larkShellPath) {",
-        "  Remove-Item $larkShellPath -Force",
-        "  info '[Portable Mode] Removed symbolic link: %APPDATA%\\LarkShell'",
-        "}",
-        "",
-        "if (Test-Path $feishuLocalPath) {",
-        "  Remove-Item $feishuLocalPath -Force",
-        "  info '[Portable Mode] Removed symbolic link: %LOCALAPPDATA%\\Feishu'",
-        "}",
-        ""
-    ],
-    "persist": "data",
+    "architecture": {
+        "64bit": {
+            "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/85ac6f7d/Feishu-win32_x64-7.54.8-signed.exe#/dl.7z",
+            "hash": "md5:b5334af4ff1657b218bae914a263aa22"
+        },
+        "32bit": {
+            "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/0af34e44/Feishu-win32_ia32-7.54.8-signed.exe#/dl.7z",
+            "hash": "md5:a0f381aabfd023ba9d101f19d187c43d"
+        }
+    },
     "checkver": {
-        "url": "https://www.feishu.cn/api/downloads",
-        "jsonpath": "$.versions.Windows_x64.download_link",
-        "regex": "(?<url>.*Feishu-win32_x64-(?<version>[\\d.]+)-signed\\.exe)",
-        "replace": "${version}"
+        "script": [
+            "$url = 'https://www.feishu.cn/api/downloads'",
+            "$dl = cache_path 'feishu' 'unknown' $url",
+            "Invoke-WebRequest $url -OutFile $dl",
+            "$it = (parse_json $dl).versions[0]",
+            "$it.Windows_x64.download_link + '|' + $it.Windows.download_link"
+        ],
+        "regex": "/(?<xid>[\\d\\w]+)/Feishu-win32_x64.+\\|.+/(?<id>[\\d\\w]+)/Feishu-win32_ia32-([\\d\\.]+)\\-signed\\.exe"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "$matchUrl#/feishu-$version.7z"
+                "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/$matchXid/Feishu-win32_x64-$version-signed.exe#/dl.7z",
+                "hash": {
+                    "url": "https://www.feishu.cn/api/downloads",
+                    "jp": "$.versions.Windows_x64.hash"
+                }
+            },
+            "32bit": {
+                "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/$matchId/Feishu-win32_ia32-$version-signed.exe#/dl.7z",
+                "hash": {
+                    "url": "https://www.feishu.cn/api/downloads",
+                    "jp": "$.versions.Windows.hash"
+                }
             }
-        },
-        "hash": {
-            "url": "https://www.feishu.cn/api/downloads",
-            "jsonpath": "$.versions.Windows_x64.hash"
         }
-    },
-    "notes": [
-        "飞书 (Feishu) - 字节跳动旗下的企业协作平台",
-        "",
-        "便携化配置：",
-        "- 用户数据：%APPDATA%\\LarkShell -> persist/feishu/roaming",
-        "- 本地数据：%LOCALAPPDATA%\\Feishu -> persist/feishu/local",
-        "",
-        "所有用户设置、聊天记录、缓存等数据都保存在便携目录中。"
-    ]
+    }
 }
