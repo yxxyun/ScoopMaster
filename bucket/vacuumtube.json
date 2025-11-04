@@ -16,21 +16,19 @@
     "persist": "data",
     "post_install": [
         "$appdata = \"$env:APPDATA\\VacuumTube\"",
-        
+        "$persistData = \"$persist_dir\\data\"",
         "if (Test-Path $appdata) {",
         "    Write-Host 'Migrating existing data from AppData to persist directory...'",
-        "    Move-Item -Path (Join-Path $appdata '*') -Destination $persist_dir -Force -ErrorAction SilentlyContinue",
+        "    if (!(Test-Path $persistData)) { New-Item -ItemType Directory -Path $persistData | Out-Null }",
+        "    Move-Item -Path (Join-Path $appdata '*') -Destination $persistData -Force -ErrorAction SilentlyContinue",
         "    Remove-Item $appdata -Recurse -Force",
         "}",
-        
-        "if (!(Test-Path $persist_dir)) { New-Item -ItemType Directory -Path $persist_dir | Out-Null }",
-        
+        "if (!(Test-Path $persistData)) { New-Item -ItemType Directory -Path $persistData | Out-Null }",
         "if (!(Test-Path $appdata)) {",
-        "    New-Item -ItemType Junction -Path $appdata -Target $persist_dir | Out-Null",
+        "    New-Item -ItemType Junction -Path $appdata -Target $persistData | Out-Null",
         "}"
     ],
     "post_uninstall": [
-        "# Remove junction on uninstall",
         "if ((Get-Item \"$env:APPDATA\\VacuumTube\" -ErrorAction SilentlyContinue)?.LinkType -eq 'Junction') {",
         "    Remove-Item \"$env:APPDATA\\VacuumTube\" -Force",
         "}"
