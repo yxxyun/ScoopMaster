@@ -1,0 +1,40 @@
+{
+  "_comment": "This is a template for the Scoop manifest. The hash will need to be updated with each new release.",
+  "version": "0.1.0",
+  "description": "A TUI tool to quickly switch environment variables in PowerShell.",
+  "homepage": "https://github.com/gennobou/gnb-envswap",
+  "license": "MIT",
+  "url": "https://github.com/GennoBou/gnb-envswap/releases/download/v0.1.0/gnb-envswap-v0.1.0.zip",
+  "hash": "c066ea5a87c328d431cddcb8aaf6952c12c5cdfe064464a75a19771061f71a50",
+  "bin": "gnb-envswap.exe",
+  "checkver": "github",
+  "autoupdate": {
+    "url": "https://github.com/GennoBou/gnb-envswap/releases/download/v0.1.0/gnb-envswap-v0.1.0.zip"
+  },
+  "post_install": [
+    "$profilePath = $PROFILE",
+    "if (!(Test-Path $profilePath)) {",
+    "    Write-Host 'Creating PowerShell profile: ' $profilePath",
+    "    New-Item -Path $profilePath -ItemType File -Force | Out-Null",
+    "}",
+    "$funcDef = 'function envswap { gnb-envswap | Invoke-Expression }'",
+    "$content = Get-Content $profilePath -Raw",
+    "if ($content -notmatch 'function envswap') {",
+    "    Add-Content -Path $profilePath -Value \"`n# Added by gnb-envswap installer`n$funcDef`n\"",
+    "    Write-Host 'envswap function added. Restart PowerShell or run `. $PROFILE`.'",
+    "} else {",
+    "    Write-Host 'envswap function already exists in your PowerShell profile.'",
+    "}"
+  ],
+  "post_uninstall": [
+    "$profilePath = $PROFILE",
+    "if (Test-Path $profilePath) {",
+    "    $content = Get-Content $profilePath -Raw",
+    "    $pattern = '(?sm)^\\s*# Added by gnb-envswap installer.*?function envswap.*?^}'",
+    "    if ($content -match $pattern) {",
+    "        ($content -replace $pattern, '').Trim() | Set-Content $profilePath",
+    "        Write-Host 'envswap function removed from your PowerShell profile.'",
+    "    }",
+    "}"
+  ]
+}
