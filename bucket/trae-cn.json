@@ -1,66 +1,104 @@
 {
     "version": "1.0.22669",
-    "description": "Trae (/treɪ/) is your helpful coding partner. It offers features like AI Q&A, code auto-completion, and agent-based AI programming capabilities. When developing projects with Trae, you can collaborate with AI to enhance your development efficiency.",
+    "description": "Trae 是国内首个 AI IDE，深度理解中文开发场景。AI 高度集成于 IDE 环境之中，为你带来比 AI 插件更加流畅、准确、优质的开发体验。",
     "homepage": "https://www.trae.com.cn/",
     "license": {
         "identifier": "Proprietary",
         "url": "https://www.trae.com.cn/terms-of-service"
     },
-    "depends": "aki/innounpacker",
     "architecture": {
         "64bit": {
             "url": "https://lf-cdn.trae.com.cn/obj/trae-com-cn/pkg/app/releases/stable/1.0.22669/win32/Trae%20CN-Setup-x64.exe",
             "hash": "442672ff014ceb31f32d81f2039446db3cbed70ef6d118bdfeaed06137e81103"
         }
     },
-    "pre_install": [
-        "(Get-ChildItem $dir 'Trae*exe').Fullname | Rename-Item -NewName 'TraeSetup.exe'",
-        "innounpack.exe -x -d\"$dir\" \"$dir\\TraeSetup.exe\" | Out-Null",
-        "Move-Item -Force -Path \"$dir\\{app}\\tools\\*\" -Destination \"$dir\"",
-        "Move-Item -Force -Path \"$dir\\{code_GetDestDir}\\*\" -Destination \"$dir\""
-    ],
-    "post_install": [
-        "Remove-Item -Force -Path \"$dir\\{app}\" -Recurse",
-        "Remove-Item -Force -Path \"$dir\\{code_GetDestDir}\" -Recurse",
-        "Remove-Item -Force -Path \"$dir\\TraeSetup.exe\" -Recurse",
-        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.trae-cn\\extensions\")) {",
-        "    info '[Portable Mode] Copying extensions...'",
-        "    Copy-Item \"$env:USERPROFILE\\.trae-cn\\extensions\" \"$dir\\data\" -Recurse",
-        "}",
-        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Trae CN\")) {",
-        "    info '[Portable Mode] Copying user data...'",
-        "    Copy-Item \"$env:AppData\\Trae CN\" \"$dir\\data\\user-data\" -Recurse",
-        "}",
-        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
-        "if ((Test-Path \"$extensions_file\")) {",
-        "    info 'Adjusting path in extensions file...'",
-        "    (Get-Content \"$extensions_file\") -replace '(?<=trae-cn(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
-        "}"
-    ],
+    "innosetup": true,
+    "extract_dir": "{code_GetDestDir}",
     "shortcuts": [
         [
             "Trae CN.exe",
-            "Trae CN",
-            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
+            "Trae CN"
         ]
+    ],
+    "post_install": [
+        "$persistDir = $persist_dir",
+        "function Ensure-PortableDirectory { param([string]$Path) if (-not (Test-Path $Path)) { New-Item -ItemType Directory -Path $Path -Force | Out-Null } }",
+        "function New-PortableSymlink { param([string]$Link,[string]$Target) if (Test-Path $Link) { Remove-Item $Link -Force -Recurse -ErrorAction SilentlyContinue } New-Item -ItemType SymbolicLink -Path $Link -Target $Target -Force | Out-Null }",
+        "$homeConfig = Join-Path $persistDir 'home\\config'",
+        "$extensionsDir = Join-Path $homeConfig 'extensions'",
+        "$roamingDir = Join-Path $persistDir 'roaming'",
+        "$programsDir = Join-Path $persistDir 'programs'",
+        "Ensure-PortableDirectory $homeConfig",
+        "Ensure-PortableDirectory $extensionsDir",
+        "Ensure-PortableDirectory $roamingDir",
+        "Ensure-PortableDirectory $programsDir",
+        "$legacyData = Join-Path $dir 'data'",
+        "if (Test-Path $legacyData) {",
+        "  $legacyRoaming = Join-Path $legacyData 'user-data'",
+        "  if (Test-Path $legacyRoaming) { Copy-Item \"$legacyRoaming\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue }",
+        "  $legacyPrograms = Join-Path $legacyData 'local-programs'",
+        "  if (Test-Path $legacyPrograms) { Copy-Item \"$legacyPrograms\\*\" $programsDir -Force -Recurse -ErrorAction SilentlyContinue }",
+        "  $legacyExtensions = Join-Path $legacyData 'extensions'",
+        "  if (Test-Path $legacyExtensions) { Copy-Item \"$legacyExtensions\\*\" $extensionsDir -Force -Recurse -ErrorAction SilentlyContinue }",
+        "  Remove-Item $legacyData -Recurse -Force -ErrorAction SilentlyContinue",
+        "}",
+        "$userProfilePath = Join-Path $env:USERPROFILE '.trae-cn'",
+        "if (Test-Path $userProfilePath) {",
+        "  if (-not (Get-Item $userProfilePath).LinkType) { Copy-Item \"$userProfilePath\\*\" $homeConfig -Force -Recurse -ErrorAction SilentlyContinue }",
+        "  Remove-Item $userProfilePath -Recurse -Force -ErrorAction SilentlyContinue",
+        "}",
+        "New-PortableSymlink $userProfilePath $homeConfig",
+        "$appDataPath = Join-Path $env:AppData 'Trae CN'",
+        "if (Test-Path $appDataPath) {",
+        "  if (-not (Get-Item $appDataPath).LinkType) { Copy-Item \"$appDataPath\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue }",
+        "  Remove-Item $appDataPath -Recurse -Force -ErrorAction SilentlyContinue",
+        "}",
+        "New-PortableSymlink $appDataPath $roamingDir",
+        "$localProgramsPath = Join-Path $env:LocalAppData 'Programs\\trae-cn'",
+        "if (Test-Path $localProgramsPath) {",
+        "  if (-not (Get-Item $localProgramsPath).LinkType) { Copy-Item \"$localProgramsPath\\*\" $programsDir -Force -Recurse -ErrorAction SilentlyContinue }",
+        "  Remove-Item $localProgramsPath -Recurse -Force -ErrorAction SilentlyContinue",
+        "}",
+        "New-PortableSymlink $localProgramsPath $programsDir",
+        "$extensionsFile = Join-Path $extensionsDir 'extensions.json'",
+        "if (Test-Path $extensionsFile) {",
+        "  info 'Adjusting path in extensions file...'",
+        "  (Get-Content $extensionsFile) -replace '(?<=trae-cn(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)home(/|\\\\\\\\)config(/|\\\\\\\\)extensions)', $version | Set-Content $extensionsFile",
+        "}"
+    ],
+    "pre_uninstall": [
+        "# Clean up symbolic links",
+        "$appDataPath = \"$env:AppData\\Trae CN\"",
+        "$userProfilePath = \"$env:USERPROFILE\\.trae-cn\"",
+        "$localProgramsPath = \"$env:LocalAppData\\Programs\\trae-cn\"",
+        "",
+        "if (Test-Path $appDataPath) {",
+        "  Remove-Item $appDataPath -Force",
+        "  info '[Portable Mode] Removed symbolic link: %APPDATA%\\Trae CN'",
+        "}",
+        "",
+        "if (Test-Path $userProfilePath) {",
+        "  Remove-Item $userProfilePath -Force",
+        "  info '[Portable Mode] Removed symbolic link: ~/.trae-cn'",
+        "}",
+        "",
+        "if (Test-Path $localProgramsPath) {",
+        "  Remove-Item $localProgramsPath -Force",
+        "  info '[Portable Mode] Removed symbolic link: %LOCALAPPDATA%\\Programs\\trae-cn'",
+        "}",
+        ""
     ],
     "persist": "data",
     "checkver": {
-        "script": [
-            ". \"$pwd\\bin\\utils.ps1\"",
-            "$dl_info = get_installer_info 'ByteDance/Trae/CN'",
-            "\"$($dl_info.x64_exe.InstallerUrl);\""
-        ],
-        "regex": "(?<version>\\d+\\.\\d+\\.\\d+)"
+        "url": "https://api.trae.com.cn/icube/api/v1/native/version/trae/cn/latest",
+        "jsonpath": "$.data.manifest.win32.download[0].x64",
+        "regex": "(?<url>.*stable/(?<version>[\\d.]+)/win32.*.exe)",
+        "replace": "${version}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://lf-cdn.trae.com.cn/obj/trae-com-cn/pkg/app/releases/stable/$version/win32/Trae%20CN-Setup-x64.exe",
-                "hash": {
-                    "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/b/ByteDance/Trae/CN/$version/ByteDance.Trae.CN.installer.yaml",
-                    "regex": "Architecture: x64[\\s\\S]+?InstallerSha256:\\s?(.+)"
-                }
+                "url": "$matchUrl"
             }
         }
     }
