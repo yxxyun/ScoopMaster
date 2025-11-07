@@ -10,11 +10,14 @@
         }
     },
     "pre_install": [
-        "$subDirs = Get-ChildItem -Path \"$dir\\x86_64-windows-gnu\" -Directory",
+        "if (!(is_admin)) { error 'This package requires admin rights to install'; break }",
+        "$sourceDir = \"$dir\\x86_64-windows-gnu\"",
+        "$destDir = \"$dir\"",
+        "$subDirs = Get-ChildItem -Path $sourceDir -Directory",
         "foreach ($subDir in $subDirs) {",
-        "    Copy-Item $subDir\\* $dir -Force -Recurse",
+        "robocopy $subDir $destDir /MOVE /E /IS /IT /SL /NFL /NDL /NJH /NJS",
         "}",
-        "Remove-Item -Path \"$dir\\x86_64-windows-gnu\" -Recurse",
+        "Remove-Item -Path $sourceDir -Recurse -Force",
         "Get-ChildItem -Path \"$dir\\lib\" -Recurse -Filter *.dll | Move-Item -Destination \"$dir\\bin\" -Force"
     ],
     "env_add_path": "bin",
