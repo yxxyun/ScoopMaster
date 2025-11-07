@@ -1,0 +1,73 @@
+{
+    "version": "2.2.14",
+    "description": "Free anti fingerprint browser",
+    "homepage": "https://github.com/Virtual-Browser/VirtualBrowser",
+    "license": {
+        "identifier": "Proprietary"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Virtual-Browser/VirtualBrowser/releases/download/2.2.14/VirtualBrowser.Setup.2.2.14.exe#/dl.7z",
+            "hash": "3f5d37ebc09a226d626a2029ccb225a1aaf5d6696f08a4b69ad9ffb3c2e45b8d",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\" -Recurse -Force -ErrorAction SilentlyContinue"
+            ]
+        }
+    },
+    "shortcuts": [
+        [
+            "VirtualBrowser.exe",
+            "VirtualBrowser"
+        ]
+    ],
+    "post_install": [
+        "$persistDir = $persist_dir",
+        "function Ensure-PortableDirectory { param([string]$Path) if (-not (Test-Path $Path)) { New-Item -ItemType Directory -Path $Path -Force | Out-Null } }",
+        "function Sync-PortableDirectory { param([string]$Source,[string]$Destination) if (Test-Path $Source) { $item = Get-Item $Source -ErrorAction SilentlyContinue; if ($item -and (-not $item.LinkType)) { Ensure-PortableDirectory $Destination; Copy-Item \"$Source\\*\" $Destination -Force -Recurse -ErrorAction SilentlyContinue } } }",
+        "function New-PortableSymlink { param([string]$Link,[string]$Target) if (Test-Path $Link) { $item = Get-Item $Link -ErrorAction SilentlyContinue; if ($item -and $item.LinkType -and $item.Target -eq $Target) { return } Remove-Item $Link -Recurse -Force -ErrorAction SilentlyContinue } New-Item -ItemType SymbolicLink -Path $Link -Target $Target -Force | Out-Null }",
+        "Ensure-PortableDirectory $persistDir",
+        "$roamingDir = Join-Path $persistDir 'roaming'",
+        "$localDir = Join-Path $persistDir 'local'",
+        "$updaterBlocker = Join-Path $persistDir 'updater-blocker'",
+        "Ensure-PortableDirectory $roamingDir",
+        "Ensure-PortableDirectory $localDir",
+        "$appDataPath = Join-Path $env:AppData 'virtual-browser'",
+        "Sync-PortableDirectory $appDataPath $roamingDir",
+        "if (Test-Path $appDataPath) { Remove-Item $appDataPath -Recurse -Force -ErrorAction SilentlyContinue }",
+        "New-PortableSymlink $appDataPath $roamingDir",
+        "$localDataPath = Join-Path $env:LocalAppData 'VirtualBrowser'",
+        "Sync-PortableDirectory $localDataPath $localDir",
+        "if (Test-Path $localDataPath) { Remove-Item $localDataPath -Recurse -Force -ErrorAction SilentlyContinue }",
+        "New-PortableSymlink $localDataPath $localDir",
+        "$updaterPath = Join-Path $env:LocalAppData 'virtual-browser-updater'",
+        "if (Test-Path $updaterPath) { Remove-Item $updaterPath -Recurse -Force -ErrorAction SilentlyContinue }",
+        "if (-not (Test-Path $updaterBlocker)) { New-Item -ItemType File -Path $updaterBlocker -Force | Out-Null }",
+        "try {",
+        "    New-PortableSymlink $updaterPath $updaterBlocker",
+        "    info '[Portable Mode] Blocked auto-updater: %LOCALAPPDATA%\\\\virtual-browser-updater -> persist\\\\virtual-browser\\\\updater-blocker'",
+        "} catch {",
+        "    warn \"Failed to link updater blocker: $_\"",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$appDataPath = Join-Path $env:AppData 'virtual-browser'",
+        "if (Test-Path $appDataPath) { Remove-Item $appDataPath -Force -ErrorAction SilentlyContinue; info '[Portable Mode] Removed symbolic link: %APPDATA%\\\\virtual-browser' }",
+        "$localDataPath = Join-Path $env:LocalAppData 'VirtualBrowser'",
+        "if (Test-Path $localDataPath) { Remove-Item $localDataPath -Force -ErrorAction SilentlyContinue; info '[Portable Mode] Removed symbolic link: %LOCALAPPDATA%\\\\VirtualBrowser' }",
+        "$updaterPath = Join-Path $env:LocalAppData 'virtual-browser-updater'",
+        "if (Test-Path $updaterPath) { Remove-Item $updaterPath -Force -ErrorAction SilentlyContinue; info '[Portable Mode] Removed symbolic link: %LOCALAPPDATA%\\\\virtual-browser-updater' }"
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/Virtual-Browser/VirtualBrowser/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "(?<version>[\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Virtual-Browser/VirtualBrowser/releases/download/$version/VirtualBrowser.Setup.$version.exe#/dl.7z"
+            }
+        }
+    }
+}
