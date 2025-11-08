@@ -24,8 +24,18 @@
     ],
     "persist": "portable",
     "checkver": {
-        "url": "https://www.blender.org/download/lts/4-5/",
-        "regex": "blender-([\\w.]+)-windows-x64\\.zip"
+        "url": "https://download.blender.org/release/Blender4.5/",
+        "regex": "blender-([\\w.]+)-windows-x64\\.zip",
+        "script": [
+            "$versionRegex = [regex]'<a\\s+[^>]*?href=\"([^\"]+)\"[^>]*?>(?<FileName>blender-(?<Version>\\d+\\.\\d+\\.\\d+)-windows-x64\\.zip)</a>'",
+            "$expectedVersion = [version]$expected_ver",
+            "$versionRegex.Matches($page) | ForEach-Object {",
+            "   [PSCustomObject]@{",
+            "       FileName = $_.Groups['FileName'].Value",
+            "       Version = [version]$_.Groups['Version'].Value",
+            "   }",
+            "} | Where-Object { $_.Version -ge $expectedVersion} | Sort-Object -Property Version -Descending | Join-String -Property FileName -Separator \"`r`n\""
+        ]
     },
     "autoupdate": {
         "architecture": {
