@@ -1,19 +1,19 @@
 {
     "version": "7.55.7",
-    "homepage": "https://feishu.cn/",
-    "description": "AI 时代先进生产力平台",
+    "homepage": "https://www.feishu.cn/",
+    "description": "Connect with teammates anytime and anywhere",
     "license": {
         "identifier": "EULA",
-        "url": "https://feishu.cn/en/terms"
+        "url": "https://www.feishu.cn/en/terms"
     },
     "architecture": {
-        "64bit": {
-            "url": "https://lf6-ug-sign.feishucdn.com/ee-appcenter/edda10df/Feishu-win32_x64-7.55.7-signed.exe#/dl.7z",
-            "hash": "md5:48a20de808485ec065816adfb3327ac4"
-        },
         "32bit": {
             "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/edda10df/Feishu-win32_ia32-7.55.7-signed.exe#/dl.7z",
             "hash": "md5:48a20de808485ec065816adfb3327ac4"
+        },
+        "64bit": {
+            "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/3c5be120/Feishu-win32_x64-7.55.7-signed.exe#/dl.7z",
+            "hash": "md5:4d98460984e60ad404b80090210811d4"
         }
     },
     "extract_to": "app",
@@ -23,24 +23,41 @@
             "飞书"
         ]
     ],
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:APPDATA\\LarkShell\" \"$persist_dir\\AppData\" -Migrate"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\LarkShell\""
+    ],
     "checkver": {
-        "url": "https://feishu.cn/api/downloads",
-        "jp": "$.versions.Windows.download_link",
-        "regex": "/(?<id>[\\d\\w]+)/Feishu-(?<arch>[\\d\\w]+)-([\\d\\.]+)\\-signed\\.exe"
+        "script": [
+            "$resp = Invoke-RestMethod 'https://www.feishu.cn/api/downloads'",
+            "return $resp.versions.Windows.version_number + '=====' + $resp.versions.Windows.download_link + '=====' + $resp.versions.Windows_x64.download_link"
+        ],
+        "regex": "Windows@V(.*)=====(?<url32>.*)=====(?<url64>.*)"
     },
     "autoupdate": {
         "architecture": {
-            "64bit": {
-                "url": "https://lf6-ug-sign.feishucdn.com/ee-appcenter/$matchId/Feishu-win32_x64-$version-signed.exe#/dl.7z"
-            },
             "32bit": {
-                "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/$matchId/Feishu-win32_ia32-$version-signed.exe#/dl.7z"
+                "url": "$matchUrl32#/dl.7z",
+                "hash": {
+                    "url": "https://www.feishu.cn/api/downloads",
+                    "jsonpath": "$.versions.Windows.hash"
+                }
+            },
+            "64bit": {
+                "url": "$matchUrl64#/dl.7z",
+                "hash": {
+                    "url": "https://www.feishu.cn/api/downloads",
+                    "jsonpath": "$.versions.Windows_x64.hash"
+                }
             }
-        },
-        "hash": {
-            "url": "https://feishu.cn/api/downloads",
-            "jp": "$.versions.Windows.hash"
         }
-    },
-    "notes": "Runtime data are stored in '%APPDATA%\\LarkShell', and are not persisted by Scoop."
+    }
 }

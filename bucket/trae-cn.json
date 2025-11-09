@@ -1,104 +1,91 @@
 {
     "version": "1.0.22795",
-    "description": "Trae 是国内首个 AI IDE，深度理解中文开发场景。AI 高度集成于 IDE 环境之中，为你带来比 AI 插件更加流畅、准确、优质的开发体验。",
-    "homepage": "https://www.trae.com.cn/",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://www.trae.com.cn/terms-of-service"
-    },
+    "description": "An AI-powered IDE that makes programming more enjoyable and efficient.",
+    "homepage": "https://www.trae.com.cn",
+    "license": "Proprietary",
+    "notes": [
+        "For github integration, run:",
+        "'reg import \"$dir\\install-github-integration.reg\"'"
+    ],
     "architecture": {
         "64bit": {
             "url": "https://lf-cdn.trae.com.cn/obj/trae-com-cn/pkg/app/releases/stable/1.0.22795/win32/Trae%20CN-Setup-x64.exe",
-            "hash": "f6cfd03a5052f1047239db38e122c34036e436fc7659f8cd1d8bf76a0b207785"
+            "hash": "f6cfd03a5052f1047239db38e122c34036e436fc7659f8cd1d8bf76a0b207785",
+            "extract_dir": "{code_GetDestDir}"
         }
     },
     "innosetup": true,
-    "extract_dir": "{code_GetDestDir}",
+    "pre_install": [
+        "# 处理用户配置目录",
+        "$config_dirs = @(",
+        "    '.trae',",
+        "    '.trae-cn',",
+        "    '.trae-aicc'",
+        ")",
+        "foreach ($config_dir in $config_dirs) {",
+        "    $target_dir = Join-Path $env:USERPROFILE $config_dir",
+        "    $link_dir = Join-Path $persist_dir $config_dir",
+        "    & \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $target_dir $link_dir",
+        "}",
+        "",
+        "# 链接 $env:APPDATA\\Trae CN 到 persist_dir/data",
+        "$appdata_dir = Join-Path $env:APPDATA \"Trae CN\"",
+        "$persist_data_dir = Join-Path $persist_dir data",
+        "& \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $appdata_dir $persist_data_dir"
+    ],
+    "post_install": [
+        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
+        "$exepath = \"$dir\\Trae CN.exe\".Replace('\\', '\\\\')",
+        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context', 'install-github-integration', 'uninstall-github-integration' | ForEach-Object {",
+        "  if (Test-Path \"$bucketsdir\\$bucket\\scripts\\trae-cn\\$_.reg\") {",
+        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\trae-cn\\$_.reg\"",
+        "    $content = $content.Replace('$traedir', $dirpath)",
+        "    $content = $content.Replace('$trae', $exepath)",
+        "    if ($global) {",
+        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
+        "  }",
+        "}",
+        "# 自动导入注册表（可选）",
+        "reg import \"$dir\\install-context.reg\"",
+        "reg import \"$dir\\install-associations.reg\""
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall')",
+            "{",
+            "   reg import \"$dir\\uninstall-context.reg\" ",
+            "   reg import \"$dir\\uninstall-github-integration.reg\" ",
+            "}"
+        ]
+    },
+    "bin": [
+        [
+            "bin/trae.cmd",
+            "trae"
+        ]
+    ],
     "shortcuts": [
         [
             "Trae CN.exe",
             "Trae CN"
         ]
     ],
-    "post_install": [
-        "$persistDir = $persist_dir",
-        "function Ensure-PortableDirectory { param([string]$Path) if (-not (Test-Path $Path)) { New-Item -ItemType Directory -Path $Path -Force | Out-Null } }",
-        "function New-PortableSymlink { param([string]$Link,[string]$Target) if (Test-Path $Link) { Remove-Item $Link -Force -Recurse -ErrorAction SilentlyContinue } New-Item -ItemType SymbolicLink -Path $Link -Target $Target -Force | Out-Null }",
-        "$homeConfig = Join-Path $persistDir 'home\\config'",
-        "$extensionsDir = Join-Path $homeConfig 'extensions'",
-        "$roamingDir = Join-Path $persistDir 'roaming'",
-        "$programsDir = Join-Path $persistDir 'programs'",
-        "Ensure-PortableDirectory $homeConfig",
-        "Ensure-PortableDirectory $extensionsDir",
-        "Ensure-PortableDirectory $roamingDir",
-        "Ensure-PortableDirectory $programsDir",
-        "$legacyData = Join-Path $dir 'data'",
-        "if (Test-Path $legacyData) {",
-        "  $legacyRoaming = Join-Path $legacyData 'user-data'",
-        "  if (Test-Path $legacyRoaming) { Copy-Item \"$legacyRoaming\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  $legacyPrograms = Join-Path $legacyData 'local-programs'",
-        "  if (Test-Path $legacyPrograms) { Copy-Item \"$legacyPrograms\\*\" $programsDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  $legacyExtensions = Join-Path $legacyData 'extensions'",
-        "  if (Test-Path $legacyExtensions) { Copy-Item \"$legacyExtensions\\*\" $extensionsDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  Remove-Item $legacyData -Recurse -Force -ErrorAction SilentlyContinue",
-        "}",
-        "$userProfilePath = Join-Path $env:USERPROFILE '.trae-cn'",
-        "if (Test-Path $userProfilePath) {",
-        "  if (-not (Get-Item $userProfilePath).LinkType) { Copy-Item \"$userProfilePath\\*\" $homeConfig -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  Remove-Item $userProfilePath -Recurse -Force -ErrorAction SilentlyContinue",
-        "}",
-        "New-PortableSymlink $userProfilePath $homeConfig",
-        "$appDataPath = Join-Path $env:AppData 'Trae CN'",
-        "if (Test-Path $appDataPath) {",
-        "  if (-not (Get-Item $appDataPath).LinkType) { Copy-Item \"$appDataPath\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  Remove-Item $appDataPath -Recurse -Force -ErrorAction SilentlyContinue",
-        "}",
-        "New-PortableSymlink $appDataPath $roamingDir",
-        "$localProgramsPath = Join-Path $env:LocalAppData 'Programs\\trae-cn'",
-        "if (Test-Path $localProgramsPath) {",
-        "  if (-not (Get-Item $localProgramsPath).LinkType) { Copy-Item \"$localProgramsPath\\*\" $programsDir -Force -Recurse -ErrorAction SilentlyContinue }",
-        "  Remove-Item $localProgramsPath -Recurse -Force -ErrorAction SilentlyContinue",
-        "}",
-        "New-PortableSymlink $localProgramsPath $programsDir",
-        "$extensionsFile = Join-Path $extensionsDir 'extensions.json'",
-        "if (Test-Path $extensionsFile) {",
-        "  info 'Adjusting path in extensions file...'",
-        "  (Get-Content $extensionsFile) -replace '(?<=trae-cn(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)home(/|\\\\\\\\)config(/|\\\\\\\\)extensions)', $version | Set-Content $extensionsFile",
-        "}"
+    "persist": [
+        "data",
+        ".trae",
+        ".trae-cn",
+        ".trae-aicc"
     ],
-    "pre_uninstall": [
-        "# Clean up symbolic links",
-        "$appDataPath = \"$env:AppData\\Trae CN\"",
-        "$userProfilePath = \"$env:USERPROFILE\\.trae-cn\"",
-        "$localProgramsPath = \"$env:LocalAppData\\Programs\\trae-cn\"",
-        "",
-        "if (Test-Path $appDataPath) {",
-        "  Remove-Item $appDataPath -Force",
-        "  info '[Portable Mode] Removed symbolic link: %APPDATA%\\Trae CN'",
-        "}",
-        "",
-        "if (Test-Path $userProfilePath) {",
-        "  Remove-Item $userProfilePath -Force",
-        "  info '[Portable Mode] Removed symbolic link: ~/.trae-cn'",
-        "}",
-        "",
-        "if (Test-Path $localProgramsPath) {",
-        "  Remove-Item $localProgramsPath -Force",
-        "  info '[Portable Mode] Removed symbolic link: %LOCALAPPDATA%\\Programs\\trae-cn'",
-        "}",
-        ""
-    ],
-    "persist": "data",
     "checkver": {
         "url": "https://api.trae.com.cn/icube/api/v1/native/version/trae/cn/latest",
-        "jsonpath": "$.data.manifest.win32.download[0].x64",
-        "regex": "(?<url>.*stable/(?<version>[\\d.]+)/win32.*.exe)",
-        "replace": "${version}"
+        "jsonpath": "$.data.manifest.win32.version"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "$matchUrl"
+                "url": "https://lf-cdn.trae.com.cn/obj/trae-com-cn/pkg/app/releases/stable/$version/win32/Trae%20CN-Setup-x64.exe"
             }
         }
     }
