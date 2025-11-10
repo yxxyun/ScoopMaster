@@ -1,0 +1,44 @@
+{
+    "version": "26100.4946.69.6",
+    "description": "This project aims to enhance the working environment on Windows",
+    "homepage": "https://github.com/valinet/ExplorerPatcher",
+    "license": "GPL-2.0",
+    "url": "https://github.com/valinet/ExplorerPatcher/releases/download/26100.4946.69.6_7384790/ep_setup.exe",
+    "hash": "8e3dd4f24f65234cfc2aaae7d84f2a9ebc167ab47cb50f4422d5974d44d5ffe7",
+    "installer": {
+        "script": [
+            "if (-not (is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+            "$proc = start-process \"$dir\\ep_setup.exe\" -NoNewWindow -passthru",
+            "if (-not $proc.waitforexit(30000)) {",
+            "    write-host -F red 'ERROR: failed installing explorerpatcher due to timeout waiting for installer (30 seconds)'",
+            "    error 'failed to install explorerpatcher'",
+            "    break",
+            "}",
+            "write-host -F yellow 'WARNING: ExplorerPatcher must be uninstalled from an interactive shell'",
+            "write-host -F green 'SUCCESS: Please reboot to complete ExplorerPatcher installation'",
+        ],
+    },
+    "pre_uninstall": [
+        "if (-not (is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+        "function interactive {",
+        "    $noni = [Environment]::GetCommandLineArgs() | Where-Object{ $_ -like '-NonI*' }",
+        "    return ([Environment]::UserInteractive -and -not $noni)",
+        "}",
+        "if (-not (interactive)) {",
+        "    write-host -F yellow 'ExplorerPatcher has no silent uninstaller; you must launch from an interactive shell'",
+        "    write-host -F yellow 'and interact with the uninstall dialogs in order to uninstall it'",
+        "    error 'explorerpatcher: noninteractive uninstall is not supported'",
+        "    break",
+        "}",
+        "$proc = start-process \"$dir\\ep_setup.exe\" -NoNewWindow -passthru -argumentlist '/uninstall'",
+        "if (-not $proc.waitforexit(30000)) {",
+        "    write-host -F red 'ERROR: failed uninstalling explorerpatcher due to timeout waiting for uninstaller (30 seconds)'",
+        "    error 'failed to uninstall explorerpatcher'",
+        "    break",
+        "}",
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/valinet/ExplorerPatcher/releases/download/$version/ep_setup.exe"
+    }
+}
