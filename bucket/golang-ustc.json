@@ -46,6 +46,21 @@
             "regex": "(?sm)$basename+.*?([a-f0-9]{64})"
         }
     },
+    "post_install": [
+        "if (!(Test-Path \"$dir\\pkg\\tool\\$env:GOOS_$env:GOARCH\")) {",
+        "    Write-Host 'Creating symbolic link for current platform tools...'",
+        "    New-Item -ItemType SymbolicLink -Path \"$dir\\pkg\\tool\\$env:GOOS_$env:GOARCH\" -Target \"$dir\\pkg\\tool\\$(go env GOOS)_$(go env GOARCH)\" | Out-Null",
+        "}",
+        "$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())",
+        "$isAdmin = $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+        "if ($isAdmin) {",
+        "    Write-Host 'Setting GOPROXY to https://goproxy.io,direct for all users...'",
+        "    [Environment]::SetEnvironmentVariable('GOPROXY', 'https://goproxy.io,direct', [EnvironmentVariableTarget]::Machine)",
+        "} else {",
+        "    Write-Host 'Setting GOPROXY to https://goproxy.io,direct for current user...'",
+        "    [Environment]::SetEnvironmentVariable('GOPROXY', 'https://goproxy.io,direct', [EnvironmentVariableTarget]::User)",
+        "}"
+    ],
     "notes": [
         "Your GOROOT has been set to: $dir",
         "You can run 'go env GOROOT' to view this at any time."
