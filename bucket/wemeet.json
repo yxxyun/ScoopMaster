@@ -1,29 +1,48 @@
 {
     "version": "3.39.1.427",
-    "description": "腾讯会议",
-    "homepage": "https://meeting.tencent.com",
-    "license": "Freeware",
-    "architecture": {
-        "64bit": {
-            "url": "https://updatecdn.meeting.qq.com/cos/9a053777fea7e142b49f2cd85df9e62d/TencentMeeting_0300000000_3.39.1.427.publish.officialwebsite.exe#/dl.7z",
-            "hash": "564767bf8378b1654b7aacb0ba5fb999b62373ba1caa988bf1d4f61fe84ac63e"
-        }
+    "description": "Tencent Meeting provides one-stop audio and video conferencing solutions.",
+    "homepage": "https://meeting.tencent.com/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://meeting.tencent.com/declare.html"
     },
+    "notes": "We persist your Tencent Meeting data, they are still storaged in \"$env:scoop\\presist\\wemeet\\data\".",
+    "url": "https://updatecdn.meeting.qq.com/cos/9a27d0a6b9faf68786d997cea293a201/TencentMeeting_0300000000_3.39.1.427_x86_64.publish.officialwebsite.exe#/dl.7z",
+    "hash": "05b8c52eacc6109ebfec5cc7931028596478dfc400dc385d76aea879f07cc859",
+    "post_install": [
+        "Rename-Item \"$dir\\`$_22_\" \"$dir\\$version\"",
+        "Remove-Item \"$dir\\$*\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item \"$dir\\wemeetapp_new.exe\" -Force -ErrorAction SilentlyContinue",
+        "if(-NOT (Test-Path \"$env:scoop\\persist\\wemeet\\data\")) {",
+        "    New-Item -ItemType Directory -Path \"$env:scoop\\apps\\wemeet\\persist\\data\"",
+        "}",
+        "if(-NOT (Test-Path \"$env:APPDATA\\Tencent\\WeMeet\")) {",
+        "    New-Item -ItemType SymbolicLink -Path \"$env:APPDATA\\Tencent\\WeMeet\" -Target \"$env:scoop\\persist\\wemeet\\data\\WeMeet\" | Out-Null",
+        "}"
+    ],
+    "post_uninstall": [
+        "if(Test-Path \"$env:APPDATA\\Tencent\\WeMeet\") {",
+        "    Remove-Item \"$env:APPDATA\\Tencent\\WeMeet\" -Force",
+        "}"
+    ],
+    "bin": [
+        [
+            "wemeetapp.exe",
+            "wemeet"
+        ]
+    ],
     "shortcuts": [
         [
             "wemeetapp.exe",
             "腾讯会议"
         ]
     ],
-    "post_install": [
-        "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\`$TEMP\",\"$dir\\`$WINDIR\" -Force -Recurse",
-        "Rename-Item \"$dir\\`$_*_\" \"$dir\\$version\""
-    ],
+    "persist": "data",
     "checkver": {
-        "url": "https://meeting.tencent.com/web-service/query-download-info?q=%5B%7B%22package-type%22:%22app%22,%22channel%22:%220300000000%22,%22platform%22:%22windows%22%7D%5D&nonce=0000000000000000",
-        "regex": "https://(?<url>.+\\.exe).*?\"version\":.*?\"([\\d.]+)\""
+        "url": "https://meeting.tencent.com/web-service/query-download-info?q=[{\"package-type\":\"app\",\"channel\":\"0300000000\",\"arch\":\"x86_64\",\"platform\":\"windows\"}]&nonce=AAAAAAAAAAAAAAAA",
+        "regex": "(?<Md5>[0-9a-f]+)/TencentMeeting_0300000000_(?<Version>\\d+.\\d+.\\d+.\\d+)_x86_64.publish.officialwebsite.exe"
     },
     "autoupdate": {
-        "url": "https://$matchUrl#/dl.7z"
+        "url": "https://updatecdn.meeting.qq.com/cos/$matchMd5/TencentMeeting_0300000000_$matchVersion_x86_64.publish.officialwebsite.exe#/dl.7z"
     }
 }
