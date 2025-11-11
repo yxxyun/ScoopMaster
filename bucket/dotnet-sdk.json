@@ -3,126 +3,49 @@
     "description": ".NET is a free, cross-platform, open source developer platform for building many different types of applications.",
     "homepage": "https://www.microsoft.com/net/",
     "license": "MIT",
-    "notes": [
-        "You can switch to the required dotnet SDK version at any time.",
-        "To do so, use the 'scoop reset' command with similar examples as shown below:",
-        "# Reseting to the latest .NET SDK (LTS) version",
-        "'scoop reset dotnet-sdk'",
-        "# Reseting to a specific .NET SDK version",
-        "'scoop reset dotnet-sdk@8.0.100'",
-        "# Reseting to the current .NET SDK (STS) version",
-        "'scoop reset dotnet-sdk-sts'",
-        "# Resetting to the latest .NET SDK (Preview) version",
-        "'scoop reset dotnet-sdk-preview'"
-    ],
     "suggest": {
-        "Visual C++ Redistributable": "vcredist",
-        ".NET SDK (STS)": "dotnet-sdk-sts",
-        ".NET SDK (LTS - preview)": "dotnet-sdk-preview"
+        "vcredist": "extras/vcredist2022"
     },
     "architecture": {
         "64bit": {
-            "url": "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/10.0.100/dotnet-sdk-10.0.100-win-x64.zip",
+            "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.100/dotnet-sdk-10.0.100-win-x64.zip",
             "hash": "sha512:24b033418a3969effd49b4651ef7ebbffeb284773b99545d78dce61a82e57f38db7facdb013c609ba15573c072f0e093363ae470824a6847f3c6111078c1fb64"
         },
-        "arm64": {
-            "url": "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/10.0.100/dotnet-sdk-10.0.100-win-arm64.zip",
-            "hash": "sha512:3d03d6ff062f77698fb61661985fe2d44070be313f2d52640ab7d9c4dac742365a4fe74eece66fd51a03b9fd9ae077648d638641d82c2432c5ea06ea676259af"
-        },
         "32bit": {
-            "url": "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/10.0.100/dotnet-sdk-10.0.100-win-x86.zip",
+            "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.100/dotnet-sdk-10.0.100-win-x86.zip",
             "hash": "sha512:78988da917520400c4a6ebd3cb166d3c6e7fcb6b34a10c4c9b95114d813ce34f190ea142a54e56462699c193a90482a64ac31b79dfb009205be0eb7676055e9a"
+        },
+        "arm64": {
+            "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.100/dotnet-sdk-10.0.100-win-arm64.zip",
+            "hash": "sha512:3d03d6ff062f77698fb61661985fe2d44070be313f2d52640ab7d9c4dac742365a4fe74eece66fd51a03b9fd9ae077648d638641d82c2432c5ea06ea676259af"
         }
     },
-    "bin": "dotnet.exe",
-    "env_add_path": [
-        ".",
-        "\\sdk\\10.0.100"
-    ],
+    "env_add_path": ".",
     "env_set": {
         "DOTNET_ROOT": "$dir",
-        "DOTNET_HOST_PATH": "$dir",
-        "DOTNET_MULTILEVEL_LOOKUP": 0,
-        "DOTNET_CLI_TELEMETRY_OPTOUT": true,
         "MSBuildSDKsPath": "$dir\\sdk\\$version\\Sdks"
     },
-    "pre_install": [
-        "# Move .NET SDK files only if the shared persist directory already exists",
-        "Write-Host",
-        "$sharedPersist = Join-Path (Resolve-Path \"$persist_dir\\..\").Path \"dotnet\"",
-        "Write-Host The \"$sharedPersist\" folder will be used to shared all dotnet-sdk* release",
-        "Write-Host \"   to add support to sdks and runtimes of dotnet installed by scoop\"",
-        "if (Test-Path \"$sharedPersist\") {",
-        "   (\"sdk\",\"sdk-manifests\",\"shared\") | ForEach-Object {",
-        "       $src = Join-Path $dir $_",
-        "       $dst = Join-Path $sharedPersist $_",
-        "       Write-Host \"Sharing the $_ folder into $sharedPersist\"",
-        "       New-Item -ItemType Directory -Path $dst -Force | Out-Null",
-        "       Copy-Item -Path (Join-Path $src \"*\") -Destination $dst -Recurse -Force",
-        "       Remove-Item -Path $src -Recurse -Force",
-        "   }",
-        "} else {",
-        "   Write-Host \"$sharedPersist\" does not exist. It will be created...",
-        "}"
-    ],
-    "pre_uninstall": [
-        "$major = ($version -split '\\.')[0]",
-        "$sharedRoot = Join-Path (Resolve-Path \"$persist_dir\\..\").Path \"dotnet\"",
-        "if (Test-Path $sharedRoot) {",
-        "   Write-Host Removing any shared dotnet-sdk files for version \"${major}.*\"",
-        "   (\"sdk\",\"sdk-manifests\",\"shared\") | ForEach-Object {",
-        "      $root = Join-Path $sharedRoot $_",
-        "      if (Test-Path $root) {",
-        "         if ($_ -eq 'shared') {",
-        "            Get-ChildItem -LiteralPath $root -Directory -Force -ErrorAction SilentlyContinue | ForEach-Object {",
-        "               Get-ChildItem -LiteralPath $_.FullName -Directory -Force -ErrorAction SilentlyContinue | Where-Object { $_.Name -like \"${major}.*\" } | ForEach-Object {",
-        "                  Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue",
-        "               }",
-        "            }",
-        "         } else {",
-        "            Get-ChildItem -LiteralPath $root -Directory -Force -ErrorAction SilentlyContinue | Where-Object { $_.Name -like \"${major}.*\" } | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue }",
-        "         }",
-        "      }",
-        "   }",
-        "}"
-    ],
-    "persist": [
-        [
-            "sdk",
-            "../dotnet/sdk"
-        ],
-        [
-            "sdk-manifests",
-            "../dotnet/sdk-manifests"
-        ],
-        [
-            "shared",
-            "../dotnet/shared"
-        ]
-    ],
+    "pre_uninstall": "info 'If the uninstall fails with a message saying that access is denied, you may need to log out of your current account, log back in and try again.'",
     "checkver": {
-        "url": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json",
-        "jsonpath": "$.releases-index[?(@.release-type == 'lts' && @.support-phase == 'active')].latest-sdk"
+        "url": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json",
+        "jsonpath": "$..releases-index[?(@.support-phase == 'active')].latest-sdk",
+        "regex": "([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/$version/dotnet-sdk-$version-win-x64.zip"
-            },
-            "arm64": {
-                "url": "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/$version/dotnet-sdk-$version-win-arm64.zip"
+                "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/$version/dotnet-sdk-$version-win-x64.zip"
             },
             "32bit": {
-                "url": "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/$version/dotnet-sdk-$version-win-x86.zip"
+                "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/$version/dotnet-sdk-$version-win-x86.zip"
+            },
+            "arm64": {
+                "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/$version/dotnet-sdk-$version-win-arm64.zip"
             }
         },
         "hash": {
-            "url": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/$majorVersion.$minorVersion/releases.json",
+            "url": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/$majorVersion.$minorVersion/releases.json",
             "regex": "(?s)$basename.*?$sha512"
-        },
-        "env_add_path": [
-            ".",
-            "\\sdk\\$version"
-        ]
+        }
     }
 }
