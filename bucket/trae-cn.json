@@ -1,8 +1,12 @@
 {
     "version": "1.0.22795",
-    "description": "Trae CN - An AI-powered IDE (China edition) that makes programming more enjoyable and efficient.",
+    "description": "An AI-powered IDE that makes programming more enjoyable and efficient.",
     "homepage": "https://www.trae.com.cn",
-    "license": "Freeware",
+    "license": "Proprietary",
+    "notes": [
+        "For github integration, run:",
+        "'reg import \"$dir\\install-github-integration.reg\"'"
+    ],
     "architecture": {
         "64bit": {
             "url": "https://lf-cdn.trae.com.cn/obj/trae-com-cn/pkg/app/releases/stable/1.0.22795/win32/Trae%20CN-Setup-x64.exe",
@@ -11,17 +15,68 @@
         }
     },
     "innosetup": true,
+    "pre_install": [
+        "# 处理用户配置目录",
+        "$config_dirs = @(",
+        "    '.trae',",
+        "    '.trae-cn',",
+        "    '.trae-aicc'",
+        ")",
+        "foreach ($config_dir in $config_dirs) {",
+        "    $target_dir = Join-Path $env:USERPROFILE $config_dir",
+        "    $link_dir = Join-Path $persist_dir $config_dir",
+        "    & \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $target_dir $link_dir",
+        "}",
+        "",
+        "# 链接 $env:APPDATA\\Trae CN 到 persist_dir/data",
+        "$appdata_dir = Join-Path $env:APPDATA \"Trae CN\"",
+        "$persist_data_dir = Join-Path $persist_dir data",
+        "& \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $appdata_dir $persist_data_dir"
+    ],
+    "post_install": [
+        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
+        "$exepath = \"$dir\\Trae CN.exe\".Replace('\\', '\\\\')",
+        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context', 'install-github-integration', 'uninstall-github-integration' | ForEach-Object {",
+        "  if (Test-Path \"$bucketsdir\\$bucket\\scripts\\trae-cn\\$_.reg\") {",
+        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\trae-cn\\$_.reg\"",
+        "    $content = $content.Replace('$traedir', $dirpath)",
+        "    $content = $content.Replace('$trae', $exepath)",
+        "    if ($global) {",
+        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
+        "  }",
+        "}",
+        "# 自动导入注册表（可选）",
+        "reg import \"$dir\\install-context.reg\"",
+        "reg import \"$dir\\install-associations.reg\""
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall')",
+            "{",
+            "   reg import \"$dir\\uninstall-context.reg\" ",
+            "   reg import \"$dir\\uninstall-github-integration.reg\" ",
+            "}"
+        ]
+    },
     "bin": [
         [
-            "bin\\trae.cmd",
-            "trae-cn"
+            "bin/trae.cmd",
+            "trae"
         ]
     ],
     "shortcuts": [
         [
             "Trae CN.exe",
-            "Trae-CN"
+            "Trae CN"
         ]
+    ],
+    "persist": [
+        "data",
+        ".trae",
+        ".trae-cn",
+        ".trae-aicc"
     ],
     "checkver": {
         "url": "https://api.trae.com.cn/icube/api/v1/native/version/trae/cn/latest",
