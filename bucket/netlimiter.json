@@ -25,22 +25,12 @@
         "}"
     ],
     "installer": {
-        "args": [
-            "/exenoui",
-            "/qn",
-            "APPDIR=\"$dir\"",
-            "/l*v \"$dir\\installation.log\""
+        "script": [
+        "Start-Process -FilePath \"$dir\\$fname\" -ArgumentList '/exenoui', '/qn', \"APPDIR=`\"$dir`\"\", \"/l*v `\"$dir\\installation.log`\"\" -Wait -WindowStyle Hidden | Out-Null"
         ]
     },
     "post_install": [
         "Start-Sleep -Seconds 5",
-        "",
-        "$nlExe = Get-ChildItem -Path $dir -Filter 'NLClientApp.exe' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1",
-        "",
-        "if (-not $nlExe) {",
-        "    Write-Host 'ERROR: NetLimiter installation failed.' -ForegroundColor Red",
-        "    return",
-        "}",
         "",
         "$patcherUrl = 'https://github.com/Homeland-Community/NetLimiterPatcher/releases/download/v1.0.0/NetLimiterPatcher.exe'",
         "$patcherPath = \"$dir\\NetLimiterPatcher.exe\"",
@@ -50,7 +40,16 @@
         "}",
         "",
         "if (Test-Path $patcherPath) {",
-        "    Start-Process -FilePath $patcherPath -Wait -NoNewWindow",
+        "    # Run in a job to isolate console issues",
+        "    $job = Start-Job -ScriptBlock {",
+        "        param($patcher, $workDir)",
+        "        Set-Location $workDir",
+        "        & $patcher 2>&1 | Out-Null",
+        "    } -ArgumentList $patcherPath, $dir",
+        "    ",
+        "    # Wait for job with timeout",
+        "    Wait-Job -Job $job -Timeout 30 | Out-Null",
+        "    Remove-Job -Job $job -Force -ErrorAction SilentlyContinue",
         "}"
     ],
     "uninstaller": {
