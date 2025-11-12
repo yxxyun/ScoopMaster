@@ -1,0 +1,36 @@
+{
+    "version": "581.80",
+    "description": "A Minimal Installation of the Nvidia Display Driver",
+    "homepage": "https://www.nvidia.com/en-us/geforce/drivers/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.nvidia.com/en-in/drivers/legalfo/"
+    },
+    "depends": "7zip19.00-helper",
+    "url": "https://us.download.nvidia.com/Windows/581.80/581.80-desktop-win10-win11-64bit-international-dch-whql.exe#/dl.7z_",
+    "hash": "0a08462764f4d36eeecb8da6abfc01a6e32c94359b9e1e3287399f057c1d2839",
+    "pre_install": [
+        "$files = 'Display.Driver NVI2 EULA.txt ListDevices.txt setup.cfg setup.exe'",
+        "Invoke-ExternalCommand 7z1900-helper -wait -ArgumentList \"x -bso0 -bsp1 -bse1 -aoa $dir\\dl.7z_ $files -o$dir\"",
+        "$cfg = Get-Content \"$dir\\setup.cfg\" | Where-Object {$_ -notmatch 'name=\\\"\\\\${{(EulaHtmlFile|FunctionalConsentFile|PrivacyPolicyFile|FrameViewSdk)}}'}",
+        "Set-Content \"$dir\\setup.cfg\" \"$cfg\" -Encoding UTF8 -Force"
+    ],
+    "installer": {
+        "script": "Start-Process -wait \"$dir\\setup.exe\" -ArgumentList '-passive -noreboot -noeula -nofinish -s -clean'"
+    },
+    "uninstaller" : {
+        "script": [
+            "$pkg = 'Display.Driver'",
+            "$dll = 'C:\\Program Files\\NVIDIA Corporation\\Installer2\\InstallerCore\\NVI2.DLL'",
+            "$argsl = \"\"\"$dll\"\",UninstallPackage $pkg -silent -deviceinitiated\"",
+            "Start-Process RunDll32 -ArgumentList $argsl -Wait"
+        ]
+    },
+    "checkver": {
+        "url": "https://gfwsl.geforce.com/services_toolkit/services/com/nvidia/services/AjaxDriverService.php?func=DriverManualLookup&psid=98&osID=57&languageCode=1033&beta=0&isWHQL=1&dltype=-1&dch=1&upCRD=0&sort1=0&numberOfResults=1",
+        "regex": "\"Version\"\\s?:\\s?\"(?<version>[\\d.]+)\".*\"DownloadURL\"\\s?:\\s?\"https://us.download.nvidia.com/(?<path>[^\"]*)\""
+    },
+    "autoupdate": {
+        "url": "https://us.download.nvidia.com/$matchPath#/dl.7z_"
+    }
+}
