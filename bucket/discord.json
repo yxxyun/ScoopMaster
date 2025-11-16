@@ -1,40 +1,45 @@
 {
     "version": "1.0.9214",
-    "description": "Group Chat That's All Fun & Games",
-    "homepage": "https://discord.com",
-    "license": "Freeware",
-    "notes": [
-        "Autostart: re-enable startup in Discord settings",
-        "Notifications:",
-        "- Run: scoop install makelnk; makelnk com.squirrel.Discord.Discord \"$dir\\Update.exe\" Discord \"--processStart Discord.exe\"",
-        "- Navigate to: \"%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\"",
-        "- Right click Discord -> Properties -> Change icon -> \"$dir\\app.ico\""
-    ],
+    "description": "Free Voice and Text Chat.",
+    "homepage": "https://discordapp.com/",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://discordapp.com/terms"
+    },
     "architecture": {
         "64bit": {
             "url": "https://stable.dl2.discordapp.net/distro/app/stable/win/x64/1.0.9214/DiscordSetup.exe#/dl.7z",
             "hash": "4e25167c638b592bb8c2415e6f4fc8b2ab4b8b37f20831bb85439813c475497b"
         }
     },
-    "pre_install": [
-        "Expand-7zipArchive \"$dir\\Discord-$version-full.nupkg\" -ExtractDir 'lib\\net45' -DestinationPath \"$dir\\app-$version\" -Removal",
-        "Move-Item \"$dir\\app-$version\\installer.db\" \"$dir\"",
-        "Move-Item \"$dir\\app-$version\\app.ico\" \"$dir\"",
-        "New-Item \"$dir\\packages\" -ItemType Directory | Out-Null",
-        "Move-Item \"$dir\\RELEASES\" \"$dir\\packages\""
-    ],
+    "extract_to": "_tmp",
+    "installer": {
+        "script": [
+            "# Expand Archive",
+            "Expand-7zipArchive \"$dir\\_tmp\\Discord-*-full.nupkg\" -ExtractDir \"lib\\net45\" -DestinationPath \"$dir\\app-$version\" -Removal | Out-Null",
+            "Remove-Item \"$dir\\_tmp\" -Force -Recurse",
+            "# Move installer.db file",
+            "Move-Item \"$dir\\app-$version\\installer.db\" -Destination \"$dir\\installer.db\"",
+            "# Create Symlink to $dir/app-9.9.9999",
+            "New-Item \"$dir\\app-9.9.9999\" -ItemType SymbolicLink -Value \"$dir\\app-$version\" -Force | Out-Null"
+        ]
+    },
     "shortcuts": [
         [
-            "Update.exe",
-            "Discord",
-            "--processStart Discord.exe",
-            "app.ico"
+            "app-9.9.9999\\Discord.exe",
+            "Discord"
         ]
     ],
-    "post_uninstall": "Remove-Item \"$env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs\\Discord.lnk\" -ErrorAction SilentlyContinue",
     "checkver": {
-        "url": "https://updates.discord.com/distributions/app/manifests/latest?channel=stable&platform=win&arch=x64",
-        "regex": "x64/([\\d.]+)"
+        "script": [
+            "$dl_url = \"https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=win&arch=x64\"",
+            "$dl = cache_path 'discord-stable' 'unknown' $dl_url",
+            "Invoke-WebRequest $dl_url -OutFile $dl",
+            "$ver = (Get-Item $dl).VersionInfo.ProductVersion",
+            "Move-Item -Force $dl (cache_path 'discord-stable' $ver $dl_url)",
+            "$ver"
+        ],
+        "regex": "(\\d.+)"
     },
     "autoupdate": {
         "architecture": {
