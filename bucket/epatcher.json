@@ -5,45 +5,41 @@
     "license": "GPL-2.0",
     "url": "https://github.com/valinet/ExplorerPatcher/releases/download/26100.4946.69.6_7384790/ep_setup.exe",
     "hash": "8e3dd4f24f65234cfc2aaae7d84f2a9ebc167ab47cb50f4422d5974d44d5ffe7",
-    "installer": {
-        "script": [
-            "if (-not (is_admin)) {",
-            "error \"$app requires admin rights to $cmd\"",
-            "break",
-            "}",
-            "$proc = start-process \"$dir\\ep_setup.exe\" -NoNewWindow -passthru",
-            "if (-not $proc.waitforexit(10000)) {",
-            "error 'Failed installing explorerpatcher due to timeout (10 seconds)'",
-            "break",
-            "}",
-            "write-host ''",
-            "write-host -F yellow 'WARNING: ExplorerPatcher must be UNINSTALLED from an INTERACTIVE shell'",
-            "write-host -F green 'The ExplorerPatcher installer may have killed your desktop shell. This is normal.'",
-            "write-host -F green 'Please reboot to complete the installation'"
-        ]
-    },
+    "pre_install": [
+        "if (-not (is_admin)) {",
+        "   error \"$app requires admin rights to $cmd\"",
+        "   break",
+        "}",
+        "reg import \"$bucketsdir\\chris\\scripts\\epatcher.reg\""
+    ],
+    "post_install": [
+        "start-process explorer.exe",
+        "write-host ''",
+        "write-host -F yellow 'WARNING: ExplorerPatcher must be UNINSTALLED from an INTERACTIVE shell'",
+        "write-host -F green 'The ExplorerPatcher installer may have killed your desktop shell. This is normal.'",
+        "write-host -F green 'Please reboot to complete the installation'"
+    ],
     "pre_uninstall": [
         "if (-not (is_admin)) {",
-        "error \"$app requires admin rights to $cmd\"",
-        "break",
+        "   error \"$app requires admin rights to $cmd\"",
+        "   break",
         "}",
         "function interactive {",
-        "$noni = [Environment]::GetCommandLineArgs() | Where-Object{ $_ -like '-NonI*' }",
-        "return ([Environment]::UserInteractive -and -not $noni)",
+        "   $noni = [Environment]::GetCommandLineArgs() | Where-Object{ $_ -like '-NonI*' }",
+        "   return ([Environment]::UserInteractive -and -not $noni)",
         "}",
         "if (-not (interactive)) {",
-        "write-host ''",
-        "write-host -f yellow 'ExplorerPatcher has no silent uninstaller; you must launch from an interactive shell'",
-        "write-host -f yellow 'and click through the uninstall dialogs in order to uninstall.'",
-        "error 'ExplorerPatcher: Uninstalling from noninteractive shell is not supported'",
-        "break",
-        "}",
-        "$proc = start-process \"$dir\\ep_setup.exe\" -NoNewWindow -passthru -argumentlist '/uninstall'",
-        "if (-not $proc.waitforexit(10000)) {",
-        "error 'Failed uninstalling explorerpatcher due to timeout (10 seconds)'",
-        "break",
+        "   write-host ''",
+        "   write-host -f yellow 'ExplorerPatcher has no silent uninstaller; you must launch from an interactive shell'",
+        "   write-host -f yellow 'and click through the uninstall dialogs in order to uninstall.'",
+        "   error 'ExplorerPatcher: Uninstalling from noninteractive shell is not supported'",
+        "   break",
         "}"
     ],
+    "uninstaller": {
+        "file": "ep_setup.exe",
+        "args": ["/uninstall"]
+    },
     "checkver": "github",
     "autoupdate": {
         "url": "https://github.com/valinet/ExplorerPatcher/releases/download/$version/ep_setup.exe"
