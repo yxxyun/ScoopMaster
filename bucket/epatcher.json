@@ -9,15 +9,29 @@
         "if (-not (is_admin)) {",
         "   error \"$app requires admin rights to $cmd\"",
         "   break",
-        "}",
-        "reg import \"$bucketsdir\\chris\\scripts\\epatcher.reg\""
+        "}"
     ],
+    "installer": {
+        "script": [
+            "$proc = start-process \"$dir\\ep_setup.exe\" -NoNewWindow -passthru",
+            "if (-not $proc.waitforexit(10000)) {",
+            "   error 'Failed installing explorerpatcher due to timeout (10 seconds)'",
+            "   break",
+            "}",
+            "reg import \"$bucketsdir\\chris\\scripts\\epatcher.reg\""
+        ]
+    },
     "post_install": [
-        "start-process explorer.exe",
         "write-host ''",
-        "write-host -F yellow 'WARNING: ExplorerPatcher must be UNINSTALLED from an INTERACTIVE shell'",
+        "write-host ''",
+        "write-host -F yellow 'WARNING: epatcher must be UNINSTALLED from an INTERACTIVE shell'",
+        "write-host -F yellow 'WARNING: epatcher WILL MODIFY YOUR TASKBAR IN SOME WAYS THAT ARE NOT REVERSED ON UNINSTALL'",
+        "write-host ''",
+        "write-host -F cyan \"For full settings application, import from epatcher gui: $bucketsdir\\chris\\scripts\\epatcher.reg\"",
+        "write-host ''",
         "write-host -F green 'The ExplorerPatcher installer may have killed your desktop shell. This is normal.'",
-        "write-host -F green 'Please reboot to complete the installation'"
+        "write-host -F green 'Please reboot to complete the installation'",
+        "write-host ''"
     ],
     "pre_uninstall": [
         "if (-not (is_admin)) {",
@@ -40,6 +54,15 @@
         "file": "ep_setup.exe",
         "args": ["/uninstall"]
     },
+    "post_uninstaller": [
+        "rm -r -force 'HKCU:\\Software\\ExplorerPatcher'",
+        "stop-process -name explorer -force",
+        "start-process explorer.exe",
+        "write-host ''",
+        "write-host ''",
+        "write-host -F yellow 'IMPORTANT: You must reboot to complete the uninstallation'",
+        "write-host ''"
+    ],
     "checkver": "github",
     "autoupdate": {
         "url": "https://github.com/valinet/ExplorerPatcher/releases/download/$version/ep_setup.exe"
