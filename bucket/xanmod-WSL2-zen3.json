@@ -3,29 +3,21 @@
     "description": "Xanmod Kernel for WSL2.",
     "license": "GPL-2.0",
     "post_install": [
-        "#########################################",
-        "# set `.wslconfig` to use custom kernel #",
-        "#########################################",
-        "$ini = Add-Type -memberDefinition @\"",
-        "[DllImport(\"Kernel32\")]",
-        "public static extern long WritePrivateProfileString (string section, string key, string val, string filePath);",
-        "\"@ -passthru -name CustomWSL2ProfileInstall -UsingNamespace System.Text",
+        ". $bucketsdir\\$bucket\\scripts\\IniFile.ps1",
         "$kernel_path=\"$original_dir\\bzImage-zen3\" -replace \"\\\\\", \"\\\\\" # double all back-slashess",
-        "$null = $ini::WritePrivateProfileString(\"wsl2\", \"kernel\", $kernel_path, \"$env:USERPROFILE\\.wslconfig\")"
+        "$null = [IniFile]::WritePrivateProfileString(\"wsl2\", \"kernel\", $kernel_path, \"$env:USERPROFILE\\.wslconfig\")"
     ],
     "post_uninstall": [
-        "##########################################",
-        "# recover `.wslconfig` to default kernel #",
-        "##########################################",
-        "$ini = Add-Type -memberDefinition @\"",
-        "[DllImport(\"Kernel32\")]",
-        "public static extern long WritePrivateProfileString (string section, string key, string val, string filePath);",
-        "\"@ -passthru -name CustomWSL2ProfileUninstall -UsingNamespace System.Text",
-        "$null = $ini::WritePrivateProfileString(\"wsl2\", \"kernel\", $null, \"$env:USERPROFILE\\.wslconfig\")"
+        ". $bucketsdir\\$($install.bucket)\\scripts\\IniFile.ps1",
+        "$null = [IniFile]::WritePrivateProfileString(\"wsl2\", \"kernel\", $null, \"$env:USERPROFILE\\.wslconfig\")"
     ],
-    "version": "6.17.7-1.1",
-    "url": "https://github.com/Locietta/xanmod-kernel-WSL2/releases/download/6.17.7-locietta-WSL2-xanmod1.1/bzImage-zen3",
-    "hash": "14fba42587cf03323873c4d373a7863d1436d9105d7c49622e9ae0aa115b3b32",
+    "notes": "To get modules support, please install sniffer/xanmod-WSL2-addons-zen3.",
+    "suggest": {
+        "modules": "sniffer/xanmod-WSL2-addons-zen3"
+    },
+    "version": "6.17.8-1.1",
+    "url": "https://github.com/Locietta/xanmod-kernel-WSL2/releases/download/6.17.8-locietta-WSL2-xanmod1.1/bzImage-zen3",
+    "hash": "06fb04a91f31f0ace6912b3eaf411e4208839d6090a1956c4a5c91d36f0e44e0",
     "checkver": {
         "script": [
             "$LATEST = ((curl.exe -sL -H \"Authorization: Bearer $(Get-GitHubToken)\" https://api.github.com/repos/Locietta/xanmod-kernel-WSL2/tags?per_page=60 | ConvertFrom-Json).name | Select-String 'lts' -NotMatch)[0]",
@@ -35,9 +27,6 @@
         "replace": "${1}-${2}"
     },
     "autoupdate": {
-        "url": "https://github.com/Locietta/xanmod-kernel-WSL2/releases/download/$matchMain-locietta-WSL2-xanmod$matchXanmod/bzImage-zen3",
-        "hash": {
-            "url": "https://github.com/Locietta/xanmod-kernel-WSL2/releases/download/$matchMain-locietta-WSL2-xanmod$matchXanmod/bzImage-zen3.sha256"
-        }
+        "url": "https://github.com/Locietta/xanmod-kernel-WSL2/releases/download/$matchMain-locietta-WSL2-xanmod$matchXanmod/bzImage-zen3"
     }
 }
