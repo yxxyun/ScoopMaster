@@ -1,6 +1,6 @@
 {
    "$schema": "https://raw.githubusercontent.com/lukesampson/scoop/master/schema.json",
-   "version": "4.17.6.22724",
+   "version": "5.0.0.27927",
    "description": "This lets you mount server and cloud storage as a disk in Finder on macOS and the File Explorer on Windows. Open remote files with any application and work like on a local volume.",
    "homepage": "https://mountainduck.io/",
    "license": {
@@ -9,53 +9,44 @@
    },
    "architecture": {
       "64bit": {
-         "url": "https://dist.mountainduck.io/Mountain%20Duck%20Installer-4.17.6.22724.exe#/dl.exe",
-         "hash": "775845bae98952834160a52339d1254ef192aff8b9d365c695ecf32b8f87620b"
+         "url": "https://dist.mountainduck.io/Mountain%20Duck-5.0.0.27927_x64.msix#/dl.7z",
+         "hash": "md5:0b36fb2cba3ae9c43ca20c0f5c82bfa5"
       }
    },
    "installer": {
       "script": [
          "if (-not (is_admin)) { abort 'This package requires admin privileges to install' }",
-         "Expand-DarkArchive -Path \"$dir\\dl.exe\" -DestinationPath \"$dir\\_tmp\" -Removal",
-         "New-Item -Type Directory -Path \"$dir\\msi\" > $null",
-         "Get-ChildItem \"$dir\\_tmp\\AttachedContainer\\*.msi\" |",
-         "    ForEach-Object {",
-         "        Copy-Item -Path $_.FullName -Destination \"$dir\\msi\\$($_.Name.TrimStart('Mountain Duck ')).msi\"",
-         "    }",
-         "Remove-Item \"$dir\\_tmp\" -Force -Recurse",
-         "Get-ChildItem \"$dir\\msi\\*.msi\" |",
-         "    ForEach-Object {",
-         "        Invoke-ExternalCommand msiexec -ArgumentList @(",
-         "            '/i',",
-         "            \"`\"$($_.FullName)`\"\",",
-         "            '/qn',",
-         "            '/norestart',",
-         "            \"INSTALLLOCATION=\"\"$dir\"\"\",",
-         "            'ARPSYSTEMCOMPONENT=0',",
-         "            'MSIFASTINSTALL=7'",
-         "        ) -ContinueExitCodes @{",
-         "            3010='This package requires restart to complete the installation.'",
-         "        } -RunAs > $null",
-         "    }"
+         "Get-ChildItem -Path $dir -Recurse | ForEach-Object {",
+         "   $DecodedPath = [System.Web.HttpUtility]::UrlDecode($_.FullName)",
+         "   if ($_.FullName -ne $DecodedPath) {",
+         "      Move-Item -Path $_.FullName -Destination $DecodedPath > $null",
+         "   }",
+         "}",
+         "Get-ChildItem -Path \"$dir\\*.msi\" -Recurse | ForEach-Object {",
+         "   Invoke-ExternalCommand msiexec -ArgumentList @(",
+         "      '/i',",
+         "      \"`\"$($_.FullName)`\"\",",
+         "      '/qn',",
+         "      '/norestart'",
+         "   ) -ContinueExitCodes @{",
+         "      3010='This package requires restart to complete the installation.'",
+         "   } -RunAs > $null",
+         "}"
       ]
    },
    "uninstaller": {
       "script": [
          "if (-not (is_admin)) { abort 'This package requires admin privileges to uninstall' }",
-         "Get-ChildItem \"$dir\\msi\\*.msi\" |",
-         "    ForEach-Object {",
-         "        Invoke-ExternalCommand msiexec -ArgumentList @(",
-         "            '/x',",
-         "            \"`\"$($_.FullName)`\"\",",
-         "            '/qn',",
-         "            '/norestart',",
-         "            \"INSTALLLOCATION=\"\"$dir\"\"\",",
-         "            'ARPSYSTEMCOMPONENT=0',",
-         "            'MSIFASTINSTALL=7'",
-         "        ) -ContinueExitCodes @{",
-         "            3010='This package requires restart to complete the uninstallation.'",
-         "        } -RunAs > $null",
-         "    }"
+         "Get-ChildItem -Path \"$dir\\*.msi\" -Recurse | ForEach-Object {",
+         "   Invoke-ExternalCommand msiexec -ArgumentList @(",
+         "      '/x',",
+         "      \"`\"$($_.FullName)`\"\",",
+         "      '/qn',",
+         "      '/norestart'",
+         "   ) -ContinueExitCodes @{",
+         "      3010='This package requires restart to complete the uninstallation.'",
+         "   } -RunAs > $null",
+         "}"
       ]
    },
    "shortcuts": [
@@ -65,12 +56,17 @@
       ]
    ],
    "checkver": {
-      "regex": "Mountain Duck Installer ([\\d.]+)\\.exe"
+      "url": "https://mountainduck.io/changelog/",
+      "regex": "Mountain%20Duck-([\\d.]+)_x64\\.msix"
    },
    "autoupdate": {
       "architecture": {
          "64bit": {
-            "url": "https://dist.mountainduck.io/Mountain%20Duck%20Installer-$version.exe#/dl.exe"
+            "url": "https://dist.mountainduck.io/Mountain%20Duck-$version_x64.msix#/dl.7z",
+            "hash": {
+               "url": "https://mountainduck.io/changelog/",
+               "regex": ".+title=\"MD5 ([a-fA-F0-9]{32})\" .+?(?=Mountain%20Duck-5\\.0\\.4\\.28064_x64\\.msix)"
+            }
          }
       }
    }
