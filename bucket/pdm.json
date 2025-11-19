@@ -1,46 +1,24 @@
 {
-  "homepage": "http://pdm-project.org",
-  "version": "2.26.1",
-  "description": "Python package and dependency manager supporting the latest PEP standards",
-  "license": "MIT",
-  "url": "https://files.pythonhosted.org/packages/1b/03/090c417e47b83c490eba14a3637e5fd6fffc5d3deccced4a8a90284ac8b7/pdm-2.26.1-py3-none-any.whl",
-  "depends": "python",
-  "hash": "20c95f799c182c8ea4c33d81e51571e8fc6e2ab4c1fd34827856014a32f1f8c6",
-  "bin": "venv\\Scripts\\pdm.exe",
-  "installer": {
-    "script": [
-      "python -m venv \"$dir\\venv\"",
-      "& \"$dir\\venv\\Scripts\\python.exe\" -m pip install \"$dir\\$fname\""
-    ]
-  },
-  "post_install": [
-    "if (-not (Test-Path -Path $PROFILE\\..\\Completions -PathType Container)) {",
-    "    mkdir $PROFILE\\..\\Completions",
-    "    echo @'",
-    "Get-ChildItem \"$PROFILE\\..\\Completions\\\" | ForEach-Object {",
-    "    . $_.FullName",
-    "}",
-    "'@ | Out-File -Append -Encoding utf8 $PROFILE",
-    "}",
-    "& \"$dir\\venv\\Scripts\\pdm.exe\" completion powershell | Out-File -Encoding utf8 $PROFILE\\..\\Completions\\pdm_completion.ps1"
-  ],
-  "uninstaller": {
-    "script": [
-      "$oldPath = [Environment]::GetEnvironmentVariable(\"PYTHONPATH\", [System.EnvironmentVariableTarget]::User)",
-      "If (-not [string]::IsNullOrWhiteSpace($oldPath)) {",
-      "    $newPath = ($oldPath.Split(';') | Where { $_ -notlike \"$dir\\venv\\*\" }) -join ';'",
-      "    [Environment]::SetEnvironmentVariable(\"PYTHONPATH\", $newPath, [System.EnvironmentVariableTarget]::User)",
-      "}",
-      "Remove-Item -Path $PROFILE\\..\\Completions\\pdm_completion.ps1 -ErrorAction SilentlyContinue"
-    ]
-  },
-  "checkver": {
-    "url": "https://pypi.org/pypi/pdm/json",
-    "jp": "$.urls[?(@.packagetype == 'bdist_wheel')].url",
-    "re": "https://files.pythonhosted.org/packages/(.*/pdm-(?<version>[\\d.]+(?:post\\d+)?)-.*\\.whl)",
-    "replace": "${version}"
-  },
-  "autoupdate": {
-    "url": "https://files.pythonhosted.org/packages/$match1"
-  }
+    "version": "2.26.1",
+    "description": "A modern Python package and dependency manager supporting the latest PEP standards",
+    "homepage": "https://pdm.fming.dev",
+    "license": "MIT",
+    "url": "https://files.pythonhosted.org/packages/1b/03/090c417e47b83c490eba14a3637e5fd6fffc5d3deccced4a8a90284ac8b7/pdm-2.26.1-py3-none-any.whl",
+    "hash": "20c95f799c182c8ea4c33d81e51571e8fc6e2ab4c1fd34827856014a32f1f8c6",
+    "bin": "venv\\scripts\\pdm.exe",
+    "pre_install": [
+        "$bpath = if ($app.LocalPath) { $app.LocalPath.Directory.Parent.FullName } else { \"$bucketsdir\\$bucket\" }",
+        "& (Join-Path \"$bpath\" \"scripts\\Install-WithVirtualEnv.ps1\") \"/$fname\""
+    ],
+    "checkver": {
+        "url": "https://pypi.org/project/pdm/",
+        "regex": "(?sm)https:\\/\\/files\\.pythonhosted\\.org\\/(?<path>[\\w\\-\\/\\.]+-py3-none-any\\.whl).+?(?<version>[\\d\\.]+(?:post\\d+)?)-py3-none-any\\.whl"
+    },
+    "autoupdate": {
+        "url": "https://files.pythonhosted.org/$matchPath",
+        "hash": {
+            "url": "https://pypi.org/project/pdm/",
+            "regex": "(?sm)Hashes for $basename.*?$sha256"
+        }
+    }
 }
