@@ -1,0 +1,56 @@
+{
+    "version": "19414847603",
+    "description": "A simple hotkey daemon for Windows",
+    "homepage": "https://github.com/LGUG2Z/whkd",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://nightly.link/LGUG2Z/whkd/actions/runs/19414847603/whkd-x86_64-pc-windows-msvc-797209aabd6db7241b82a27716146d0b1da524bb.zip",
+            "hash": "e3bf96e5f1beb73bf7cfdbb760d115df85a037b9035eb16740712b43931c469f",
+            "extract_dir": "x86_64-pc-windows-msvc/release"
+        },
+        "arm64": {
+            "url": "https://nightly.link/LGUG2Z/whkd/actions/runs/19414847603/whkd-aarch64-pc-windows-msvc-797209aabd6db7241b82a27716146d0b1da524bb.zip",
+            "hash": "f8495784646697d2f097f8e2eea19fb5d41c439a93891a3f30cbf5b854f62a2d",
+            "extract_dir": "aarch64-pc-windows-msvc/release"
+        }
+    },
+    "env_set": {
+        "WHKD_CONFIG_HOME": "$env:USERPROFILE\\.config\\whkd"
+    },
+    "pre_install": [
+        "if (!(Test-Path \"$env:USERPROFILE\\.config\\whkd\")) {",
+        "   New-Item \"$env:USERPROFILE\\.config\\whkd\" -ItemType Directory | Out-Null",
+        "}",
+        "if (Get-Command komorebi -ErrorAction SilentlyContinue) {",
+        "   if (!(Test-Path \"$env:USERPROFILE\\.config\\whkdrc\")) {",
+        "      if (!(Test-Path \"$env:USERPROFILE\\.config\\whkd\\whkdrc\")) {",
+        "         Invoke-WebRequest -Uri \"https://cdn.jsdelivr.net/gh/LGUG2Z/komorebi@master/docs/whkdrc.sample\" -OutFile \"$env:USERPROFILE\\.config\\whkd\\whkdrc\" -UseBasicParsing | Out-Null",
+        "      }",
+        "   } else {",
+        "      Move-Item -Path \"$env:USERPROFILE\\.config\\whkdrc\" -Destination \"$env:USERPROFILE\\.config\\whkd\\whkdrc\" -Force",
+        "   }",
+        "}"
+    ],
+    "bin": "whkd.exe",
+    "checkver": {
+        "script": [
+            "$workflow_runs = (Invoke-WebRequest 'https://api.github.com/repositories/591491992/actions/workflows/windows.yaml/runs?status=success' -UseBasicParsing | ConvertFrom-Json).workflow_runs[0]",
+            "$sha = $workflow_runs.head_sha",
+            "$version = $workflow_runs.id",
+            "Write-Output $version-$sha"
+        ],
+        "regex": "(?<version>.+)-(?<sha>.+)",
+        "replace": "${version}"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://nightly.link/LGUG2Z/whkd/actions/runs/$matchVersion/whkd-x86_64-pc-windows-msvc-$matchSha.zip"
+            },
+            "arm64": {
+                "url": "https://nightly.link/LGUG2Z/whkd/actions/runs/$matchVersion/whkd-aarch64-pc-windows-msvc-$matchSha.zip"
+            }
+        }
+    }
+}

@@ -1,49 +1,82 @@
 {
-    "version": "2025-10-17",
-    "description": "A tiling window manager for Windows (nightly builds)",
+    "version": "19484678196",
+    "description": "A tiling window manager for Windows",
     "homepage": "https://github.com/LGUG2Z/komorebi",
     "license": {
         "identifier": "Komorebi",
         "url": "https://github.com/LGUG2Z/komorebi/blob/master/LICENSE.md"
     },
-    "notes": "Check out the quickstart guide on https://lgug2z.github.io/komorebi",
-    "suggest": {
-        "whkd": "extras/whkd",
-        "autohotkey": "extras/autohotkey"
-    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/LGUG2Z/komorebi/releases/download/nightly/komorebi-nightly-x86_64-pc-windows-msvc.zip",
-            "hash": "6c4f5aa7b50d7fcee87c92319b9f26129560efef0bc44f4cf9193ef48910a298"
+            "url": "https://nightly.link/LGUG2Z/komorebi/actions/runs/19484678196/komorebi-x86_64-pc-windows-msvc-df2adde13df384fe75b499015a2dadc74f9d1c9a.zip",
+            "hash": "d0684e64f2c70e928b921298e159271e05c941874953151aaf1db09930a4b7e3",
+            "extract_dir": "x86_64-pc-windows-msvc/release"
         },
         "arm64": {
-            "url": "https://github.com/LGUG2Z/komorebi/releases/download/nightly/komorebi-nightly-aarch64-pc-windows-msvc.zip",
-            "hash": "dfb0bd083d34f2bef87c8d359524bd0a1b3267534daa38c351d1a0ec6d9e13c5"
+            "url": "https://nightly.link/LGUG2Z/komorebi/actions/runs/19484678196/komorebi-aarch64-pc-windows-msvc-df2adde13df384fe75b499015a2dadc74f9d1c9a.zip",
+            "hash": "de874803686ba4b6200ee2dce9a3a1d23f167d7f3679bc540709328a8d0aca3e",
+            "extract_dir": "aarch64-pc-windows-msvc/release"
         }
     },
+    "env_set": {
+        "KOMOREBI_CONFIG_HOME": "$env:USERPROFILE\\.config\\komorebi"
+    },
+    "pre_install": [
+        "if (!(Test-Path \"$env:USERPROFILE\\.config\\komorebi\")) {",
+        "   New-Item \"$env:USERPROFILE\\.config\\komorebi\" -ItemType Directory | Out-Null",
+        "}",
+        "if (!(Test-Path \"$env:USERPROFILE\\.config\\komorebi\\komorebi.json\")) {",
+        "   Invoke-WebRequest -Uri \"https://cdn.jsdelivr.net/gh/LGUG2Z/komorebi@master/docs/komorebi.example.json\" -OutFile \"$env:USERPROFILE\\.config\\komorebi\\komorebi.json\"-UseBasicParsing | Out-Null",
+        "}",
+        "if (!(Test-Path \"$env:USERPROFILE\\.config\\komorebi\\komorebi-bar.json\")) {",
+        "   Invoke-WebRequest -Uri \"https://cdn.jsdelivr.net/gh/LGUG2Z/komorebi@master/docs/komorebi.bar.example.json\" -OutFile \"$env:USERPROFILE\\.config\\komorebi\\komorebi-bar.json\"-UseBasicParsing | Out-Null",
+        "}",
+        "if (!(Test-Path \"$env:USERPROFILE\\.config\\komorebi\\applications.json\")) {",
+        "   Invoke-WebRequest -Uri \"https://cdn.jsdelivr.net/gh/LGUG2Z/komorebi-application-specific-configuration@master/applications.json\" -OutFile \"$env:USERPROFILE\\.config\\komorebi\\applications.json\"-UseBasicParsing | Out-Null",
+        "}",
+        "if (Test-Path \"$env:USERPROFILE\\.config\\komorebi\\komorebi.json\") {",
+        "   $jsonContent = Get-Content \"$env:USERPROFILE\\.config\\komorebi\\komorebi.json\" | ConvertFrom-Json",
+        "   $jsonContent.app_specific_configuration_path = \"$env:USERPROFILE\\.config\\komorebi\\applications.json\"",
+        "   $jsonContent | ConvertTo-Json -Depth 10 | Set-Content \"$env:USERPROFILE\\.config\\komorebi\\komorebi.json\"",
+        "}",
+        "if (Get-Command whkd -ErrorAction SilentlyContinue) {",
+        "   if (!(Test-Path \"$env:USERPROFILE\\.config\\whkd\")) {",
+        "      New-Item \"$env:USERPROFILE\\.config\\whkd\" -ItemType Directory | Out-Null",
+        "   }",
+        "   if (!(Test-Path \"$env:USERPROFILE\\.config\\whkdrc\")) {",
+        "      if (!(Test-Path \"$env:USERPROFILE\\.config\\whkd\\whkdrc\")) {",
+        "         Invoke-WebRequest -Uri \"https://cdn.jsdelivr.net/gh/LGUG2Z/komorebi@master/docs/whkdrc.sample\" -OutFile \"$env:USERPROFILE\\.config\\whkd\\whkdrc\" -UseBasicParsing | Out-Null",
+        "      }",
+        "   } else {",
+        "      Move-Item -Path \"$env:USERPROFILE\\.config\\whkdrc\" -Destination \"$env:USERPROFILE\\.config\\whkd\\whkdrc\" -Force",
+        "   }",
+        "}"
+    ],
     "bin": [
         "komorebi.exe",
+        "komorebi-bar.exe",
         "komorebic.exe",
         "komorebic-no-console.exe",
-        "komorebi-gui.exe",
-        "komorebi-bar.exe"
+        "komorebi-gui.exe"
     ],
     "checkver": {
-        "url": "https://api.github.com/repositories/390873100/releases/tags/nightly",
-        "jsonpath": "$.body",
-        "regex": "nightly \\((\\d{4}-\\d{2}-\\d{2})\\)"
+        "script": [
+            "$workflow_runs = (Invoke-WebRequest 'https://api.github.com/repositories/390873100/actions/workflows/windows.yaml/runs?branch=master&status=success' -UseBasicParsing | ConvertFrom-Json).workflow_runs[0]",
+            "$sha = $workflow_runs.head_sha",
+            "$version = $workflow_runs.id",
+            "Write-Output $version-$sha"
+        ],
+        "regex": "(?<version>.+)-(?<sha>.+)",
+        "replace": "${version}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/LGUG2Z/komorebi/releases/download/nightly/komorebi-nightly-x86_64-pc-windows-msvc.zip"
+                "url": "https://nightly.link/LGUG2Z/komorebi/actions/runs/$matchVersion/komorebi-x86_64-pc-windows-msvc-$matchSha.zip"
             },
             "arm64": {
-                "url": "https://github.com/LGUG2Z/komorebi/releases/download/nightly/komorebi-nightly-aarch64-pc-windows-msvc.zip"
+                "url": "https://nightly.link/LGUG2Z/komorebi/actions/runs/$matchVersion/komorebi-aarch64-pc-windows-msvc-$matchSha.zip"
             }
-        },
-        "hash": {
-            "url": "$baseurl/checksums.txt"
         }
     }
 }
