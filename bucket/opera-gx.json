@@ -16,49 +16,21 @@
             "hash": "b2ee81db2f1c59dc52ea0cb8310bbfadb8e03a207dae99defa176ff28bf0ec9f"
         }
     },
-    "pre_install": [
-        "$operagx_root = \"$dir\".Replace('\\', '\\\\')",
-        "'install-context.reg', 'uninstall-context.reg' | ForEach-Object {",
-        "    $content = Get-Content \"$bucketsdir\\business\\assets\\opera-gx\\$_\"",
-        "    $content = $content.Replace('$operagx_root', $operagx_root)",
-        "    if ($global) {",
-        "       $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
-        "    }",
-        "    Set-Content \"$dir\\$_\" $content -Encoding Ascii",
-        "}"
-    ],
     "installer": {
         "script": [
             "Remove-Item -Path \"$dir\\*_list\" -Force",
-            "if (!(Test-Path \"$dir\\localization\")) {",
-            "   New-Item -Path \"$dir\\localization\" -ItemType Directory | Out-Null",
-            "   Move-Item -Path \"$dir\\*.pak\" -Destination \"$dir\\localization\" -Exclude 'opera*' -ErrorAction Ignore",
+            "Move-Item -Path \"$dir\\*\" -Destination \"$dir\\$version\" -Exclude 'Assets', 'launcher*', 'Resources.pri' -ErrorAction Ignore",
+            "if (!(Test-Path \"$dir\\$version\\localization\")) {",
+            "   New-Item -Path \"$dir\\$version\\localization\" -ItemType Directory | Out-Null",
+            "   Move-Item -Path \"$dir\\$version\\*.pak\" -Destination \"$dir\\$version\\localization\" -Exclude 'opera*' -ErrorAction Ignore",
             "}",
             "Set-Content -Path \"$dir\\installer_prefs.json\" -Value (@{ 'autoupdate'= $false; 'enable_stats' = $false; 'single_profile' = $true } | ConvertTo-Json) -Encoding ASCII"
         ]
     },
-    "post_install": [
-        "reg import \"$dir\\install-context.reg\"",
-        "Write-Host Registering the app with : \"$dir\\install-context.reg\""
-    ],
-    "uninstaller": {
-        "script": [
-            "reg import \"$dir\\uninstall-context.reg\"",
-            "Write-Host UnRegistering the app with : \"$dir\\uninstall-context.reg\""
-        ]
-    },
-    "bin": [
-        [
-            "opera.exe",
-            "Opera GX",
-            "--user-data-dir=$persist_dir\\profile\\data"
-        ]
-    ],
     "shortcuts": [
         [
-            "opera.exe",
-            "Opera GX",
-            "--user-data-dir=$persist_dir\\profile\\data"
+            "launcher.exe",
+            "Opera GX"
         ]
     ],
     "persist": "profile",
