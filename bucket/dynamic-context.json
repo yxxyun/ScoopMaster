@@ -1,0 +1,60 @@
+{
+	"version": "0",
+	"description": "An extension allows you to write C# scripts to provide context menu items in Windows Explorer.",
+	"homepage": "https://example.com/",
+	"notes": [
+		"Config path: $persist_dir\\config.json",
+		"Default plugin path: $persist_dir\\Plugins",
+		"It's recommended to change the plugin path in config.json to use your own plugin path."
+	],
+	"architecture": {
+		"64bit": {
+			"url": "https://github.com/GuanmingLu/ScoopBucket/releases/download/DynamicContext/DynamicContext_x64.7z",
+			"hash": "a41bdf1d5357550f6436f4d03c9dfbe718f20b87b171a1ad65fda7a74e292248"
+		},
+		"32bit": {
+			"url": "https://github.com/GuanmingLu/ScoopBucket/releases/download/DynamicContext/DynamicContext_x86.7z",
+			"hash": "1501e66cf954d529b327fed9b764af5ee79b10c2e9d333054625ecd225733545"
+		}
+	},
+	"persist": [
+		"Plugins",
+		"config.json"
+	],
+	"pre_install": [
+		"if (!(is_admin)) { error \"Requires admin rights!\"; break }",
+		"$confirm = Read-Host \"Explorer will be restarted after installation. Continue? (y/n)\"",
+		"if ($confirm -ne 'y') { break }",
+		"ensure \"$persist_dir\\Plugins\" | Out-Null",
+		"if (!(Test-Path -Path \"$persist_dir\\config.json\")) {",
+		"    Copy-Item -Path \"$dir\\InstallFiles\\config.json\" -Destination \"$persist_dir\\config.json\"",
+		"}",
+		"if (!(Test-Path -Path \"$persist_dir\\Plugins\")) {",
+		"    New-Item -Path \"$persist_dir\\Plugins\" -ItemType Directory",
+		"}",
+		"if (!(Test-Path -Path \"$persist_dir\\Plugins\\cs\")) {",
+		"    Copy-Item -Path \"$dir\\InstallFiles\\Plugins\\cs\" -Destination \"$persist_dir\\Plugins\\cs\" -Recurse",
+		"}",
+		"if (!(Test-Path -Path \"$persist_dir\\Plugins\\dll\")) {",
+		"    Copy-Item -Path \"$dir\\InstallFiles\\Plugins\\dll\" -Destination \"$persist_dir\\Plugins\\dll\" -Recurse",
+		"}",
+		"Remove-Item -Path \"$dir\\InstallFiles\" -Recurse -Force"
+	],
+	"installer": {
+		"script": [
+			"& \"$dir\\RegAsm.exe\" \"$dir\\DynamicContext.dll\" /CodeBase",
+			"Stop-Process -processName: Explorer"
+		]
+	},
+	"pre_uninstall": [
+		"if (!(is_admin)) { error \"Requires admin rights!\"; break }",
+		"$confirm = Read-Host \"Explorer will be restarted before uninstallation. Continue? (y/n)\"",
+		"if ($confirm -ne 'y') { break }"
+	],
+	"uninstaller": {
+		"script": [
+			"& \"$dir\\RegAsm.exe\" \"$dir\\DynamicContext.dll\" /CodeBase /u",
+			"Stop-Process -processName: Explorer; Start-Sleep -Seconds 3"
+		]
+	}
+}
