@@ -1,108 +1,40 @@
 {
-    "version": "3.2.4",
-    "description": "Nuclei POC漏洞管理与验证可视化工具",
+    "version": "2.1.6",
+    "description": "(Scoop bucket by arch3rpro) Wavely - 一个好用的nuclei GUI POC管理工具.",
     "homepage": "https://github.com/perlh/Wavely",
-    "license": "MIT",
-    "url": "https://github.com/perlh/Wavely/releases/download/v3.2.4/Wavely-installer.zip",
-    "hash": "sha256:请在此处添加文件的SHA256哈希值",
-    "installer": {
-        "script": [
-            "# 解压下载的安装包",
-            "Expand-Archive -Path \"$dir\\$fname\" -DestinationPath \"$dir\" -Force",
-            "",
-            "# 运行 NSIS 安装程序",
-            "$installer = Get-ChildItem \"$dir\" -Filter 'Wavely-installer.exe' | Select-Object -First 1",
-            "if ($installer) {",
-            "    Write-Host '正在安装 Wavely...' -ForegroundColor Yellow",
-            "    ",
-            "    # NSIS 静默安装参数",
-            "    $process = Start-Process -Wait -PassThru -FilePath \"$($installer.FullName)\" -ArgumentList '/S', \"/D=$dir\"",
-            "    ",
-            "    if ($process.ExitCode -eq 0) {",
-            "        Write-Host 'Wavely 安装成功' -ForegroundColor Green",
-            "    } else {",
-            "        Write-Warning \"安装程序退出代码: $($process.ExitCode)\"",
-            "    }",
-            "} else {",
-            "    Write-Error '未找到 Wavely-installer.exe'",
-            "}"
-        ]
+    "notes": "此配置由arch3rPro独家编写，安装时集成了NucleiTP项目，自动整合Nuclei的漏洞POC ",
+    "license": "Unknown",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/perlh/Wavely/releases/download/v2.1.6/Wavely-2.1.6-Windows-amd64.zip",
+            "hash": "3417f7cd6b3cb68a7b067f014809eb22697cdd5721bde7699d30d76fa214c8cd"
+        },
+        "arm64": {
+            "url": "https://github.com/perlh/Wavely/releases/download/v2.1.6/Wavely-2.1.6-windows-arm64.zip",
+            "hash": "622790a9a7d3bd152dfef23ae1ee0c27049b28aece08a3dd427b44ff784c75c4"
+        }
     },
-    "post_install": [
-        "# 清理安装文件",
-        "Remove-Item \"$dir\\$fname\" -Force -ErrorAction SilentlyContinue",
-        "Get-ChildItem \"$dir\" -Filter 'Wavely-installer.exe' | Remove-Item -Force -ErrorAction SilentlyContinue",
-        "",
-        "# 验证安装结果",
-        "if (Test-Path \"$dir\\Wavely.exe\") {",
-        "    Write-Host 'Wavely 已成功安装' -ForegroundColor Green",
-        "} else {",
-        "    # 如果不在根目录，尝试在子目录中查找",
-        "    $exePath = Get-ChildItem \"$dir\" -Recurse -Filter 'Wavely.exe' | Select-Object -First 1",
-        "    if ($exePath) {",
-        "        Write-Host \"找到 Wavely.exe 在: $($exePath.FullName)\" -ForegroundColor Yellow",
-        "    } else {",
-        "        Write-Warning '未找到 Wavely.exe，可能需要手动检查安装'",
-        "    }",
-        "}"
+    "pre_install": [
+        "Get-ChildItem \"$dir\\Wavely-*.exe\" | Rename-Item -NewName 'WavelySetup.exe'",
+        "& \"7z.exe\" x \"$dir\\WavelySetup.exe\" -o\"$dir\"",
+        "New-Item -ItemType Directory -Force -Path \"$dir\\.wavely\\templates\"",
+        "git clone https://github.com/ExpLangcn/NucleiTP.git \"$dir\\.wavely\\templates\\NucleiTP\"",
+        "git clone https://github.com/projectdiscovery/nuclei-templates \"$dir\\.wavely\\templates\\nuclei-templates\""
     ],
-    "uninstaller": {
-        "script": [
-            "# 使用 Wavely 自带的卸载程序",
-            "if (Test-Path \"$dir\\uninstall.exe\") {",
-            "    Write-Host '正在卸载 Wavely...' -ForegroundColor Yellow",
-            "    Start-Process -Wait -FilePath \"$dir\\uninstall.exe\" -ArgumentList '/S' -NoNewWindow",
-            "} else {",
-            "    # 备选方案：通过注册表查找卸载信息",
-            "    $regPaths = @(",
-            "        'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'",
-            "        'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'",
-            "        'HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'",
-            "    )",
-            "    ",
-            "    $uninstallInfo = Get-ItemProperty -Path $regPaths -ErrorAction SilentlyContinue | ",
-            "        Where-Object { $_.DisplayName -match 'Wavely' } | Select-Object -First 1",
-            "    ",
-            "    if ($uninstallInfo -and $uninstallInfo.UninstallString) {",
-            "        Write-Host '通过注册表卸载 Wavely...' -ForegroundColor Yellow",
-            "        $uninstallCmd = $uninstallInfo.UninstallString",
-            "        ",
-            "        # 处理带引号的路径",
-            "        if ($uninstallCmd -match '^\"([^\"]+)\"') {",
-            "            $uninstallExe = $matches[1]",
-            "            $uninstallArgs = $uninstallCmd.Substring($matches[0].Length).Trim()",
-            "        } else {",
-            "            $firstSpace = $uninstallCmd.IndexOf(' ')",
-            "            if ($firstSpace -gt 0) {",
-            "                $uninstallExe = $uninstallCmd.Substring(0, $firstSpace)",
-            "                $uninstallArgs = $uninstallCmd.Substring($firstSpace + 1)",
-            "            } else {",
-            "                $uninstallExe = $uninstallCmd",
-            "                $uninstallArgs = ''",
-            "            }",
-            "        }",
-            "        ",
-            "        # 确保使用静默参数",
-            "        if ($uninstallArgs -notmatch '/S') {",
-            "            $uninstallArgs = \"$uninstallArgs /S\"",
-            "        }",
-            "        ",
-            "        Start-Process -Wait -FilePath $uninstallExe -ArgumentList $uninstallArgs -NoNewWindow",
-            "    } else {",
-            "        Write-Error '未找到 Wavely 的卸载程序，可能需要手动卸载'",
-            "    }",
-            "}"
-        ]
-    },
-    "bin": "Wavely.exe",
-    "shortcuts": [
-        ["Wavely.exe", "Wavely"]
-    ],
+    "post_install": "Remove-Item \"$dir\\WavelySetup.exe\" -Force",
+    "bin": "wavely.exe",
     "checkver": {
-        "github": "https://github.com/perlh/Wavely",
-        "re": "releases/tag/v([\\d.]+)"
+        "url": "https://github.com/perlh/Wavely/releases",
+        "regex": "tag/v([\\d.]+)"
     },
     "autoupdate": {
-        "url": "https://github.com/perlh/Wavely/releases/download/v$version/Wavely-installer.zip"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/perlh/Wavely/releases/download/v$version/Wavely-$version-Windows-amd64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/perlh/Wavely/releases/download/v$version/Wavely-$version-windows-arm64.zip"
+            }
+        }
     }
 }
