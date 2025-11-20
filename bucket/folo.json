@@ -1,49 +1,49 @@
 {
-    "version": "1.2.1",
-    "description": "🧡 Follow everything in one place",
-    "homepage": "https://follow.is/",
-    "license": {
-        "identifier": "GPL-3.0 license",
-        "url": "https://github.com/RSSNext/Folo#GPL-3.0-1-ov-file"
+    "version": "1.1.7",
+    "description": "Follow everything in one place",
+    "homepage": "https://folo.is/",
+    "license": "GPL-3.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/RSSNext/Folo/releases/download/desktop%2Fv1.1.7/Folo-1.1.7-windows-x64.exe#/dl.7z",
+            "hash": "sha512:bc2d15e49855662f5d6b1de5a3ccde20321757d2dbedb8b6d558fc7e79a8c12bd2ada6e264e9af1b2bb27405ee9c2fa3a4eca099c96c1e0cd70969901cfcae8a"
+        }
     },
-    "url": "https://github.com/RSSNext/Folo/releases/download/desktop/v1.2.1/Folo-1.2.1-windows-x64.exe#/dl.7z",
-    "hash": "sha512:d8af81818f26123f828e0933c152b353b31bfa85d27d913000f9e8804b53a214cb7fc065ed78429bd031313cfc3ad91cdc6627d0fb3e6da3532a11680ac79612",
     "pre_install": [
-        "Get-Item \"$dir\\Folo*.nupkg\" | Rename-Item -NewName 'Folo.nupkg'",
-        "Expand-7zipArchive \"$dir\\Folo.nupkg\" \"$dir\" -ExtractDir 'lib\\net45'",
-        "Remove-Item \"$dir\\*.gif\", \"$dir\\*.nupkg\", \"$dir\\RELEASES\",  \"$dir\\*.ico\", \"$dir\\Update.exe\" -Force -Recurse"
+        "Get-ChildItem \"$dir\\*\" -Exclude 'Folo-*nupkg' | Remove-Item",
+        "Expand-7zipArchive \"$dir\\Folo-*-full.nupkg\" -ExtractDir 'lib\\net45' -Removal"
     ],
-    "installer": {
-        "script": [
-            "# handle runtime cache",
-            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
-            "Mount-ExternalRuntimeData -Source \"$persist_dir\" -Target \"$env:APPDATA\\Folo\"",
-            "Remove-Module -Name AppsUtils"
-        ]
-    },
+    "post_install": [
+        "if (Test-Path $env:APPDATA\\Folo) {",
+        "    Write-Host \"`r`nMove config from non-portable version...\"",
+        "    Copy-Item -Path $env:APPDATA\\Folo\\* -Destination \"$persist_dir\\UserData\" -Force -Recurse | Out-Null",
+        "    Remove-Item $env:APPDATA\\Folo -Force -Recurse",
+        "}",
+        "New-Item -ItemType Junction -Path $env:APPDATA\\Folo -Target $persist_dir\\UserData | Out-Null"
+    ],
     "uninstaller": {
-        "script": [
-            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
-            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\Folo\"",
-            "Remove-Module -Name AppsUtils"
-        ]
+        "script": "Remove-Item $env:APPDATA\\Folo -Force -Recurse"
     },
-    "bin": "Folo.exe",
     "shortcuts": [
         [
             "Folo.exe",
             "Folo"
         ]
     ],
+    "persist": "UserData",
     "checkver": {
-        "url": "https://api.github.com/repos/RSSNext/Folo/releases/latest",
-        "regex": "/releases/tag/desktop/v([\\w.-]+)"
+        "url": "https://api.github.com/repositories/783512367/releases",
+        "regex": "desktop/v([\\d.]+)"
     },
     "autoupdate": {
-        "url": "https://github.com/RSSNext/Folo/releases/download/desktop/v$version/Folo-$version-windows-x64.exe#/dl.7z",
-        "hash": {
-            "url": "$baseurl/latest.yml",
-            "regex": "sha512:\\s+$base64"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/RSSNext/Folo/releases/download/desktop%2Fv$version/Folo-$version-windows-x64.exe#/dl.7z",
+                "hash": {
+                    "url": "$baseurl/latest.yml",
+                    "regex": "(?sm)x64.exe.*?sha512:\\s+$base64"
+                }
+            }
         }
     }
 }
