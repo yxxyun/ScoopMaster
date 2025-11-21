@@ -1,15 +1,19 @@
 {
-    "version": "4.5.5",
-    "description": "The automated Usenet download tool",
+    "version": "4.6.0Alpha1",
+    "description": "The automated Usenet download tool (Beta/RC if available)",
     "homepage": "https://sabnzbd.org",
     "license": "GPL-2.0-or-later",
+    "suggest": {
+        "unrar (or systemwide WinRAR install)": "main/unrar",
+        "MultiPar (possibly newer)": "versions/multipar-beta"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/sabnzbd/sabnzbd/releases/download/4.5.5/SABnzbd-4.5.5-win64-bin.zip",
-            "hash": "fa183e1c4080dbe6b50e26ba9595c8a714be32bfc94cdc1b9d663d5dab64ed41"
+            "url": "https://github.com/sabnzbd/sabnzbd/releases/download/4.6.0Alpha1/SABnzbd-4.6.0Alpha1-win64-bin.zip",
+            "hash": "b2741eabf2b610e5ffb8780f41168b463fb11f9c3f352a8eb3a000751a36c816"
         }
     },
-    "extract_dir": "SABnzbd",
+    "extract_dir": "SABnzbd-4.6.0Alpha1",
     "bin": [
         "SABnzbd-console.exe",
         [
@@ -23,14 +27,25 @@
             "SABnzbd"
         ]
     ],
+    "post_install": [
+        "if ($architecture -eq '64bit' -and $global) {",
+        "$multipar = $(appdir multipar-beta $global)",
+        "$unrar = $(appdir unrar $global)",
+        "if (!(Test-Path \"$unrar\")) { $unrar = \"$env:ProgramFiles\\WinRAR\\UnRAR.exe\" } else { $unrar = \"$unrar\\current\\UnRAR.exe\" }",
+        "if (Test-Path \"$unrar\") { New-Item -Path \"$dir\\win\\unrar\\x64\\UnRAR.exe\" -Force -ItemType SymbolicLink -Value \"$unrar\" | Out-Null }",
+        "if (Test-Path \"$multipar\") { New-Item -Path \"$dir\\win\\multipar\\par2j64.exe\" -Force -ItemType SymbolicLink -Value \"$multipar\\current\\par2j64.exe\" | Out-Null }",
+        "}"
+    ],
     "checkver": {
-        "github": "https://github.com/sabnzbd/sabnzbd"
+        "url": "https://api.github.com/repos/sabnzbd/sabnzbd/releases?per_page=1",
+        "jsonpath": "$[0].tag_name"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
                 "url": "https://github.com/sabnzbd/sabnzbd/releases/download/$version/SABnzbd-$version-win64-bin.zip"
             }
-        }
+        },
+        "extract_dir": "SABnzbd-$version"
     }
 }
