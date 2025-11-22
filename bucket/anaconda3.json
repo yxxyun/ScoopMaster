@@ -1,1 +1,69 @@
-{    "version": "2025.06-1",    "description": "The most popular Python distribution for data science.",    "homepage": "https://www.anaconda.com/",    "license": "BSD-3-Clause",    "notes": [        "From 4.6.0, conda has built the support for Cmd, Powershell or other shells.",        "Use \"conda init powershell\" or \"conda init __your_favorite_shell__\"",        "",        "Anaconda3 drops support for 32-bit CPUs from v2022.10. If you are running a 32-bit system, please install anaconda3-2022.05 from the Versions bucket."    ],    "architecture": {        "64bit": {            "url": "https://repo.anaconda.com/archive/Anaconda3-2025.06-1-Windows-x86_64.exe",            "hash": "36ba946abeb6bb7ba3235e0ccb67660e0b545235ca467f3aa964cd4b307c14ed"        }    },    "pre_install": "if ($dir -match ' ') { error 'The installation directory cannot include a space'; exit 1 }",    "installer": {        "script": [            "warn 'Installing Anaconda 3. This can take up to 30 minutes on an HDD.'",            "Start-Process \"$dir\\$fname\" -ArgumentList @('/S', '/InstallationType=JustMe', '/RegisterPython=1', '/AddToPath=0', '/NoRegistry=1', \"/D=$dir\\App\") -Wait"        ]    },    "post_install": [        "Remove-Item \"$dir\\$fname\"",        "cmd /c \"$dir\\App\\condabin\\conda.bat\" tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main",        "cmd /c \"$dir\\App\\condabin\\conda.bat\" tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r",        "cmd /c \"$dir\\App\\condabin\\conda.bat\" tos accept --override-channels --channel https://repo.anaconda.com/pkgs/msys2",        "cmd /c \"$dir\\App\\condabin\\conda.bat\" config --set plugins.auto_accept_tos yes",        "cmd /c \"$dir\\App\\condabin\\conda.bat\" install -n base -y conda-libmamba-solver",        "cmd /c \"$dir\\App\\condabin\\conda.bat\" config --set solver libmamba"    ],    "env_add_path": [        "App\\condabin",        "App\\Scripts"    ],    "env_set": {        "CONDA_ENVS_PATH": "$persist_dir\\envs",        "CONDA_PKGS_DIRS": "$persist_dir\\pkgs",        "CONDA_PLUGINS_AUTO_ACCEPT_TOS": "yes"    },    "bin": [        [            "App\\condabin\\conda.bat",            "conda"        ],        "App\\python.exe",        "App\\pythonw.exe",        [            "App\\python.exe",            "python3"        ]    ],    "persist": [        "App\\envs",        "App\\pkgs"    ],    "uninstaller": {        "script": [            "Start-Process \"$dir\\App\\Uninstall-Anaconda3.exe\" -ArgumentList '/S' -Wait",            "ensure \"$dir\\App\\envs\" | Out-Null"        ]    },    "checkver": {        "url": "https://repo.anaconda.com/archive/",        "regex": "Anaconda3-([\\d.]+-\\d+)-Windows-x86_64\\.exe",        "reverse": false    },    "autoupdate": {        "architecture": {            "64bit": {                "url": "https://repo.anaconda.com/archive/Anaconda3-$version-Windows-x86_64.exe",                "hash": {                    "url": "https://repo.anaconda.com/archive/",                    "regex": "(?sm)$basename.*?$sha256"                }            }        }    }}
+{
+    "version": "2025.06-1",
+    "description": "The most popular Python distribution for data science.",
+    "homepage": "https://www.anaconda.com/",
+    "license": "BSD-3-Clause",
+    "notes": [
+        "From 4.6.0, conda has built the support for Cmd, Powershell or other shells.",
+        "Use \"conda init powershell\" or \"conda init __your_favorite_shell__\"",
+        "",
+        "Anaconda3 drops support for 32-bit CPUs from v2022.10. If you are running a 32-bit system, please install anaconda3-2022.05 from the Versions bucket."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://repo.anaconda.com/archive/Anaconda3-2025.06-1-Windows-x86_64.exe#/setup.exe",
+            "hash": "36ba946abeb6bb7ba3235e0ccb67660e0b545235ca467f3aa964cd4b307c14ed"
+        }
+    },
+    "installer": {
+        "script": [
+            "Write-Host 'Installing Anaconda 3. This can take up to 30 minutes on an HDD.' -ForegroundColor Magenta",
+            "# Using Start-Process as a workaround because the installer will not work properly when args are quoted (e.g. \"`\"/S`\"\")",
+            "Start-Process \"$dir\\setup.exe\" -ArgumentList @('/S', '/InstallationType=JustMe', '/RegisterPython=1', '/AddToPath=0', '/NoRegistry=1', \"/D=$dir\") -Wait | Out-Null"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Start-Process \"$dir\\Uninstall-Anaconda3.exe\" -ArgumentList '/S' -Wait | Out-Null",
+            "# Create a 'dummy' to avoid error because the uninstaller removes the symlink. The does not affect persist.",
+            "if (!(Test-Path \"$dir\\envs\")) { New-Item \"$dir\\envs\" -ItemType Directory | Out-Null }"
+        ]
+    },
+    "bin": [
+        "python.exe",
+        "pythonw.exe",
+        [
+            "python.exe",
+            "python3"
+        ],
+        [
+            "python.exe",
+            "py"
+        ],
+        [
+            "bin\\_conda.exe",
+            "conda"
+        ],
+        [
+            "bin\\_conda.exe",
+            "conda3"
+        ]
+    ],
+    "env_add_path": "Scripts",
+    "persist": "envs",
+    "checkver": {
+        "url": "https://repo.anaconda.com/archive/",
+        "regex": "Anaconda3-([\\d.]+-?[\\d]?)-Windows"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://repo.anaconda.com/archive/Anaconda3-$version-Windows-x86_64.exe#/setup.exe"
+            }
+        },
+        "hash": {
+            "url": "https://repo.anaconda.com/archive/",
+            "regex": "(?sm)$basename.*?>$sha256<"
+        }
+    }
+}
