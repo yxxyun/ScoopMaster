@@ -1,50 +1,57 @@
 {
     "version": "1.0.9215",
-    "description": "Free Voice and Text Chat.",
-    "homepage": "https://discordapp.com/",
-    "license": {
-        "identifier": "Freeware",
-        "url": "https://discordapp.com/terms"
-    },
+    "description": "Group Chat That's All Fun & Games",
+    "homepage": "https://discord.com",
+    "license": "Freeware",
+    "notes": [
+        "Autostart: re-enable startup in Discord settings",
+        "Notifications:",
+        "- Run: scoop install makelnk; makelnk com.squirrel.Discord.Discord \"$dir\\Update.exe\" Discord \"--processStart Discord.exe\"",
+        "- Navigate to: \"%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\"",
+        "- Right click Discord -> Properties -> Change icon -> \"$dir\\app.ico\""
+    ],
     "architecture": {
         "64bit": {
             "url": "https://stable.dl2.discordapp.net/distro/app/stable/win/x64/1.0.9215/DiscordSetup.exe#/dl.7z",
             "hash": "15c911b05945529704353eb11d4ea5e80c573d6480e13599d445e1a32f01bba1"
+        },
+        "arm64": {
+            "url": "https://stable.dl2.discordapp.net/distro/app/stable/win/arm64/1.0.7/DiscordSetup.exe#/dl.7z",
+            "hash": "8a5903d1532f5f31f810a7ba0117c0e061ae6dfbdb29cecb7614c8104279faa6"
         }
     },
-    "extract_to": "_tmp",
-    "installer": {
-        "script": [
-            "# Expand Archive",
-            "Expand-7zipArchive \"$dir\\_tmp\\Discord-*-full.nupkg\" -ExtractDir \"lib\\net45\" -DestinationPath \"$dir\\app-$version\" -Removal | Out-Null",
-            "Remove-Item \"$dir\\_tmp\" -Force -Recurse",
-            "# Move installer.db file",
-            "Move-Item \"$dir\\app-$version\\installer.db\" -Destination \"$dir\\installer.db\"",
-            "# Create Symlink to $dir/app-9.9.9999",
-            "New-Item \"$dir\\app-9.9.9999\" -ItemType SymbolicLink -Value \"$dir\\app-$version\" -Force | Out-Null"
-        ]
-    },
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\Discord-$version-full.nupkg\" -ExtractDir 'lib\\net45' -DestinationPath \"$dir\\app-$version\" -Removal",
+        "Move-Item \"$dir\\app-$version\\installer.db\" \"$dir\"",
+        "Move-Item \"$dir\\app-$version\\app.ico\" \"$dir\"",
+        "New-Item \"$dir\\packages\" -ItemType Directory | Out-Null",
+        "Move-Item \"$dir\\RELEASES\" \"$dir\\packages\""
+    ],
     "shortcuts": [
         [
-            "app-9.9.9999\\Discord.exe",
-            "Discord"
+            "Update.exe",
+            "Discord",
+            "--processStart Discord.exe",
+            "app.ico"
         ]
     ],
+    "post_uninstall": "Remove-Item \"$env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs\\Discord.lnk\" -ErrorAction SilentlyContinue",
     "checkver": {
         "script": [
-            "$dl_url = \"https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=win&arch=x64\"",
-            "$dl = cache_path 'discord-stable' 'unknown' $dl_url",
-            "Invoke-WebRequest $dl_url -OutFile $dl",
-            "$ver = (Get-Item $dl).VersionInfo.ProductVersion",
-            "Move-Item -Force $dl (cache_path 'discord-stable' $ver $dl_url)",
-            "$ver"
+            "$base = 'https://updates.discord.com/distributions/app/manifests/latest?channel=stable&platform=win&arch='",
+            "$x64 = Invoke-RestMethod \"${base}x64\"",
+            "$arm64 = Invoke-RestMethod \"${base}arm64\"",
+            "Write-Output \"$($x64.full) $($arm64.full)\""
         ],
-        "regex": "(\\d.+)"
+        "regex": "x64/(?<version>[\\d.]+)[\\s\\S]*arm64/(?<armVersion>[\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://stable.dl2.discordapp.net/distro/app/stable/win/x64/$version/DiscordSetup.exe#/dl.7z"
+                "url": "https://stable.dl2.discordapp.net/distro/app/stable/win/x64/$matchVersion/DiscordSetup.exe#/dl.7z"
+            },
+            "arm64": {
+                "url": "https://stable.dl2.discordapp.net/distro/app/stable/win/arm64/$matchArmVersion/DiscordSetup.exe#/dl.7z"
             }
         }
     }
