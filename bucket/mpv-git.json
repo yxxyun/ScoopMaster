@@ -1,6 +1,6 @@
 {
-    "version": "20251124",
-    "description": "Video player based on MPlayer/mplayer2 (builds by shinchiro)",
+    "version": "20251124121046+8469605",
+    "description": "Video player based on MPlayer/mplayer2 (nightly builds by zhongfly, AVX2 required)",
     "homepage": "https://mpv.io",
     "license": "LGPL-2.1-or-later,GPL-2.0-or-later",
     "notes": [
@@ -12,12 +12,8 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20251124/mpv-x86_64-20251124-git-8469605.7z",
-            "hash": "a71fb69af1464ed75ba66697f4c1c9089cfc73391deb94c43d345e1e1e3cf2fc"
-        },
-        "32bit": {
-            "url": "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20251124/mpv-i686-20251124-git-8469605.7z",
-            "hash": "a66afd74dbe398a00a2d0e7fc704cb353a6c28d76760c51093c147106f96c466"
+            "url": "https://github.com/zhongfly/mpv-winbuild/releases/download/2025-11-24-8469605/mpv-x86_64-v3-20251124-git-8469605.7z",
+            "hash": "beaff90c6c3743970d38c04e189b1d983cca8a34acd1a8ee89cd45dc266bee70"
         }
     },
     "pre_install": "Remove-Item \"$dir\\updater.bat\"",
@@ -30,17 +26,27 @@
     ],
     "persist": "portable_config",
     "checkver": {
-        "url": "https://api.github.com/repositories/141023757/releases/latest",
-        "jsonpath": "$.assets..browser_download_url",
-        "regex": "mpv-x86_64-(\\d+)-git-(?<commit>[\\da-f]+)\\.7z"
+        "script": [
+            "$cont = (Invoke-RestMethod -UseBasicParsing -Method Get -Headers @{'Accept' = 'application/vnd.github+json'; 'Accept-Encoding' = 'gzip' } -MaximumRedirection 0 -Uri 'https://api.github.com/repos/zhongfly/mpv-winbuild/releases?per_page=2')",
+            ":OuterLoop foreach ($release in $cont) {",
+            "    foreach ($asset in $release.assets) {",
+            "        if ($asset.name -cmatch '^mpv-x86_64-v3-(?<date>[\\d-]+)-git-(?<commit>[\\da-f]+)\\.7z$') {",
+            "            $updated_date = ([DateTime]$asset.updated_at).ToUniversalTime().ToString('yyyyMMddHHmmss')",
+            "            Write-Output ('basever:\"' + $updated_date + '+' + $matches.commit + '\"') ('tag_name:\"' + $release.tag_name + '\"') ('date:\"' + $matches.date + '\"') ('commit:\"' + $matches.commit + '\"')",
+            "            break OuterLoop",
+            "        }",
+            "    }",
+            "}"
+        ],
+        "regex": "basever:\"(.+)\"\\stag_name:\"(?<tagname>.+)\"\\sdate:\"(?<date>.+)\"\\scommit:\"(?<commit>.+)\""
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/$version/mpv-x86_64-$version-git-$matchCommit.7z"
-            },
-            "32bit": {
-                "url": "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/$version/mpv-i686-$version-git-$matchCommit.7z"
+                "url": "https://github.com/zhongfly/mpv-winbuild/releases/download/$matchTagname/mpv-x86_64-v3-$matchDate-git-$matchCommit.7z",
+                "hash": {
+                    "url": "$baseurl/sha256.txt"
+                }
             }
         }
     }

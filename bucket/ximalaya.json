@@ -1,14 +1,13 @@
 {
-    "version": "4.0.2",
-    "description": "Online music app.",
+    "version": "3.3.7.384",
+    "description": "音频: 喜马拉雅",
     "homepage": "https://www.ximalaya.com",
-    "license": "Freeware",
-    "url": "https://www.ximalaya.com/down/lite/v2?client=win#/dl.7z",
-    "hash": "3686a1a11a1ac0fc6c3140c63d654f1e80b1032b15a9433e6009c0d9e32c0f7e",
+    "license": "Unknown",
+    "url": "https://webcdn.m.qq.com/spcmgr/download/GMCoOR8H-MTsACAAAAIIDKxD_3.3.7.384.exe#/dl.7z",
+    "hash": "ce29a53ef89878d3396949f5245f62d332cb55f540a326313a8eb9cc0102febc",
     "installer": {
-        "script": "Expand-7zipArchive \"$dir\\ximalaya-$version-ia32.nsis.7z\" \"$dir\""
+        "script": "(Get-ChildItem $dir 'ximalaya-*-ia32.nsis.7z').Fullname | Expand-7zipArchive -DestinationPath $dir -Removal"
     },
-    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
     "bin": [
         [
             "喜马拉雅.exe",
@@ -21,5 +20,18 @@
             "喜马拉雅"
         ]
     ],
-    "notes": "Check version number manually."
+    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
+    "checkver": {
+        "script": [
+            "$res = Invoke-WebRequest -UseBasicParsing -Uri 'https://luban.m.qq.com/api/public/software-manager/softwareProxy' -Body 'cmdid=3318&jprxReq[req][soft_id_list]=26167' -Method 'POST'",
+            "$content = $res.Content | ConvertFrom-Json",
+            "$verName = $content.resp.soft_list[0].ver_name",
+            "$fileName = $content.resp.soft_list[0].file_name",
+            "Write-Output \"$verName|$fileName\""
+        ],
+        "regex": "(?<version>[\\d.]+)\\|(?<id>.*)"
+    },
+    "autoupdate": {
+        "url": "https://webcdn.m.qq.com/spcmgr/download/$matchId#/dl.7z"
+    }
 }
