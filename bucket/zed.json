@@ -1,16 +1,12 @@
 {
-    "version": "0.214.6",
+    "version": "0.214.7",
     "description": "Zed is a high-performance, multiplayer code editor from the creators of Atom and Tree-sitter. It's also open source.",
     "homepage": "https://zed.dev/",
     "license": "AGPL-3.0, Apache-2.0, GPL-3.0",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/zed-industries/zed/releases/download/v0.214.6/Zed-x86_64.exe",
-            "hash": "2a8208c84c7c7513fe7dae2c098cb0f6a3f19d6b94fa617781cae3a2aa1cea96"
-        },
-        "arm64": {
-            "url": "https://github.com/zed-industries/zed/releases/download/v0.214.6/Zed-aarch64.exe",
-            "hash": "28d48ed43a58a98a3da01618bccc78e1312fa17d3468f7f77105af93664f2195"
+            "url": "https://github.com/zed-industries/zed/releases/download/v0.214.7/Zed-x86_64.exe",
+            "hash": "c783c1bc846b92b8e754e5d9bfb10d48b0c17e1db7eb5d860b910151cb77df33"
         }
     },
     "installer": {
@@ -19,10 +15,49 @@
             "Expand-InnoArchive -Path \"$dir\\$fname\" -ExtractDir '{code_GetInstallDir}' -Removal"
         ]
     },
+    "pre_install": [
+        "$local=Join-Path $env:LOCALAPPDATA \"Zed\"",
+        "$persist_local=Join-Path $persist_dir \"local\"",
+        "& \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $local $persist_local",
+        "$appdata=Join-Path $env:APPDATA \"Zed\"",
+        "$persist_appdata=Join-Path $persist_dir \"appdata\"",
+        "& \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $appdata $persist_appdata"
+    ],
+    "post_install": [
+        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
+        "$exepath = \"$dir\\zed.exe\".Replace('\\', '\\\\')",
+        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context', 'install-context-it', 'uninstall-context-it', 'install-github-integration', 'uninstall-github-integration' | ForEach-Object {",
+        "  if (Test-Path \"$bucketsdir\\$bucket\\scripts\\zed\\$_.reg\") {",
+        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\zed\\$_.reg\"",
+        "    $content = $content.Replace('$zeddir', $dirpath)",
+        "    $content = $content.Replace('$zed', $exepath)",
+        "    if ($global) {",
+        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
+        "  }",
+        "}",
+        "# 自动导入注册表（可选）",
+        "reg import \"$dir\\install-context.reg\"",
+        "reg import \"$dir\\install-associations.reg\""
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall')",
+            "{",
+            "   reg import \"$dir\\uninstall-context.reg\" ",
+            "   reg import \"$dir\\uninstall-github-integration.reg\" ",
+            "}"
+        ]
+    },
+    "persist": [
+        "local",
+        "appdata"
+    ],
     "bin": "bin\\zed.exe",
     "shortcuts": [
         [
-            "zed.exe",
+            "Zed.exe",
             "Zed"
         ]
     ],
@@ -30,13 +65,6 @@
         "github": "https://github.com/zed-industries/zed"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/zed-industries/zed/releases/download/v$version/Zed-x86_64.exe"
-            },
-            "arm64": {
-                "url": "https://github.com/zed-industries/zed/releases/download/v$version/Zed-aarch64.exe"
-            }
-        }
+        "url": "https://github.com/zed-industries/zed/releases/download/v$version/Zed-x86_64.exe"
     }
 }
