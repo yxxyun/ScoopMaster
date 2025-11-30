@@ -1,16 +1,31 @@
 {
-    "homepage": "https://www.todesk.com/",
-    "description": "A unlimited speed multifunctional remote control software",
     "version": "4.8.3.3",
+    "description": "A unlimited speed multifunctional remote control software",
+    "homepage": "https://www.todesk.com/",
     "license": "Proprietary",
-    "url": "https://dl.todesk.com/irrigation/ToDesk_4.8.3.3.exe#/dl.7z",
-    "hash": "8f86962d88b59a856e6c5796209902d86a407e9fffb3a951a8038b6112051eef",
+    "architecture": {
+        "64bit": {
+            "url": "https://dl.todesk.com/irrigation/ToDesk_4.8.3.3.exe#/dl.7z",
+            "hash": "c05e129ec63c8e6b235f7c06a365c6f6a01f2d9e1ad3a32686e5933d1eb3f74b"
+        }
+    },
     "pre_install": [
         "if (!(Test-Path \"$persist_dir\\config.ini\")) {",
         "    New-Item -Force -Path \"$persist_dir\\config.ini\" -ItemType File -Value \"[ConfigInfo]`nautoStart=0\" | Out-Null",
+        "}",
+        "# 解压对应架构的7z文件",
+        "if ($architecture -eq '64bit') {",
+        "    Get-ChildItem \"$dir\\app64.7z\" | Expand-7zipArchive -DestinationPath \"$dir\"",
+        "} else {",
+        "    Get-ChildItem \"$dir\\app32.7z\" | Expand-7zipArchive -DestinationPath \"$dir\"",
         "}"
     ],
-    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\uninst.exe\" -Force -Recurse",
+    "post_install": [
+        "# 清理不必要的文件",
+        "Remove-Item \"$dir\\app32.7z\", \"$dir\\app64.7z\" -Force -ErrorAction SilentlyContinue",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse -ErrorAction SilentlyContinue",
+        "Remove-Item \"$dir\\uninst.exe\" -Force -ErrorAction SilentlyContinue"
+    ],
     "shortcuts": [
         [
             "ToDesk.exe",
@@ -22,10 +37,14 @@
         "config.ini"
     ],
     "checkver": {
-        "url": "https://update.todesk.com/windows/uplog.html",
-        "regex": ">([\\d.]+)</div>"
+        "url": "https://www.todesk.com/download.html",
+        "regex": "ToDesk_([\\d.]+).exe"
     },
     "autoupdate": {
-        "url": "https://dl.todesk.com/irrigation/ToDesk_$version.exe#/dl.7z"
+        "architecture": {
+            "64bit": {
+                "url": "https://dl.todesk.com/irrigation/ToDesk_$version.exe#/dl.7z"
+            }
+        }
     }
 }
