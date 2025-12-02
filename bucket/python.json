@@ -6,16 +6,12 @@
     "notes": "Allow applications and third-party installers to find python by running: \"$dir\\install-pep-514.reg\"",
     "architecture": {
         "64bit": {
-            "url": "https://mirrors.huaweicloud.com/python/3.14.1/python-3.14.1-amd64.exe#/setup.exe",
+            "url": "https://www.python.org/ftp/python/3.14.1/python-3.14.1-amd64.exe",
             "hash": "md5:b236d1a32f73dcf1188db880acca5136"
         },
         "32bit": {
-            "url": "https://mirrors.huaweicloud.com/python/3.14.1/python-3.14.1.exe#/setup.exe",
+            "url": "https://www.python.org/ftp/python/3.14.1/python-3.14.1.exe",
             "hash": "md5:6e3f352986d73a85d2ff1a6e757c513c"
-        },
-        "arm64": {
-            "url": "https://mirrors.huaweicloud.com/python/3.14.1/python-3.14.1-arm64.exe#/setup.exe",
-            "hash": "md5:c785ff40517799f03d952ad91887152a"
         }
     },
     "pre_install": [
@@ -25,26 +21,15 @@
         "if ($architecture -eq '32bit') {",
         "    $py_archLabel = '32-bit'",
         "    $bit = '32'",
-        "}",
-        "if ($architecture -eq 'arm64') { $py_archLabel = 'ARM64' }",
-        "'install-pep-514.reg', 'uninstall-pep-514.reg' | ForEach-Object {",
-        "    $py_version = ($version -split '\\.')[0..1] -join '.'",
-        "    $content = Get-Content \"$bucketsdir\\main\\scripts\\python\\$_\"",
-        "    $content = $content.Replace('$py_root', $py_root)",
-        "    $content = $content.Replace('$py_version', $py_version)",
-        "    $content = $content.Replace('$py_fullversion', $version)",
-        "    $content = $content.Replace('$py_cleanVersion', $version -replace '\\.')",
-        "    $content = $content.Replace('$py_archLabel', $py_archLabel)",
-        "    $content = $content.Replace('$py_arch', \"$bit\")",
-        "    if ($global) {",
-        "       $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
-        "    }",
-        "    Set-Content \"$dir\\$_\" $content -Encoding Ascii",
         "}"
     ],
     "installer": {
         "script": [
-            "Expand-DarkArchive \"$dir\\setup.exe\" \"$dir\\_tmp\"",
+            "$setup_file = \"$dir\\python-3.10.6-amd64.exe\"",
+            "if ($bit -eq '32') {",
+            "    $setup_file = \"$dir\\python-3.10.6.exe\"",
+            "}",
+            "Expand-DarkArchive $setup_file \"$dir\\_tmp\"",
             "@('path.msi', 'pip.msi') | ForEach-Object {",
             "    Remove-Item \"$dir\\_tmp\\AttachedContainer\\$_\"",
             "}",
@@ -53,10 +38,10 @@
             "    if($((Get-Item $_).Basename) -eq 'appendpath') { return }",
             "    Expand-MsiArchive $_ \"$dir\" ",
             "}",
-            "Remove-Item \"$dir\\_tmp\", \"$dir\\setup.exe\" -Force -Recurse",
+            "Remove-Item \"$dir\\_tmp\", $setup_file -Force -Recurse",
             "if ($global) {",
-            "    $pathext = (env 'PATHEXT' $true) -replace ';.PYW?', ''",
-            "    env 'PATHEXT' $true \"$pathext;.PY;.PYW\"",
+            "    $pathext = (Get-EnvVar -Name PATHEXT -Global) -replace ';.PYW?', ''",
+            "    Set-EnvVar -Name PATHEXT -Value \"$pathext;.PY;.PYW\" -Global",
             "}"
         ]
     },
@@ -67,8 +52,8 @@
     "uninstaller": {
         "script": [
             "if ($global) {",
-            "    $pathext = (env 'PATHEXT' $true) -replace ';.PYW?', ''",
-            "    env 'PATHEXT' $true \"$pathext\"",
+            "    $pathext = (Get-EnvVar -Name PATHEXT -Global) -replace ';.PYW?', ''",
+            "    Set-EnvVar -Name PATHEXT -Value \"$pathext\" -Global",
             "}"
         ]
     },
@@ -98,13 +83,10 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://mirrors.huaweicloud.com/python/$version/python-$version-amd64.exe#/setup.exe"
+                "url": "https://www.python.org/ftp/python/$version/python-$version-amd64.exe"
             },
             "32bit": {
-                "url": "https://mirrors.huaweicloud.com/python/$version/python-$version.exe#/setup.exe"
-            },
-            "arm64": {
-                "url": "https://mirrors.huaweicloud.com/python/$version/python-$version-arm64.exe#/setup.exe"
+                "url": "https://www.python.org/ftp/python/$version/python-$version.exe"
             }
         },
         "hash": {
