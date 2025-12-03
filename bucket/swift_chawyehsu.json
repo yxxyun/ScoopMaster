@@ -2,15 +2,15 @@
   "homepage": "https://www.swift.org/",
   "description": "The Swift Programming Language",
   "license": "Apache-2.0",
-  "version": "6.2.1",
+  "version": "6.1",
   "architecture": {
     "64bit": {
-      "url": "https://download.swift.org/swift-6.2.1-release/windows10/swift-6.2.1-RELEASE/swift-6.2.1-RELEASE-windows10.exe",
-      "hash": "fd1209ac3e008152924e0409e5590f2fe41644132e532d4526b8641339e88000"
+      "url": "https://download.swift.org/swift-6.1-release/windows10/swift-6.1-RELEASE/swift-6.1-RELEASE-windows10.exe",
+      "hash": "8c8aef8b4a449ebeefd74482ac767e269f8cbe7e520871c1d103c7079c5f4c6a"
     },
     "arm64": {
-      "url": "https://download.swift.org/swift-6.2.1-release/windows10-arm64/swift-6.2.1-RELEASE/swift-6.2.1-RELEASE-windows10-arm64.exe",
-      "hash": "7c2351e1708f6e74f4c97098c50ac049e08a58894e75cc7c8fd220eb2549fb9d"
+      "url": "https://download.swift.org/swift-6.1-release/windows10-arm64/swift-6.1-RELEASE/swift-6.1-RELEASE-windows10-arm64.exe",
+      "hash": "c0ad594e3e033c30b9f472b1a689a2d05ff20f265a4fc44acd1b5eae3751a341"
     }
   },
   "depends": "main/wixtoolset",
@@ -23,27 +23,34 @@
       "wix.exe burn extract \"$dir\\$fname\" -o \"$dir\\extracted\" -oba \"$dir\\extracted\"",
       "$productVersion = ([xml](Get-Content -Raw \"$dir\\extracted\\manifest.xml\" -Encoding utf8)).BurnManifest.Registration.Version",
       "Get-ChildItem \"$dir\\extracted\\WixAttachedContainer\\*.msi\" | ForEach-Object {",
-      "    if ($_.Name -match 'rtl.*.msi') {",
+      "    if ($_.Name -match 'rtl.msi') {",
       "        Expand-MsiArchive $_ \"$dir\\Runtimes\\usr\\bin\"",
       "    } else {",
       "        Expand-MsiArchive $_ \"$dir\"",
       "    }",
       "}",
-      "Rename-Item -Path \"$dir\\LocalApp\\Programs\\Swift\\Toolchains\\$($productVersion)+Asserts\" -NewName \"$dir\\LocalApp\\Programs\\Swift\\Toolchains\\Asserts\"",
-      "Move-Item -Path \"$dir\\LocalApp\\Programs\\Swift\\Platforms\\$productVersion\\*.platform\" -Destination \"$dir\\LocalApp\\Programs\\Swift\\Platforms\"",
+      "if (Test-Path \"$dir\\LocalApp\\Programs\\Swift\\Tools\") {",
+      "    Get-ChildItem \"$dir\\LocalApp\\Programs\\Swift\\Tools\\$productVersion\" | ForEach-Object {",
+      "        Move-Item -Path $_ -Destination \"$dir\\LocalApp\\Programs\\Swift\\Toolchains\\$($productVersion)+Asserts\\usr\\bin\" -Force",
+      "    }",
+      "    Remove-Item \"$dir\\LocalApp\\Programs\\Swift\\Tools\" -Recurse | Out-Null",
+      "}",
+      "Move-Item -Path \"$dir\\LocalApp\\Programs\\Swift\\Platforms\\$productVersion\\Windows.platform\" -Destination \"$dir\\LocalApp\\Programs\\Swift\\Platforms\"",
+      "Move-Item -Path \"$dir\\LocalApp\\Programs\\Swift\\Toolchains\\$($productVersion)+Asserts\\usr\" -Destination \"$dir\\LocalApp\\Programs\\Swift\\Toolchains\"",
       "Move-Item -Path \"$dir\\LocalApp\\Programs\\Swift\\Redistributables\\$productVersion\\*\" -Destination \"$dir\\LocalApp\\Programs\\Swift\\Redistributables\"",
       "Get-ChildItem \"$dir\\LocalApp\\Programs\\Swift\" | ForEach-Object {",
       "    Move-Item -Path $_ -Destination \"$dir\\\" -Force",
       "}",
-      "Remove-Item \"$dir\\Platforms\\$productVersion\" -Recurse | Out-Null",
-      "Remove-Item \"$dir\\Redistributables\\$productVersion\" -Recurse | Out-Null",
+      "Remove-Item \"$dir\\Platforms\\$productVersion\" | Out-Null",
+      "Remove-Item \"$dir\\Toolchains\\$($productVersion)+Asserts\" | Out-Null",
+      "Remove-Item \"$dir\\Redistributables\\$productVersion\" | Out-Null",
       "@(\"$fname\", 'extracted', 'LocalApp', 'SourceDir') | ForEach-Object {",
       "    Remove-Item \"$dir\\$_\" -Recurse -ErrorAction SilentlyContinue | Out-Null",
       "}"
     ]
   },
   "env_add_path": [
-    "Toolchains\\Asserts\\usr\\bin",
+    "Toolchains\\usr\\bin",
     "Runtimes\\usr\\bin"
   ],
   "env_set": {
