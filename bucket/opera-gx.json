@@ -1,5 +1,5 @@
 {
-    "version": "124.0.5705.61",
+    "version": "124.0.5705.89",
     "description": "Opera GX is a special version of the Opera browser built specifically for gamers.",
     "homepage": "https://www.opera.com/gx",
     "license": {
@@ -8,53 +8,70 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://get.opera.com/pub/opera_gx/124.0.5705.61/win/Opera_GX_124.0.5705.61_Setup_x64.exe#/dl.7z",
-            "hash": "e1d4a2f2c4ddf1db8cc442406a2c9395362d2a8f8f43d067d68530b55593edd6"
+            "url": "https://get.opera.com/pub/opera_gx/124.0.5705.89/win/Opera_GX_124.0.5705.89_Setup_x64.exe#/dl.7z",
+            "hash": "aa8e8f6faf4e4922341d43b922524197b54e37a5415a81f5bd5c099277a1ad30"
         },
         "32bit": {
-            "url": "https://get.opera.com/pub/opera_gx/124.0.5705.61/win/Opera_GX_124.0.5705.61_Setup.exe#/dl.7z",
-            "hash": "2351c62d4d981dbe2e5d0dbedb52f96a8fb839c0dbb72d011d17ed2b35983c55"
+            "url": "https://get.opera.com/pub/opera_gx/124.0.5705.89/win/Opera_GX_124.0.5705.89_Setup.exe#/dl.7z",
+            "hash": "fafae3dc0ea6acfa6844584e9daccc63a38cc7561d782a36b600ef283eef2e0b"
         }
     },
+    "pre_install": [
+        "$operagx_root = \"$dir\".Replace('\\', '\\\\')",
+        "'install-context.reg', 'uninstall-context.reg' | ForEach-Object {",
+        "    $content = Get-Content \"$bucketsdir\\business\\assets\\opera-gx\\$_\"",
+        "    $content = $content.Replace('$operagx_root', $operagx_root)",
+        "    if ($global) {",
+        "       $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    Set-Content \"$dir\\$_\" $content -Encoding Ascii",
+        "}"
+    ],
     "installer": {
         "script": [
-            "Remove-Item -Path \"$dir\\*_list\" -Force -ErrorAction SilentlyContinue",
-            "$version, 'autoupdate' | ForEach-Object { ensure \"$dir\\$_\" | Out-Null }",
-            "Move-Item -Path \"$dir\\opera_autoupdate*\" -Destination \"$dir\\autoupdate\" -Force",
-            "$exclude_list = @('Assets', $version, 'autoupdate', 'Resources.pri', 'opera.visualelementsmanifest.xml')",
-            "Get-ChildItem -Path $dir | Where-Object { $exclude_list -notcontains $_.Name } | ForEach-Object {",
-            "    $destination_dir = Join-Path $dir \"$version\\$($_.Name)\"",
-            "    Move-Item -Path $_.FullName -Destination $destination_dir -Force -ErrorAction SilentlyContinue",
+            "Remove-Item -Path \"$dir\\*_list\" -Force",
+            "if (!(Test-Path \"$dir\\localization\")) {",
+            "   New-Item -Path \"$dir\\localization\" -ItemType Directory | Out-Null",
+            "   Move-Item -Path \"$dir\\*.pak\" -Destination \"$dir\\localization\" -Exclude 'opera*' -ErrorAction Ignore",
             "}",
-            "Copy-Item -Path \"$dir\\$version\\opera.exe\" -Destination $dir -Force",
-            "$cfg = @{ 'autoupdate'= $false; 'enable_stats' = $false; 'single_profile' = $true } | ConvertTo-Json",
-            "Set-Content -Path \"$dir\\installer_prefs.json\" -Value $cfg -Encoding ASCII"
+            "Set-Content -Path \"$dir\\installer_prefs.json\" -Value (@{ 'autoupdate'= $false; 'enable_stats' = $false; 'single_profile' = $true } | ConvertTo-Json) -Encoding ASCII"
         ]
     },
+    "post_install": [
+        "reg import \"$dir\\install-context.reg\"",
+        "Write-Host Registering the app with : \"$dir\\install-context.reg\""
+    ],
+    "uninstaller": {
+        "script": [
+            "reg import \"$dir\\uninstall-context.reg\"",
+            "Write-Host UnRegistering the app with : \"$dir\\uninstall-context.reg\""
+        ]
+    },
+    "bin": [
+        [
+            "opera.exe",
+            "Opera GX",
+            "--user-data-dir=$persist_dir\\profile\\data"
+        ]
+    ],
     "shortcuts": [
         [
             "opera.exe",
-            "Opera GX"
+            "Opera GX",
+            "--user-data-dir=$persist_dir\\profile\\data"
         ]
     ],
     "persist": "profile",
     "checkver": {
         "script": [
-            "$version_regex = '^(?!\\.)[\\d.]+/$'",
-            "$version_sort = { [version]$_.href.TrimEnd('/') }",
             "$releases = 'https://get.opera.com/pub/opera_gx/'",
             "$download_page = Invoke-WebRequest -Uri $releases -UseBasicParsing",
-            "$version_segments = $download_page.links | Where-Object href -Match $version_regex | Sort-Object $version_sort -Descending | Select-Object -Expand href",
-            "foreach ($version_segment in $version_segments) {",
-            "    $version_url = $releases + $version_segment",
-            "    $version_page = Invoke-WebRequest -Uri $version_url -UseBasicParsing",
-            "    if ($null -ne $version_page -and $version_page.Content -match 'win') {",
-            "        Write-Output $version_segment",
-            "        break",
-            "    }",
-            "}"
+            "$versionSort   = { [version]$_.href.TrimEnd('/') }",
+            "$last_ver = $download_page.links | Where-Object href -match '^[\\d]+[\\d\\.]+/$' | Sort-Object $versionSort -Descending | Select-Object -first 1 -expand href",
+            "$version = $last_ver -replace '/', ''",
+            "Write-Output $version"
         ],
-        "regex": "([\\d.]+)/"
+        "regex": "(\\S+)"
     },
     "autoupdate": {
         "architecture": {
