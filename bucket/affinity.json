@@ -1,0 +1,65 @@
+{
+    "##": "ltguillaume/schep",
+    "version": "3.0.2",
+    "description": "Professional creative software, free for everyone. Portable.",
+    "homepage": "https://www.affinity.studio",
+    "license": "Proprietary",
+    "suggest": {
+        "Visual C++ 2022 runtimes": "vcredist2022"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://downloads.affinity.studio/Affinity%20x64.msix#/dl.7z",
+            "hash": "84d97a3e24f6c8048ff4cba00c4820883133359c4161129dba1975527f0c0428"
+        },
+        "arm64": {
+            "url": "https://downloads.affinity.studio/Affinity%20arm64.msix#/dl.7z",
+            "hash": "ae3195d54f24dbffc45d654a92907c8930643490bc9d3e0ef74c0337a5e3538f"
+        }
+    },
+    "extract_dir": "App",
+    "post_install": [
+        "'AppData', 'ProgramData' | ForEach-Object {",
+        "    $data = [Environment]::GetEnvironmentVariable($_) +\"\\Affinity\"",
+        "    if (-not (Test-Path \"$data\\*\")) {",
+        "        Remove-Item \"$data\" 2>$null",
+        "        if (-not (Test-Path \"$persist_dir\\$_\")) {",
+        "            New-Item -ItemType Directory -Path \"$persist_dir\\$_\" >$null",
+        "        }",
+        "        New-DirectoryJunction \"$data\" \"$persist_dir\\$_\" >$null",
+        "    }",
+        "}"
+    ],
+    "shortcuts": [
+        [
+            "Affinity.exe",
+            "Canva Affinity"
+        ]
+    ],
+    "post_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    'AppData', 'ProgramData' | ForEach-Object {",
+        "        $data = Get-Item ([Environment]::GetEnvironmentVariable($_) +\"\\Affinity\")",
+        "        if (\"$($data.Target)\" -eq \"$persist_dir\\$_\") { $data.Delete() }",
+        "    }",
+        "    Remove-Item \"$Env:ProgramData\\Intel\\ShaderCache\\Affinity*\" 2>$null",
+        "    Remove-Item 'HKLM:SOFTWARE\\Microsoft\\Tracing\\Affinity_RASAPI32' -Force -Recurse 2>$null",
+        "    Remove-Item 'HKLM:SOFTWARE\\Microsoft\\Tracing\\Affinity_RASMANCS' -Force -Recurse 2>$null",
+        "}"
+    ],
+    "checkver": {
+        "url": "https://www.affinity.studio/en_gb/help/release-notes",
+        "regex": "version ([\\d.]+)",
+        "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/145.0"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://downloads.affinity.studio/Affinity%20x64.msix#/dl.7z"
+            },
+            "arm64": {
+                "url": "https://downloads.affinity.studio/Affinity%20arm64.msix#/dl.7z"
+            }
+        }
+    }
+}
