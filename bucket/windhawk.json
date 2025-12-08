@@ -1,18 +1,42 @@
 {
     "version": "1.7.2",
-    "description": "Windhawk. The customization marketplace for Windows programs",
+    "description": "Customization marketplace for Windows programs.",
     "homepage": "https://windhawk.net/",
-    "license": "",
-    "changelog": "https://github.com/ramensoftware/windhawk/releases",
-    "url": "https://github.com/ramensoftware/windhawk/releases/download/v1.7.2/windhawk_setup.exe#/setup.exe",
-    "hash": "ab9f389ae946c74611a34171f24e9302adf2949cd11b87a5c01aee35a5a4b09b",
-    "persist": "Windhawk\\AppData",
-    "installer": {
-        "script": "Start-Process -Wait \"$dir\\setup.exe\" -ArgumentList '/S /portable' -Verb RunAs"
+    "license": {
+        "identifier": "GPL-3.0-or-later",
+        "url": "https://github.com/ramensoftware/windhawk/blob/main/LICENSE"
     },
+    "url": "https://github.com/ramensoftware/windhawk/releases/download/v1.7.2/windhawk_setup_offline.exe",
+    "hash": "b421ec06c2a4ea5fee76250c5ea40302eb54fa0c85489eaa177845e39c6a7a60",
+    "bin": "windhawk.exe",
+    "pre_install": [
+        "if(!(test-path \"$persist_dir\\AppData\\settings.ini\")) {",
+        "    New-Item -ItemType \"Directory\" -Path \"$dir\\AppData\" | Out-Null",
+        "    New-Item \"$dir\\AppData\\settings.ini\" | Out-Null",
+        "    Add-Content \"$dir\\AppData\\settings.ini\" \"[Settings]`r`nDisableUpdateCheck=1\"",
+        "}"
+    ],
+    "installer": {
+        "args": [
+            "/portable",
+            "/S",
+            "/D=$dir"
+        ]
+    },
+    "post_install": [
+        "if((test-path \"$dir\\AppData.original\")) {",
+        "    Copy-Item \"$dir\\AppData.original\\*\"  \"$dir\\AppData\" -Exclude \"*.ini\" -Recurse -Force",
+        "    Remove-Item \"$dir\\AppData.original\" -Recurse -Force | Out-Null",
+        "    Remove-Item \"$dir\\windhawk.ini.original\" -Recurse -Force | Out-Null",
+        "}"
+    ],
+    "persist": [
+        "AppData",
+        "windhawk.ini"
+    ],
     "shortcuts": [
         [
-            "Windhawk\\windhawk.exe",
+            "windhawk.exe",
             "Windhawk"
         ]
     ],
@@ -20,6 +44,6 @@
         "github": "https://github.com/ramensoftware/windhawk"
     },
     "autoupdate": {
-        "url": "https://github.com/ramensoftware/windhawk/releases/download/v$version/windhawk_setup.exe#/setup.exe"
+        "url": "https://github.com/ramensoftware/windhawk/releases/download/v$version/windhawk_setup_offline.exe"
     }
 }
