@@ -1,36 +1,69 @@
 {
     "version": "20.0.81",
-    "description": "Hello, KuGou!",
-    "homepage": "https://www.kugou.com/",
+    "description": "Hello, KuGou! - The largest P2P music sharing software in China.",
+    "homepage": "https://www.kugou.com",
     "license": {
-        "identifier": "Unknown"
+        "identifier": "Proprietary",
+        "url": "https://www.kugou.com/about/protocol.html"
     },
-    "url": "http://download.kugou.com/download/kugou_pc#/dl.7z",
+    "suggest": {
+        "sudo": "main/gsudo"
+    },
+    "url": "https://download.kugou.com/dl/kugou_pc#/dl.7z",
+    "hash": "65e317dc512951644188dd321b44b8d2d47728407c873d40f0a00a0e04e9b5d3",
+    "pre_install": "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
     "installer": {
         "script": [
-            "Get-ChildItem -Path  \"$dir\\`$PLUGINSDIR\" -Recurse -Exclude KuGou.7z | Remove-Item -Recurse -Force",
-            "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\KuGou.7z\" \"$dir\"",
-            "New-Item -ItemType Junction -Path \"$dir\\$([System.Diagnostics.FileVersionInfo]::GetVersionInfo(\"$dir\\KuGou.exe\").FileVersion)\" -Target \"$dir\"",
-            "Remove-Item -Recurse -Force \"$dir\\`$PLUGINSDIR\""
-        ],
-        "keep": false
+            "Move-Item \"$dir\\`$PLUGINSDIR\\KuGou.7z\" \"$dir\"",
+            "Move-Item \"$dir\\`$PLUGINSDIR\\AppData.7z\" \"$dir\"",
+            "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse -Force",
+            "Expand-7zipArchive \"$dir\\KuGou.7z\" \"$dir\\temp\" -Removal",
+            "Copy-Item \"$dir\\temp\\Kugou.exe\" \"$dir\\Kugou.exe\" | Out-Null",
+            "$fileVersion = $([System.Diagnostics.FileVersionInfo]::GetVersionInfo(\"$dir\\Kugou.exe\").FileVersion)",
+            "Move-Item \"$dir\\temp\" \"$dir\\$fileVersion\"",
+            "ensure \"$persist_dir\\appdata\\KuGou8\"",
+            "Expand-7zipArchive \"$dir\\AppData.7z\" \"$persist_dir\\appdata\\KuGou8\" -Overwrite 'Skip' -Removal",
+            "if (Test-Path \"$env:APPDATA\\KuGou8\") {",
+            "  $f = (Get-Item -LiteralPath \"$env:APPDATA\\KuGou8\")",
+            "  if ($f.LinkType -Eq \"SymbolicLink\") {",
+            "    $f.Delete()",
+            "  } else {",
+            "    robocopy \"$env:APPDATA\\KuGou8\" \"$persist_dir\\appdata\\KuGou8\" /E /MOVE /XJ /NFL /NDL /NJH /NJS /NC /NS",
+            "  }",
+            "}",
+            "New-Item -ItemType SymbolicLink -Path \"$env:APPDATA\\KuGou8\" -Target \"$persist_dir\\appdata\\KuGou8\" | Out-Null",
+            "if (!(Test-Path 'HKCU:\\Software\\kugou')) {",
+            "  New-Item -Path 'HKCU:\\Software\\kugou' | Out-Null",
+            "}",
+            "New-ItemProperty -Path 'HKCU:\\Software\\kugou' -Name 'AppDataPath' -Value \"$env:APPDATA\\KuGou8\" -Type String | Out-Null",
+            "New-ItemProperty -Path 'HKCU:\\Software\\kugou' -Name 'AppPath' -Value \"$dir\" -Type String | Out-Null"
+        ]
     },
+    "post_uninstall": [
+        "Remove-Item -Path 'HKLM:\\SOFTWARE\\Classes\\kugou' -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item -Path 'HKLM:\\SOFTWARE\\WOW6432Node\\KUGOU' -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item -Path 'HKCU:\\Software\\kugou' -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item -Path 'HKCU:\\Software\\KuGou8' -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item -Path 'HKCU:\\System\\KConfig' -Recurse -Force -ErrorAction SilentlyContinue",
+        "if (Test-Path \"$env:APPDATA\\KuGou8\") {",
+        "  $f = (Get-Item -LiteralPath \"$env:APPDATA\\KuGou8\")",
+        "  if ($f.LinkType -Eq \"SymbolicLink\") {",
+        "    $f.Delete()",
+        "  }",
+        "}"
+    ],
     "shortcuts": [
         [
-            "KuGou.exe",
-            "KuGou"
+            "Kugou.exe",
+            "酷狗音乐"
         ]
-    ],
-    "bin": "kugou.exe",
-    "persist": [
-        "Lyric",
-        "Download"
     ],
     "checkver": {
         "url": "https://download.kugou.com/",
-        "regex": "V([\\d.]+)"
+        "regex": "<span class=\"tuijian_product_version\">V(?<version>\\d+\\.\\d+\\.\\d+)<\\/span>",
+        "replace": "${version}"
     },
     "autoupdate": {
-        "version": "$version"
+        "url": "https://download.kugou.com/dl/kugou_pc#/dl.7z"
     }
 }
