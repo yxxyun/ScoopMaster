@@ -22,9 +22,9 @@
     },
     "installer": {
         "script": [
-            "$configpath = \"$([Environment]::GetFolderPath('CommonDocuments'))\\Tencent\\QQ\"",
+            "$configpath = \"$env:PUBLIC\\Documents\\Tencent\\QQ\"",
             "if (!(Test-Path -Path \"$configpath\")) {",
-            "    New-Item -Path \"$configpath\" -Type Directory -Force -ErrorAction SilentlyContinue | Out-Null",
+            "    New-Item -Path \"$configpath\" -Type Directory -Force | Out-Null",
             "}",
             "if (!(Test-Path -Path \"$configpath\\UserDataInfo.ini\" -PathType leaf)) {",
             "    Set-Content -NoNewline -Path \"$configpath\\UserDataInfo.ini\" -Value \"[UserDataSet]`nUserDataSavePathType=2`nUserDataSavePath=`\"$persist_dir\\Tencent Files`\"\"",
@@ -38,41 +38,31 @@
         ]
     ],
     "persist": "Tencent Files",
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App"
-    ],
     "uninstaller": {
-        "script": [
-            "if ($cmd -eq 'uninstall') {",
-            "    Remove-Item -Path \"$([Environment]::GetFolderPath('CommonDocuments'))\\Tencent\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
-            "    Remove-Item -Path \"$env:AppData\\QQ\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
-            "}"
-        ]
+        "script": "Remove-Item -Path \"$env:PUBLIC\\Documents\\Tencent\" -Recurse -Force | Out-Null"
     },
     "checkver": {
         "script": [
-            "# Please keep this script. An empty Accept-Encoding header can cause the CDN to deliver expired cache.",
-            "# See : https://github.com/ScoopInstaller/Extras/issues/15916",
-            "$headers = @{ 'Accept-Encoding' = 'gzip' }",
-            "$url = 'https://cdn-go.cn/qq-web/im.qq.com_new/latest/rainbow/windowsConfig.js'",
-            "$response = Invoke-WebRequest -Uri $url -UseBasicParsing -Headers $headers",
-            "Write-Output $response.Content"
+            "$url = 'https://im.qq.com/pcqq/index.shtml'",
+            "$resp = Invoke-WebRequest -Uri $url",
+            "$cont = $resp.Content",
+            "$pattern = 'cdn-go.cn/qq-web.*windows.*.js'",
+            "$jsUrl = 'https://' + [regex]::Match($cont, $pattern).Value",
+            "Invoke-WebRequest -Uri $jsUrl"
         ],
-        "regex": "QQNT/Windows/QQ_([\\d\\.]+)_([\\d]+)_x86_01.exe",
-        "replace": "${1}.${2}"
+        "regex": "([\\d\\w]+.qq.com)/qqfile/qq/QQNT/Windows/QQ_([\\d\\.]+)_([\\d]+)_x86_01.exe",
+        "replace": "${2}.${3}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$match1_$match2_x64_01.exe#/dl.7z"
+                "url": "https://$match1/qqfile/qq/QQNT/Windows/QQ_$match2_$match3_x64_01.exe#/dl.7z"
             },
             "32bit": {
-                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$match1_$match2_x86_01.exe#/dl.7z"
+                "url": "https://$match1/qqfile/qq/QQNT/Windows/QQ_$match2_$match3_x86_01.exe#/dl.7z"
             },
             "arm64": {
-                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$match1_$match2_arm64_01.exe#/dl.7z"
+                "url": "https://$match1/qqfile/qq/QQNT/Windows/QQ_$match2_$match3_arm64_01.exe#/dl.7z"
             }
         }
     }
