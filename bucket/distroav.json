@@ -1,57 +1,20 @@
 {
-    "architecture": {
-        "64bit": {
-            "hash": "e5690fe6ae589e19be003413835f9169a8f18df0bc53b858d7292928b661c529",
-            "url": "https://github.com/DistroAV/DistroAV/releases/download/6.1.1/distroav-6.1.1-windows-x64.zip"
-        }
+    "version": "6.1.1",
+    "homepage":"https://github.com/DistroAV/DistroAV",
+    "url":"https://github.com/DistroAV/DistroAV/releases/download/6.1.1/distroav-6.1.1-windows-x64.zip",
+    "hash":"sha256:e5690fe6ae589e19be003413835f9169a8f18df0bc53b858d7292928b661c529",
+    "depands": {
+        "OBS Studio":"obs-studio",
+        "##":"別途NDI Toolsが必要"
     },
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "hash": {
-                    "regex": "$basename: ([0-9a-f]{64})",
-                    "url": "https://github.com/DistroAV/DistroAV/releases/tag/$version"
-                },
-                "url": "https://github.com/DistroAV/DistroAV/releases/download/$version/distroav-$version-windows-x64.zip"
-            }
-        }
-    },
-    "checkver": "github",
-    "description": "NewTek NDI integration for OBS Studio.",
-    "homepage": "https://github.com/DistroAV/DistroAV",
-    "extract_dir": "distroav",
-    "installer": {
-        "script": [
-            "if (-not (Test-Path \"$(appdir obs-studio)\\current\")) {",
-            "    warn 'OBS Studio was not installed through scoop. You must copy this plugin into the OBS installation folder manually!'",
-            "    return",
-            "}",
-            "Get-ChildItem -Path \"$dir\\bin\\$architecture\" -File | ForEach-Object {",
-            "    New-Item -ItemType HardLink -Path \"$(appdir obs-studio)\\current\\obs-plugins\\$architecture\\$($_.Name)\" -Target $_.FullName -Force | Out-Null",
-            "}",
-            "Move-Item -Path \"$dir\\data\" -Destination \"$dir\\distroav\" -Force | Out-Null",
-            "New-Item -ItemType Junction -Path \"$(appdir obs-studio)\\current\\data\\obs-plugins\\distroav\" -Target \"$dir\\distroav\" -Force | Out-Null"
-        ]
-    },
-    "license": {
-        "identifier": "GPL-2.0-only",
-        "url": "https://github.com/DistroAV/DistroAV/blob/master/LICENSE"
-    },
-    "suggest": {
-        "NDI Runtime": "ox/ndi-runtime",
-        "OBS Studio": "ox/obs-studio"
-    },
-    "uninstaller": {
-        "script": [
-            "if (-not (Test-Path \"$(appdir obs-studio)\\current\")) {",
-            "    warn 'OBS Studio was not installed through scoop. You must remove this plugin from the OBS installation folder manually!'",
-            "    return",
-            "}",
-            "Get-ChildItem -Path \"$dir\\bin\\$architecture\" -File | ForEach-Object {",
-            "    Remove-Item -Path \"$(appdir obs-studio)\\current\\obs-plugins\\$architecture\\$($_.Name)\" -Force -ErrorAction SilentlyContinue",
-            "}",
-            "Remove-Item -Path \"$(appdir obs-studio)\\current\\data\\obs-plugins\\distroav\" -Force -ErrorAction SilentlyContinue"
-        ]
-    },
-    "version": "6.1.1"
+    "post_install":[
+        "New-Item -Value \"$dir\\distroav\\data\" -Path \"$scoopdir\\persist\\obs-studio\\data\\obs-plugins\\distroav\" -ItemType Junction",
+        "Get-ChildItem -Directory -Path \"$dir\\distroav\\bin\\$architecture\" | ForEach-Object{New-Item -Value $_.FullName -Path \"$scoopdir\\persist\\obs-studio\\obs-plugins\\$architecture\\$_\" -ItemType Junction}",
+        "Get-ChildItem -File -Path \"$dir\\distroav\\bin\\$architecture\" | ForEach-Object{New-Item -Value $_.FullName -Path \"$scoopdir\\persist\\obs-studio\\obs-plugins\\$architecture\\$_\" -ItemType hardlink}"
+    ],
+    "pre_uninstall":[
+        "Remove-Item \"$scoopdir\\persist\\obs-studio\\data\\obs-plugins\\distroav\" -recurse",
+        "Get-ChildItem -Directory -Path \"$dir\\distroav\\bin\\$architecture\" | ForEach-Object{Remove-Item \"$scoopdir\\persist\\obs-studio\\obs-plugins\\$architecture\\$_\" -recurse}",
+        "Get-ChildItem -File -Path \"$dir\\distroav\\bin\\$architecture\" | ForEach-Object{Remove-Item \"$scoopdir\\persist\\obs-studio\\obs-plugins\\$architecture\\$_\"}"
+    ]
 }
