@@ -1,0 +1,67 @@
+{
+    "version": "32.0.3",
+    "description": "Video recording and live streaming software",
+    "homepage": "https://obsproject.com",
+    "license": "GPL-2.0-only",
+    "notes": [
+        "Add Virtual Camera module by running: \"$dir\\data\\obs-plugins\\win-dshow\\virtualcam-install.bat\"",
+        "Remove it by running: \"$dir\\data\\obs-plugins\\win-dshow\\virtualcam-uninstall.bat\""
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://cdn-fastly.obsproject.com/downloads/OBS-Studio-32.0.3-Windows-x64.zip",
+            "hash": "7dbaafe4ff9acbeab688035d6a8071e39c09d1a86f3aa3e300e74eec09e4b502",
+            "shortcuts": [
+                [
+                    "bin\\64bit\\obs64.exe",
+                    "OBS Studio"
+                ],
+                [
+                    "bin\\64bit\\obs64.exe",
+                    "OBS Studio Startup",
+                    "--disable-shutdown-check"
+                ]
+            ]
+        },
+        "arm64": {
+            "url": "https://cdn-fastly.obsproject.com/downloads/OBS-Studio-32.0.3-Windows-arm64.zip",
+            "hash": "e3ed1f2145798a11f37d5d1898adfd8b21483e0969485845106e763b0e93d7b7",
+            "shortcuts": [
+                [
+                    "bin\\64bit\\obs64.exe",
+                    "OBS Studio"
+                ]
+            ]
+        }
+    },
+    "pre_install": "if (!(Test-Path \"$persist_dir\\portable_mode.txt\")) { New-Item \"$dir\\portable_mode.txt\" | Out-Null }",
+    "persist": [
+        "config",
+        "portable_mode.txt",
+        "obs-plugins"
+    ],
+    "post_install": [
+        "if (!(Test-Path \"$dir\\obs-plugins.original\")) { return }",
+        "Copy-Item \"$dir\\obs-plugins.original\\*\" \"$dir\\obs-plugins\" -Recurse -Force",
+        "Remove-Item \"$dir\\obs-plugins.original\" -Recurse -Force",
+        "Invoke-WebRequest -Uri \"https://github.com/joaoricarte/jr-bucket/raw/refs/heads/main/scripts/obs-studio-startup/OBS.xml\" -OutFile \"$dir\\OBS.xml\"",
+        "schtasks /create /tn \"\\OBS\" /xml \"$dir\\OBS.xml\" /f"
+    ],
+    "checkver": {
+        "github": "https://github.com/obsproject/obs-studio"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://cdn-fastly.obsproject.com/downloads/OBS-Studio-$version-Windows-x64.zip"
+            },
+            "arm64": {
+                "url": "https://cdn-fastly.obsproject.com/downloads/OBS-Studio-$version-Windows-arm64.zip"
+            }
+        },
+        "hash": {
+            "url": "https://github.com/obsproject/obs-studio/releases/$version",
+            "regex": "(?sm)$basename.*?$sha256"
+        }
+    }
+}

@@ -13,12 +13,36 @@
         "Expand-7ZipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
         "Remove-Item \"$dir\\`$*\" -Recurse"
     ],
+    "##": [
+        "hard links on config.json break when updating settings",
+        "would link the whole folder if it wasn't full of chromium junk"
+    ],
+    "post_install": [
+        "$appdata = \"$env:APPDATA\\Heynote\"",
+        "ensure \"$appdata\" | Out-Null",
+        "if (!(Test-Path \"$appdata\\config.json\")) {",
+        "   if (Test-Path \"$persist_dir\\config.json\") {",
+        "      Copy-Item \"$persist_dir\\config.json\" \"$appdata\"",
+        "   } else {",
+        "      $notes = \"$dir/notes\".Replace('\\', '/')",
+        "      Set-Content \"$appdata\\config.json\" \"{\"\"settings\"\":{\"\"autoUpdate\"\":false,\"\"bufferPath\"\":\"\"$notes\"\"}}\"",
+        "   }",
+        "}"
+    ],
     "shortcuts": [
         [
             "Heynote.exe",
             "Heynote"
         ]
     ],
+    "persist": "notes",
+    "pre_uninstall": [
+        "$config = \"$env:APPDATA\\Heynote\\config.json\"",
+        "if (Test-Path \"$config\") {",
+        "    Copy-Item \"$config\" \"$persist_dir\" -Force",
+        "}"
+    ],
+    "post_uninstall": "Remove-Item \"$env:APPDATA\\Heynote\" -Recurse 2>&1 | Out-Null",
     "checkver": {
         "github": "https://github.com/heyman/heynote"
     },

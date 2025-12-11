@@ -1,61 +1,60 @@
 {
-    "version": "0.1.20241223+62b9a1a85",
-    "description": "MoonBit is an end-to-end programming language toolchain for cloud and edge computing using WebAssembly.",
+    "version": "20251208-9acd8eb-63166cf",
+    "description": "An end-to-end programming language toolchain for cloud and edge computing using WebAssembly.",
     "homepage": "https://www.moonbitlang.com/",
-    "license": "Unknown",
+    "license": "AGPL-3.0-only",
     "architecture": {
         "64bit": {
             "url": [
-                "https://github.com/chawyehsu/moonbit-binaries/releases/download/v0.1.20241223+62b9a1a85/moonbit-core-v0.1.20241223+62b9a1a85.zip",
-                "https://github.com/chawyehsu/moonbit-binaries/releases/download/v0.1.20241223+62b9a1a85/moonbit-v0.1.20241223+62b9a1a85-win-x64.zip"
+                "https://cli.moonbitlang.com/binaries/latest/moonbit-windows-x86_64.zip",
+                "https://cli.moonbitlang.com/cores/core-latest.zip"
             ],
             "hash": [
-                "71241ab37d9ea2bce0ff52f362ae78f95bb9ceb499ef801773eb8b7b81d2d03c",
-                "bf410fb6fed92f3630042cdcc4f4a3d60148bcef1d2b0628255e4633bee2868d"
+                "2170d778d24d265a41461f7b2e6bed5629dd4a3a642387c0ed2daf1cb07be519",
+                "6971b94a74e2fbb604fb75be2a09f5f58bb2f491456806ac5ffd69de89667544"
             ]
         }
     },
-    "pre_install": [
-        "New-Item -ItemType Directory -Force -Path \"$dir\\bin\" | Out-Null",
-        "New-Item -ItemType Directory -Force -Path \"$dir\\lib\" | Out-Null"
+    "bin": [
+        "bin\\moon.exe",
+        "bin\\moonc.exe",
+        "bin\\moonfmt.exe",
+        "bin\\mooninfo.exe",
+        "bin\\moonrun.exe",
+        "bin\\mooncake.exe",
+        "bin\\moondoc.exe",
+        "bin\\moon_cove_report.exe"
     ],
-    "post_install": [
-        "function CreateFile([String] $file, [String] $content = $null) {",
-        "    if (!(Test-Path \"$persist_dir\\$file\")) {",
-        "        New-Item -Force -Path \"$persist_dir\\$file\" -ItemType file -Value $content | Out-Null",
-        "    }",
-        "}",
-        "CreateFile 'credentials.json'",
-        "Move-Item -Path \"$dir\\*.exe\" -Destination \"$dir\\bin\"",
-        "Move-Item -Path \"$dir\\core\" -Destination \"$dir\\lib\"",
-        "Push-Location \"$dir\\lib\\core\"",
-        "& moon bundle --all",
-        "Pop-Location"
-    ],
-    "env_add_path": "bin",
     "env_set": {
         "MOON_HOME": "$dir"
     },
+    "pre_install": "Move-Item \"$dir\\core\" \"$dir\\lib\\core\"",
+    "post_install": [
+        "Write-Host \"\"",
+        "$bundleAllStatus = Invoke-ExternalCommand \"$dir\\bin\\moon.exe\" @('bundle', '--all', '-C', \"$dir\\lib\\core\") -Activity \"Bundling core ...\" -LogPath \"$dir\\bundle_core.log\"",
+        "$bundleWasmGcStatus =  Invoke-ExternalCommand \"$dir\\bin\\moon.exe\" @('bundle', '--target', 'wasm-gc', '--quiet', '-C', \"$dir\\lib\\core\") -Activity \"Bundling core to wasm-gc ...\" -LogPath \"$dir\\bundle_core_wasm_gc.log\""
+    ],
     "persist": [
         "registry",
-        "credentials.json"
+        "tmp"
     ],
     "checkver": {
-        "github": "https://github.com/chawyehsu/moonbit-binaries",
-        "regex": "v([\\d.]+\\+[a-z0-9]+)"
+        "script": [
+            "try { $binDetail = Invoke-WebRequest -Method HEAD 'https://cli.moonbitlang.com/binaries/latest/moonbit-windows-x86_64.zip' -MaximumRedirection 0 -ErrorAction Ignore } catch { $_.Exception.Response }",
+            "try { $coreDetail = Invoke-WebRequest -Method HEAD 'https://cli.moonbitlang.com/cores/core-latest.zip' -MaximumRedirection 0 -ErrorAction Ignore } catch { $_.Exception.Response }",
+            "$binDate = ([DateTime][String]$binDetail.Headers.'Last-Modified').ToUniversalTime().AddHours(8).ToString(\"yyyyMMdd\")",
+            "if (($binDetail.StatusCode -eq 200) -And ($coreDetail.StatusCode -eq 200)) { return $binDate + '-' + $binDetail.Headers.ETag.SubString(1, 7) + '-' + $coreDetail.Headers.ETag.SubString(1, 7) } else { return '' }"
+        ],
+        "regex": "(\\d{8}-.*)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
                 "url": [
-                    "https://github.com/chawyehsu/moonbit-binaries/releases/download/v$version/moonbit-core-v$version.zip",
-                    "https://github.com/chawyehsu/moonbit-binaries/releases/download/v$version/moonbit-v$version-win-x64.zip"
+                    "https://cli.moonbitlang.com/binaries/latest/moonbit-windows-x86_64.zip",
+                    "https://cli.moonbitlang.com/cores/core-latest.zip"
                 ]
             }
-        },
-        "hash": {
-            "url": "$url.sha256",
-            "regex": "([a-f0-9]{64})"
         }
     }
 }

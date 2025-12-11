@@ -1,0 +1,73 @@
+{
+   "$schema": "https://raw.githubusercontent.com/lukesampson/scoop/master/schema.json",
+   "version": "5.1.0.28309",
+   "description": "This lets you mount server and cloud storage as a disk in Finder on macOS and the File Explorer on Windows. Open remote files with any application and work like on a local volume.",
+   "homepage": "https://mountainduck.io/",
+   "license": {
+      "identifier": "Proprietary",
+      "url": "https://cyberduck.io/license/"
+   },
+   "architecture": {
+      "64bit": {
+         "url": "https://dist.mountainduck.io/Mountain%20Duck-5.1.0.28309_x64.msix#/dl.7z",
+         "hash": "md5:7689e8162ca7f1e6085d9fd59eb0b03d"
+      }
+   },
+   "installer": {
+      "script": [
+         "if (-not (is_admin)) { abort 'This package requires admin privileges to install' }",
+         "Get-ChildItem -Path $dir -Recurse | ForEach-Object {",
+         "   $DecodedPath = [System.Web.HttpUtility]::UrlDecode($_.FullName)",
+         "   if ($_.FullName -ne $DecodedPath) {",
+         "      Move-Item -Path $_.FullName -Destination $DecodedPath > $null",
+         "   }",
+         "}",
+         "Get-ChildItem -Path \"$dir\\*.msi\" -Recurse | ForEach-Object {",
+         "   Invoke-ExternalCommand msiexec -ArgumentList @(",
+         "      '/i',",
+         "      \"`\"$($_.FullName)`\"\",",
+         "      '/qn',",
+         "      '/norestart'",
+         "   ) -ContinueExitCodes @{",
+         "      3010='This package requires restart to complete the installation.'",
+         "   } -RunAs > $null",
+         "}"
+      ]
+   },
+   "uninstaller": {
+      "script": [
+         "if (-not (is_admin)) { abort 'This package requires admin privileges to uninstall' }",
+         "Get-ChildItem -Path \"$dir\\*.msi\" -Recurse | ForEach-Object {",
+         "   Invoke-ExternalCommand msiexec -ArgumentList @(",
+         "      '/x',",
+         "      \"`\"$($_.FullName)`\"\",",
+         "      '/qn',",
+         "      '/norestart'",
+         "   ) -ContinueExitCodes @{",
+         "      3010='This package requires restart to complete the uninstallation.'",
+         "   } -RunAs > $null",
+         "}"
+      ]
+   },
+   "shortcuts": [
+      [
+         "Mountain Duck.exe",
+         "Mountain Duck"
+      ]
+   ],
+   "checkver": {
+      "url": "https://mountainduck.io/changelog/",
+      "regex": "Mountain%20Duck-([\\d.]+)_x64\\.msix"
+   },
+   "autoupdate": {
+      "architecture": {
+         "64bit": {
+            "url": "https://dist.mountainduck.io/Mountain%20Duck-$version_x64.msix#/dl.7z",
+            "hash": {
+               "url": "https://mountainduck.io/changelog/",
+               "regex": ".+title=\"MD5 ([a-fA-F0-9]{32})\" .+?(?=Mountain%20Duck-5\\.0\\.4\\.28064_x64\\.msix)"
+            }
+         }
+      }
+   }
+}

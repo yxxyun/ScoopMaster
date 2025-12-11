@@ -1,16 +1,16 @@
 {
     "version": "6.14.0",
-    "description": "Simple and easy to use DDNS. Support Aliyun, Tencent Cloud, Dnspod, Cloudflare, Callback, Huawei Cloud, Baidu Cloud, Porkbun, GoDaddy, Namecheap, NameSilo, Dynadot",
+    "description": "简单好用的 DDNS，把 .ddns_go_config.yaml 也持久化了，卸载时仅会保留在 persist 文件夹中",
     "homepage": "https://github.com/jeessy2/ddns-go",
     "license": "MIT",
     "architecture": {
-        "32bit": {
-            "url": "https://github.com/jeessy2/ddns-go/releases/download/v6.14.0/ddns-go_6.14.0_windows_i386.zip",
-            "hash": "56ad245e52ecb702aca824a6c6fc08ac74752ff62804eb784029cbcbd500cd4f"
-        },
         "64bit": {
             "url": "https://github.com/jeessy2/ddns-go/releases/download/v6.14.0/ddns-go_6.14.0_windows_x86_64.zip",
             "hash": "176801c3916e95231c2866ef737ab205b2d2acd8a8a582dac44df82a1c1abbf0"
+        },
+        "32bit": {
+            "url": "https://github.com/jeessy2/ddns-go/releases/download/v6.14.0/ddns-go_6.14.0_windows_i386.zip",
+            "hash": "56ad245e52ecb702aca824a6c6fc08ac74752ff62804eb784029cbcbd500cd4f"
         },
         "arm64": {
             "url": "https://github.com/jeessy2/ddns-go/releases/download/v6.14.0/ddns-go_6.14.0_windows_arm64.zip",
@@ -18,21 +18,32 @@
         }
     },
     "bin": "ddns-go.exe",
+    "post_install": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match 'Scoop-Store'})[0].Name",
+        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name $bucket) scripts/SSUtils.psm1)",
+        "RedirectDirectory \"$env:USERPROFILE\\.ddns_go_config.yaml\" \"$persist_dir\\USERPROFILE\\.ddns_go_config.yaml\"",
+        "Invoke-ExternalCommand -Path \"$dir\\ddns-go.exe\" -ArgumentList @('-s', 'install') -RunAs",
+        "Remove-Module -Name SSUtils"
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match 'Scoop-Store'})[0].Name",
+        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name $bucket) scripts/SSUtils.psm1)",
+        "RemoveJunction -Path \"$env:USERPROFILE\\.ddns_go_config.yaml\"",
+        "Invoke-ExternalCommand -Path \"$dir\\ddns-go.exe\" -ArgumentList @('-s', 'uninstall') -RunAs",
+        "Remove-Module -Name SSUtils"
+    ],
     "checkver": "github",
     "autoupdate": {
         "architecture": {
-            "32bit": {
-                "url": "https://github.com/jeessy2/ddns-go/releases/download/v$version/ddns-go_$version_windows_i386.zip"
-            },
             "64bit": {
                 "url": "https://github.com/jeessy2/ddns-go/releases/download/v$version/ddns-go_$version_windows_x86_64.zip"
+            },
+            "32bit": {
+                "url": "https://github.com/jeessy2/ddns-go/releases/download/v$version/ddns-go_$version_windows_i386.zip"
             },
             "arm64": {
                 "url": "https://github.com/jeessy2/ddns-go/releases/download/v$version/ddns-go_$version_windows_arm64.zip"
             }
-        },
-        "hash": {
-            "url": "$baseurl/checksums.txt"
         }
     }
 }

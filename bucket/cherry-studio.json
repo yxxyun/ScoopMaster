@@ -3,44 +3,59 @@
     "description": "A desktop client that supports for multiple LLM providers.",
     "homepage": "https://cherry-ai.com",
     "license": "Apache-2.0",
-    "suggest": {
-        "vcredist": "extras/vcredist2022"
-    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.7.2/Cherry-Studio-1.7.2-x64-portable.exe#/cherry-studio.exe",
-            "hash": "d72ba833b72417728b42227fd7530cae54cdf2f0c0bf0048af294341accbacaf"
+            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.7.2/Cherry-Studio-1.7.2-x64-setup.exe#/dl.7z",
+            "hash": "sha512:4d8095c6600a4427894bb31cdb6053008728bb87dde9b4eb068f082573d6215262b0459da8532a6772a963f0673f05d64443afc4488d4e71dd49a7726fdf4a73",
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
         },
         "arm64": {
-            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.7.2/Cherry-Studio-1.7.2-arm64-portable.exe#/cherry-studio.exe",
-            "hash": "0d5a5c37b56679d0416e59ddace3480c7ceb35bf6d2ac4b34c23710900729c3c"
+            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.7.2/Cherry-Studio-1.7.2-arm64-setup.exe#/dl.7z",
+            "hash": "sha512:b2a9bcb8df21f9b711512a985deac117dbb954e8a1c1a53f60acd409b3c594ed6611f718ad8131d467fbe56a2d803dd91a33781eee1ff6963874b0d0dce6a558",
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\""
         }
     },
-    "pre_install": [
-        "if (-not (Test-Path \"$persist_dir\\data\") -and (Test-Path \"$env:APPDATA\\CherryStudio\")) {",
-        "    ensure \"$persist_dir\\data\" | Out-Null",
-        "    info '[Portable Mode] Copying user data...'",
-        "    Move-Item \"$env:APPDATA\\CherryStudio\\*\" \"$persist_dir\\data\"",
-        "    Remove-Item \"$env:APPDATA\\CherryStudio\" -Recurse -Force",
-        "}"
-    ],
     "shortcuts": [
         [
-            "cherry-studio.exe",
+            "Cherry Studio.exe",
             "Cherry Studio"
         ]
     ],
-    "persist": "data",
+    "installer": {
+        "script": [
+            "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name localbucket) scripts/LocalUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:APPDATA\\CherryStudio\"",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\dotdata\" -Target \"$env:USERPROFILE\\.cherrystudio\"",
+            "Remove-Module -Name LocalUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name localbucket) scripts/LocalUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\CherryStudio\"",
+            "Dismount-ExternalRuntimeData -Target \"$env:USERPROFILE\\.cherrystudio\"",
+            "Remove-Module -Name LocalUtils"
+        ]
+    },
     "checkver": {
         "github": "https://github.com/CherryHQ/cherry-studio"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-x64-portable.exe#/cherry-studio.exe"
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-x64-setup.exe#/dl.7z",
+                "hash": {
+                    "url": "$baseurl/latest.yml",
+                    "regex": "(?s)x64.*?sha512: $base64"
+                }
             },
             "arm64": {
-                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-arm64-portable.exe#/cherry-studio.exe"
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-arm64-setup.exe#/dl.7z",
+                "hash": {
+                    "url": "$baseurl/latest.yml",
+                    "regex": "(?s)arm64.*?sha512: $base64"
+                }
             }
         }
     }

@@ -1,90 +1,74 @@
 {
-    "version": "2.17.0.2",
+    "version": "2.18.0.0",
+    "description": "Windows Shell Interface to Git based on TortoiseSVN.",
     "homepage": "https://tortoisegit.org/",
-    "license": "https://www.gnu.org/licenses/gpl-2.0",
+    "license": {
+        "identifier": "GPL-2.0-only"
+    },
+    "notes": [
+        "To add TortoiseGit as a context menu option, run '$dir\\tortoisegit-install.reg'",
+        "For file associations, run '$dir\\tortoisegit-install-tools.reg'",
+        "Before uninstalling TortoiseGit, run '$dir\\tortoisegit-uninstall.reg' "
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://download.tortoisegit.org/tgit/2.17.0.0/TortoiseGit-2.17.0.2-64bit.msi",
-            "hash": "66ca43f34e1beefc50df67335d8cbf75f29ae5bad66e678fa673f40f53649961"
+            "url": "https://download.tortoisegit.org/tgit/2.18.0.0/TortoiseGit-2.18.0.0-64bit.msi",
+            "hash": "6927197c5e60eb6a6283dcec08224f0547ca982418f1f0839d4f1eaea2cddf66"
         },
         "32bit": {
-            "url": "https://download.tortoisegit.org/tgit/2.17.0.0/TortoiseGit-2.17.0.2-32bit.msi",
-            "hash": "f90d42d5730befcd2680b5cd89c6037be1f3f8f5f459b33f83704883dd561b19"
+            "url": "https://download.tortoisegit.org/tgit/2.18.0.0/TortoiseGit-2.18.0.0-32bit.msi",
+            "hash": "0e6bf19a0658271556333f709290d01e08611890d32f8ee4d904cde57d0608e8"
         }
     },
-    "extract_dir": [
-        "Program Files\\TortoiseGit",
-        "Program Files\\TortoiseGit"
-    ],
-    "pre_install": [
-        "[Environment]::SetEnvironmentVariable(\"GIT_INSTALL_ROOT\", \"C:\\ProgramData\\scoop\\apps\\git\\current\\bin\", \"Machine\")",
-        "$shortcutPath = \"$env:ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Scoop Apps\\TortoiseGit Settings.lnk\"",
-        "$targetPath = \"$env:ProgramData\\scoop\\apps\\tortoisegit\\current\\bin\\TortoiseGitProc.exe\"",
-        "$WScriptShell = New-Object -ComObject WScript.Shell",
-        "$shortcut = $WScriptShell.CreateShortcut($shortcutPath)",
-        "$shortcut.TargetPath = $targetPath",
-        "$shortcut.Arguments = '/command:settings'",
-        "$shortcut.Save()",
-        "$shortcutPath = \"$env:ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Scoop Apps\\TortoiseGit.lnk\"",
-        "$targetPath = \"$env:ProgramData\\scoop\\apps\\tortoisegit\\current\\bin\\TortoiseGitProc.exe\"",
-        "$WScriptShell = New-Object -ComObject WScript.Shell",
-        "$shortcut = $WScriptShell.CreateShortcut($shortcutPath)",
-        "$shortcut.TargetPath = $targetPath",
-        "$shortcut.Arguments = '/command:rtfm'",
-        "$shortcut.Save()",
-        "$msiPath = \"$dir\\TortoiseGit-2.17.0.2-64bit.msi\"",
-        "$installArgs = \"/quiet /norestart\"",
-        "Start-Process msiexec.exe -ArgumentList \"/i\", $msiPath, $installArgs -Wait"
+    "extract_dir": "Program Files\\TortoiseGit",
+    "post_install": [
+        "$path = 'HKCU:\\Software\\TortoiseGit'",
+        "if (!(Test-path \"$path\")) {",
+        "    New-Item $path | Out-Null",
+        "    New-ItemProperty -Path $path -Name 'VersionCheck' -PropertyType DWord -Value 0 -Force | Out-Null",
+        "    New-ItemProperty -Path $path -Name 'MsysGit' -PropertyType String -Value \"$env:GIT_INSTALL_ROOT\\bin\" -Force | Out-Null",
+        "}",
+        "$app, $manifest, $bucket, $url = Get-Manifest $app",
+        "$bucketdir = Find-BucketDirectory($bucket)",
+        "$escdir = $dir -replace \"\\\\\",\"\\\\\"",
+        "(gc \"$bucketdir\\..\\scripts\\tortoisegit\\tortoisegit-install.reg.templ\") | % {$_ -replace \"%TGITHOME%\",\"$escdir\"} | out-file -enc oem \"$dir\\tortoisegit-install.reg\"",
+        "(gc \"$bucketdir\\..\\scripts\\tortoisegit\\tortoisegit-install-tools.reg.templ\") | % {$_ -replace \"%TGITHOME%\",\"$escdir\"} | out-file -enc oem \"$dir\\tortoisegit-install-tools.reg\"",
+        "cp \"$bucketdir\\..\\scripts\\tortoisegit\\tortoisegit-uninstall.reg\" \"$dir\""
     ],
     "bin": [
-        "bin\\TortoiseGitMerge.exe",
-        "bin\\TortoiseGitIDiff.exe",
-        "bin\\TortoiseGitBlame.exe",
-        "bin\\TortoiseGitProc.exe"
+        "bin\\TortoiseGitUDiff.exe",
+        "bin\\TortoisePlink.exe"
     ],
     "shortcuts": [
         [
             "bin\\TortoiseGitMerge.exe",
-            "TortoiseGitMerge"
-        ],
-        [
-            "bin\\TortoiseGitIDiff.exe",
-            "TortoiseGitIDiff"
+            "TortoiseGit Merge"
         ],
         [
             "bin\\TortoiseGitBlame.exe",
-            "TortoiseGitBlame"
+            "TortoiseGit Blame"
+        ],
+        [
+            "bin\\TortoiseGitIDiff.exe",
+            "TortoiseGit Diff"
+        ],
+        [
+            "bin\\TortoiseGitProc.exe",
+            "TortoiseGit Settings",
+            "/command:settings"
         ]
-    ],
-    "post_install": [
-        "$installDir = \"$dir\"",
-        "$installRoot = $installDir.Replace('\\', '\\\\')",
-        "'install-context.reg', 'uninstall-context.reg' | ForEach-Object {",
-        "    $content = Get-Content \"$bucketsdir\\scoop_repository\\scripts\\tortoisegit\\$_\"",
-        "    $content = $content.Replace('$tortoisegit_root', $installRoot)",
-        "    if ($global) {",
-        "       $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
-        "    }",
-        "    Set-Content \"$installDir\\$_\" $content -Encoding Ascii",
-        "}"
-    ],
-    "post_uninstall": [
-        "$shortcutPath = \"$env:ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Scoop Apps\\TortoiseGit Settings.lnk\"",
-        "Remove-Item -Path $shortcutPath -Force -ErrorAction SilentlyContinue",
-        "$shortcutPath = \"$env:ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Scoop Apps\\TortoiseGit.lnk\"",
-        "Remove-Item -Path $shortcutPath -Force -ErrorAction SilentlyContinue"
     ],
     "checkver": {
         "url": "https://download.tortoisegit.org/tgit/",
-        "regex": "href=\"([\\d.]+)/TortoiseGit-([\\d.]+)-64bit\\.msi\""
+        "regex": "TortoiseGit is: <a href=/tgit/([\\d\\.]+)/"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://download.tortoisegit.org/tgit/$match1/TortoiseGit-$match2-64bit.msi"
+                "url": "https://download.tortoisegit.org/tgit/$version/TortoiseGit-$version-64bit.msi"
             },
             "32bit": {
-                "url": "https://download.tortoisegit.org/tgit/$match1/TortoiseGit-$match2-32bit.msi"
+                "url": "https://download.tortoisegit.org/tgit/$version/TortoiseGit-$version-32bit.msi"
             }
         }
     }

@@ -1,0 +1,71 @@
+{
+    "version": "2.4.0-beta.9",
+    "description": "Image uploader/manager (pre-release)",
+    "homepage": "https://picgo.github.io/PicGo-Doc",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Molunerfinn/PicGo/releases/download/v2.4.0-beta.9/PicGo-Setup-2.4.0-beta.9-x64.exe#/dl.7z",
+            "hash": "sha512:9497781ca94d67f876d2fe8fe683d88f64e54ca568cfeded701a0814ca997d92343edb96b5f065a18de611960124182dcf2ede75b98680b4ca13a5a61e250565",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse"
+            ]
+        },
+        "32bit": {
+            "url": "https://github.com/Molunerfinn/PicGo/releases/download/v2.4.0-beta.9/PicGo-Setup-2.4.0-beta.9-ia32.exe#/dl.7z",
+            "hash": "sha512:4ce54f51f056840e9f10918bc556f89723da1c9586b5e826372c0ab69f9ade3e2dcd3d2bc40c7cc2217f36d374a351ef4522fb8ede2f6c25733c95472a109fe2",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-32.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse"
+            ]
+        }
+    },
+    "post_install": [
+        "$S4UtilsPath = Find-BucketDirectory -Root -Name $bucket | Join-Path -ChildPath \"scripts\\S4Utils.psm1\"",
+        "if (Test-Path $S4UtilsPath) {",
+        "    Unblock-File $S4UtilsPath",
+        "    Import-Module $S4UtilsPath",
+        "    Mount-ExternalRuntimeData -Source \"$persist_dir\\picgo\" -AppData",
+        "    Remove-Module -Name S4Utils -ErrorAction SilentlyContinue",
+        "} else {",
+        "    Write-Host \"Missing files, please re-add Scoop4kariiin bucket and re-install this app.\" -ForegroundColor Red",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "$S4UtilsPath = Find-BucketDirectory -Root -Name $install.bucket | Join-Path -ChildPath \"scripts\\S4Utils.psm1\"",
+            "if (Test-Path $S4UtilsPath) {",
+            "    Unblock-File $S4UtilsPath",
+            "    Import-Module $S4UtilsPath",
+            "    Dismount-ExternalRuntimeData -Target \"picgo\" -AppData",
+            "    Remove-Module -Name S4Utils -ErrorAction SilentlyContinue",
+            "}"
+        ]
+    },
+    "bin": "PicGo.exe",
+    "shortcuts": [
+        [
+            "PicGo.exe",
+            "PicGo"
+        ]
+    ],
+    "checkver": {
+        "url": "https://github.com/Molunerfinn/PicGo/releases",
+        "regex": "/PicGo-Setup-(\\d.+?-beta.\\d)-x64\\.exe"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Molunerfinn/PicGo/releases/download/v$version/PicGo-Setup-$version-x64.exe#/dl.7z"
+            },
+            "32bit": {
+                "url": "https://github.com/Molunerfinn/PicGo/releases/download/v$version/PicGo-Setup-$version-ia32.exe#/dl.7z"
+            }
+        },
+        "hash": {
+            "url": "$baseurl/latest.yml",
+            "regex": "(?s)$basename.*?$base64"
+        }
+    }
+}
