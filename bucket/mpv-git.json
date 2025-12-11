@@ -1,19 +1,23 @@
 {
-    "version": "20251211",
-    "description": "Video player based on MPlayer/mplayer2 (builds by EndlesslyFlowering)",
+    "version": "20251211121305+95c7599",
+    "description": "Video player based on MPlayer/mplayer2 (nightly builds by zhongfly, AVX2 required)",
     "homepage": "https://mpv.io",
     "license": "LGPL-2.1-or-later,GPL-2.0-or-later",
     "notes": [
-        "To set up file type associations and AutoPlay handlers run '$dir\\installer\\mpv-install.bat' as administrator.",
-        "This doesn't need to be done everytime you update mpv however, do keep in mind that if you want to uninstall mpv you'll need to run '$dir\\installer\\mpv-uninstall.bat' beforehand since this action will not be performed automatically.",
-        "You can use Icaros (https://www.majorgeeks.com/files/details/icaros.html) to enable thumbnails for all media types."
+        "To set and unset file type associations and AutoPlay handlers, run '$dir\\installer\\mpv-install.bat' and '$dir\\installer\\mpv-uninstall.bat' as administrator, respectively.",
+        "You can use Icaros ('nonportable/icaros-np') to enable thumbnails for all media types."
     ],
     "suggest": {
         "yt-dlp": "yt-dlp"
     },
-    "url": "https://github.com/EndlesslyFlowering/mpv-winbuild-cmake/releases/download/20251211/mpv-x86_64-znver3-20251211-git-95c7599.7z",
-    "hash": "c5c5125749530352b9194c5a95a89fa8de04a773726810a97b73843222cda245",
-    "bin": "mpv.com",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/zhongfly/mpv-winbuild/releases/download/2025-12-11-95c7599/mpv-x86_64-v3-20251211-git-95c7599.7z",
+            "hash": "6b4381b528ded62098e20fb99f8496de35b6fe5262740aa77047b1f3fececd1b"
+        }
+    },
+    "pre_install": "Remove-Item \"$dir\\updater.bat\"",
+    "env_add_path": ".",
     "shortcuts": [
         [
             "mpv.exe",
@@ -23,16 +27,27 @@
     "persist": "portable_config",
     "checkver": {
         "script": [
-            "$gh_url = Invoke-WebRequest -Uri 'https://github.com/EndlesslyFlowering/mpv-winbuild-cmake/releases/latest'",
-            "$gh_ass = $gh_url.Content | Select-String -Pattern 'https://github.com/EndlesslyFlowering/mpv-winbuild-cmake/releases/expanded_assets/[\\d]+' | % { $_.Matches.Value }",
-            "$gh_ver = $gh_ass | Select-String -Pattern '[\\d]+' | % { $_.Matches.Value }",
-            "$gh_ur2 = Invoke-WebRequest -Uri $gh_ass",
-            "$gh_fil = $gh_ur2.Content | Select-String -Pattern 'mpv-x86_64-znver3-[\\d]+-git-[\\da-f]+.7z' | % { $_.Matches.Value }",
-            "Write-Output $gh_ver $gh_fil"
+            "$cont = (Invoke-RestMethod -UseBasicParsing -Method Get -Headers @{'Accept' = 'application/vnd.github+json'; 'Accept-Encoding' = 'gzip' } -MaximumRedirection 0 -Uri 'https://api.github.com/repos/zhongfly/mpv-winbuild/releases?per_page=2')",
+            ":OuterLoop foreach ($release in $cont) {",
+            "    foreach ($asset in $release.assets) {",
+            "        if ($asset.name -cmatch '^mpv-x86_64-v3-(?<date>[\\d-]+)-git-(?<commit>[\\da-f]+)\\.7z$') {",
+            "            $updated_date = ([DateTime]$asset.updated_at).ToUniversalTime().ToString('yyyyMMddHHmmss')",
+            "            Write-Output ('basever:\"' + $updated_date + '+' + $matches.commit + '\"') ('tag_name:\"' + $release.tag_name + '\"') ('date:\"' + $matches.date + '\"') ('commit:\"' + $matches.commit + '\"')",
+            "            break OuterLoop",
+            "        }",
+            "    }",
+            "}"
         ],
-        "regex": "(?<version>.+)\\s(?<filename>.+)"
+        "regex": "basever:\"(.+)\"\\stag_name:\"(?<tagname>.+)\"\\sdate:\"(?<date>.+)\"\\scommit:\"(?<commit>.+)\""
     },
     "autoupdate": {
-        "url": "https://github.com/EndlesslyFlowering/mpv-winbuild-cmake/releases/download/$version/$matchFilename"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/zhongfly/mpv-winbuild/releases/download/$matchTagname/mpv-x86_64-v3-$matchDate-git-$matchCommit.7z",
+                "hash": {
+                    "url": "$baseurl/sha256.txt"
+                }
+            }
+        }
     }
 }

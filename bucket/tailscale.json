@@ -10,14 +10,21 @@
     "architecture": {
         "64bit": {
             "url": "https://pkgs.tailscale.com/stable/tailscale-setup-1.92.1-amd64.msi",
-            "hash": "90f51d4849a906b3759fb5a56e957fdca16e31b1200a5de808fd36f588093279"
+            "hash": "90f51d4849a906b3759fb5a56e957fdca16e31b1200a5de808fd36f588093279",
+            "extract_dir": "PFiles64\\Tailscale"
+        },
+        "32bit": {
+            "url": "https://pkgs.tailscale.com/stable/tailscale-setup-1.92.1-x86.msi",
+            "hash": "d6c359f6a6fb1326561c175309bb95f6bad41d3c2928e2ad4390c72769cecfad",
+            "extract_dir": "PFiles\\Tailscale"
+        },
+        "arm64": {
+            "url": "https://pkgs.tailscale.com/stable/tailscale-setup-1.92.1-arm64.msi",
+            "hash": "828ac8a688b251710c6bbcbbf620df5c9d26e13ae76a6291d5c4f27beeb1160b",
+            "extract_dir": "PFiles64\\Tailscale"
         }
     },
-    "pre_install": [
-        "if (!(is_admin)) {error 'This package requires admin rights to install';break}",
-        ". $bucketsdir\\$bucket\\bin\\util.ps1",
-        "move_link -origin \"$env:ProgramData\\Tailscale\" -target $persist_dir\\data"
-    ],
+    "pre_install": "if (!(is_admin)) {error 'This package requires admin rights to install'; break}",
     "post_install": [
         "tailscaled.exe install-system-daemon",
         "$dirpath = $dir.Replace('\\', '\\\\')",
@@ -30,20 +37,17 @@
         "    }",
         "}"
     ],
-    "persist": "data",
     "pre_uninstall": [
         "if (!(is_admin)) { error 'Admin rights are required to uninstall'; break }",
         "Stop-Process -Name 'tailscale-ipn' -Force -ErrorAction SilentlyContinue | Out-Null",
-        "Stop-Service -Name 'Tailscale' -Force| Out-Null"
+        "Stop-Service -Name 'Tailscale' -Force -ErrorAction SilentlyContinue | Out-Null"
     ],
     "uninstaller": {
         "script": [
             "tailscaled.exe uninstall-system-daemon",
-            "if ($cmd -eq 'uninstall') { reg import \"$dir\\remove-startup.reg\" }",
-            "if ($cmd -eq 'uninstall') { Remove-Item \"$env:ProgramData\\Tailscale\" -Force }"
+            "if ($cmd -eq 'uninstall') { reg import \"$dir\\remove-startup.reg\" }"
         ]
     },
-    "extract_dir": "PFiles64/Tailscale",
     "bin": [
         "tailscale.exe",
         "tailscale-ipn.exe",
@@ -63,6 +67,12 @@
         "architecture": {
             "64bit": {
                 "url": "https://pkgs.tailscale.com/stable/tailscale-setup-$version-amd64.msi"
+            },
+            "32bit": {
+                "url": "https://pkgs.tailscale.com/stable/tailscale-setup-$version-x86.msi"
+            },
+            "arm64": {
+                "url": "https://pkgs.tailscale.com/stable/tailscale-setup-$version-arm64.msi"
             }
         },
         "hash": {

@@ -4,63 +4,48 @@
     "homepage": "https://www.videolan.org/",
     "license": "GPL-2.0-only",
     "architecture": {
-        "32bit": {
-            "url": "https://mirror.aarnet.edu.au/pub/videolan/vlc/3.0.21/win32/vlc-3.0.21-win32.exe#/setup.exe",
-            "hash": "4bd03202b6633f9611b3fc8757880a9b2b38c7c0c40ed6bcbefec71c0099d493"
-        },
         "64bit": {
-            "url": "https://mirror.aarnet.edu.au/pub/videolan/vlc/3.0.21/win64/vlc-3.0.21-win64.exe#/setup.exe",
-            "hash": "9742689a50e96ddc04d80ceff046b28da2beefd617be18166f8c5e715ec60c59"
+            "url": "https://download.videolan.org/pub/vlc/3.0.21/win64/vlc-3.0.21-win64.7z",
+            "hash": "9d2b24d6bc4196b3da8d181a3878678ba272e2a7690321f8826da76a69b2fb9c"
+        },
+        "32bit": {
+            "url": "https://download.videolan.org/pub/vlc/3.0.21/win32/vlc-3.0.21-win32.7z",
+            "hash": "77b2a79c4baf0dcc7c453f74f29fbdb55d42c790d277b5f9e0dbed0f3abc0131"
         }
     },
+    "extract_dir": "vlc-3.0.21",
     "pre_install": [
-        "$processname = \"VLC\"",
-        "$process = Get-Process $processname -ErrorAction SilentlyContinue",
-        "if ($process) {",
-        "   $process.CloseMainWindow()",
-        "   Start-Sleep -Seconds 5",
-        "   if (!$process.HasExited) {",
-        "       Start-Sleep -Seconds 25",
-        "       $process | Stop-Process -Force",
-        "   }",
+        "if (!(Test-Path \"$persist_dir\\portable\") -and (Test-Path \"$env:APPDATA\\vlc\")) {",
+        "    info \"Copying old '$env:APPDATA\\vlc' to '$persist_dir\\portable'\"",
+        "    ensure \"$dir\\portable\\vlc\" | Out-Null",
+        "    Copy-Item \"$env:APPDATA\\vlc\\*\" \"$dir\\portable\" -Recurse -Force",
+        "    Move-Item \"$dir\\portable\\vlc-qt-interface.ini\" \"$dir\\portable\\vlc\"",
         "}"
     ],
-    "installer": {
-        "script": [
-            "$programname = \"VLC media player*\"",
-            "$ProgramFiles = [Environment]::GetFolderPath(\"ProgramFiles\")",
-            "$filepath = \"$ProgramFiles\\VideoLAN\\VLC\\VLC.exe\"",
-            "if(((Test-Path -Path $filepath -PathType Leaf) -eq $false) -or ((Get-Command $filepath).Version -lt [System.Version]\"$version\"))",
-            "{",
-            "   &\"$dir\\setup.exe\" /S | Out-Null",
-            "   if(((Test-Path -Path $filepath -PathType Leaf) -eq $false) -or ((Get-Command $filepath).Version -lt [System.Version]\"$version\"))",
-            "   {",
-            "       exit 1",
-            "   }",
-            "}",
-            "if (Test-Path -Path \"$dir\\setup.exe\") { Remove-Item \"$dir\\setup.exe\" -Force }"
+    "bin": "vlc.exe",
+    "shortcuts": [
+        [
+            "vlc.exe",
+            "VLC media player"
         ]
-    },
-    "post_install": [
-        "$programname = \"VLC media player\"",
-        "$CommonDesktopPath = [Environment]::GetFolderPath(\"CommonDesktopDirectory\")",
-        "if (Test-Path \"$CommonDesktopPath\\$programname.lnk\") {Remove-Item \"$CommonDesktopPath\\$programname.lnk\" -Force}"
     ],
+    "persist": "portable",
     "checkver": {
         "url": "https://www.videolan.org/vlc/download-windows.html",
-        "re": "downloadVersion'>\\s*([\\d.]+)</span>"
+        "regex": "\\s+([\\d.]+)</span>"
     },
     "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://download.videolan.org/pub/vlc/$version/win64/vlc-$version-win64.7z"
+            },
+            "32bit": {
+                "url": "https://download.videolan.org/pub/vlc/$version/win32/vlc-$version-win32.7z"
+            }
+        },
         "hash": {
             "url": "$url.sha256"
         },
-        "architecture": {
-            "32bit": {
-                "url": "https://mirror.aarnet.edu.au/pub/videolan/vlc/$version/win32/vlc-$version-win32.exe#/setup.exe"
-            },
-            "64bit": {
-                "url": "https://mirror.aarnet.edu.au/pub/videolan/vlc/$version/win64/vlc-$version-win64.exe#/setup.exe"
-            }
-        }
+        "extract_dir": "vlc-$version"
     }
 }

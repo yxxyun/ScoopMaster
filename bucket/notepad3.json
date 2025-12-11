@@ -1,8 +1,12 @@
 {
     "version": "6.25.822.1",
     "description": "Notepad-like text editor based on the Scintilla source code",
-    "homepage": "https://rizonesoft.com/downloads/notepad3/",
+    "homepage": "https://www.rizonesoft.com/downloads/notepad3/",
     "license": "BSD-3-Clause",
+    "notes": [
+        "To add Notepad3 to right-click context menu, run:",
+        "reg import \"$dir\\install-context.reg\""
+    ],
     "architecture": {
         "64bit": {
             "url": "https://github.com/rizonesoft/Notepad3/releases/download/RELEASE_6.25.822.1/Notepad3_6.25.822.1_x64_Portable.zip",
@@ -14,44 +18,25 @@
         }
     },
     "post_install": [
-        "if ($global) {",
-        "    $registry_scope = \"HKEY_LOCAL_MACHINE\"",
-        "} else {",
-        "    $registry_scope = \"HKEY_CURRENT_USER\"",
-        "}",
-        "",
-        "@\"",
-        "Windows Registry Editor Version 5.00",
-        "",
-        "[$registry_scope\\SOFTWARE\\Classes\\*\\shell\\Notepad3]",
-        "@=\"使用 Notepad3 编辑(&3)\"",
-        "\"icon\"=\"$($dir -replace '\\\\','\\\\')\\\\Notepad3.exe\"",
-        "",
-        "[$registry_scope\\SOFTWARE\\Classes\\*\\shell\\Notepad3\\command]",
-        "@=\"\\\"$($dir -replace '\\\\','\\\\')\\\\Notepad3.exe\\\" \\\"%1\\\"\"",
-        "\"@ | Set-Content -Path \"$dir\\install-notepad3.reg\" -Encoding Unicode",
-        "",
-        "reg import \"$dir\\install-notepad3.reg\""
-    ],
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App"
+        "$appdir = \"$dir\\Notepad3.exe\".Replace('\\', '\\\\')",
+        "'install-context.reg', 'uninstall-context.reg' | ForEach-Object {",
+        "    if (Test-Path \"$bucketsdir\\extras\\scripts\\$app\\$_\") {",
+        "        $content = Get-Content \"$bucketsdir\\extras\\scripts\\$app\\$_\"",
+        "        $content = $content.Replace('$appdir', $appdir)",
+        "        if ($global) {",
+        "            $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "        }",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_\" -Encoding ascii",
+        "}"
     ],
     "uninstaller": {
-        "script": [
-            "if ($global) {",
-            "    $registry_scope = \"HKLM\"",
-            "} else {",
-            "    $registry_scope = \"HKCU\"",
-            "}",
-            "reg.exe delete \"$registry_scope\\SOFTWARE\\Classes\\*\\shell\\Notepad3\" /f"
-        ]
+        "script": "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-context.reg\" }"
     },
     "bin": [
         "Notepad3.exe",
         "minipath.exe",
-        "grepWinNP3.exe"
+        "np3encrypt.exe"
     ],
     "shortcuts": [
         [
@@ -61,31 +46,25 @@
         [
             "minipath.exe",
             "minipath"
-        ],
-        [
-            "grepWinNP3.exe",
-            "grepWinNP3"
         ]
     ],
     "persist": [
         "Favorites",
         "Themes",
         "minipath.ini",
-        "Notepad3.ini",
-        "grepwinNP3.ini"
+        "Notepad3.ini"
     ],
     "checkver": {
-        "url": "https://api.github.com/repos/rizonesoft/Notepad3/releases/latest",
-        "jsonpath": "$.tag_name",
-        "regex": "(?<tag>.*_([\\d.]+))"
+        "github": "https://github.com/rizonesoft/Notepad3",
+        "regex": "tag/RELEASE_([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/rizonesoft/Notepad3/releases/download/$matchTag/Notepad3_$version_x64_Portable.zip"
+                "url": "https://github.com/rizonesoft/Notepad3/releases/download/RELEASE_$version/Notepad3_$version_x64_Portable.zip"
             },
             "32bit": {
-                "url": "https://github.com/rizonesoft/Notepad3/releases/download/$matchTag/Notepad3_$version_x86_Portable.zip"
+                "url": "https://github.com/rizonesoft/Notepad3/releases/download/RELEASE_$version/Notepad3_$version_x86_Portable.zip"
             }
         }
     }

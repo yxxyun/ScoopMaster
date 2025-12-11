@@ -1,0 +1,55 @@
+{
+    "version": "20251207",
+    "description": "GPU-accelerated terminal emulator",
+    "homepage": "https://github.com/wezterm/wezterm",
+    "license": "Apache-2.0",
+    "notes": [
+        "Add Open with Wezterm as a context menu option by running:",
+        "reg import \"$dir\\install-context.reg\""
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Lyaiya/wezterm-weekly/releases/download/20251207/WezTerm-windows-nightly.zip",
+            "hash": "9d5d1645be9532e61082de800b9aca0d49675f03c86a8cdb8b0ce1e0cb0ecce4"
+        }
+    },
+    "pre_install": [
+        "$folder = Get-ChildItem $dir | Where-Object { $_.PSIsContainer } | Select-Object -First 1",
+        "if ($folder) { Move-Item \"$($folder.FullName)\\*\" $dir -Force }",
+        "if ($folder) { Remove-Item $folder.FullName -Recurse -Force }"
+    ],
+    "post_install": [
+        "$weztermPath = \"$dir\\wezterm-gui.exe\".Replace('\\', '\\\\')",
+        "'install-context', 'uninstall-context' | ForEach-Object {",
+        "    if (Test-Path \"$bucketsdir\\extras\\scripts\\$app\\$_.reg\") {",
+        "        $content = Get-Content \"$bucketsdir\\extras\\scripts\\$app\\$_.reg\"",
+        "        $content = $content.Replace('$weztermPath', $weztermPath)",
+        "        if ($global) { $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE') }",
+        "        Set-Content \"$dir\\$_.reg\" $content -Encoding Ascii -Force",
+        "    }",
+        "}"
+    ],
+    "bin": [
+        "wezterm.exe",
+        "wezterm-gui.exe"
+    ],
+    "shortcuts": [
+        [
+            "wezterm-gui.exe",
+            "Wezterm"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/Lyaiya/wezterm-weekly"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Lyaiya/wezterm-weekly/releases/download/$version/WezTerm-windows-nightly.zip"
+            }
+        },
+        "hash": {
+            "url": "$url.sha256"
+        }
+    }
+}
