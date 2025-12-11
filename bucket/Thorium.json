@@ -1,46 +1,47 @@
 {
-    "$schema": "https://raw.githubusercontent.com/brian6932/Scoop/64bit-v2-v3-v4/schema.json",
     "version": "130.0.6723.174",
-    "description": "Chromium fork named after radioactive element No. 90. Windows",
+    "description": "Chromium fork for Linux, Windows, MacOS, Android, and Raspberry Pi named after radioactive element No. 90.",
     "homepage": "https://thorium.rocks/",
-    "license": "BSD-3-Clause",
+    "license": {
+        "identifier": "BSD 3-Clause",
+        "url": "https://github.com/Alex313031/Thorium-Win/blob/main/LICENSE"
+    },
     "architecture": {
-        "64bit-v3": {
-            "url": "https://github.com/Alex313031/Thorium-Win/releases/download/M130.0.6723.174/Thorium_AVX2_130.0.6723.174.zip",
-            "hash": "0cdeef8c4f32d9cded5c36e72cb949e305a8fb0b559334ebe626d0aa379364f5"
-        },
         "64bit": {
             "url": "https://github.com/Alex313031/Thorium-Win/releases/download/M130.0.6723.174/Thorium_SSE3_130.0.6723.174.zip",
             "hash": "fbe6c6d673f964ace536bda405f572cccb53e897acab8f0bb96b1f214efc6b01"
         }
     },
-    "post_install": [
-        "'_SHELL', '' | ForEach-Object {",
-        "    $_ = \"$dir/THORIUM$_.BAT\"",
-        "    (Get-Content $_) -Replace '%(?:cd|~dp0)%',$dir | Set-Content $_",
-        "}"
-    ],
-    "persist": "USER_DATA",
     "bin": [
-        "THORIUM.BAT",
-        "THORIUM_SHELL.BAT"
+        [
+            "bin\\thorium.exe",
+            "thorium",
+            "--user-data-dir=\"$dir\\USER_DATA\""
+        ]
     ],
     "shortcuts": [
         [
-            "THORIUM.BAT",
-            "Thorium"
+            "bin\\thorium.exe",
+            "Thorium",
+            "--user-data-dir=\"$dir\\USER_DATA\""
         ]
     ],
+    "post_install": [
+        "if (!(Test-Path \"$dir\\USER_DATA\\*\") -and (Test-Path \"$env:LocalAppData\\Thorium\\User Data\")) {",
+        "    info '[Portable Mode]: Copying user data...'",
+        "    Copy-Item \"$env:LocalAppData\\Thorium\\User Data\\*\" \"$dir\\USER_DATA\" -Recurse",
+        "}"
+    ],
+    "env_set": {
+        "CHROME_EXECUTABLE": "$dir\\thorium.exe"
+    },
+    "persist": "USER_DATA",
     "checkver": {
-        "url": "https://api.github.com/repositories/424006400/releases/latest",
-        "jsonpath": "$.tag_name",
-        "regex": "\\AM([\\d.]+)\\Z"
+        "github": "https://github.com/Alex313031/Thorium-Win",
+        "regex": "/releases/tag/M(?<version>(?:\\d+\\.){3}\\d+)"
     },
     "autoupdate": {
         "architecture": {
-            "64bit-v3": {
-                "url": "https://github.com/Alex313031/Thorium-Win/releases/download/M$version/Thorium_AVX2_$version.zip"
-            },
             "64bit": {
                 "url": "https://github.com/Alex313031/Thorium-Win/releases/download/M$version/Thorium_SSE3_$version.zip"
             }

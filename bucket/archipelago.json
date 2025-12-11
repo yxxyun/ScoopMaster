@@ -1,0 +1,67 @@
+{
+    "version": "0.6.4",
+    "description": "A multi-game multiworld randomizer.",
+    "homepage": "https://archipelago.gg",
+    "license": "MIT",
+    "suggest": {
+        "vcredist": "extras/vcredist2022"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/ArchipelagoMW/Archipelago/releases/download/0.6.4/Setup.Archipelago.0.6.4.exe",
+            "hash": "9ec31224a919f14882867873a77d8e8dc0649390568d0dd320ab4488725aa3fe"
+        }
+    },
+    "innosetup": true,
+    "post_install": [
+        "Get-ChildItem \"$persist_dir\" -File | % {",
+        "   Copy-Item -LiteralPath $_ -Destination \"$dir\" -Force",
+        "}",
+        "$archidir = \"$dir\".Replace('\\', '\\\\')",
+        "Get-ChildItem \"$bucketsdir\\$bucket\\scripts\\$app\\*.reg\" | ForEach-Object {",
+        "    $content = Get-Content \"$_\"",
+        "    $content = $content.Replace('$archidir', $archidir)",
+        "    if ($global) {",
+        "        $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    Set-Content \"$dir\\$($_.Name)\" $content -Encoding utf8",
+        "}",
+        "reg import \"$dir\\install-associations.reg\" | Out-Null"
+    ],
+    "bin": [
+        [
+            "ArchipelagoLauncher.exe",
+            "archipelago"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "ArchipelagoLauncher.exe",
+            "Archipelago Launcher"
+        ]
+    ],
+    "persist": [
+        "custom_worlds",
+        "Players"
+    ],
+    "pre_uninstall": [
+        "Get-ChildItem \"$dir\" | ? {",
+        "   $_.Name -match '\\.(yaml|gb|nes|sfc|z64|bin|a26)'",
+        "} | % {",
+        "   Copy-Item -LiteralPath $_ -Destination \"$persist_dir\" -Force",
+        "}",
+        "if ($cmd -eq 'uninstall') {",
+        "   reg import \"$dir\\uninstall-associations.reg\" | Out-Null",
+        "}"
+    ],
+    "checkver": {
+        "github": "https://github.com/ArchipelagoMW/Archipelago"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/ArchipelagoMW/Archipelago/releases/download/$version/Setup.Archipelago.$version.exe"
+            }
+        }
+    }
+}

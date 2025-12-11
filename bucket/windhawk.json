@@ -1,26 +1,37 @@
 {
-  "version": "1.7.3",
-  "description": "The customization marketplace for Windows programs",
-  "homepage": "https://windhawk.net/",
-  "license": "GPL-3.0-or-later",
-  "changelog": "https://github.com/ramensoftware/windhawk/releases",
-  "url": "https://github.com/ramensoftware/windhawk/releases/download/v1.7.3/windhawk_setup.exe#/setup.exe",
-  "hash": "5116cc1703384aac88b8d7a3b57f172aea5da32b6df7355fb2f8247d23813c8f",
-  "persist": "windhawk\\AppData",
-  "installer": {
-    "script": "Start-Process -Wait \"$dir\\setup.exe\" -ArgumentList '/S /portable /d=$dir' -Verb RunAs"
-  },
-  "post_install": "if (Test-Path -Path \"$dir\\setup.exe\") { Remove-Item \"$dir\\setup.exe\" -Force }",
-  "shortcuts": [
-    [
-      "windhawk\\windhawk.exe",
-      "Windhawk"
-    ]
-  ],
-  "checkver": {
-    "github": "https://github.com/ramensoftware/windhawk"
-  },
-  "autoupdate": {
-    "url": "https://github.com/ramensoftware/windhawk/releases/download/v$version/windhawk_setup.exe#/setup.exe"
-  }
+    "version": "1.7.3",
+    "description": "Customization marketplace for Windows programs.",
+    "homepage": "https://windhawk.net/",
+    "license": {
+        "identifier": "GPL-3.0-or-later",
+        "url": "https://github.com/ramensoftware/windhawk/blob/main/LICENSE"
+    },
+    "url": "https://github.com/ramensoftware/windhawk/releases/download/v1.7.3/windhawk_setup_offline.exe",
+    "hash": "4d93016570f982326eebdfc9068e924ff21f6448534ea32672bb4c1d52a8193b",
+    "pre_install": [
+        "if(!(test-path \"$persist_dir\\AppData\\settings.ini\")) {",
+        "    New-Item -ItemType \"Directory\" -Path \"$dir\\AppData\" | Out-Null",
+        "    Set-Content \"$dir\\AppData\\settings.ini\" \"[Settings]`r`nDisableUpdateCheck=1\" -Encoding Unicode",
+        "}"
+    ],
+    "post_install": [
+        "# Windhawk needs to apply permissive access attributes to AppData folder in order to work properly",
+        "Start-Process -FilePath \"$dir\\$fname\" -ArgumentList @('/S', '/portable', \"/D=$dir\") -Wait",
+        "Remove-Item -Path \"$dir\\$fname\" -Force",
+        "startmenu_shortcut \"$dir\\windhawk.exe\" 'Windhawk' $null $null $global",
+        "shim \"$dir\\windhawk.exe\" $global 'windhawk'"
+    ],
+    "persist": "AppData",
+    "post_uninstall": [
+        "# Remove shortcut and shim",
+        "Write-Host \"`nRemoving shortcut $(friendly_path \"$(shortcut_folder $global)\\Windhawk.lnk\")\"",
+        "Remove-Item \"$(shortcut_folder $global)\\Windhawk.lnk\" -Force -ErrorAction Ignore",
+        "rm_shim 'windhawk' \"$(shimdir $global)\""
+    ],
+    "checkver": {
+        "github": "https://github.com/ramensoftware/windhawk"
+    },
+    "autoupdate": {
+        "url": "https://github.com/ramensoftware/windhawk/releases/download/v$version/windhawk_setup_offline.exe"
+    }
 }

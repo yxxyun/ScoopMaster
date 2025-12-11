@@ -1,0 +1,75 @@
+{
+    "version": "5.30.0-20241031",
+    "description": "Launcher & client for OpenRSC, an open-source clone of RuneScape Classic.",
+    "homepage": "https://rsc.vet",
+    "license": "AGPL-3.0-or-later",
+    "notes": [
+        "The client must be run via the launcher on the first run.",
+        "The Java runtime must be installed to run both launcher and client."
+    ],
+    "suggest": {
+        "JRE": "java/temurin-jre"
+    },
+    "url": [
+        "https://rsc.vet/downloads/OpenRSC.jar",
+        "https://rsc.vet/downloads/Open_RSC_Client.jar"
+    ],
+    "hash": [
+        "md5:680bc7419c05c208c2a9619461ad24b0",
+        "md5:76735ed9f39cf27468f24337d9c49ba8"
+    ],
+    "pre_install": [
+        "New-Item \"$dir\\Cache\" -Type Directory | Out-Null",
+        "'clientSettings.conf', 'launcherSettings.conf' | % {",
+        "   if (!(Test-Path \"$persist_dir\\Cache\\$_\")) {",
+        "      New-Item \"$dir\\Cache\\$_\" | Out-Null",
+        "   }",
+        "}",
+        "Move-Item \"$dir\\Open_RSC_Client.jar\" \"$dir\\Cache\\Open_RSC_Client.jar\""
+    ],
+    "bin": [
+        [
+            "OpenRSC.jar",
+            "openrsc"
+        ],
+        [
+            "Cache\\Open_RSC_Client.jar",
+            "openrsc-client"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "OpenRSC.jar",
+            "OpenRSC Launcher"
+        ],
+        [
+            "Cache\\Open_RSC_Client.jar",
+            "OpenRSC Client"
+        ]
+    ],
+    "persist": [
+        "Cache\\clientSettings.conf",
+        "Cache\\launcherSettings.conf"
+    ],
+    "checkver": {
+        "script": [
+            "$tags_resp = Invoke-RestMethod https://github.com/Open-RSC/Core-Framework/tags",
+            "$tags_resp -match 'tag/ORSC-([\\d\\.]+)' | Out-Null",
+            "$matches[1]",
+            "$dl_resp = Invoke-RestMethod https://rsc.vet/downloads",
+            "$dl_resp -match '>OpenRSC\\.jar.+?right\">([\\d-]+)' | Out-Null",
+            "$matches[1]"
+        ],
+        "regex": "(\\S+)\\s+(\\d+)-(\\d+)-(\\d+)",
+        "replace": "${1}-${2}${3}${4}"
+    },
+    "autoupdate": {
+        "url": [
+            "https://rsc.vet/downloads/OpenRSC.jar",
+            "https://rsc.vet/downloads/Open_RSC_Client.jar"
+        ],
+        "hash": {
+            "url": "https://rsc.vet/downloads/MD5.SUM"
+        }
+    }
+}

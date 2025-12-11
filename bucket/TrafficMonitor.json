@@ -1,8 +1,11 @@
 {
     "version": "1.85.1",
-    "description": "Network monitoring floating window software on Windows. It can display the current network speed, CPU and memory usage. It also supports being embedded into the taskbar, theme changing and traffic statistics.",
-    "homepage": "https://github.com/zhongyang219/TrafficMonitor/blob/master/README_en-us.md",
-    "license": "MIT",
+    "description": "Windows 上的网络监控窗口软件。可显示当前网速/CPU/内存使用情况。支持嵌入任务栏/主题更改/流量统计。Network monitoring floating window software on Windows. It can display the current network speed, CPU and memory usage. It also supports being embedded into the taskbar, theme changing and traffic statistics.",
+    "homepage": "https://github.com/zhongyang219/TrafficMonitor",
+    "license": {
+        "identifier": "\"Anti 996\" License",
+        "url": "https://github.com/zhongyang219/TrafficMonitor/blob/master/LICENSE"
+    },
     "suggest": {
         "vcredist": "extras/vcredist2022"
     },
@@ -17,29 +20,23 @@
         }
     },
     "extract_dir": "TrafficMonitor",
-    "pre_install": [
-        "    # Portable migration",
-        "if (!(Test-Path \"$persist_dir\") -and (Test-Path \"$env:APPDATA\\TrafficMonitor\\config.ini\")) {",
-        "    ensure \"$persist_dir\" | Out-Null",
-        "    Copy-Item -Recurse \"$env:APPDATA\\TrafficMonitor\\*\" \"$persist_dir\"",
-        "    Rename-Item \"$env:APPDATA\\TrafficMonitor\" 'TrafficMonitor.old'",
-        "}",
-        "",
-        "if (!(Test-Path \"$persist_dir\\config.ini\")) { Set-Content \"$dir\\config.ini\" @('[general]', 'check_update_when_start = false') -Encoding Ascii }",
-        "if (!(Test-Path \"$persist_dir\\global_cfg.ini\")) { Set-Content \"$dir\\global_cfg.ini\" @('[config]', 'portable_mode = true') -Encoding Ascii }",
-        "if (!(Test-Path \"$persist_dir\\history_traffic.dat\")) { New-Item \"$dir\\history_traffic.dat\" | Out-Null }"
-    ],
     "shortcuts": [
         [
             "TrafficMonitor.exe",
             "TrafficMonitor"
         ]
     ],
-    "persist": [
-        "config.ini",
-        "global_cfg.ini",
-        "history_traffic.dat",
-        "plugins"
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "persist_file -dir @(\"$user_AppData\\TrafficMonitor\") @(\"$persist_dir\\TrafficMonitor\")",
+        "handle_app_lnk",
+        "do_some_things"
+    ],
+    "pre_uninstall": [
+        "$bucket = (Get-Content \"$dir\\install.json\" | ConvertFrom-Json).bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "confirm (handle_lang {\"卸载暂停。`nTrafficMonitor 需要先手动关闭软件再进行卸载，请确认已经关闭了软件。`n然后按下 Enter(回车键) 继续进行卸载，或者按下其他任意键取消本次卸载。\"} {\"Uninstall paused.`nTrafficMonitor needs to be manually closed to continue to uninstall.`nPlease confirm that you have closed it.`nPress Enter to continue or other key to cancel the uninstall.\"})",
+        "remove_files @(\"$user_AppData\\TrafficMonitor\")"
     ],
     "checkver": {
         "github": "https://github.com/zhongyang219/TrafficMonitor"

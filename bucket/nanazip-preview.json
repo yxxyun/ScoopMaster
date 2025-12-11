@@ -1,37 +1,52 @@
 {
-  "architecture": {
-    "32bit": {
-      "pre_install": "Get-ChildItem \"$dir\" -Exclude '*x86.msix' | Remove-Item -Force -Recurse"
+    "version": "6.0.1461.0",
+    "description": "NanaZip is an open source file archiver intended for the modern Windows experience, forked from the source code of well-known open source file archiver 7-Zip.",
+    "homepage": "https://github.com/M2Team/NanaZip",
+    "license": "MIT",
+    "url": "https://github.com/M2Team/NanaZip/releases/download/6.0.1461.0/NanaZipPreview_6.0.1461.0.msixbundle#/dl.7z",
+    "hash": "875b42f0b990fba52fd8fdfc2eadef4c2caec1442b866a91987512667a4e690d",
+    "extract_to": "Deploy",
+    "architecture": {
+        "64bit": {
+            "pre_install": "Get-ChildItem \"$dir\\Deploy\\*_x64.msix\" | ForEach-Object { Expand-7zipArchive $_ $dir }"
+        },
+        "arm64": {
+            "pre_install": "Get-ChildItem \"$dir\\Deploy\\*_ARM64.msix\" | ForEach-Object { Expand-7zipArchive $_ $dir }"
+        }
     },
-    "64bit": {
-      "pre_install": "Get-ChildItem \"$dir\" -Exclude '*x64.msix' | Remove-Item -Force -Recurse"
+    "shortcuts": [
+        [
+            "NanaZip.Modern.FileManager.exe",
+            "NanaZip Preview"
+        ]
+    ],
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "Enable-DevelopmentMode",
+            "Remove-Item \"$dir\\AppxSignature.p7x\" -Force -ErrorAction SilentlyContinue | Out-Null",
+            "Remove-Item \"$dir\\Deploy\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+            "Import-AppxPSModule",
+            "Add-AppxPackage -Path \"$dir\\AppxManifest.xml\" -Register"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Import-AppxPSModule",
+        "if ($cmd -eq 'uninstall') {",
+        "    reg.exe delete \"HKEY_CURRENT_USER\\SOFTWARE\\NanaZip\" /f",
+        "    Get-AppxPackage -Name \"40174MouriNaruto.NanaZipPreview\" | Remove-AppxPackage",
+        "} else {",
+        "    Get-AppxPackage -Name \"40174MouriNaruto.NanaZipPreview\" | Remove-AppxPackage -PreserveApplicationData",
+        "}"
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/M2Team/NanaZip/releases?per_page=1",
+        "jsonpath": "$.tag_name"
+    },
+    "autoupdate": {
+        "url": "https://github.com/M2Team/NanaZip/releases/download/$version/NanaZipPreview_$version.msixbundle#/dl.7z"
     }
-  },
-  "autoupdate": {
-    "url": "https://ghproxy.com/https://github.com/M2Team/NanaZip/releases/download/$matchTag/40174MouriNaruto.NanaZip$matchPre_$version_gnj4mf6z9tkrc.msixbundle#/dl.7z"
-  },
-  "checkver": {
-    "regex": "releases/download/(?<tag>[\\w-.]+)/40174MouriNaruto.NanaZip(?<pre>Preview)?_([\\d.]+)_gnj4mf6z9tkrc.msixbundle",
-    "url": "https://api.github.com/repos/M2Team/NanaZip/releases"
-  },
-  "description": "NanaZip is an open source file archiver, forked from the source code of well-known file archiver 7-Zip.",
-  "hash": "69e8e6054e60377f9a6231789f399c8791a7bf9851b96621877c58eff553fbf1",
-  "homepage": "https://github.com/M2Team/NanaZip",
-  "installer": {
-    "script": [
-      "$appmsix = (Get-ChildItem \"$dir\" '*.msix' | Select-Object -ExpandProperty Fullname)",
-      "Add-AppxPackage -Path $appmsix"
-    ]
-  },
-  "license": {
-    "identifier": "Freeware"
-  },
-  "shortcuts": [
-    [
-      "NanaZip.exe",
-      "NanaZip"
-    ]
-  ],
-  "url": "https://ghproxy.com/https://github.com/M2Team/NanaZip/releases/download/2.1.451/40174MouriNaruto.NanaZipPreview_2.1.451.0_gnj4mf6z9tkrc.msixbundle#/dl.7z",
-  "version": "2.1.451.0"
 }

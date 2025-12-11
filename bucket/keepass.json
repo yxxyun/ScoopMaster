@@ -3,9 +3,63 @@
     "description": "Light-weight and easy-to-use password manager",
     "homepage": "https://keepass.info",
     "license": "GPL-2.0-or-later",
-    "url": "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/2.60/KeePass-2.60-Setup.exe",
-    "hash": "sha1:5cdb3c636f7c88b8538ca6d61c94e8fae3b8db09",
-    "innosetup": true,
+    "url": "https://downloads.sourceforge.net/project/keepass/KeePass%202.x/2.60/KeePass-2.60.zip",
+    "hash": "sha1:b1d9ea9892d8680aa0cebf005dabd32c06e4a2ef",
+    "pre_install": [
+        "function Set-Node-to-False {",
+        "    param (",
+        "        $config,",
+        "        $nodepath",
+        "    )",
+        "    $node = $config.SelectSingleNode($nodepath)",
+        "    if (($node -eq $null) -or ($node.InnerText -ne \"false\")) {",
+        "        if ($node) {",
+        "            $node.InnerText = \"false\"",
+        "        } else {",
+        "            $parts = $nodepath -split \"/\"",
+        "            $branch = \"/\"+(($parts[0..($parts.Length-2)]) -join \"/\")",
+        "            $leaf = $parts[-1]",
+        "            $branchnode = $config.SelectSingleNode($branch)",
+        "            $leafnode = $config.CreateElement($leaf)",
+        "            $leafnode.InnerText = \"false\"",
+        "            $branchnode.AppendChild($leafnode) | Out-Null",
+        "        }",
+        "        return $True",
+        "    } else {",
+        "        return $False",
+        "    }",
+        "}",
+        "function Disable-KeePassTransactions {",
+        "    param (",
+        "        $FileName",
+        "    )",
+        "    $config = New-Object System.Xml.XmlDocument",
+        "    $config.Load($FileName)",
+        "    $changed1 = Set-Node-to-False $config \"/Configuration/Application/UseTransactedFileWrites\"",
+        "    $changed2 = Set-Node-to-False $config \"/Configuration/Application/UseTransactedConfigWrites\"",
+        "    if ($changed1 -or $changed2) {",
+        "        $settings = New-Object System.Xml.XmlWriterSettings",
+        "        $settings.Indent = $true",
+        "        $settings.IndentChars = \"`t\"",
+        "        $settings.Encoding = New-Object System.Text.UTF8Encoding($false)",
+        "        $writer = [System.Xml.XmlWriter]::Create($FileName, $settings)",
+        "        $config.Save($writer)",
+        "        $writer.Dispose()",
+        "    }",
+        "}",
+        "if (Test-Path \"$persist_dir\\KeePass.config.xml\") {",
+        "    Disable-KeePassTransactions \"$persist_dir\\KeePass.config.xml\"",
+        "} else {",
+        "    $content = \"<?xml version=`\"1.0`\" encoding=`\"utf-8`\"?>",
+        "<Configuration xmlns:xsd=`\"http://www.w3.org/2001/XMLSchema`\" xmlns:xsi=`\"http://www.w3.org/2001/XMLSchema-instance`\">",
+        "    <Application>",
+        "        <UseTransactedFileWrites>false</UseTransactedFileWrites>",
+        "        <UseTransactedConfigWrites>false</UseTransactedConfigWrites>",
+        "    </Application>",
+        "</Configuration>\"",
+        "    Out-File -InputObject $content -FilePath \"$dir\\KeePass.config.xml\" -Encoding ascii",
+        "}"
+    ],
     "bin": "KeePass.exe",
     "shortcuts": [
         [
@@ -14,6 +68,7 @@
         ]
     ],
     "persist": [
+        "KeePass.config.xml",
         "Plugins",
         "Languages"
     ],
@@ -22,6 +77,6 @@
         "regex": "KeePass:([\\d.]+)"
     },
     "autoupdate": {
-        "url": "https://downloads.sourceforge.net/project/keepass/KeePass%20$majorVersion.x/$version/KeePass-$version-Setup.exe"
+        "url": "https://downloads.sourceforge.net/project/keepass/KeePass%20$majorVersion.x/$version/KeePass-$version.zip"
     }
 }
