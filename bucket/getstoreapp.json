@@ -1,0 +1,47 @@
+{
+    "version": "6.11.1118.0",
+    "description": "获取商店应用 | 离线下载 Microsoft Store 商店应用",
+    "homepage": "https://github.com/Gaoyifei1011/GetStoreApp",
+    "license": "MIT",
+    "url": "https://github.com/Gaoyifei1011/GetStoreApp/releases/download/v6.11.1118.0/GetStoreAppNonStorePackage_6.11.1118.0_x86_x64_arm64.msixbundle#/dl.7z",
+    "hash": "18277ed9b1ea18f94328e5affdfc31f372ea4072ac6e976a52deeb3e6900e800",
+    "extract_to": "Deploy",
+    "architecture": {
+        "32bit": {
+            "pre_install": "Get-ChildItem \"$dir\\Deploy\\*_x86.msix\" | ForEach-Object { Expand-7zipArchive $_ $dir }"
+        },
+        "64bit": {
+            "pre_install": "Get-ChildItem \"$dir\\Deploy\\*_x64.msix\" | ForEach-Object { Expand-7zipArchive $_ $dir }"
+        },
+        "arm64": {
+            "pre_install": "Get-ChildItem \"$dir\\Deploy\\*_ARM64.msix\" | ForEach-Object { Expand-7zipArchive $_ $dir }"
+        }
+    },
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "Enable-DevelopmentMode",
+            "Remove-Item \"$dir\\AppxSignature.p7x\" -Force -ErrorAction SilentlyContinue | Out-Null",
+            "Remove-Item \"$dir\\Deploy\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+            "Import-AppxPSModule",
+            "Add-AppxPackage -Path \"$dir\\AppxManifest.xml\" -Register"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Import-AppxPSModule",
+        "Stop-App",
+        "if ($cmd -eq 'uninstall') {",
+        "    Get-AppxPackage -Name \"Gaoyifei1011.GetStoreApp\" | Remove-AppxPackage",
+        "} else {",
+        "    Get-AppxPackage -Name \"Gaoyifei1011.GetStoreApp\" | Remove-AppxPackage -PreserveApplicationData",
+        "}"
+    ],
+    "checkver": {
+        "github": "https://github.com/Gaoyifei1011/GetStoreApp"
+    },
+    "autoupdate": {
+        "url": "https://github.com/Gaoyifei1011/GetStoreApp/releases/download/v$version/GetStoreAppNonStorePackage_$version_x86_x64_arm64.msixbundle#/dl.7z"
+    }
+}

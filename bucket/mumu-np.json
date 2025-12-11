@@ -1,0 +1,69 @@
+{
+    "version": "5.12.1.2372",
+    "description": "(sudo) MuMu Player 12 Large Screen, Unlimited Games Android 12 | Customize keep-alive apps | Multi-Instance.",
+    "homepage": "https://mumuglobal.com",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://www.mumuplayer.com/news/update/20190906/30607_831430.html"
+    },
+    "url": "http://a11.gdl.easebar.com/MuMu-setup-V5.12.1.2372-overseas-1205174752.exe#/installer.exe",
+    "hash": "md5:fdff28a04fad7d370fdcec3be15a76d6",
+    "persist": [
+        "configs",
+        "vms"
+    ],
+    "shortcuts": [
+        [
+            "nx_main\\MuMuNxMain.exe",
+            "MuMuPlayer"
+        ]
+    ],
+    "installer": {
+        "script": [
+            "if (!(is_admin)) {",
+            "    error \"Administrator rights are required to install $app.\"",
+            "    scoop uninstall $app",
+            "    exit 1",
+            "}",
+            "Invoke-ExternalCommand \"$dir\\installer.exe\" -ArgumentList @('/S', '/auto_start=false', \"/D=$dir\") -RunAs",
+            "Remove-Item \"$dir\\installer.exe\" -Force -ErrorAction SilentlyContinue | Out-Null"
+        ]
+    },
+    "post_install": [
+        "Remove-Item \"$dir\\nx_main\\MuMuNxUpdater.exe\" -Force -ErrorAction SilentlyContinue | Out-Null",
+        "Remove-Item \"$env:APPDATA\\Netease\\MuMuPlayerGlobal\\data\\startupImage\" -Force -ErrorAction SilentlyContinue | Out-Null",
+        "New-Item \"$env:APPDATA\\Netease\\MuMuPlayerGlobal\\data\" -Name 'startupImage' -ItemType Directory -Force -ErrorAction SilentlyContinue | Out-Null",
+        "Remove-Item \"$env:APPDATA\\Netease\\MuMuPlayerGlobal\\data\\msgCenter\" -Force -ErrorAction SilentlyContinue | Out-Null",
+        "New-Item \"$env:APPDATA\\Netease\\MuMuPlayerGlobal\\data\" -Name 'msgCenter' -ItemType Directory -Force -ErrorAction SilentlyContinue | Out-Null"
+    ],
+    "pre_uninstall": [
+        "if (!(is_admin)) {",
+        "    error \"Administrator rights are required to uninstall $app.\"",
+        "    exit 1",
+        "}",
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "unlink_persist_data $manifest $dir",
+        "Invoke-ExternalCommand \"$dir\\uninstall.exe\" -ArgumentList '/S /no_browser' -RunAs",
+        "Start-Sleep -Seconds 10"
+    ],
+    "checkver": {
+        "script": [
+            "$response = Invoke-RestMethod -Uri 'https://api.mumuglobal.com/api/v1/download/nx' -Method Post -Form @{",
+            "    architecture = 'x86_64'",
+            "    machine      = '\"\"'",
+            "    usage        = '1'",
+            "}",
+            "$response.data.version + '=====' + $response.data.mumu.checksum + '=====' + $response.data.mumu.link"
+        ],
+        "regex": "(.*)=====(?<md5>.*)=====(?<url>.*)"
+    },
+    "autoupdate": {
+        "url": "$matchUrl#/installer.exe",
+        "hash": {
+            "url": "https://httpbin.org/get?md5=$matchMd5",
+            "jsonpath": "$.args.md5"
+        }
+    }
+}

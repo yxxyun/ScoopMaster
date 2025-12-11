@@ -23,6 +23,28 @@
             "extract_dir": "PFiles64\\Nilesoft Shell"
         }
     },
+    "pre_install": "if (!(Test-Path \"$persist_dir\\shell.log\")) { New-Item -ItemType File -Path \"$dir\\shell.log\" | Out-Null }",
+    "pre_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    $regkey = Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Classes\\Directory\\background\\shellex\\ContextMenuHandlers\\ @nilesoft.shell' -ErrorAction SilentlyContinue",
+        "    if ($regkey) {",
+        "        if (!(is_admin)) { error 'Admin right is required to unregister Nilesoft Shell'; break }",
+        "        Start-Process \"$dir\\shell.exe\" -ArgumentList @('-unregister', '-restart', '-silent') -Verb RunAs -Wait | Out-Null",
+        "        if (Get-Process -Name 'shell' -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 2 }",
+        "    }",
+        "}"
+    ],
+    "bin": "shell.exe",
+    "shortcuts": [
+        [
+            "shell.exe",
+            "Nilesoft Shell"
+        ]
+    ],
+    "persist": [
+        "shell.log",
+        "shell.nss"
+    ],
     "checkver": {
         "url": "https://nilesoft.org/download/changes",
         "regex": "Version ([\\d.]+)"
@@ -39,22 +61,5 @@
                 "url": "https://nilesoft.org/download/shell/$version/setup-arm64.msi"
             }
         }
-    },
-    "pre_install": [
-        "if (!(Test-Path \"$persist_dir\\shell.nss\") -and !(Test-Path \"$dir\\shell.nss\")) {",
-        "    New-Item \"$dir\\shell.nss\" | Out-Null",
-        "}"
-    ],
-    "pre_uninstall": [
-        "if ($cmd -eq 'uninstall') {",
-        "    $regkey = Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Classes\\Directory\\background\\shellex\\ContextMenuHandlers\\ @nilesoft.shell' -ErrorAction SilentlyContinue",
-        "    if ($regkey) {",
-        "        if (!(is_admin)) { error 'Admin right is required to unregister Nilesoft Shell'; break }",
-        "        Start-Process \"$dir\\shell.exe\" -ArgumentList @('-unregister', '-restart', '-silent') -Verb RunAs -Wait | Out-Null",
-        "        if (Get-Process -Name 'shell' -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 2 }",
-        "    }",
-        "}"
-    ],
-    "persist": ["imports", "shell.nss"],
-    "shortcuts": [["shell.exe", "Nilesoft Shell"]]
+    }
 }
