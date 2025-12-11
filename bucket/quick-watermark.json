@@ -1,0 +1,32 @@
+{
+    "version": "0.0.1",
+    "description": "为windows资源管理器添加一个右键菜单，一键为图片添加水印",
+    "homepage": "https://github.com/ChuckieChen945/QuickWatermark",
+    "license": "MIT",
+    "url": "https://github.com/ChuckieChen945/QuickWatermark/archive/refs/heads/main.zip",
+    "depends": ["main/ImageMagick", "main/pwsh"],
+    "extract_dir": ["QuickWatermark-main"],
+    "post_install": [
+        "$templateFile = Join-Path $dir 'add_watermark.ps1.template'",
+        "$outputFile = Join-Path $dir 'add_watermark.ps1'",
+        "$content = Get-Content -Path $templateFile -Raw",
+        "$content = $content -replace '\\{\\{\\$magic_dir_placeholder\\}\\}', \"$(appdir ImageMagick $global)\\\\current\"",
+        "Set-Content -Path $outputFile -Value $content",
+        "#-----------",
+        "$quickwatermark_root = \"$dir\".Replace('\\', '\\\\')",
+        "$pwsh_root = \"$(appdir pwsh $global)\\current\".Replace('\\','\\\\')",
+        "'install-context.reg', 'uninstall-context.reg' | ForEach-Object {",
+        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\$app\\$_\"",
+        "    $content = $content.Replace('{{$quickwatermark_root_placeholder}}', $quickwatermark_root)",
+        "    $content = $content.Replace('{{$pwsh_root_placeholder}}', $pwsh_root)",
+        "    Set-Content \"$dir\\$_\" $content -Encoding Ascii",
+        "}",
+        "reg import \"$dir\\install-context.reg\""
+    ],
+    "pre_uninstall": ["reg import \"$dir\\uninstall-context.reg\""],
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/ChuckieChen945/QuickWatermark/archive/refs/heads/main.zip"
+    },
+    "persist": ["watermark"]
+}
