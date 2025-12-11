@@ -1,62 +1,28 @@
 {
-    "version": "11.2.251124",
-    "description": "网易有道翻译 | 史上最强大的翻译生产力工具",
-    "homepage": "https://cidian.youdao.com/",
-    "license": "Proprietary",
-    "url": "https://download.ydstatic.com/cidian/static/11.2/251124/YoudaoDictSetup.exe#/dl.7z",
+    "version": "11.2.10.0",
+    "description": "Youdao Dictionary has typical acoustic translation, smart screen word identification, real-time synchronization with network up-to-date vocabulary, and other word look-up features.",
+    "homepage": "https://cidian.youdao.com",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "http://xue.youdao.com/sw/m/1191866"
+    },
+    "url": "http://cidian.youdao.com/download/YoudaoDict.exe#/dl.7z",
     "hash": "dd94d5e62ce3d5fc2a1613fcff6e0c4e74348e723a3dadc17b464bfba1a6bfb8",
+    "pre_install": "Expand-7ZipArchive \"$dir\\`$PLUGINSDIR\\dict.7z\" \"$dir\"",
+    "post_install": "@('$PLUGINSDIR', '[NSIS].nsi', 'uninst.exe', '$_67_') | ForEach-Object { Remove-Item \"$dir\\$_\" -ErrorAction 'SilentlyContinue' -Force -Recurse }",
     "shortcuts": [
         [
             "YoudaoDict.exe",
-            "网易有道翻译"
+            "Youdao\\Youdao Dict"
         ]
     ],
-    "installer": {
-        "script": [
-            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-            "New-PersistDirectory \"$env:LOCALAPPDATA\\Yodao\\DeskDict\" \"$persist_dir\\LocalAppData\" -Migrate",
-            "Expand-7ZipArchive \"$dir\\`$PLUGINSDIR\\dict.7z\" \"$dir\"",
-            "Remove-Item \"$dir\\`$*\" -Recurse -Force",
-            "Remove-Item \"$dir\\uninst.exe\" -Force",
-            "if ($global) {",
-            "    $registry_scope = \"HKLM:\"",
-            "} else {",
-            "    $registry_scope = \"HKCU:\"",
-            "}",
-            "New-Item \"$registry_scope\\SOFTWARE\\Classes\\yddict\" -Force -ItemType String -Value 'URL:yddict' | Out-Null",
-            "New-ItemProperty \"$registry_scope\\SOFTWARE\\Classes\\yddict\" -Force -PropertyType string -Name 'URL Protocol' -Value '' | Out-Null",
-            "New-Item \"$registry_scope\\SOFTWARE\\Classes\\yddict\\shell\\open\\command\" -Force -ItemType String -Value \"`\"$dir\\YoudaoDict.exe`\" `\"-startWithParam`\" `\"%1`\"\" | Out-Null"
-        ]
-    },
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App",
-        "Remove-Junction \"$env:LOCALAPPDATA\\Yodao\\DeskDict\""
-    ],
-    "uninstaller": {
-        "script": [
-            "if ($global) {",
-            "    $registry_scope = \"HKLM:\"",
-            "} else {",
-            "    $registry_scope = \"HKCU:\"",
-            "}",
-            "Remove-Item \"$registry_scope\\SOFTWARE\\Classes\\yddict\" -Recurse -Force | Out-Null",
-            "if ($cmd -eq 'uninstall') {",
-            "    Remove-ItemProperty \"HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\" -Name \"YoudaoDict\" -Force | Out-Null",
-            "    Remove-Item \"HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\网易有道翻译\" -Recurse -Force | Out-Null",
-            "}"
-        ]
-    },
+    "bin": "YoudaoDict.exe",
     "checkver": {
-        "script": [
-            ". \"$pwd\\bin\\utils.ps1\"",
-            "\"https://cidian.youdao.com/download/YoudaoDict.exe\" | Get-RedirectedUrl1st"
-        ],
-        "regex": "(?<url>.*/cidian/static/(?<mainver>.*)/(?<patchver>.*)/YoudaoDictSetup.exe)",
-        "replace": "${mainver}.${patchver}"
+        "url": "https://api-overmind.youdao.com/openapi/get/luna/dict/luna-front/prod/cidianConfig",
+        "jsonpath": "$.data.value.logList[0].version",
+        "regex": "([\\d.]+)"
     },
     "autoupdate": {
-        "url": "$matchUrl#/dl.7z"
+        "url": "http://cidian.youdao.com/download/YoudaoDict.exe#/dl.7z"
     }
 }

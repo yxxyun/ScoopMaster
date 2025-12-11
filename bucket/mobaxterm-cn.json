@@ -1,46 +1,47 @@
 {
-    "version": "25.4",
-    "description": "MobaXterm 是一款功能强大的终端模拟器和远程计算机管理软件",
-    "homepage": "https://www.osssr.com/5704.html",
-    "license": "Proprietary",
-    "architecture": {
-        "64bit": {
-            "url": "https://api.xrgzs.top/lanzou/?url=https://www.lanzoui.com/ioS1A3cfkk9a&type=down#/dl.7z",
-            "hash": "69b0c40e5b0a524234f0eaeaf52bcc77170b41a80a89677bf58f34c716bb3786"
-        }
-    },
-    "pre_install": [
-        "function New-PersistFile([String] $path) {",
-        "    if (!(Test-Path $path) -or !(Get-Item $path).Length) {",
-        "        New-Item $path -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null",
-        "    }",
-        "}",
-        "New-PersistFile 'MobaXterm backup.zip'"
-    ],
-    "extract_dir": "MobaXterm",
-    "shortcuts": [
-        [
-            "MobaXterm.exe",
-            "MobaXterm Professional"
-        ]
-    ],
-    "persist": [
-        "MobaXterm.ini",
-        "MobaXterm backup.zip"
-    ],
-    "checkver": {
-        "script": [
-            ". \"$pwd\\bin\\utils.ps1\"",
-            "$f = Get-LanzouList \"https://osssr.lanzoum.com/b01ty3lgf\" | Where-Object { $_.name_all -like \"MobaXterm.*.Portable OSSSR.7z\" } | Select-Object -First 1",
-            "$f.name_all + '=====' + $f.id"
-        ],
-        "regex": "MobaXterm.(.*).Portable OSSSR.7z=====(?<sharekey>.*)"
-    },
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://api.xrgzs.top/lanzou/?url=https://www.lanzoui.com/$matchSharekey&type=down#/dl.7z"
-            }
-        }
-    }
+  "version": "24.3-chs",
+  "description": "MobaXterm 简体中文便携版：集成终端、SSH、SFTP、X11 的强大远程运维工具",
+  "homepage": "https://github.com/RipplePiam/MobaXterm-Chinese-Simplified",
+  "license": "Freeware",
+
+  "url": "https://github.com/RipplePiam/MobaXterm-Chinese-Simplified/releases/download/v0.24.3.10/MobaXterm_Portable_v24.3_chs.zip",
+  "hash": "md5:2216bb8085e2a3b726a9ea8817f6afef",
+
+   "pre_install": [
+    "# 把主程序统一改名",
+    "Rename-Item \"$dir\\MobaXterm_Personal_24.3.exe\" 'MobaXterm.exe'",
+  
+    "# 如果已经存在同名目录，需要先删除，再创建空文件",
+    "if (Test-Path \"$dir\\MobaXterm.ini\" -PathType Container) {",
+    "    Remove-Item \"$dir\\MobaXterm.ini\" -Recurse -Force",
+    "}",
+    "if (!(Test-Path \"$dir\\MobaXterm.ini\" -PathType Leaf)) {",
+    "    New-Item \"$dir\\MobaXterm.ini\" -Type File | Out-Null",
+    "}",
+  
+    "# 持久化备份文件占位",
+    "if (!(Test-Path \"$persist_dir\\MobaXterm backup.zip\")) {",
+    "    New-Item \"$dir\\MobaXterm backup.zip\" -Type File | Out-Null",
+    "}"
+  ],
+
+  "pre_uninstall": [
+    "# 若运行期修改了 ini / 备份文件，卸载前同步回 persist",
+    "function Sync([string] $f) {",
+    "  if ((Get-Item \"$dir\\$f\").LastWriteTime -gt (Get-Item \"$persist_dir\\$f\").LastWriteTime) {",
+    "    Copy-Item \"$dir\\$f\" \"$persist_dir\\$f\" -Force",
+    "  }",
+    "}",
+    "@('MobaXterm.ini','MobaXterm backup.zip') | ForEach-Object { Sync $_ }"
+  ],
+
+  "bin": "MobaXterm.exe",
+  "shortcuts": [
+    [ "MobaXterm.exe", "MobaXterm 中文版" ]
+  ],
+
+  "persist": [
+    "MobaXterm.ini",
+    "MobaXterm backup.zip"
+  ]
 }

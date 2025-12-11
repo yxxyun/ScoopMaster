@@ -7,12 +7,8 @@
         "url": "https://code.visualstudio.com/License/"
     },
     "notes": [
-        "Add Visual Studio Code as a context menu option by running:",
-        "reg import \"$dir\\install-context.reg\"",
-        "For file associations, run:",
-        "reg import \"$dir\\install-associations.reg\"",
         "For github integration, run:",
-        "reg import \"$dir\\install-github-integration.reg\""
+        "'reg import \"$dir\\install-github-integration.reg\"'"
     ],
     "architecture": {
         "64bit": {
@@ -24,19 +20,41 @@
             "hash": "1e1ad63398e8c091e242593320adbaae5109248a3d0f4fad411c02b7ac9f1b33"
         }
     },
-    "env_add_path": "bin",
+    "bin": [
+        [
+            "bin/code.cmd",
+            "code"
+        ]
+    ],
     "shortcuts": [
         [
             "code.exe",
             "Visual Studio Code"
         ]
     ],
+    "pre_install": [
+        "# 处理用户配置目录",
+        "$config_dirs = @(",
+        "    '.vscode',",
+        "    '.lingma'",
+        ")",
+        "foreach ($config_dir in $config_dirs) {",
+        "    $target_dir = Join-Path $env:USERPROFILE $config_dir",
+        "    $link_dir = Join-Path $persist_dir $config_dir",
+        "    & \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $target_dir $link_dir",
+        "}",
+        "",
+        "# 链接 $env:APPDATA\\Code 到 persist_dir/data",
+        "$appdata_dir = Join-Path $env:APPDATA \"Code\"",
+        "$persist_data_dir = Join-Path $persist_dir data",
+        "& \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $appdata_dir $persist_data_dir"
+    ],
     "post_install": [
         "$dirpath = \"$dir\".Replace('\\', '\\\\')",
         "$exepath = \"$dir\\Code.exe\".Replace('\\', '\\\\')",
         "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context', 'install-github-integration', 'uninstall-github-integration' | ForEach-Object {",
-        "  if (Test-Path \"$bucketsdir\\extras\\scripts\\vscode\\$_.reg\") {",
-        "    $content = Get-Content \"$bucketsdir\\extras\\scripts\\vscode\\$_.reg\"",
+        "  if (Test-Path \"$bucketsdir\\$bucket\\scripts\\vscode\\$_.reg\") {",
+        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\vscode\\$_.reg\"",
         "    $content = $content.Replace('$codedir', $dirpath)",
         "    $content = $content.Replace('$code', $exepath)",
         "    if ($global) {",
@@ -45,19 +63,9 @@
         "    $content | Set-Content -Path \"$dir\\$_.reg\"",
         "  }",
         "}",
-        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.vscode\\extensions\")) {",
-        "    info '[Portable Mode] Copying extensions...'",
-        "    Copy-Item \"$env:USERPROFILE\\.vscode\\extensions\" \"$dir\\data\" -Recurse",
-        "}",
-        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Code\")) {",
-        "    info '[Portable Mode] Copying user data...'",
-        "    Copy-Item \"$env:AppData\\Code\" \"$dir\\data\\user-data\" -Recurse",
-        "}",
-        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
-        "if ((Test-Path \"$extensions_file\")) {",
-        "    info 'Adjusting path in extensions file...'",
-        "    (Get-Content \"$extensions_file\") -replace '(?<=vscode(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
-        "}"
+        "# 自动导入注册表（可选）",
+        "reg import \"$dir\\install-context.reg\"",
+        "reg import \"$dir\\install-associations.reg\""
     ],
     "uninstaller": {
         "script": [
@@ -68,7 +76,11 @@
             "}"
         ]
     },
-    "persist": "data",
+    "persist": [
+        "data",
+        ".vscode",
+        ".lingma"
+    ],
     "checkver": {
         "url": "https://update.code.visualstudio.com/api/update/win32-x64-archive/stable/latest",
         "jsonpath": "$.name"

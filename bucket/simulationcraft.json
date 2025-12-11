@@ -1,18 +1,18 @@
 {
-    "version": "1027.01.87c5dd2",
-    "description": "SimulationCraft is a tool to explore combat mechanics in the popular MMO RPG World of Warcraft.",
+    "version": "1125.01.20251128.8bee68e",
+    "description": "Utility to explore combat mechanics in the popular MMORPG World of Warcraft",
     "homepage": "https://www.simulationcraft.org/",
-    "license": "GPL-3.0",
+    "license": "GPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": "http://downloads.simulationcraft.org/nightly/simc-1027.01.87c5dd2-win64.7z",
-            "hash": "a1ca088054051ca22d41671fd343f4d91293cc7417dc85f82d16c8c4f26309ff",
-            "extract_dir": "simc-1027.01.87c5dd2-win64"
+            "url": "http://downloads.simulationcraft.org/nightly/simc-1125.01.8bee68e-win64.7z",
+            "hash": "331348cd6c8fc10e849ca4fc0d32303da30f5c1a2adba50077c088aed776fd0f",
+            "extract_dir": "simc-1125.01.8bee68e-win64"
         },
         "arm64": {
-            "url": "http://downloads.simulationcraft.org/nightly/simc-1027.01.87c5dd2-winarm64.7z",
-            "hash": "066d5272d77d1e9f0d16bf0b26fdabf215db51b530f9502da1990e05055cc298",
-            "extract_dir": "simc-1027.01.87c5dd2-winarm64"
+            "url": "http://downloads.simulationcraft.org/nightly/simc-1125.01.8bee68e-winarm64.7z",
+            "hash": "a73c39e723bb3d27db60bdcbaab51660f3fa5e3775809e3670cb494410d97e7d",
+            "extract_dir": "simc-1125.01.8bee68e-winarm64"
         }
     },
     "shortcuts": [
@@ -20,5 +20,32 @@
             "SimulationCraft.exe",
             "SimulationCraft"
         ]
-    ]
+    ],
+    "bin": "simc.exe",
+    "checkver": {
+        "script": [
+            "try {",
+            "    $resp = Invoke-WebRequest 'http://downloads.simulationcraft.org/nightly/?C=M;O=D'",
+            "    # scrape information from a line like 'ms.date: 12/16/2024'",
+            "    $lines = $resp.Content.Split([Environment]::NewLine)",
+            "    $lines | Select-String -Pattern 'simc-(?<realVersion>\\d{3,}\\.\\d{2,}\\.[a-fA-F0-9]{7})-(?<arch>win(?:arm)?64)\\.7z\\s*</a>.*(?<date>\\d{4}-\\d{2}-\\d{2})' | Foreach-Object { \"version: $($_.Matches[0].Groups[\"realVersion\"]) xxx arch: $($_.Matches[0].Groups[\"arch\"]) xxx date: $($_.Matches[0].Groups[\"date\"])\" } | Write-Output",
+            "} catch {",
+            "    throw $_.Exception",
+            "}"
+        ],
+        "regex": "version: (?<major>\\d{3,}\\.\\d{2,})\\.(?<minor>[a-fA-F0-9]{7}) xxx arch: (?<arch>win(?:arm)?64) xxx date: (?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})",
+        "replace": "${major}.${year}${month}${day}.${minor}"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "http://downloads.simulationcraft.org/nightly/simc-$matchMajor.$matchMinor-win64.7z",
+                "extract_dir": "simc-$matchMajor.$matchMinor-win64"
+            },
+            "arm64": {
+                "url": "http://downloads.simulationcraft.org/nightly/simc-$matchMajor.$matchMinor-winarm64.7z",
+                "extract_dir": "simc-$matchMajor.$matchMinor-winarm64"
+            }
+        }
+    }
 }
