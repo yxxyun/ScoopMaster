@@ -1,9 +1,9 @@
 {
-    "version": "9.9.25-251203",
-    "description": "Tencent QQ NT Edition",
-    "homepage": "https://im.qq.com/",
+    "version": "9.9.25.251203",
+    "description": "An instant messaging tool that gives you the best way to keep in touch with your friends and family, Build with Electron",
+    "homepage": "https://im.qq.com",
     "license": {
-        "identifier": "Freeware",
+        "identifier": "Proprietary",
         "url": "https://ti.qq.com/agreement/index.html"
     },
     "architecture": {
@@ -14,27 +14,56 @@
         "32bit": {
             "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_9.9.25_251203_x86_01.exe#/dl.7z",
             "hash": "06f58f856bd5cf64796df03d97e7e8d777f3f0daf14f56882a5da73e45c70ade"
+        },
+        "arm64": {
+            "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_9.9.25_251203_arm64_01.exe#/dl.7z",
+            "hash": "3117cb1f74e046fd30a17f93b5288f6c342f2f37b3e1b5c59cf058b1f0b5581c"
         }
     },
-    "extract_dir": "Files",
+    "installer": {
+        "script": [
+            "$configpath = \"$env:PUBLIC\\Documents\\Tencent\\QQ\"",
+            "if (!(Test-Path -Path \"$configpath\")) {",
+            "    New-Item -Path \"$configpath\" -Type Directory -Force | Out-Null",
+            "}",
+            "if (!(Test-Path -Path \"$configpath\\UserDataInfo.ini\" -PathType leaf)) {",
+            "    Set-Content -NoNewline -Path \"$configpath\\UserDataInfo.ini\" -Value \"[UserDataSet]`nUserDataSavePathType=2`nUserDataSavePath=`\"$persist_dir\\Tencent Files`\"\"",
+            "}"
+        ]
+    },
     "shortcuts": [
         [
-            "QQ.exe",
+            "Files\\QQ.exe",
             "QQ"
         ]
     ],
+    "persist": "Tencent Files",
+    "uninstaller": {
+        "script": "Remove-Item -Path \"$env:PUBLIC\\Documents\\Tencent\" -Recurse -Force | Out-Null"
+    },
     "checkver": {
-        "url": "https://qq-web.cdn-go.cn/im.qq.com_new/latest/rainbow/windowsDownloadUrl.js",
-        "regex": "ntDownloadX64Url.*/qqfile/qq/QQNT/Windows/QQ_(?<coreversion>[\\d.]+)_(?<buildversion>[\\d.]+)_x64_(?<number>[\\d.]+)\\.exe",
-        "replace": "${coreversion}-${buildversion}"
+        "script": [
+            "# Please keep this script. Using 'cdn-go.cn' may result in receiving expired cache responses.",
+            "$url = 'https://cdn-go.cn/qq-web/im.qq.com_new/latest/rainbow/windowsConfig.js'",
+            "$hostname = ([Uri]$url).Host",
+            "$records = Resolve-DnsName 'cdn-go.cn.cloud.tc.qq.com' -Type A -DnsOnly -ErrorAction Ignore",
+            "$ip = $records | Where-Object { $_.QueryType -eq 'A' -and $_.IPAddress } | Select-Object -ExpandProperty IP4Address -First 1",
+            "$url = $url -Replace [regex]::Escape($hostname), $ip",
+            "Invoke-WebRequest -Uri $url -UseBasicParsing -Headers @{'Host' = $hostname} | Select-Object -ExpandProperty Content"
+        ],
+        "regex": "([\\d\\w]+).qq.com/qqfile/qq/QQNT/Windows/QQ_([\\d\\.]+)_([\\d]+)_x86_01.exe",
+        "replace": "${2}.${3}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_$matchCoreversion_$matchBuildversion_x64_$matchNumber.exe#/dl.7z"
+                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$match2_$match3_x64_01.exe#/dl.7z"
             },
             "32bit": {
-                "url": "https://dldir1.qq.com/qqfile/qq/QQNT/Windows/QQ_$matchCoreversion_$matchBuildversion_x86_$matchNumber.exe#/dl.7z"
+                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$match2_$match3_x86_01.exe#/dl.7z"
+            },
+            "arm64": {
+                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$match2_$match3_arm64_01.exe#/dl.7z"
             }
         }
     }
