@@ -1,9 +1,11 @@
 {
-    "$schema": "https://raw.githubusercontent.com/lukesampson/scoop/master/schema.json",
     "version": "2.0.65",
-    "description": "Anthropic's agentic coding tool that lives in your terminal",
-    "homepage": "https://docs.anthropic.com/en/docs/claude-code/overview",
+    "description": "An agentic coding tool that lives in your terminal",
+    "homepage": "https://github.com/anthropics/claude-code",
     "license": "Proprietary",
+    "suggest": {
+        "git": "main/git"
+    },
     "architecture": {
         "64bit": {
             "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/2.0.65/win32-x64/claude.exe",
@@ -11,9 +13,46 @@
         }
     },
     "bin": "claude.exe",
+    "env_set": {
+        "CLAUDE_CODE_GIT_BASH_PATH": "$env:GIT_INSTALL_ROOT\\bin\\bash.exe"
+    },
+    "post_install": [
+        "$localBinDir = \"$env:USERPROFILE\\.local\\bin\"",
+        "if (-not (Test-Path $localBinDir)) {",
+        "    New-Item -ItemType Directory -Path $localBinDir -Force | Out-Null",
+        "    Write-Host \"Created directory: $localBinDir\" -ForegroundColor Green",
+        "}",
+        "$symlinkPath = Join-Path $localBinDir 'claude.exe'",
+        "if (Test-Path $symlinkPath) {",
+        "    Remove-Item $symlinkPath -Force",
+        "}",
+        "New-Item -ItemType SymbolicLink -Path $symlinkPath -Target \"$dir\\claude.exe\" -Force | Out-Null",
+        "Write-Host \"Created symlink: $symlinkPath -> $dir\\claude.exe\" -ForegroundColor Green"
+    ],
+    "post_uninstall": [
+        "$symlinkPath = Join-Path \"$env:USERPROFILE\\.local\\bin\" 'claude.exe'",
+        "if (Test-Path $symlinkPath) {",
+        "    Remove-Item $symlinkPath -Force",
+        "    Write-Host \"Removed symlink: $symlinkPath\" -ForegroundColor Yellow",
+        "}"
+    ],
+    "notes": [
+        "Claude Code has been installed and symlinked to ~/.local/bin/claude.exe",
+        "",
+        "Make sure ~/.local/bin is in your PATH:",
+        "  $env:PATH += \";$env:USERPROFILE\\.local\\bin\"",
+        "",
+        "To make it permanent, add to your PowerShell profile:",
+        "  notepad $PROFILE",
+        "",
+        "Usage:",
+        "  claude [command]",
+        "",
+        "For help, run: claude --help"
+    ],
     "checkver": {
         "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/stable",
-        "regex": "(.*)"
+        "regex": "([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
