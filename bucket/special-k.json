@@ -1,53 +1,56 @@
 {
     "version": "25.12.2.5",
-    "description": "Lovingly referred to as the Swiss Army Knife of PC gaming, Special K does a bit of everything. It is best known for fixing and enhancing graphics, its many detailed performance analysis and correction mods, and a constantly growing palette of tools that solve a wide variety of issues affecting PC games.",
+    "description": "Lovingly referred to as the Swiss Army Knife of PC gaming, Special K does a bit of everything.",
     "homepage": "https://www.special-k.info/",
-    "license": "GPL-3.0-only",
-    "notes": "SKIF and SKIV have CLI args for internal use which you may find useful. See their respective source code at https://github.com/SpecialKO/SKIF. https://github.com/SpecialKO/SKIV.",
+    "license": "GPL-3.0",
     "url": "https://sk-data.special-k.info/repository/SpecialK_25.12.2.5.exe",
     "hash": "2ac633ad3e6a68b34ffc7e48da1bc4fadbcadcd04b823be260c5d7fe4823847c",
-    "bin": [
-        [
-            "SKIF,1.exe",
-            "SKIF"
-        ],
-        [
-            "SKIF,2.exe",
-            "SKIF32"
-        ],
-        "SKIV.exe"
+    "pre_install": [
+        "$special_k_dir = \"$env:LOCALAPPDATA\\Programs\\Special K\"",
+        "if (Test-Path \"$persist_dir\\Profiles\") {",
+        "    Copy-Item \"$persist_dir\\Profiles\" \"$special_k_dir\\Profiles\" -Recurse",
+        "}",
+        "if (Test-Path \"$persist_dir\\Global\") {",
+        "    Copy-Item \"$persist_dir\\Global\" \"$special_k_dir\\Global\" -Recurse",
+        "}",
+        "if ($cmd -eq 'update') {",
+        "    Start-Process \"$dir\\$fname\" -Args @('/VERYSILENT', '/SP-', '/NORESTART', '/CURRENTUSER')",
+        "    Start-Sleep -Seconds 5",
+        "} else {",
+        "    Start-Process \"$dir\\$fname\" -Wait -Args @('/VERYSILENT', '/SP-', '/NORESTART', '/CURRENTUSER')",
+        "}",
+        "if (Get-Process -Name 'SKIF' -ErrorAction 'SilentlyContinue') { Stop-Process -Name 'SKIF' -Force }"
     ],
-    "shortcuts": [
-        [
-            "SKIF,1.exe",
-            "Special K/SKIF"
-        ],
-        [
-            "SKIF,2.exe",
-            "Special K/SKIF32"
-        ],
-        [
-            "SKIV.exe",
-            "Special K/SKIV"
+    "uninstaller": {
+        "script": [
+            "$special_k_dir = \"$env:LOCALAPPDATA\\Programs\\Special K\"",
+            "if ($cmd -eq 'uninstall') {",
+            "    if (!$purge) {",
+            "        ensure \"$persist_dir\" | Out-Null",
+            "        Write-Host 'Backing up Special K profiles and global config...' -F 'Yellow'",
+            "        Copy-Item \"$special_k_dir\\Profiles\" \"$persist_dir\\Profiles\" -Recurse -Force",
+            "        Copy-Item \"$special_k_dir\\Global\" \"$persist_dir\\Profiles\" -Recurse -Force",
+            "        Write-Host 'Done! Special K profiles and global config were successfully backed up' -F 'Green'",
+            "        Write-Output \"You can find a backup of your Special K profiles in '$persist_dir\\Profiles'\"",
+            "    }",
+            "    Start-Process \"$special_k_dir\\Servlet\\unins000.exe\" -Wait `",
+            "      -Args @('/VERYSILENT', '/SP-', '/NORESTART', '/CURRENTUSER')",
+            "}"
         ]
-    ],
-    "pre_install": "\"steam_api_sk.dll\", \"steam_api_sk64.dll\" | ForEach-Object { $filePath = \"$persist_dir\\PlugIns\\ThirdParty\\Steamworks\\$_\"; If (Test-Path $filePath) { Remove-Item $filePath -Force } }",
-    "persist": [
-        "Global",
-        "PlugIns",
-        "Profiles"
-    ],
-    "innosetup": true,
+    },
     "checkver": {
-        "url": "https://sk-data.special-k.info/repository.json",
-        "jp": "$.Main.Versions[0].Name"
+        "regex": "([\\d.]+)",
+        "script": [
+            "$jsonContent = Invoke-RestMethod 'https://sk-data.special-k.info/repository.json'",
+            "$version = $jsonContent.Main.Versions.Where({$_.Branches -eq 'Website'}).Name[0]",
+            "Write-Output $version"
+        ]
     },
     "autoupdate": {
+        "url": "https://sk-data.special-k.info/repository/SpecialK_$version.exe",
         "hash": {
-            "mode": "json",
-            "jp": "$.Main.Versions[0].SHA256",
-            "url": "https://sk-data.special-k.info/repository.json"
-        },
-        "url": "https://sk-data.special-k.info/repository/SpecialK_$version.exe"
+            "url": "https://sk-data.special-k.info/repository.json",
+            "jsonpath": "$.Main.Versions[?(@.Name == '$version')].SHA256"
+        }
     }
 }
