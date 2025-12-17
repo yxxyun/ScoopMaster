@@ -1,55 +1,67 @@
 {
     "version": "143.0.7499.147",
-    "description": "The Fast & Secure Web Browser Built to be Yours",
-    "homepage": "https://google.com/chrome",
-    "license": "Freeware",
+    "description": "Fast, secure, and free web browser, built for the modern web.",
+    "homepage": "https://www.google.com/chrome/",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://www.google.com/chrome/privacy/eula_text.html"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise64.msi#/dl.7z",
-            "hash": "7781b948073d8b6cc33b1c33afe3f03c566f86cfa51e960d633da2d448845e19"
+            "url": "https://dl.google.com/release2/chrome/pqwz53egj7gpyflbo3qbxokuy4_143.0.7499.147/143.0.7499.147_chrome_installer.exe#/dl.7z",
+            "hash": "19179bc4e01995f06cd35c4cf48d32a3484382d2e0c8af4d4ecc0d411d08e017"
         },
         "32bit": {
-            "url": "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise.msi#/dl.7z",
-            "hash": "3644fd7f54445d113d32535c0c869afa360a7ee9716c64e940e6c80761cffd8b"
-        },
-        "arm64": {
-            "url": "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise_arm64.msi#/dl.7z",
-            "hash": "8a2694d59473a6cb2f47c7e89cde3e046eb671dcc13eee831f632514e8b1f21e"
+            "url": "https://dl.google.com/release2/chrome/joe3yrggucibqpn7m34c2jy7ga_143.0.7499.147/143.0.7499.147_chrome_installer.exe#/dl.7z",
+            "hash": "45e8d9e3fe440b0a799846c25ef07bff7cfa4520b3aa36c7f3e51f4ff59b4862"
         }
     },
-    "extract_to": "tmp",
-    "pre_install": [
-        "Expand-7zipArchive \"$dir\\tmp\\Binary.GoogleChromeInstaller\" \"$dir\\tmp\"",
-        "Expand-7zipArchive \"$dir\\tmp\\updater.7z\" \"$dir\\tmp\"",
-        "$inst = Get-ChildItem \"$dir\\tmp\" -Filter '*_chrome_installer.exe' -File -Recurse | Select-Object -First 1 -ExpandProperty FullName",
-        "Expand-7zipArchive \"$inst\" \"$dir\\tmp\"",
-        "Expand-7zipArchive \"$dir\\tmp\\chrome.7z\" -ExtractDir 'Chrome-bin' -DestinationPath \"$dir\""
+    "installer": {
+        "script": "Expand-7zipArchive \"$dir\\chrome.7z\" -ExtractDir 'Chrome-bin' -Removal"
+    },
+    "bin": [
+        [
+            "chrome.exe",
+            "chrome",
+            "--user-data-dir=\"$dir\\User Data\""
+        ]
     ],
-    "post_install": "Remove-Item \"$dir\\tmp\" -Recurse -Force",
     "shortcuts": [
         [
             "chrome.exe",
-            "Google Chrome"
+            "Google Chrome",
+            "--user-data-dir=\"$dir\\User Data\""
         ]
     ],
+    "post_install": [
+        "if (!(Test-Path \"$dir\\User Data\\*\") -and (Test-Path \"$env:LocalAppData\\Google\\Chrome\\User Data\")) {",
+        "    info '[Portable Mode]: Copying user data...'",
+        "    Copy-Item \"$env:LocalAppData\\Google\\Chrome\\User Data\\*\" \"$dir\\User Data\" -Recurse",
+        "}"
+    ],
+    "env_set": {
+        "CHROME_EXECUTABLE": "$dir\\chrome.exe"
+    },
+    "persist": "User Data",
     "checkver": {
-        "script": [
-            "$Body = '<?xml version=\"1.0\" encoding=\"UTF-8\"?><request protocol=\"3.0\"><os platform=\"win\" version=\"10.0.22000\" /><app appid=\"{8A69D345-D564-463C-AFF1-A69D9E530F96}\" version=\"\"><updatecheck /></app></request>'",
-            "$Response = Invoke-RestMethod -Uri 'https://update.googleapis.com/service/update2' -Method Post -Body $Body",
-            "Write-Output $Response.response.app.updatecheck.manifest.version"
-        ],
-        "regex": "([\\d.]+)"
+        "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
+        "regex": "(?sm)<stable32><version>(?<version>[\\d.]+)</version>.+release2/chrome/(?<32>[\\w-]+)_.+<stable64>.+release2/chrome/(?<64>[\\w-]+)_.+</stable64>"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise64.msi#/dl.7z"
+                "url": "https://dl.google.com/release2/chrome/$match64_$version/$version_chrome_installer.exe#/dl.7z",
+                "hash": {
+                    "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
+                    "xpath": "/chromechecker/stable64[version='$version']/sha256"
+                }
             },
             "32bit": {
-                "url": "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise.msi#/dl.7z"
-            },
-            "arm64": {
-                "url": "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise_arm64.msi#/dl.7z"
+                "url": "https://dl.google.com/release2/chrome/$match32_$version/$version_chrome_installer.exe#/dl.7z",
+                "hash": {
+                    "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
+                    "xpath": "/chromechecker/stable32[version='$version']/sha256"
+                }
             }
         }
     }
