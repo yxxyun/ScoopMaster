@@ -1,27 +1,19 @@
 {
-    "version": "1.107.1",
+    "version": "1.108.0",
     "description": "Lightweight but powerful source code editor",
     "homepage": "https://code.visualstudio.com/",
     "license": {
         "identifier": "Freeware",
         "url": "https://code.visualstudio.com/License/"
     },
-    "notes": [
-        "Add Visual Studio Code as a context menu option by running:",
-        "'reg import \"$dir\\install-context.reg\"'",
-        "For file associations, run:",
-        "'reg import \"$dir\\install-associations.reg\"'",
-        "For github integration, run:",
-        "'reg import \"$dir\\install-github-integration.reg\"'"
-    ],
     "architecture": {
         "64bit": {
-            "url": "https://update.code.visualstudio.com/1.107.1/win32-x64-archive/stable#/dl.7z",
-            "hash": "f2bdbb4acf43d9d2d721ab5b2dba7ba02ad214d71ec78ad3b3b43fede31187af"
+            "url": "https://vscode.download.prss.microsoft.com/dbazure/download/stable/cff2c318f87b2ff763290e4d5020c250f78d61f8/VSCodeSetup-x64-1.108.0.exe#/setup.exe",
+            "hash": "fd26f044004d9b448314406bdd8ec15c698e762a81eae8975a209e74f196d3a0"
         },
         "arm64": {
-            "url": "https://update.code.visualstudio.com/1.107.1/win32-arm64-archive/stable#/dl.7z",
-            "hash": "7797e80afb6a8b1f73003e47670576c7d9e1867ba86db77c87b1e4f92f1322e0"
+            "url": "https://vscode.download.prss.microsoft.com/dbazure/download/stable/cff2c318f87b2ff763290e4d5020c250f78d61f8/VSCodeSetup-arm64-1.108.0.exe#/setup.exe",
+            "hash": "514b08eb4cdbad1a03ec7be137140b56d1c2a6069af8a315ceecee4b0f716a31"
         }
     },
     "env_add_path": "bin",
@@ -31,48 +23,33 @@
             "Visual Studio Code"
         ]
     ],
-    "post_install": [
-        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
-        "$exepath = \"$dir\\Code.exe\".Replace('\\', '\\\\')",
-        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context', 'install-github-integration', 'uninstall-github-integration' | ForEach-Object {",
-        "  if (Test-Path \"$bucketsdir\\extras\\scripts\\vscode\\$_.reg\") {",
-        "    $content = Get-Content \"$bucketsdir\\extras\\scripts\\vscode\\$_.reg\"",
-        "    $content = $content.Replace('$codedir', $dirpath)",
-        "    $content = $content.Replace('$code', $exepath)",
-        "    if ($global) {",
-        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
-        "    }",
-        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
-        "  }",
-        "}"
+    "pre_install": [
+        "innounp -x -q \"-d$dir\" \"$dir\\setup.exe\" *> $null",
+        "Copy-Item \"$dir\\{code_GetDestDir}\\*\" \"$dir\" -Recurse",
+        "Remove-Item \"$dir\\{code_GetDestDir}\" -Recurse",
+        "Remove-Item \"$dir\\{app}\" -Recurse",
+        "Remove-Item \"$dir\\install_script.iss\""
     ],
-    "uninstaller": {
-        "script": [
-            "if ($cmd -eq 'uninstall')",
-            "{",
-            "   reg import \"$dir\\uninstall-context.reg\" ",
-            "   reg import \"$dir\\uninstall-github-integration.reg\" ",
-            "}"
-        ]
-    },
+    "persist": "data",
     "checkver": {
         "url": "https://code.visualstudio.com/sha?build=stable",
-        "jsonpath": "$.products[?(@.platform.os == 'win32-x64-archive')].name"
+        "regex": "version\":\"(?<Code>[\\d\\w]+)\",\"productVersion\":\"(?<version>[\\d.]+)",
+        "replace": "${version}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://update.code.visualstudio.com/$version/win32-x64-archive/stable#/dl.7z",
+                "url": "https://vscode.download.prss.microsoft.com/dbazure/download/stable/$matchCode/VSCodeSetup-x64-$version.exe#/setup.exe",
                 "hash": {
-                    "url": "https://update.code.visualstudio.com/api/update/win32-x64-archive/stable/latest",
-                    "jsonpath": "$.sha256hash"
+                    "url": "https://code.visualstudio.com/sha?build=stable",
+                    "jsonpath": "$.products[?(@.platform.os == 'win32-x64')].sha256hash"
                 }
             },
             "arm64": {
-                "url": "https://update.code.visualstudio.com/$version/win32-arm64-archive/stable#/dl.7z",
+                "url": "https://vscode.download.prss.microsoft.com/dbazure/download/stable/$matchCode/VSCodeSetup-arm64-$version.exe#/setup.exe",
                 "hash": {
-                    "url": "https://update.code.visualstudio.com/api/update/win32-arm64-archive/stable/latest",
-                    "jsonpath": "$.sha256hash"
+                    "url": "https://code.visualstudio.com/sha?build=stable",
+                    "jsonpath": "$.products[?(@.platform.os == 'win32-arm64')].sha256hash"
                 }
             }
         }
