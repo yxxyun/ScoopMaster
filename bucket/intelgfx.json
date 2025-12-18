@@ -5,6 +5,7 @@
     "license": "Proprietary",
     "url": "https://downloadmirror.intel.com/870640/gfx_win_101.7082.exe#/dl.7z",
     "hash": "b923c7242587e5468846dcdede965de5f5498064cee40dee9c3ad9886db46fb2",
+    "depends": "curl",
     "installer": {
         "script": "start-process -wait \"$dir\\installer.exe\" -a '-s --terminateProcesses --noExtras -o -f'"
     },
@@ -17,7 +18,14 @@
         ]
     },
     "checkver": {
-        "regex": "name=\"DownloadVersion\" content=\"(?<version>[\\d.]+)\"|name=\"RecommendedDownloadUrl\" content=\"https://downloadmirror\\.intel\\.com/(?<url>.*gfx_win_.*exe)\""
+        "script": [
+            "$src = 'https://www.intel.com/content/www/us/en/download/864990/intel-11th-14th-gen-processor-graphics-windows.html'",
+            "$html = curl -s $src",
+            "$ver = [regex]::Matches($html, 'name=\"DownloadVersion\" content=\"(?<version>[\\d.]+)\"')",
+            "$url = [regex]::Matches($html, 'download-button(.*)\"https://downloadmirror.intel.com/(?<url>.*exe)\"')",
+            "[string]::Format('{0}|{1}', $ver[0].groups['version'].value, $url[0].groups['url'].value)"
+        ],
+        "regex": "(?<version>.+)\\|(?<url>.+)"
     },
     "autoupdate": {
         "url": "https://downloadmirror.intel.com/$matchUrl#/dl.7z"
