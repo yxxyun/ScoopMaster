@@ -1,23 +1,24 @@
 {
     "version": "1.12.3",
-    "description": "Free end-to-end encrypted cloud storage made by Proton AG. Securely backup and share your files. Open source, publicly audited, and Swiss based.",
+    "description": "Free end-to-end encrypted cloud storage made by Proton AG",
     "homepage": "https://proton.me/drive",
-    "license": "GPL-3.0-only",
+    "license": "GPL-3.0",
     "architecture": {
         "64bit": {
             "url": "https://proton.me/download/drive/windows/1.12.3/x64/Proton%20Drive%20Setup%201.12.3.exe",
             "hash": "6b21ce0763b92fa8dcb1b1fad9158024f9e778025c755beaec12a8f726604786"
+        },
+        "arm64": {
+            "url": "https://proton.me/download/drive/windows/1.12.3/arm64/Proton%20Drive%20Setup%201.12.3.exe",
+            "hash": "bcad6ed81fce2e1cb5266d77f3acbb8004e6bff08dc80869f2c42429b1586d9e"
         }
     },
-    "installer": {
-        "script": [
-            "Expand-DarkArchive \"$dir\\$fname\" \"$dir\\_tmp\"",
-            "$msi_file = Get-ChildItem \"$dir\\_tmp\\AttachedContainer\\*.msi\" | Select-Object -First 1",
-            "Expand-MsiArchive $msi_file \"$dir\\_tmp\"",
-            "movedir \"$dir\\_tmp\\PFiles64\\Proton\\Drive\" \"$dir\" | Out-Null",
-            "Remove-Item \"$dir\\_tmp\", \"$dir\\$fname\" -Force -Recurse"
-        ]
-    },
+    "pre_install": [
+        "Expand-DarkArchive \"$dir\\$fname\" \"$dir\\tmp\" -Removal",
+        "$msi = Get-ChildItem \"$dir\\tmp\\AttachedContainer\\*.msi\" | Select-Object -First 1",
+        "Expand-MsiArchive $msi -ExtractDir 'PFiles64\\Proton\\Drive' -DestinationPath \"$dir\""
+    ],
+    "post_install": "Remove-Item \"$dir\\tmp\" -Recurse -Force",
     "shortcuts": [
         [
             "ProtonDrive.exe",
@@ -25,10 +26,17 @@
         ]
     ],
     "checkver": {
-        "url": "https://proton.me/download/drive/windows/x64/v1/version.json",
+        "url": "https://proton.me/download/drive/windows/version.json",
         "jsonpath": "$.Releases[0].Version"
     },
     "autoupdate": {
-        "url": "https://proton.me/download/drive/windows/$version/x64/Proton%20Drive%20Setup%20$version.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://proton.me/download/drive/windows/$version/x64/Proton%20Drive%20Setup%20$version.exe"
+            },
+            "arm64": {
+                "url": "https://proton.me/download/drive/windows/$version/arm64/Proton%20Drive%20Setup%20$version.exe"
+            }
+        }
     }
 }
