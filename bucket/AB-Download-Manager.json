@@ -6,23 +6,38 @@
     "architecture": {
         "64bit": {
             "url": "https://github.com/amir1376/ab-download-manager/releases/download/v1.8.0/ABDownloadManager_1.8.0_windows_x64.zip",
-            "hash": "4f97fa4e0354812e25da38a0eee9a42ee22f98eab4921e30e2dd96be67826ca7"
+            "hash": "md5:f3d7633fd433ad0813acd5096713f545"
         }
     },
     "extract_dir": "ABDownloadManager",
-    "post_install": [
-        "if (!(Test-Path \"$persist_dir\\.abdm\") -and (Test-Path \"$env:USERPROFILE\\.abdm\")) {",
-        "    info \"Moving configs to persist directory...\"",
-        "    Copy-Item -Path \"$env:USERPROFILE\\.abdm\\*\" -Destination \"$persist_dir\\.abdm\" -Force -Recurse | Out-Null",
-        "}"
-    ],
     "shortcuts": [
         [
             "ABDownloadManager.exe",
             "ABDownloadManager"
         ]
     ],
-    "persist": ".abdm",
+    "pre_install": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match 'Scoop-Store'})[0].Name",
+        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name $bucket) scripts/AirUtils.psm1)",
+        "RedirectDirectory \"$env:USERPROFILE\\.abdm\" \"$persist_dir\\.abdm\"",
+        "Remove-Module -Name AirUtils"
+    ],
+    "pre_uninstall": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match 'Scoop-Store'})[0].Name",
+        ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+        "stop_process",
+        "stop_exe"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    $bucket=(scoop bucket list | where-Object { $_.Source -match 'Scoop-Store'})[0].Name",
+            "    Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name $bucket) scripts/AirUtils.psm1)",
+            "    RemoveJunction \"$env:USERPROFILE\\.abdm\"",
+            "    Remove-Module -Name AirUtils",
+            "}"
+        ]
+    },
     "checkver": {
         "github": "https://github.com/amir1376/ab-download-manager"
     },
@@ -31,6 +46,9 @@
             "64bit": {
                 "url": "https://github.com/amir1376/ab-download-manager/releases/download/v$version/ABDownloadManager_$version_windows_x64.zip"
             }
+        },
+        "hash": {
+            "url": "$url.md5"
         }
     }
 }
