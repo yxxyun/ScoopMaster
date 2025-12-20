@@ -1,73 +1,69 @@
 {
     "version": "20.0.90",
-    "description": "酷狗音乐，就是歌多",
-    "homepage": "https://www.kugou.com/",
-    "license": "Proprietary",
-    "url": "http://api.xrgzs.top/360baoku/?appid=72#/dl.7z",
-    "hash": "5eee3146218e086ffa93b12de2868e6fbf72c63d93994137cae960ec78f9ca10",
+    "description": "Hello, KuGou! - The largest P2P music sharing software in China.",
+    "homepage": "https://www.kugou.com",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.kugou.com/about/protocol.html"
+    },
+    "suggest": {
+        "sudo": "main/gsudo"
+    },
+    "url": "https://download.kugou.com/dl/kugou_pc#/dl.7z",
+    "hash": "17eb8c8a3d36fc720639da38074f10f80db25ac43d78f63f386b2a8d4781707d",
+    "pre_install": "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
     "installer": {
         "script": [
-            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-            "# Do not migrate settings",
-            "if (Test-Path \"$env:APPDATA\\KuGou8\\KuGou.ini\") {",
-            "    Remove-Item \"$env:APPDATA\\KuGou8\\KuGou.ini\" -Force -ErrorAction SilentlyContinue | Out-Null",
+            "Move-Item \"$dir\\`$PLUGINSDIR\\KuGou.7z\" \"$dir\"",
+            "Move-Item \"$dir\\`$PLUGINSDIR\\AppData.7z\" \"$dir\"",
+            "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse -Force",
+            "Expand-7zipArchive \"$dir\\KuGou.7z\" \"$dir\\temp\" -Removal",
+            "Copy-Item \"$dir\\temp\\Kugou.exe\" \"$dir\\Kugou.exe\" | Out-Null",
+            "$fileVersion = $([System.Diagnostics.FileVersionInfo]::GetVersionInfo(\"$dir\\Kugou.exe\").FileVersion)",
+            "Move-Item \"$dir\\temp\" \"$dir\\$fileVersion\"",
+            "ensure \"$persist_dir\\appdata\\KuGou8\"",
+            "Expand-7zipArchive \"$dir\\AppData.7z\" \"$persist_dir\\appdata\\KuGou8\" -Overwrite 'Skip' -Removal",
+            "if (Test-Path \"$env:APPDATA\\KuGou8\") {",
+            "  $f = (Get-Item -LiteralPath \"$env:APPDATA\\KuGou8\")",
+            "  if ($f.LinkType -Eq \"SymbolicLink\") {",
+            "    $f.Delete()",
+            "  } else {",
+            "    robocopy \"$env:APPDATA\\KuGou8\" \"$persist_dir\\appdata\\KuGou8\" /E /MOVE /XJ /NFL /NDL /NJH /NJS /NC /NS",
+            "  }",
             "}",
-            "New-PersistDirectory \"$env:APPDATA\\KuGou8\" \"$persist_dir\\AppData\" -Migrate",
-            "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\KuGou.7z\" \"$dir\"",
-            "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\AppData.7z\" \"$persist_dir\\AppData\" -Overwrite 'Skip'",
-            "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
-            "",
-            "if (-not (Test-Path \"$persist_dir\\AppData\\KuGou.ini\")) {",
-            "    @\"",
-            "[DownloadConfigSection]",
-            "DownloadPath=$persist_dir\\KuGou",
-            "TempPath=$persist_dir\\KuGou\\Temp",
-            "",
-            "[Fanxing]",
-            "PlayingRecommend=0",
-            "",
-            "[GeneralConfigSection]",
-            "AutoRunDlnaKey=0",
-            "DynamicDesktopUsageDenominator=2",
-            "RegisterRestart=0",
-            "",
-            "[LyricConfigSection]",
-            "LyricPath=$persist_dir\\KuGou\\Lyric\\",
-            "",
-            "[MP3Copy]",
-            "SyncPrompt=0",
-            "",
-            "[Player]",
-            "SystemMediaControl=1",
-            "\"@ | Set-Content \"$persist_dir\\AppData\\KuGou.ini\" -Encoding unicode -Force",
-            "    success \"[New install] The download folder have been set to $persist_dir\\KuGou successfully!\"",
-            "}"
+            "New-Item -ItemType SymbolicLink -Path \"$env:APPDATA\\KuGou8\" -Target \"$persist_dir\\appdata\\KuGou8\" | Out-Null",
+            "if (!(Test-Path 'HKCU:\\Software\\kugou')) {",
+            "  New-Item -Path 'HKCU:\\Software\\kugou' | Out-Null",
+            "}",
+            "New-ItemProperty -Path 'HKCU:\\Software\\kugou' -Name 'AppDataPath' -Value \"$env:APPDATA\\KuGou8\" -Type String | Out-Null",
+            "New-ItemProperty -Path 'HKCU:\\Software\\kugou' -Name 'AppPath' -Value \"$dir\" -Type String | Out-Null"
         ]
     },
-    "persist": [
-        "KuGou\\Temp",
-        "KuGou\\Lyric"
-    ],
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App",
-        "Remove-Junction \"$env:APPDATA\\KuGou8\"",
-        "reg.exe delete \"HKCU\\SOFTWARE\\kugou\" /f *>$null",
-        "reg.exe delete \"HKCU\\SOFTWARE\\KuGou8\" /f *>$null",
-        "reg.exe delete \"HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\" /v \"KuGou8\" /f *>$null"
+    "post_uninstall": [
+        "Remove-Item -Path 'HKLM:\\SOFTWARE\\Classes\\kugou' -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item -Path 'HKLM:\\SOFTWARE\\WOW6432Node\\KUGOU' -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item -Path 'HKCU:\\Software\\kugou' -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item -Path 'HKCU:\\Software\\KuGou8' -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item -Path 'HKCU:\\System\\KConfig' -Recurse -Force -ErrorAction SilentlyContinue",
+        "if (Test-Path \"$env:APPDATA\\KuGou8\") {",
+        "  $f = (Get-Item -LiteralPath \"$env:APPDATA\\KuGou8\")",
+        "  if ($f.LinkType -Eq \"SymbolicLink\") {",
+        "    $f.Delete()",
+        "  }",
+        "}"
     ],
     "shortcuts": [
         [
-            "KuGou.exe",
+            "Kugou.exe",
             "酷狗音乐"
         ]
     ],
     "checkver": {
-        "url": "https://soft-api.safe.360.cn/main/v1/soft/info?softid=72",
-        "jsonpath": "$.data.version"
+        "url": "https://download.kugou.com/",
+        "regex": "<span class=\"tuijian_product_version\">V(?<version>\\d+\\.\\d+\\.\\d+)<\\/span>",
+        "replace": "${version}"
     },
     "autoupdate": {
-        "url": "http://api.xrgzs.top/360baoku/?appid=72#/dl.7z"
+        "url": "https://download.kugou.com/dl/kugou_pc#/dl.7z"
     }
 }

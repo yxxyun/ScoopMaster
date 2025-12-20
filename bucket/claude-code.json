@@ -1,16 +1,55 @@
 {
-    "##": "This file is a template. Fill the blanks and add or remove fields as necessary.",
-    "version": "2.0.65",
-    "description": "Claude Code is an agentic coding tool that lives in your terminal.",
+    "version": "2.0.67",
+    "description": "An agentic coding tool that lives in your terminal",
     "homepage": "https://github.com/anthropics/claude-code",
     "license": "Proprietary",
+    "suggest": {
+        "git": "main/git"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/2.0.65/win32-x64/claude.exe",
-            "hash": "93ee90cd9356d4647bff6107b466d7083a4181aee8bf357371411ac549a5df0a"
+            "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/2.0.67/win32-x64/claude.exe",
+            "hash": "706b46bc2e5c8c2f44214e3cdec732e41e57e8f3043703953a6b577a4bba4a81"
         }
     },
     "bin": "claude.exe",
+    "env_set": {
+        "CLAUDE_CODE_GIT_BASH_PATH": "$env:GIT_INSTALL_ROOT\\bin\\bash.exe"
+    },
+    "post_install": [
+        "$localBinDir = \"$env:USERPROFILE\\.local\\bin\"",
+        "if (-not (Test-Path $localBinDir)) {",
+        "    New-Item -ItemType Directory -Path $localBinDir -Force | Out-Null",
+        "    Write-Host \"Created directory: $localBinDir\" -ForegroundColor Green",
+        "}",
+        "$symlinkPath = Join-Path $localBinDir 'claude.exe'",
+        "if (Test-Path $symlinkPath) {",
+        "    Remove-Item $symlinkPath -Force",
+        "}",
+        "New-Item -ItemType SymbolicLink -Path $symlinkPath -Target \"$dir\\claude.exe\" -Force | Out-Null",
+        "Write-Host \"Created symlink: $symlinkPath -> $dir\\claude.exe\" -ForegroundColor Green"
+    ],
+    "post_uninstall": [
+        "$symlinkPath = Join-Path \"$env:USERPROFILE\\.local\\bin\" 'claude.exe'",
+        "if (Test-Path $symlinkPath) {",
+        "    Remove-Item $symlinkPath -Force",
+        "    Write-Host \"Removed symlink: $symlinkPath\" -ForegroundColor Yellow",
+        "}"
+    ],
+    "notes": [
+        "Claude Code has been installed and symlinked to ~/.local/bin/claude.exe",
+        "",
+        "Make sure ~/.local/bin is in your PATH:",
+        "  $env:PATH += \";$env:USERPROFILE\\.local\\bin\"",
+        "",
+        "To make it permanent, add to your PowerShell profile:",
+        "  notepad $PROFILE",
+        "",
+        "Usage:",
+        "  claude [command]",
+        "",
+        "For help, run: claude --help"
+    ],
     "checkver": {
         "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/stable",
         "regex": "([\\d.]+)"
@@ -23,7 +62,7 @@
         },
         "hash": {
             "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/$version/manifest.json",
-            "regex": "$.platforms['win32-x64'].checksum"
+            "jsonpath": "$.platforms['win32-x64'].checksum"
         }
     }
 }
