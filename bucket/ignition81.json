@@ -1,0 +1,54 @@
+{
+    "version": "8.1.51",
+    "description": "Unlimited Platform for SCADA and so much more",
+    "homepage": "https://inductiveautomation.com/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://inductiveautomation.com/ignition/license"
+    },
+    "url": "https://files.inductiveautomation.com/release/ia/8.1.51/20251216-0811/Ignition-windows-x86-64-8.1.51.zip",
+    "hash": "be4a1bdd24f673223f46efd0ea0ba7d98785b859c3b24ea9322e68d511aeb031",
+    "pre_install": [
+        "# Remove modules.json if it exists",
+        "if (Test-Path -PathType Container \"$persist_dir\\data\\modules.json\") {",
+        "    Remove-Item \"$persist_dir\\data\\modules.json\"",
+        "}"
+    ],
+    "post_install": [
+        "# Update ignition.conf",
+        "(Get-Content \"$dir\\data\\ignition.conf\") -replace '=Ignition 8.1 scoop', '=Ignition' | Out-File \"$dir\\data\\ignition.conf\"",
+        "(Get-Content \"$dir\\data\\ignition.conf\") -replace '=Ignition', '=Ignition 8.1 scoop' | Out-File \"$dir\\data\\ignition.conf\"",
+        "# Install Ignition",
+        "cmd.exe /c \"$dir\\install-ignition.bat\"",
+        "# Run upgrader",
+        "cmd.exe /c \"$dir\\run-upgrader.bat\"",
+        "# Start Ignition",
+        "cmd.exe /c \"$dir\\start-ignition.bat\""
+    ],
+    "uninstaller": {
+        "script": [
+            "# Stop Ignition if running",
+            "cmd.exe /c \"$dir\\stop-ignition.bat\"",
+            "# Uninstall Ignition",
+            "cmd.exe /c \"$dir\\uninstall-ignition.bat\""
+        ]
+    },
+    "bin": [
+        [
+            "start-ignition.bat",
+            "start-ignition"
+        ],
+        [
+            "stop-ignition.bat",
+            "stop-ignition"
+        ]
+    ],
+    "persist": [
+        "data",
+        "logs"
+    ],
+    "checkver": {
+        "url": "https://inductiveautomation.com/downloads/ignition/",
+        "regex": "\"version\"\\s*:\\s*\"(8\\.1(?:\\.\\d+)*)\""
+    }
+}
