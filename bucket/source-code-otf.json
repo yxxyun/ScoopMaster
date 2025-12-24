@@ -1,96 +1,56 @@
 {
-    "version": "2.042",
-    "description": "Monospaced font family for user interface and coding environments.",
-    "homepage": "https://adobe-fonts.github.io/source-code-pro",
-    "license": "OFL-1.1",
-    "url": "https://github.com/adobe-fonts/source-code-pro/releases/download/2.042R-u%2F1.062R-i%2F1.026R-vf/OTF-source-code-pro-2.042R-u_1.062R-i.zip",
-    "hash": "754a2e3ebb945ae905d720ac5896b3b34acc9546dd6551ef9536869788629dae",
-    "extract_dir": "OTF",
-    "checkver": {
-        "url": "https://api.github.com/repos/adobe-fonts/source-code-pro/releases/latest",
-        "regex": "([\\d.]+)R-u/(?<i>[\\d.]+)R-i/(?<v>[\\d.]+)R-vf"
-    },
-    "autoupdate": {
-        "url": "https://github.com/adobe-fonts/source-code-pro/releases/download/$versionR-u%2F$matchIR-i%2F$matchVR-vf/OTF-source-code-pro-$versionR-u_$matchIR-i.zip"
-    },
-    "installer": {
-        "script": [
-            "$currentBuildNumber = [int] (Get-ItemProperty \"HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\").CurrentBuildNumber",
-            "$windows10Version1809BuildNumber = 17763",
-            "$isPerUserFontInstallationSupported = $currentBuildNumber -ge $windows10Version1809BuildNumber",
-            "if (!$isPerUserFontInstallationSupported -and !$global) {",
-            "    scoop uninstall $app",
-            "    Write-Host \"\"",
-            "    Write-Host \"For Windows version before Windows 10 Version 1809 (OS Build 17763),\" -Foreground DarkRed",
-            "    Write-Host \"Font can only be installed for all users.\" -Foreground DarkRed",
-            "    Write-Host \"\"",
-            "    Write-Host \"Please use following commands to install '$app' Font for all users.\" -Foreground DarkRed",
-            "    Write-Host \"\"",
-            "    Write-Host \"        scoop install sudo\"",
-            "    Write-Host \"        sudo scoop install -g $app\"",
-            "    Write-Host \"\"",
-            "    exit 1",
-            "}",
-            "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
-            "if (-not $global) {",
-            "    # Ensure user font install directory exists and has correct permission settings",
-            "    # See https://github.com/matthewjberger/scoop-nerd-fonts/issues/198#issuecomment-1488996737",
-            "    New-Item $fontInstallDir -ItemType Directory -ErrorAction SilentlyContinue | Out-Null",
-            "    $accessControlList = Get-Acl $fontInstallDir",
-            "    $allApplicationPackagesAccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule([System.Security.Principal.SecurityIdentifier]::new(\"S-1-15-2-1\"), \"ReadAndExecute\", \"ContainerInherit,ObjectInherit\", \"None\", \"Allow\")",
-            "    $allRestrictedApplicationPackagesAccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule([System.Security.Principal.SecurityIdentifier]::new(\"S-1-15-2-2\"), \"ReadAndExecute\", \"ContainerInherit,ObjectInherit\", \"None\", \"Allow\")",
-            "    $accessControlList.SetAccessRule($allApplicationPackagesAccessRule)",
-            "    $accessControlList.SetAccessRule($allRestrictedApplicationPackagesAccessRule)",
-            "    Set-Acl -AclObject $accessControlList $fontInstallDir",
-            "}",
-            "$registryRoot = if ($global) { \"HKLM\" } else { \"HKCU\" }",
-            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
-            "Get-ChildItem $dir -Filter '*.otf' | ForEach-Object {",
-            "    $value = if ($global) { $_.Name } else { \"$fontInstallDir\\$($_.Name)\" }",
-            "    New-ItemProperty -Path $registryKey -Name $_.Name.Replace($_.Extension, ' (TrueType)') -Value $value -Force | Out-Null",
-            "    Copy-Item -LiteralPath $_.FullName -Destination $fontInstallDir",
-            "}"
-        ]
-    },
-    "pre_uninstall": [
-        "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
-        "Get-ChildItem $dir -Filter '*.otf' | ForEach-Object {",
-        "    Get-ChildItem $fontInstallDir -Filter $_.Name | ForEach-Object {",
-        "        try {",
-        "            Rename-Item $_.FullName $_.FullName -ErrorVariable LockError -ErrorAction Stop",
-        "        } catch {",
-        "            Write-Host \"\"",
-        "            Write-Host \" Error \" -Background DarkRed -Foreground White -NoNewline",
-        "            Write-Host \"\"",
-        "            Write-Host \" Cannot uninstall '$app' font.\" -Foreground DarkRed",
-        "            Write-Host \"\"",
-        "            Write-Host \" Reason \" -Background DarkCyan -Foreground White -NoNewline",
-        "            Write-Host \"\"",
-        "            Write-Host \" The '$app' font is currently being used by another application,\" -Foreground DarkCyan",
-        "            Write-Host \" so it cannot be deleted.\" -Foreground DarkCyan",
-        "            Write-Host \"\"",
-        "            Write-Host \" Suggestion \" -Background Magenta -Foreground White -NoNewline",
-        "            Write-Host \"\"",
-        "            Write-Host \" Close all applications that are using '$app' font (e.g. vscode),\" -Foreground Magenta",
-        "            Write-Host \" and then try again.\" -Foreground Magenta",
-        "            Write-Host \"\"",
-        "            exit 1",
-        "        }",
-        "    }",
-        "}"
-    ],
-    "uninstaller": {
-        "script": [
-            "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
-            "$registryRoot = if ($global) { \"HKLM\" } else { \"HKCU\" }",
-            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
-            "Get-ChildItem $dir -Filter '*.otf' | ForEach-Object {",
-            "    Remove-ItemProperty -Path $registryKey -Name $_.Name.Replace($_.Extension, ' (TrueType)') -Force -ErrorAction SilentlyContinue",
-            "    Remove-Item \"$fontInstallDir\\$($_.Name)\" -Force -ErrorAction SilentlyContinue",
-            "}",
-            "if ($cmd -eq \"uninstall\") {",
-            "    Write-Host \"The '$app' Font family has been uninstalled and will not be present after restarting your computer.\" -Foreground Magenta",
-            "}"
-        ]
-    } 
+  "version": "2.038",
+  "description": "Monospaced font family for user interface and coding environments.",
+  "homepage": "https://adobe-fonts.github.io/source-sans",
+  "license": "OFL-1.1",
+  "url": "https://ghproxy.com/https://github.com/adobe-fonts/source-code-pro/releases/download/2.038R-ro%2F1.058R-it%2F1.018R-VAR/OTF-source-code-pro-2.038R-ro-1.058R-it.zip",
+  "hash": "478028ec70adc1ff73848a546c3ad266716a0096cd1f1a1ef18aeff0199d5996",
+  "checkver": {
+    "url": "https://api.github.com/repos/adobe-fonts/source-code-pro/releases/latest",
+    "regex": "([\\d.]+)R?-ro\\/(?<it>[\\d.]+)R?-it\\/(?<var>[\\d.]+)R?-VAR"
+  },
+  "autoupdate": {
+    "url": "https://ghproxy.com/https://github.com/adobe-fonts/source-code-pro/releases/download/$versionR-ro%2F$matchItR-it%2F$matchVarR-VAR/OTF-source-code-pro-$versionR-ro-$matchItR-it.zip"
+  },
+  "installer": {
+    "script": [
+      "$currentBuildNumber = [int] (Get-ItemProperty \"HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\").CurrentBuildNumber",
+      "$windows1809BuildNumber = 17763",
+      "$isPerUserFontInstallationSupported = $currentBuildNumber -ge $windows1809BuildNumber",
+      "$isFontInstallationForAllUsers = $global -or !$isPerUserFontInstallationSupported",
+      "if ($isFontInstallationForAllUsers -and !(is_admin)) {",
+      "    error \"Administrator rights are required to install $app.\"",
+      "    exit 1",
+      "}",
+      "$fontInstallDir = if ($isFontInstallationForAllUsers) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
+      "$registryRoot = if ($isFontInstallationForAllUsers) { \"HKLM\" } else { \"HKCU\" }",
+      "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
+      "New-Item $fontInstallDir -ItemType Directory -ErrorAction SilentlyContinue | Out-Null",
+      "Get-ChildItem $dir -Filter '*.otf' -Recurse | ForEach-Object {",
+      "    $value = if ($isFontInstallationForAllUsers) { $_.Name } else { \"$fontInstallDir\\$($_.Name)\" }",
+      "    New-ItemProperty -Path $registryKey -Name $_.Name.Replace($_.Extension, ' (TrueType)') -Value $value -Force | Out-Null",
+      "    Copy-Item $_.FullName -Destination $fontInstallDir",
+      "}"
+    ]
+  },
+  "uninstaller": {
+    "script": [
+      "$currentBuildNumber = [int] (Get-ItemProperty \"HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\").CurrentBuildNumber",
+      "$windows1809BuildNumber = 17763",
+      "$isPerUserFontInstallationSupported = $currentBuildNumber -ge $windows1809BuildNumber",
+      "$isFontInstallationForAllUsers = $global -or !$isPerUserFontInstallationSupported",
+      "if ($isFontInstallationForAllUsers -and !(is_admin)) {",
+      "    error \"Administrator rights are required to uninstall $app.\"",
+      "    exit 1",
+      "}",
+      "$fontInstallDir = if ($isFontInstallationForAllUsers) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
+      "$registryRoot = if ($isFontInstallationForAllUsers) { \"HKLM\" } else { \"HKCU\" }",
+      "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
+      "Get-ChildItem $dir -Filter '*.otf' -Recurse | ForEach-Object {",
+      "    Remove-ItemProperty -Path $registryKey -Name $_.Name.Replace($_.Extension, ' (TrueType)') -Force -ErrorAction SilentlyContinue",
+      "    Remove-Item \"$fontInstallDir\\$($_.Name)\" -Force -ErrorAction SilentlyContinue",
+      "}",
+      "Write-Host \"The 'Source Code Pro' Font family has been uninstalled and will not be present after restarting your computer.\" -Foreground Magenta"
+    ]
+  }
 }
