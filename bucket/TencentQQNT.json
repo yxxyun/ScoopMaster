@@ -44,20 +44,34 @@
         ]
     },
     "checkver": {
-        "url": "https://cdn-go.cn/qq-web/im.qq.com_new/latest/rainbow/windowsConfig.js",
-        "regex": "QQNT\\/Windows\\/QQ_([\\d\\.]+)_([\\d]+)_x64_01\\.exe",
-        "replace": "${1}.${2}"
+        "script": [
+            "$check_regex = [regex]\"QQNT\\/Windows\\/QQ_([\\d.]+)_([\\d]+)_x64_01\\.exe\"",
+            "$check_url = \"https://cdn-go.cn/qq-web/im.qq.com_new/latest/rainbow/windowsConfig.js\"",
+            "$check_page = Invoke-WebRequest -Uri $check_url -UseBasicParsing | Select-Object -ExpandProperty Content",
+            "$check_page -match $check_regex",
+            "$fetch_version_head = $matches[1]",
+            "$fetch_version_tail = $matches[2]",
+            "$fetch_version = ($fetch_version_head, $fetch_version_tail) -Join \".\"",
+            "$current_version_tail = $json.version -Split \"\\.\" | Select-Object -Last 1",
+            "if ([int]$fetch_version_tail -ge [int]$current_version_tail) {",
+            "    return $fetch_version",
+            "} else {",
+            "    write-host \"TencentQQNT: Fetched latest version: $fetch_version, aborting update...\" -ForegroundColor Yellow",
+            "    return $json.version",
+            "}"
+        ],
+        "regex": "([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$match1_$match2_x64_01.exe#/dl.7z"
+                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$matchHead_$buildVersion_x64_01.exe#/dl.7z"
             },
             "32bit": {
-                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$match1_$match2_x86_01.exe#/dl.7z"
+                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$matchHead_$buildVersion_x86_01.exe#/dl.7z"
             },
             "arm64": {
-                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$match1_$match2_arm64_01.exe#/dl.7z"
+                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$matchHead_$buildVersion_arm64_01.exe#/dl.7z"
             }
         }
     }
