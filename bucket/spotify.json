@@ -1,62 +1,49 @@
 {
-    "version": "1.2.80.358.g74e46c21-1087",
-    "description": "A digital music service that gives you access to millions of songs.",
-    "homepage": "https://www.spotify.com/",
-    "license": {
-        "identifier": "Freeware",
-        "url": "https://www.spotify.com/legal/end-user-agreement/"
+    "version": "1.2.80.358",
+    "description": "Music for everyone",
+    "homepage": "https://spotify.com",
+    "license": "Proprietary",
+    "architecture": {
+        "64bit": {
+            "url": "https://upgrade.scdn.co/upgrade/client/win32-x86_64/spotify_installer-1.2.80.358.g74e46c21-1087.exe",
+            "hash": "a96d96945b72f55bf1aae25b98b8d4057684df2387a49ece035de475418bc3f1"
+        },
+        "arm64": {
+            "url": "https://upgrade.scdn.co/upgrade/client/win32-arm64/spotify_installer-1.2.80.358.g74e46c21-1074.exe",
+            "hash": "535f72b5fd76ac2e85587672b4652ac9fe5cbc35737f274a9c20488e09d86eb4"
+        }
     },
-    "url": "https://upgrade.scdn.co/upgrade/client/win32-x86_64/spotify_installer-1.2.80.358.g74e46c21-1087.exe",
-    "hash": "a96d96945b72f55bf1aae25b98b8d4057684df2387a49ece035de475418bc3f1",
-    "installer": {
-        "script": [
-            "Start-Process -Wait \"$dir\\$fname\" -ArgumentList '/extract', \"`\"$dir`\"\"",
-            "Remove-Item \"$dir\\$fname\", \"$dir\\SpotifyMigrator.exe\" -ErrorAction SilentlyContinue",
-            "## Steps to block the built-in autoupdater ##",
-            "$updateFile = \"$env:LOCALAPPDATA\\Spotify\\Update\"",
-            "# Delete any remnant file or directory called Update (including modify-protected), unless it is readonly or hidden",
-            "Remove-Item -Path \"$updateFile\" -Recurse -ErrorAction SilentlyContinue | Out-Null",
-            "# Delete any remnant file or directory called Update (including readonly), unless it is modify-protected",
-            "Remove-Item -Path \"$updateFile\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
-            "# Exit if there already exists an autoupdate-blocking file called Update",
-            "if (Test-Path -Path \"$updateFile\") { return }",
-            "# Create a file called Update",
-            "New-Item -Path \"$updateFile\" -ItemType File -Value \"Created by Scoop to block the built-in autoupdater.\" -Force -ErrorAction SilentlyContinue | Out-Null",
-            "# Make the file readonly",
-            "Set-ItemProperty -Path \"$updateFile\" -Name IsReadOnly -Value $true -ErrorAction SilentlyContinue | Out-Null",
-            "# Make the file modify-protected from self",
-            "$Ace = New-Object System.Security.AccessControl.FileSystemAccessRule(\"${env:username}\", \"Modify\", \"Deny\")",
-            "$Acl = New-Object System.Security.AccessControl.FileSecurity",
-            "$Acl.AddAccessRule($Ace)",
-            "Set-Acl -Path \"$updateFile\" -AclObject $Acl -ErrorAction SilentlyContinue | Out-Null"
-        ]
-    },
+    "pre_install": [
+        "Start-Process \"$dir\\$fname\" -ArgumentList @('/extract', \"$dir\") -Wait",
+        "$update = \"$env:LOCALAPPDATA\\Spotify\\Update\"",
+        "Remove-Item $update -Recurse -Force -ErrorAction SilentlyContinue",
+        "New-Item $update | Out-Null",
+        "Set-ItemProperty $update -Name IsReadOnly -Value $true",
+        "$Ace = New-Object System.Security.AccessControl.FileSystemAccessRule(\"${env:USERNAME}\", \"Modify\", \"Deny\")",
+        "$Acl = New-Object System.Security.AccessControl.FileSecurity",
+        "$Acl.AddAccessRule($Ace)",
+        "Set-Acl $update -AclObject $Acl"
+    ],
+    "post_install": "Remove-Item \"$dir\\$fname\"",
     "shortcuts": [
         [
             "Spotify.exe",
             "Spotify"
         ]
     ],
-    "uninstaller": {
-        "script": [
-            "if ($cmd -ne 'uninstall') { return }",
-            "## Undoing the steps to block the built-in autoupdater ##",
-            "$updateFile = \"$env:LOCALAPPDATA\\Spotify\\Update\"",
-            "# Remove modify-protection for the Update file",
-            "$Ace = New-Object System.Security.AccessControl.FileSystemAccessRule(\"${env:username}\", \"Modify\", \"Deny\")",
-            "$Acl = New-Object System.Security.AccessControl.FileSecurity",
-            "$Acl.RemoveAccessRule($Ace)",
-            "Set-Acl -Path \"$updateFile\" -AclObject $Acl -ErrorAction SilentlyContinue | Out-Null",
-            "# Delete the Update file",
-            "Remove-Item -Path \"$updateFile\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null"
-        ]
-    },
     "checkver": {
         "url": "https://raw.githubusercontent.com/amd64fox/LoaderSpot/main/versions.json",
-        "jsonpath": "$..[?(@.fullversion)].links.win.x64",
-        "regex": "spotify_installer-([\\d.]+[^.]+)"
+        "jsonpath": "$..[?(@.buildType == 'Release')]",
+        "regex": "(?<version>[\\d.]+)\\.(?<build>[\\w]+)-(?<x64>[\\d]+).exe[\\s\\S]*?(?<arm>[\\d]+).exe"
     },
     "autoupdate": {
-        "url": "https://upgrade.scdn.co/upgrade/client/win32-x86_64/spotify_installer-$version.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://upgrade.scdn.co/upgrade/client/win32-x86_64/spotify_installer-$matchVersion.$matchBuild-$matchX64.exe"
+            },
+            "arm64": {
+                "url": "https://upgrade.scdn.co/upgrade/client/win32-arm64/spotify_installer-$matchVersion.$matchBuild-$matchArm.exe"
+            }
+        }
     }
 }
