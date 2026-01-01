@@ -1,0 +1,36 @@
+{
+    "version": "1.2.0",
+    "description": "Native messaging host for External Editor Revived, a Thunderbird MailExtension which allows editing emails in external editors such as Vim, Neovim, Emacs, etc.",
+    "homepage": "https://github.com/Frederick888/external-editor-revived",
+    "license": "GPL-3.0-or-later",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Frederick888/external-editor-revived/releases/download/v1.2.0/windows-latest-msvc-native-messaging-host-v1.2.0.zip",
+            "hash": "52617c8170e84a619dd842de2c25b9df882b166dfdb6dd0a55b35134eaece924"
+        }
+    },
+    "bin": "external-editor-revived.exe",
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Frederick888/external-editor-revived/releases/download/v$version/windows-latest-msvc-native-messaging-host-v$version.zip",
+                "hash": {
+                    "url": "$url.sha256sum"
+                }
+            }
+        }
+    },
+    "post_install": [
+        "if (-not (Test-Path $persist_dir)) { New-Item -ItemType Directory -Path $persist_dir -Force | Out-Null }",
+        "$json = \"$persist_dir\\external_editor_revived.json\"",
+        "$exe = \"$dir\\external-editor-revived.exe\"",
+        "& $exe | Out-File -Encoding UTF8 -NoNewline $json",
+        "$reg = \"HKCU:\\Software\\Mozilla\\NativeMessagingHosts\\external_editor_revived\"",
+        "if (-not (Test-Path $reg)) { New-Item -Path $reg -Force | Out-Null }",
+        "Set-ItemProperty -Path $reg -Name \"(default)\" -Value $json"
+    ],
+    "pre_uninstall": [
+        "Remove-Item -Path \"HKCU:\\Software\\Mozilla\\NativeMessagingHosts\\external_editor_revived\" -Recurse -ErrorAction SilentlyContinue"
+    ]
+}
