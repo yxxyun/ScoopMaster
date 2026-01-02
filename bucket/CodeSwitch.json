@@ -1,0 +1,80 @@
+{
+    "version": "2.6.9",
+    "description": "Code Switch：一站式管理 Claude Code / Codex / Gemini CLI 的供应商切换、代理与用量统计",
+    "homepage": "https://github.com/Rogers-F/code-switch-R",
+    "license": "Apache-2.0",
+    "notes": [
+        "用户配置目录（供应商/数据库/更新状态等）：%USERPROFILE%\\.code-switch\\",
+        "Gemini CLI 配置目录：%USERPROFILE%\\.gemini\\（Code Switch 会写入 .env / settings.json 等；本包不接管该目录）",
+        "本包会将 %USERPROFILE%\\.code-switch\\ 持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist（便于备份/迁移与跨版本保留）",
+        "建议在应用设置中关闭内置“自动检查更新/自动更新”，避免与 Scoop 更新冲突"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Rogers-F/code-switch-R/releases/download/v2.6.9/CodeSwitch.exe",
+            "hash": "82e3d1314b583bebc8babc26470f0e57d1f379d23018a3706eb0944c4b9ad1f5"
+        }
+    },
+    "bin": [
+        [
+            "CodeSwitch.exe",
+            "codeswitch"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "CodeSwitch.exe",
+            "Code Switch"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path $env:USERPROFILE '.code-switch'",
+        "$target = Join-Path $persist_dir 'code-switch'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        # 已存在链接/联接点：不做破坏性替换，避免覆盖用户自定义指向",
+        "        Write-Host \"检测到已存在的联接点/符号链接：$source，跳过创建（如需由 Scoop 接管请手动删除该链接）\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"配置路径已存在且不是目录：$source（请手动处理后重装）\"",
+        "    }",
+        "",
+        "    # 迁移已有配置到 persist（尽量无损：先复制到 persist，再把原目录重命名为备份，最后创建 Junction）",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"robocopy 迁移失败（exit=$LASTEXITCODE），将保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'",
+        "    $backup = \"$source.backup-$stamp\"",
+        "    $i = 0",
+        "    while (Test-Path $backup) { $i++; $backup = \"$source.backup-$stamp-$i\" }",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原配置目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原配置目录（可能有进程占用）：$source\"",
+        "        Write-Host \"请关闭 Code Switch 后重试；或手动将该目录改名/移走，再执行：scoop update -f CodeSwitch\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "persist": "code-switch",
+    "checkver": {
+        "github": "https://github.com/Rogers-F/code-switch-R"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Rogers-F/code-switch-R/releases/download/v$version/CodeSwitch.exe"
+            }
+        }
+    }
+}
