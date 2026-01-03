@@ -1,0 +1,69 @@
+{
+    "version": "0.4.0",
+    "description": "A local-first AI-powered note-taking app",
+    "homepage": "https://github.com/blueberrycongee/Lumina-Note",
+    "license": "AGPL-3.0",
+    "notes": [
+        "Lumina Note 是一款本地优先的 AI 笔记应用",
+        "用户数据目录：%LOCALAPPDATA%\\com.luminanote.app\\",
+        "本包会将该目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/blueberrycongee/Lumina-Note/releases/download/v0.4.0/lumina-note_0.4.0_x64-setup.exe#/dl.7z",
+            "hash": "8b60a845bed04c7b2c8463787d5bde68e1a3d6893bc1dfe60734cc0859e4a5cf"
+        }
+    },
+    "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\uninstall.exe\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "bin": "lumina-note.exe",
+    "shortcuts": [
+        [
+            "lumina-note.exe",
+            "Lumina Note"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path $env:LOCALAPPDATA 'com.luminanote.app'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"配置路径已存在且不是目录：$source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"迁移失败，保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原配置目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原目录：$source\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "persist": "data",
+    "checkver": {
+        "github": "https://github.com/blueberrycongee/Lumina-Note"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/blueberrycongee/Lumina-Note/releases/download/v$version/lumina-note_$version_x64-setup.exe#/dl.7z"
+            }
+        }
+    }
+}
