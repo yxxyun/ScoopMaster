@@ -1,0 +1,55 @@
+{
+    "version": "1.126.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v1.126.0/vmutils-windows-amd64-v1.126.0.zip",
+            "hash": "0ace3a4a6b48f977dad5e3c1c12b5f5a36b1ccaad537be854378644e97d76c75"
+        }
+    },
+    "suggest": {
+        "Node Exporter": "windows_exporter"
+    },
+    "depends": "winsw",
+    "persist": "service.yml",
+    "pre_install": [
+        "Write-Host Uno ; Write-Host Due",
+        "if (-not $global) { Write-Host \"This package requires global installation. Please install using --global.\"; exit 1 }",
+        "if (-not (Test-Path \"$persist_dir\\service.yml\")) { New-Item -Path \"$dir\\service.yml\" -ItemType File -Value \"id: victoriametrics-agent
+name: Victoria Metrics Agent
+description: Victoria Metrics Agent scrapes Prometheus-style metrics and sends them to a central Victoria Metrics TSDB.
+executable: $dir\\vmagent.exe
+arguments: -memory.allowedBytes=128MiB -enableTCP6 -httpListenAddr=:8429 -graphiteListenAddr=:2003 -promscrape.config=`\"$persist_dir\\scrape.yml`\"
+log:
+  mode: roll\" }"
+    ],
+    "post_install": [
+        "Push-Location \"$dir\"",
+        "Get-ChildItem -Filter \"vmagent-*.exe\" | Rename-Item -NewName vmagent.exe",
+        "Remove-Item *prod.exe",
+        "Pop-Location",
+        "Push-Location \"$persist_dir\"",
+        "winsw.exe install service.yml",
+        "winsw.exe start service.yml",
+        "Pop-Location"
+    ],
+    "pre_uninstall": [
+        "Push-Location \"$persist_dir\"",
+        "winsw.exe stop service.yml",
+        "winsw.exe uninstall service.yml",
+        "Pop-Location"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v$version/vmutils-windows-amd64-v$version.zip"
+            }
+        },
+        "hash": {
+            "url": "$baseurl/vmutils-windows-amd64-v$version_checksums.txt"
+        }
+    },
+    "homepage": "https://github.com/VictoriaMetrics/VictoriaMetrics/",
+    "license": "Apache-2.0",
+    "description": "VictoriaMetrics: fast, cost-effective monitoring solution and time series database"
+}
