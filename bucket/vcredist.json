@@ -23,9 +23,15 @@
     ],
     "post_install": "Remove-Item \"$dir\\$fname\"",
     "checkver": {
-        "url": "https://api.github.com/repositories/197275551/contents/manifests/m/Microsoft/VCRedist/2015%2B/x64",
-        "jsonpath": "$..name",
-        "reverse": true
+        "script": [
+            "$url = 'https://aka.ms/vc14/vc_redist.x64.exe'",
+            "$dl = cache_path 'vcredist' 'unknown' $url",
+            "Invoke-WebRequest $url -OutFile $dl",
+            "$ver = (Get-Item $dl).VersionInfo.FileVersion",
+            "Move-Item $dl (cache_path 'vcredist' $ver $url) -Force",
+            "$ver"
+        ],
+        "regex": "([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
