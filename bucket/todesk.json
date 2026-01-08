@@ -1,19 +1,33 @@
 {
+    "homepage": "https://www.todesk.com/",
+    "description": "A unlimited speed multifunctional remote control software",
     "version": "4.8.4.2",
-    "description": "ToDesk",
-    "homepage": "https://www.todesk.com",
-    "license": "Freeware",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.todesk.com/licence.html"
+    },
+    "url": "https://dl.todesk.com/windows/ToDesk_Setup.exe#/dl.7z",
+    "hash": "12bd7d492a54e255e3b7db3079860c4d479baf6b64aeaa4722b556a4ab1fc157",
     "architecture": {
         "64bit": {
-            "url": "https://dl.todesk.com/windows/ToDesk_Setup.exe#/dl.7z",
-            "hash": "4055f47da713ea1971eb0421489b14bb06aa7b444835406ccbb568e7b794281c"
+            "installer": {
+                "script": "Expand-7ZipArchive \"$dir\\app64.7z\" \"$dir\" -Removal"
+            }
         }
     },
     "pre_install": [
-        "Expand-7zipArchive \"$dir\\app64.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\app32.7z\",\"$dir\\app64.7z\",\"$dir\\`$PLUGINSDIR\",\"$dir\\uninst.exe\",\"$dir\\CrashReport.exe\" -Force -Recurse",
         "if (!(Test-Path \"$persist_dir\\config.ini\")) {",
         "    New-Item -Force -Path \"$persist_dir\\config.ini\" -ItemType File -Value \"[ConfigInfo]`nautoStart=0\" | Out-Null",
+        "}"
+    ],
+    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\app*.7z\",\"$dir\\uninst.exe\" -Force -Recurse",
+    "pre_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    if (!(is_admin)) {",
+        "        Start-Process -Wait powershell.exe -ArgumentList \"-Command sc.exe delete ToDesk_Service\" -Verb RunAs -WindowStyle Hidden",
+        "    } else {",
+        "        sc.exe delete ToDesk_Service",
+        "    }",
         "}"
     ],
     "shortcuts": [
@@ -28,9 +42,12 @@
     ],
     "checkver": {
         "url": "https://update.todesk.com/windows/uplog.html",
-        "regex": ">([\\d.]+)</div>"
+        "regex": "<div class=\"text\">([\\d.]+)</div>"
     },
     "autoupdate": {
-        "url": "https://dl.todesk.com/windows/ToDesk_Setup.exe#/dl.7z"
+        "url": "https://dl.todesk.com/windows/ToDesk_Setup.exe#/dl.7z",
+        "hash": {
+            "mode": "download"
+        }
     }
 }
