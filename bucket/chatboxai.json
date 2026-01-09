@@ -1,32 +1,62 @@
 {
-    "homepage": "https://chatboxai.app",
-    "description": "Chatbox AI 是一款 AI 客户端应用和智能助手，支持众多先进的 AI 模型和 API，可在 Windows、MacOS、Android、iOS、Linux 和网页版上使用。",
-    "version": "0.10.4",
+    "version": "1.18.2",
+    "description": "Powerful AI desktop client with support for ChatGPT, Claude and other LLMs.",
+    "homepage": "https://chatboxai.app/",
     "license": {
-        "identifier": "Proprietary",
-        "url": "https://chatboxai.app/zh/privacy"
+        "identifier": "GPL-3.0-or-later",
+        "url": "https://github.com/chatboxai/chatbox/blob/main/LICENSE"
     },
-    "url": "https://github.com/Bin-Huang/chatbox/releases/download/v0.10.4/Chatbox.CE-0.10.4-Setup.exe#dl.7z",
-    "hash": "sha512:0981eca6f7ec46ef16219edd3f3cbcb513d92de05d1705481ac2c53f3358331e9547b33c41fe582bde902d16d992cf09ba5c9b2253ea87c56922d93fa4639b5c",
+    "architecture": {
+        "64bit": {
+            "url": "https://download.chatboxai.app/releases/Chatbox-1.18.2-Setup.exe#/dl.7z",
+            "hash": "81130b31c2500ce5f93aaecf3c128fc41a4fa30cbc800d969b35e58dc6587b9f"
+        },
+        "arm64": {
+            "url": "https://download.chatboxai.app/releases/Chatbox-1.18.2-Setup.exe#/dl.7z",
+            "hash": "81130b31c2500ce5f93aaecf3c128fc41a4fa30cbc800d969b35e58dc6587b9f"
+        }
+    },
     "pre_install": [
-        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Recurse"
+        "$arch = $architecture -replace 'bit',''",
+        "Expand-7ZipArchive \"$dir\\`$PLUGINSDIR\\app-$arch.7z\" \"$dir\" -Removal",
+        "Remove-Item \"$dir\\`$*\" -Force -Recurse"
     ],
-    "checkver": {
-        "github": "https://github.com/Bin-Huang/chatbox"
-    },
-    "bin": "Chatbox.exe",
+    "post_install": [
+        "$file = \"$persist_dir\\User Data\\config.json\"",
+        "if (!(Test-Path \"$dir\\User Data\\*\") -and (Test-Path \"$env:APPDATA\\xyz.chatboxapp.app\")) {",
+        "    info '[Portable Mode]: Copying user data...'",
+        "    Copy-Item \"$env:APPDATA\\xyz.chatboxapp.app\\*\" \"$dir\\User Data\" -Recurse",
+        "    if ((Test-Path $file)) {",
+        "        warn \"Disabling incompatible autoUpdate\"",
+        "        (Get-Content $file) -replace '\"autoUpdate\": true', '\"autoUpdate\": false' | Set-Content $file -Encoding ASCII",
+        "    }",
+        "}",
+        "if (!(Test-Path $file)) {",
+        "   $json = \"{`n`t'settings': {`n`t`t'autoUpdate': false`n`t}`n}`n\"",
+        "   $json.Replace(\"'\", '\"') | Out-File -FilePath $file -Encoding ASCII",
+        "   warn \"Do not enable autoUpdate inside Chatbox, use scoop update instead\"",
+        "}"
+    ],
     "shortcuts": [
         [
             "Chatbox.exe",
-            "ChatboxAI"
+            "Chatbox",
+            "--user-data-dir=\"$dir\\User Data\""
         ]
     ],
+    "persist": "User Data",
+    "checkver": {
+        "url": "https://chatboxai.app/en/help-center/changelog",
+        "regex": "https://download\\.chatboxai\\.app/releases/Chatbox-([0-9.]+)-Setup.exe"
+    },
     "autoupdate": {
-        "url": "https://github.com/Bin-Huang/chatbox/releases/download/v$version/Chatbox.CE-$version-Setup.exe#dl.7z",
-        "hash": {
-            "url": "$baseurl/latest.yml",
-            "regex": "(?sm).*?sha512:\\s+$base64"
+        "architecture": {
+            "64bit": {
+                "url": "https://download.chatboxai.app/releases/Chatbox-$version-Setup.exe#/dl.7z"
+            },
+            "arm64": {
+                "url": "https://download.chatboxai.app/releases/Chatbox-$version-Setup.exe#/dl.7z"
+            }
         }
     }
 }
