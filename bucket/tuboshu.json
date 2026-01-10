@@ -1,27 +1,84 @@
 {
-    "version": "2.0.8",
-    "description": "Transform Your Favorite Websites into Seamless Desktop Experiences✨! 把常用的网站集合到一个桌面程序里。",
+    "version": "2.1.0",
+    "description": "Transform your favorite websites into seamless desktop experiences",
     "homepage": "https://github.com/deepshit2025/tuboshu",
-    "license": "Unknown",
-    "url": "https://github.com/deepshit2025/tuboshu/releases/download/v2.0.8/Tuboshu-Setup-2.0.8-win-x64-portable.exe#/installer.7z",
-    "hash": "20eeb5eef3aff619bfb46224ff0d14f7767fc0ad095378060ca8193dfc50fc44",
-    "extract_dir": "$PLUGINSDIR",
+    "license": "ISC",
+    "notes": [
+        "Tuboshu 把常用的网站集合到一个桌面程序里",
+        "用户数据目录：%APPDATA%\\Tuboshu\\",
+        "包含数据库 (userdata.db)、站点配置、快捷键设置等",
+        "本包会将该目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/deepshit2025/tuboshu/releases/download/v2.1.0/Tuboshu-Setup-2.1.0-win-x64.exe#/dl.7z",
+            "hash": "30d6baa5fecf81985434bf575a516bdd211b8d32b076771010b4d01579b333f1",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
+                "Remove-Item \"$dir\\`$*\" -Force -Recurse -ErrorAction SilentlyContinue"
+            ]
+        },
+        "arm64": {
+            "url": "https://github.com/deepshit2025/tuboshu/releases/download/v2.1.0/Tuboshu-Setup-2.1.0-win-arm64.exe#/dl.7z",
+            "hash": "263507c90542436318e11203452a2a8393eaeaa153cd8a24ed0b72a1b7b5d175",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\" -Removal",
+                "Remove-Item \"$dir\\`$*\" -Force -Recurse -ErrorAction SilentlyContinue"
+            ]
+        }
+    },
+    "bin": "Tuboshu.exe",
     "shortcuts": [
         [
             "Tuboshu.exe",
             "Tuboshu"
         ]
     ],
-    "checkver": "github",
-    "autoupdate": {
-        "url": "https://github.com/deepshit2025/tuboshu/releases/download/v$version/Tuboshu-Setup-$version-win-x64-portable.exe#/installer.7z",
-        "extract_dir": "$PLUGINSDIR"
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'Tuboshu'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"配置路径已存在且不是目录：$source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"迁移失败，保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原配置目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原目录：$source\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "persist": "data",
+    "checkver": {
+        "github": "https://github.com/deepshit2025/tuboshu"
     },
-    "installer": {
-        "script": [
-            "$innerzipfile = Join-Path -Path \"$dir\" -ChildPath \"app-64.7z\"",
-            "7z x -y \"$innerzipfile\" -o\"$dir\" | Out-Null",
-            "Remove-Item -Path \"$innerzipfile\" -Force"
-        ]
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/deepshit2025/tuboshu/releases/download/v$version/Tuboshu-Setup-$version-win-x64.exe#/dl.7z"
+            },
+            "arm64": {
+                "url": "https://github.com/deepshit2025/tuboshu/releases/download/v$version/Tuboshu-Setup-$version-win-arm64.exe#/dl.7z"
+            }
+        }
     }
 }
