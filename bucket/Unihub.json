@@ -1,0 +1,73 @@
+{
+    "version": "1.2.0",
+    "description": "Modern cross-platform toolkit with powerful plugin system",
+    "homepage": "https://github.com/t8y2/unihub",
+    "license": "MIT",
+    "notes": [
+        "Unihub 是一个现代化的跨平台工具箱，支持插件系统",
+        "用户数据目录：%APPDATA%\\Unihub\\",
+        "包含数据库、插件、配置等",
+        "本包会将该目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/t8y2/unihub/releases/download/v1.2.0/unihub-1.2.0-setup.exe#/dl.7z",
+            "hash": "d9c8c206912391593e04eaa702702f3f49069bcf407e609c7e99fe93663e7297"
+        }
+    },
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
+        "Remove-Item \"$dir\\`$*\" -Force -Recurse -ErrorAction SilentlyContinue"
+    ],
+    "bin": "Unihub.exe",
+    "shortcuts": [
+        [
+            "Unihub.exe",
+            "Unihub"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'Unihub'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"配置路径已存在且不是目录：$source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"迁移失败，保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原配置目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原目录：$source\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "persist": "data",
+    "checkver": {
+        "github": "https://github.com/t8y2/unihub"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/t8y2/unihub/releases/download/v$version/unihub-$version-setup.exe#/dl.7z"
+            }
+        }
+    }
+}
