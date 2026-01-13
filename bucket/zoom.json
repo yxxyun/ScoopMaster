@@ -1,37 +1,55 @@
 {
     "version": "6.7.2.26346",
-    "description": "One platform to connect",
-    "homepage": "https://zoom.us",
+    "description": "Zoom provides videotelephony and online chat services through a cloud-based peer-to-peer software platform and is used for teleconferencing, telecommuting, distance education, and social relations.",
+    "homepage": "https://zoom.us/",
     "license": "Proprietary",
-    "architecture": {
-        "64bit": {
-            "url": "https://zoom.us/client/6.7.2.26346/ZoomInstallerFull.msi?archType=x64#/setup.msi",
-            "hash": "e2ceead9528a42bcb23faec2e4ca88185886657400b5242a7dc959e5a8046f2a"
-        },
-        "arm64": {
-            "url": "https://zoom.us/client/6.7.2.26346/ZoomInstallerFull.msi?archType=winarm64#/setup.msi",
-            "hash": "2e32a0890235794c68132c6b2f69a12c5b83a53ae8a57adbe4fe7015f8d3f272"
-        }
-    },
-    "extract_dir": "Program Files (64-bit) Folder\\Zoom\\bin",
-    "shortcuts": [
-        [
-            "Zoom.exe",
-            "Zoom"
+    "url": "https://zoom.us/client/latest/ZoomInstallerFull.msi#/setup.msi_",
+    "hash": "95479d9358760ea88fa347a65d635760a67f0ebc2625750bc9eed35a8c229b48",
+    "pre_download": "Assert-Administrator",
+    "pre_install": [
+        "$processname = \"Zoom*\"",
+        "$process = Get-Process $processname -ErrorAction SilentlyContinue",
+        "if ($process) {",
+        "   $process.CloseMainWindow()",
+        "   Start-Sleep -Seconds 5",
+        "   if (!$process.HasExited) {",
+        "       Start-Sleep -Seconds 25",
+        "       $process | Stop-Process -Force",
+        "   }",
+        "}"
+    ],
+    "installer": {
+        "script": [
+            "$programname = \"Zoom*\"",
+            "$installpath = \"$dir\\setup.msi_\"",
+            "$ProgramFilesX86 = [Environment]::GetFolderPath(\"ProgramFilesX86\")",
+            "$programsVersion = \"$majorVersion.$minorVersion.$patchVersion\"",
+            "if((Get-Command \"$ProgramFilesX86\\Zoom\\bin\\zoom.exe\").Version -lt $version)",
+            "{",
+            "   Invoke-ExternalCommand msiexec -ArgumentList @('/i', \"$dir\\setup.msi_\", '/qn', '/norestart', 'MSIRESTARTMANAGERCONTROL=”Disable”', 'ZoomAutoUpdate=\"true\"') -RunAs | Out-Null",
+            "   if((Get-Command \"$ProgramFilesX86\\Zoom\\bin\\zoom.exe\").Version -lt $version)",
+            "   {",
+            "       exit 1",
+            "   }",
+            "}",
+            "$CommonDesktopPath = [Environment]::GetFolderPath(\"CommonDesktopDirectory\")",
+            "if (Test-Path -Path \"$CommonDesktopPath\\Zoom.lnk\")",
+            "{",
+            "   Remove-Item \"$CommonDesktopPath\\Zoom.lnk\" -Force",
+            "}",
+            "if (Test-Path -Path \"$dir\\setup.msi_\") { Remove-Item \"$dir\\setup.msi_\" -Force }"
         ]
+    },
+    "post_install": [
+        "$programname = \"Zoom\"",
+        "$CommonDesktopPath = [Environment]::GetFolderPath(\"CommonDesktopDirectory\")",
+        "if (Test-Path \"$CommonDesktopPath\\$programname.lnk\") {Remove-Item \"$CommonDesktopPath\\$programname.lnk\" -Force}"
     ],
     "checkver": {
-        "url": "https://zoom.us/rest/download?os=win",
-        "jsonpath": "$.result.downloadVO.zoomX64.version"
+        "url": "https://ninite.com/applist/pro.html",
+        "regex": "<td>Video Conference ([\\d.]+)"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://zoom.us/client/$version/ZoomInstallerFull.msi?archType=x64#/setup.msi"
-            },
-            "arm64": {
-                "url": "https://zoom.us/client/$version/ZoomInstallerFull.msi?archType=winarm64#/setup.msi"
-            }
-        }
+        "url": "https://zoom.us/client/latest/ZoomInstallerFull.msi#/setup.msi_"
     }
 }
