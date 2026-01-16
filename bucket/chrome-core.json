@@ -1,0 +1,71 @@
+{
+    "version": "144.0.7559.60",
+    "description": "Automatically fetch Google Chrome offline installer using GitHub Actions",
+    "homepage": "https://github.com/Bush2021/chrome_installer",
+    "license": "MIT",
+    "depends": "chrome-plus",
+    "notes": "This package acts as a binary provider. It downloads and injects the official Google Chrome binaries directly into the 'rojem/chrome-plus' installation directory. It strictly requires 'chrome-plus' to be installed first.",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Bush2021/chrome_installer/releases/download/144.0.7559.60/x64_144.0.7559.60_chrome_installer_uncompressed.exe#/dl.7z",
+            "hash": "4372ba2664312500615198c37941ff55e4e7568744f1092f7da9dcd273dbc650"
+        },
+        "32bit": {
+            "url": "https://github.com/Bush2021/chrome_installer/releases/download/144.0.7559.60/x86_144.0.7559.60_chrome_installer_uncompressed.exe#/dl.7z",
+            "hash": "493367b6be9e624cee1e4ed32420ca3acac75694bde7655ba1b41d100f4e3e4b"
+        },
+        "arm64": {
+            "url": "https://github.com/Bush2021/chrome_installer/releases/download/144.0.7559.60/arm64_144.0.7559.60_chrome_installer_uncompressed.exe#/dl.7z",
+            "hash": "35bc4b240ae573d7b84162eaf1f85a4e159c14526e7d5274c691e95f3c316a08"
+        }
+    },
+    "installer": {
+        "script": [
+            "$cp_root = $(appdir chrome-plus $global)",
+            "if (Test-Path \"$cp_root\\current\") {",
+            "    $dest_app = \"$cp_root\\current\\App\"",
+            "    if (-not (Test-Path \"$dest_app\")) {",
+            "        New-Item \"$dest_app\" -ItemType Directory -Force | Out-Null",
+            "    }",
+            "    ",
+            "    Write-Host \"Cleaning up old Chrome versions...\" -ForegroundColor Yellow",
+            "    Get-ChildItem -Path \"$dest_app\" -Directory | Where-Object { $_.Name -match '^\\d+\\.\\d+\\.\\d+\\.\\d+$' } | Remove-Item -Recurse -Force",
+            "    ",
+            "    Write-Host \"Merging new Chrome binaries...\" -ForegroundColor Cyan",
+            "    Move-Item \"$dir\\Chrome-bin\\*\" \"$dest_app\" -Force",
+            "    ",
+            "    Remove-Item \"$dir\\Chrome-bin\" -Force",
+            "    ",
+            "    Write-Host \"Chrome binaries injected successfully. The fake placeholder has been overwritten.\" -ForegroundColor Green",
+            "} else {",
+            "    Write-Warning \"chrome-plus installation not found. Binaries NOT moved.\"",
+            "}"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$cp_root = $(appdir chrome-plus $global)",
+            "if (Test-Path \"$cp_root\\current\\App\") {",
+            "    $dest_app = \"$cp_root\\current\\App\"",
+            "    Write-Host \"Removing Chrome binaries from chrome-plus...\" -ForegroundColor Yellow",
+            "    if (Test-Path \"$dest_app\\chrome.exe\") { Remove-Item \"$dest_app\\chrome.exe\" -Force }",
+            "    Get-ChildItem -Path \"$dest_app\" -Directory | Where-Object { $_.Name -match '^\\d+\\.\\d+\\.\\d+\\.\\d+$' } | Remove-Item -Recurse -Force",
+            "    if (Test-Path \"$dest_app\\chrome_proxy.exe\") { Remove-Item \"$dest_app\\chrome_proxy.exe\" -Force }",
+            "}"
+        ]
+    },
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Bush2021/chrome_installer/releases/download/$version/x64_$version_chrome_installer_uncompressed.exe#/dl.7z"
+            },
+            "32bit": {
+                "url": "https://github.com/Bush2021/chrome_installer/releases/download/$version/x86_$version_chrome_installer_uncompressed.exe#/dl.7z"
+            },
+            "arm64": {
+                "url": "https://github.com/Bush2021/chrome_installer/releases/download/$version/arm64_$version_chrome_installer_uncompressed.exe#/dl.7z"
+            }
+        }
+    }
+}
