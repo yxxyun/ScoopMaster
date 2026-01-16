@@ -1,36 +1,29 @@
 {
+    "homepage": "https://rime.im/",
     "version": "0.17.4.0",
-    "description": "【小狼毫】Rime for Windows",
-    "homepage": "https://rime.im",
-    "license": "GPL",
-    "url": "https://github.com/rime/weasel/releases/download/0.17.4/weasel-0.17.4.0-installer.exe#dl.7z",
+    "license": "GPL-3.0-only",
+    "url": "https://github.com/rime/weasel/releases/download/0.17.4/weasel-0.17.4.0-installer.exe#/dl.7z",
     "hash": "cf509534a8f5f8af9c98ed7cbb8f135439f145a8cbe7e50ede42bb5b5ab45c29",
-    "post_install": [
-        "$Source = \"$persist_dir\\AppData\"",
-        "$Target = \"$env:AppData\\Rime\"",
-        "Write-Host $Source $Target",
-        "New-Item -ItemType Directory -Path $Source -ErrorAction Ignore | Out-Null",
-        "New-Item -ItemType Junction -Path $Target -Target $Source -ErrorAction Ignore | Out-Null",
-        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse",
-        "New-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\" -Name WeaselServer -Value \"$dir\\WeaselServer.exe\" -ErrorAction Ignore | Out-Null",
-        "Start-Process -Wait \"$dir\\WeaselSetup.exe\" \"/i\"",
-        "#Start-Process -Wait \"$dir\\WeaselDeployer.exe\" \"/install\"",
-        "Start-Process \"$dir\\WeaselServer.exe\""
+    "persist": "user",
+    "pre_install": "New-Item HKCU:\\Software\\Rime\\Weasel -Force | New-ItemProperty -Name RimeUserDir -Value \"$persist_dir\\user\" | Out-Null",
+    "installer": {
+        "script": "& \"$dir\\WeaselSetup.exe\" /s"
+    },
+    "uninstaller": {
+        "script": "& \"$dir\\WeaselSetup.exe\" /u"
+    },
+    "shortcuts": [
+        [
+            "WeaselServer.exe",
+            "小狼毫算法服务"
+        ]
     ],
-    "pre_uninstall": [
-        "Remove-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\" -Name WeaselServer",
-        "#Start-Process -Wait \"$dir\\WeaselServer.exe\" \"/quit\"",
-        "#Start-Process -Wait \"$dir\\WeaselSetup.exe\" \"/u\"",
-        "Start-Process -Wait \"$dir\\uninstall.exe\"",
-        "$Source = \"$persist_dir\\AppData\"",
-        "$Target = \"$env:AppData\\Rime\"",
-        "cmd /c rmdir /s /q $Target"
-    ],
+    "notes": "请运行算法服务（WeaselServer.exe）并添加到开机启动。",
     "checkver": {
-        "url": "https://rime.im/download/",
-        "regex": "/(?<marjor>[\\d.]+)/weasel-([\\d.]+)-installer.exe"
+        "url": "https://api.github.com/repos/rime/weasel/releases/latest",
+        "regex": "/releases/download/(?<prefix>[\\d.]+)/weasel-(?<version>[\\d.]+)-installer.exe"
     },
     "autoupdate": {
-        "url": "https://github.com/rime/weasel/releases/download/$matchMarjor/weasel-$version-installer.exe#dl.7z"
+        "url": "https://github.com/rime/weasel/releases/download/$matchPrefix/weasel-$version-installer.exe#/dl.7z"
     }
 }
