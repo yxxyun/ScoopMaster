@@ -1,0 +1,72 @@
+{
+    "version": "0.11.0",
+    "description": "本地 AI CLI 统一网关 - 路由 Claude Code、Codex 和 Gemini CLI 请求",
+    "homepage": "https://github.com/dyndynjyxa/aio-coding-hub",
+    "license": "MIT",
+    "notes": [
+        "AIO Coding Hub 是一个统一的 AI CLI 网关",
+        "默认监听端口: 127.0.0.1:37123",
+        "用户数据目录：%LOCALAPPDATA%\\com.aio-coding-hub.app\\",
+        "本包会将该目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/dyndynjyxa/aio-coding-hub/releases/download/aio-coding-hub-v0.11.0/AIO.Coding.Hub_0.11.0_x64_en-US.msi",
+            "hash": "eff5c4c7521e2436d8e55326359fc11648611bf6fde64640bce4d6d5168a0041"
+        }
+    },
+    "extract_dir": "AIO Coding Hub",
+    "bin": "aio-coding-hub.exe",
+    "shortcuts": [
+        [
+            "aio-coding-hub.exe",
+            "AIO Coding Hub"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path $env:LOCALAPPDATA 'com.aio-coding-hub.app'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"配置路径已存在且不是目录：$source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"迁移失败，保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原配置目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原目录：$source\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "persist": "data",
+    "checkver": {
+        "url": "https://api.github.com/repos/dyndynjyxa/aio-coding-hub/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "aio-coding-hub-v([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/dyndynjyxa/aio-coding-hub/releases/download/aio-coding-hub-v$version/AIO.Coding.Hub_$version_x64_en-US.msi"
+            }
+        }
+    }
+}
