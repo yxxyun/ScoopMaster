@@ -3,7 +3,6 @@
     "description": "BLE-MIDI support for REAPER",
     "homepage": "https://github.com/LeonarddeR/BLEAPER",
     "license": "GPL-2.0-only",
-    "notes": "A single setting is stored in reaper-extstate.ini by this plugin.",
     "architecture": {
         "64bit": {
             "url": "https://github.com/LeonarddeR/BLEAPER/releases/download/0.3/reaper_BLEAPER64.dll",
@@ -14,9 +13,15 @@
             "hash": "947a95bce9833d981a3f1c74e8f8ae0543489b9595a4eec4b85e01e25638b367"
         }
     },
-    "post_install": "Move-Item \"$dir\\reaper_BLEAPER*.dll\" \"$env:AppData\\REAPER\\UserPlugins\" -Force",
+    "post_install": [
+        "if (!(Test-Path \"$env:AppData\\REAPER\\UserPlugins\")) { New-Item -ItemType Directory \"$env:AppData\\REAPER\\UserPlugins\" -Force | Out-Null }",
+        "Move-Item \"$dir\\reaper_BLEAPER*.dll\" \"$env:AppData\\REAPER\\UserPlugins\" -Force"
+    ],
     "uninstaller": {
-        "script": "Remove-Item \"$env:AppData\\REAPER\\UserPlugins\\reaper_BLEAPER*.dll\" -Force"
+        "script": [
+            "Remove-Item \"$env:AppData\\REAPER\\UserPlugins\\reaper_BLEAPER*.dll\" -Force",
+            "(Get-Content \"$env:AppData\\REAPER\\reaper-extstate.ini\") | Where-Object {$_ -NotMatch 'bleaper'} | Where-Object {$_ -NotMatch 'midiInDevice'} | Set-Content \"$env:AppData\\REAPER\\reaper-extstate.ini\""
+        ]
     },
     "checkver": "github",
     "autoupdate": {
