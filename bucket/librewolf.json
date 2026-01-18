@@ -1,47 +1,41 @@
 {
-    "version": "147.0.1-2",
-    "description": "A fork of Firefox, focused on privacy, security and freedom.",
-    "homepage": "https://librewolf.net/",
+    "##": "ltguillaume/schep",
+    "version": "147.0.1-3",
+    "description": "A fork of Firefox, focused on privacy, security and freedom. This variant does not use the portable launcher and makes sure the Scoop profile is used by default.",
+    "homepage": "https://librewolf.net",
     "license": "MPL-2.0",
+    "notes": "After installation, the profile manager will be run to choose the right default profile.",
     "architecture": {
         "64bit": {
-            "url": "https://codeberg.org/api/packages/librewolf/generic/librewolf/147.0.1-2/librewolf-147.0.1-2-windows-x86_64-portable.zip",
-            "hash": "70d9ed1bf61b74d47d937d819a0dfbc12094eeeb704e12431ab71cbca51d7c0a"
+            "url": "https://codeberg.org/api/packages/librewolf/generic/librewolf/147.0.1-3/librewolf-147.0.1-3-windows-x86_64-portable.zip",
+            "hash": "bc01cac354fe94e6a03673628c3552baaf151f01588c62fe66c16d650adae0d0"
         }
     },
-    "extract_dir": "librewolf-147.0.1-2",
-    "pre_install": [
-        "'LibreWolf-WinUpdater.exe', 'ScheduledTask-Create.ps1', 'ScheduledTask-Remove.ps1' | ForEach-Object { \"$dir/$_\" } | Remove-Item",
-        "",
-        "# Customizing LibreWolf Using AutoConfig",
-        "# https://support.mozilla.org/en-US/kb/customizing-firefox-using-autoconfig",
-        "$null = ensure \"$persist_dir/LibreWolf/defaults/pref\"",
-        "Copy-Item \"$persist_dir/LibreWolf/defaults/pref/*\" \"$dir/LibreWolf/defaults/pref\" -Exclude channel-prefs.js",
-        "Copy-Item \"$persist_dir/LibreWolf/*.js\", \"$persist_dir/LibreWolf/*.cfg\" \"$dir/LibreWolf\"",
-        "",
-        "# Customizing LibreWolf Using policies.json",
-        "# https://support.mozilla.org/en-US/kb/customizing-firefox-using-policiesjson",
-        "# Used to override the default policies.json of LibreWolf, if you want",
-        "$null = ensure \"$persist_dir/LibreWolf/distribution\"",
-        "Copy-Item \"$persist_dir/LibreWolf/distribution/policies.json\" \"$dir/LibreWolf/distribution\" -ErrorAction SilentlyContinue"
+    "extract_dir": "librewolf-147.0.1-3\\LibreWolf",
+    "post_install": [
+        "$Addition = \"$persist_dir\\addition\"",
+        "if (Test-Path $Addition) {",
+        "  info 'Copying additional items...'",
+        "  Copy-Item -Path $Addition\\* -Destination $dir -Force -Recurse -ErrorAction SilentlyContinue",
+        "}",
+        "if (!(Test-Path \"$persist_dir\\profile\\times.json\")) {",
+        "    librewolf.exe -CreateProfile \"Scoop $persist_dir\\profile\"",
+        "}",
+        "Start-Process -WorkingDirectory $dir -FilePath librewolf.exe -ArgumentList '-P'"
     ],
     "bin": [
         [
-            "LibreWolf-Portable.exe",
+            "librewolf.exe",
             "librewolf"
         ]
     ],
     "shortcuts": [
         [
-            "LibreWolf-Portable.exe",
+            "librewolf.exe",
             "LibreWolf"
         ]
     ],
-    "persist": "Profiles",
-    "pre_uninstall": [
-        "Copy-Item \"$dir/LibreWolf/defaults/pref/*\" \"$persist_dir/LibreWolf/defaults/pref\" -Exclude channel-prefs.js",
-        "Copy-Item \"$dir/LibreWolf/*.js\", \"$dir/LibreWolf/*.cfg\" \"$persist_dir/LibreWolf\" -Exclude librewolf.cfg"
-    ],
+    "persist": "profile",
     "checkver": {
         "url": "https://codeberg.org/api/v1/repos/librewolf/bsys6/releases/latest",
         "jsonpath": "$.tag_name"
@@ -55,6 +49,6 @@
         "hash": {
             "url": "$url.sha256sum"
         },
-        "extract_dir": "librewolf-$version"
+        "extract_dir": "librewolf-$version\\LibreWolf"
     }
 }
