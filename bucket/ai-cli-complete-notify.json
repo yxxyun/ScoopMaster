@@ -1,0 +1,53 @@
+{
+    "version": "1.1.0",
+    "description": "AI CLI Complete Notify：多种 AI CLI 任务完成提醒（Claude/Codex/Gemini），支持耗时阈值与多通道推送",
+    "homepage": "https://github.com/ZekerTop/ai-cli-complete-notify",
+    "license": "ISC",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/ZekerTop/ai-cli-complete-notify/releases/download/v1.1.0/ai-cli-complete-notify-1.1.0-win32-x64.zip",
+            "hash": "1d8abde46a8c1bdedb46869df5816a2954d443e913138026bb47241c6281bd04"
+        }
+    },
+    "extract_dir": "ai-cli-complete-notify-1.1.0-win32-x64",
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'ai-cli-complete-notify'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    Move-Item -LiteralPath $source -Destination $backup -Force",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "bin": "ai-cli-complete-notify.exe",
+    "shortcuts": [
+        [
+            "ai-cli-complete-notify.exe",
+            "AI CLI Complete Notify"
+        ]
+    ],
+    "persist": [
+        ".env",
+        "data"
+    ],
+    "checkver": {
+        "github": "https://github.com/ZekerTop/ai-cli-complete-notify"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/ZekerTop/ai-cli-complete-notify/releases/download/v$version/ai-cli-complete-notify-$version-win32-x64.zip",
+                "extract_dir": "ai-cli-complete-notify-$version-win32-x64"
+            }
+        }
+    }
+}
