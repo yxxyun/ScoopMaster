@@ -1,0 +1,50 @@
+{
+    "version": "1.0.0",
+    "description": "Shell 别名可视化管理工具",
+    "homepage": "https://github.com/Gary-zy/AliasGUl",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Gary-zy/AliasGUl/releases/download/v1.0.0/AliasGUI.Setup.1.0.0.exe#/dl.7z",
+            "hash": "7ab5bc5bf426e003ac398b5daa69d73108b35e6b77536a62bba35d93c130b9ee"
+        }
+    },
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
+        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Force -Recurse -ErrorAction SilentlyContinue"
+    ],
+    "bin": "AliasGUI.exe",
+    "shortcuts": [
+        [
+            "AliasGUI.exe",
+            "AliasGUI"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'AliasGUI'",
+        "$target = Join-Path $persist_dir 'appdata'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host '检测到已存在的联接点，跳过创建'",
+        "        return",
+        "    }",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    Move-Item -LiteralPath $source -Destination $backup -Force",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "persist": "appdata",
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Gary-zy/AliasGUl/releases/download/v$version/AliasGUI.Setup.$version.exe#/dl.7z"
+            }
+        }
+    }
+}

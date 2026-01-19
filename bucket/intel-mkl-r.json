@@ -1,0 +1,92 @@
+{
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+    "version": "2025.3.0.453",
+    "description": "Intel oneAPI Math Kernel Library (MKL) runtime redistributables",
+    "homepage": "https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.intel.com/content/www/us/en/developer/articles/license/end-user-license-agreement.html"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://www.nuget.org/api/v2/package/intelmkl.redist.win-x64/2025.3.0.453#/intelmkl.redist.win-x64.2025.3.0.453.nupkg",
+            "hash": "a8da1d8e71f7f8eeec5eb9dccae035cf948b925ef469be4da07b76e2c0306275"
+        }
+    },
+    "extract_dir": "runtimes/win-x64/native",
+    "post_install": [
+        "$r_bin = \"$env:SCOOP\\global\\apps\\r\\current\\bin\\x64\"",
+        "if (!(Test-Path $r_bin)) { throw \"R not found at $r_bin\" }",
+        "",
+        "$backup_dir = \"$dir\\r_backup\"",
+        "New-Item -ItemType Directory -Path $backup_dir -Force | Out-Null",
+        "",
+        "# Backup original R BLAS/LAPACK",
+        "foreach ($dll in @('Rblas.dll', 'Rlapack.dll')) {",
+        "    $src = \"$r_bin\\$dll\"",
+        "    if (Test-Path $src) {",
+        "        Copy-Item $src \"$backup_dir\\$dll\" -Force",
+        "        Write-Host \"Backed up $dll\"",
+        "    }",
+        "}",
+        "",
+        "# Copy MKL DLLs to R",
+        "Get-ChildItem \"$dir\\*.dll\" | ForEach-Object {",
+        "    Copy-Item $_.FullName $r_bin -Force",
+        "    Write-Host \"Copied $($_.Name)\"",
+        "}",
+        "",
+        "# Replace Rblas.dll with mkl_rt.2.dll",
+        "Copy-Item \"$dir\\mkl_rt.2.dll\" \"$r_bin\\Rblas.dll\" -Force",
+        "Write-Host \"Replaced Rblas.dll with mkl_rt.2.dll\"",
+        "",
+        "Write-Host \"`nIntel MKL installed for R. Backups saved to: $backup_dir\""
+    ],
+    "pre_uninstall": [
+        "$r_bin = \"$env:SCOOP\\global\\apps\\r\\current\\bin\\x64\"",
+        "$backup_dir = \"$dir\\r_backup\"",
+        "",
+        "# Remove MKL DLLs from R",
+        "$mkl_dlls = @('libimalloc.dll', 'mkl_avx2.2.dll', 'mkl_avx512.2.dll', 'mkl_core.2.dll',",
+        "              'mkl_def.2.dll', 'mkl_intel_thread.2.dll', 'mkl_mc3.2.dll', 'mkl_rt.2.dll',",
+        "              'mkl_sequential.2.dll', 'mkl_tbb_thread.2.dll', 'mkl_vml_avx2.2.dll',",
+        "              'mkl_vml_avx512.2.dll', 'mkl_vml_cmpt.2.dll', 'mkl_vml_def.2.dll', 'mkl_vml_mc3.2.dll')",
+        "",
+        "foreach ($dll in $mkl_dlls) {",
+        "    $path = \"$r_bin\\$dll\"",
+        "    if (Test-Path $path) {",
+        "        Remove-Item $path -Force",
+        "        Write-Host \"Removed $dll\"",
+        "    }",
+        "}",
+        "",
+        "# Restore original R BLAS/LAPACK",
+        "if (Test-Path $backup_dir) {",
+        "    foreach ($dll in @('Rblas.dll', 'Rlapack.dll')) {",
+        "        $bak = \"$backup_dir\\$dll\"",
+        "        if (Test-Path $bak) {",
+        "            Copy-Item $bak \"$r_bin\\$dll\" -Force",
+        "            Write-Host \"Restored $dll\"",
+        "        }",
+        "    }",
+        "}",
+        "",
+        "Write-Host \"`nOriginal R BLAS/LAPACK restored.\""
+    ],
+    "notes": [
+        "MKL has been installed to R at: $env:SCOOP\\global\\apps\\r\\current\\bin\\x64",
+        "Original Rblas.dll and Rlapack.dll backed up to: $dir\\r_backup",
+        "Uninstalling this package will restore the original R libraries."
+    ],
+    "checkver": {
+        "url": "https://www.nuget.org/packages/intelmkl.redist.win-x64",
+        "regex": "intelmkl\\.redist\\.win-x64\\s+([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://www.nuget.org/api/v2/package/intelmkl.redist.win-x64/$version#/intelmkl.redist.win-x64.$version.nupkg"
+            }
+        }
+    }
+}
