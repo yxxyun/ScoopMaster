@@ -1,0 +1,92 @@
+{
+    "version": "2025.9.7",
+    "description": "Meituan CatPaw 是美团推出的 AI IDE，通过 Agent 驱动编程体验革新，让开发者专注于创意实现，提升项目交付效率。",
+    "homepage": "https://catpaw.meituan.com/",
+    "license": "Proprietary",
+    "notes": [
+        "For github integration, run:",
+        "'reg import \"$dir\\install-github-integration.reg\"'"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://s3plus.meituan.net/catpaw-external-resources/ide/win32-x64/stable/2025.9.7/17660381430845779341_CatPawSetup.exe",
+            "extract_dir": "{code_GetDestDir}"
+        }
+    },
+    "innosetup": true,
+    "pre_install": [
+        "# 处理用户配置目录",
+        "$config_dirs = @(",
+        "    '.catpawai'",
+        ")",
+        "foreach ($config_dir in $config_dirs) {",
+        "    $target_dir = Join-Path $env:USERPROFILE $config_dir",
+        "    $link_dir = Join-Path $persist_dir $config_dir",
+        "    & \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $target_dir $link_dir",
+        "}",
+        "",
+        "$appdata_dir = Join-Path $env:APPDATA \"CatPawAI\"",
+        "$persist_data_dir = Join-Path $persist_dir data",
+        "& \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $appdata_dir $persist_data_dir"
+    ],
+    "post_install": [
+        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
+        "$exepath = \"$dir\\CatPawAI.exe\".Replace('\\', '\\\\')",
+        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context', 'install-github-integration', 'uninstall-github-integration' | ForEach-Object {",
+        "  if (Test-Path \"$bucketsdir\\$bucket\\scripts\\CatPawAI\\$_.reg\") {",
+        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\CatPawAI\\$_.reg\"",
+        "    $content = $content.Replace('$buddydir', $dirpath)",
+        "    $content = $content.Replace('$buddy', $exepath)",
+        "    if ($global) {",
+        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
+        "  }",
+        "}",
+        "# 自动导入注册表（可选）",
+        "reg import \"$dir\\install-context.reg\"",
+        "reg import \"$dir\\install-associations.reg\""
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall')",
+            "{",
+            "   reg import \"$dir\\uninstall-context.reg\" ",
+            "   reg import \"$dir\\uninstall-github-integration.reg\" ",
+            "}"
+        ]
+    },
+    "bin": [
+        [
+            "bin/catpawai.cmd",
+            "catpawai"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "CatPawAI.exe",
+            "CatPawAI"
+        ]
+    ],
+    "persist": [
+        "data",
+        ".catpawai"
+    ],
+    "checkver": {
+        "url": "https://copilot.tencent.com/v2/update?platform=ide-win32-x64-user",
+        "jsonpath": "$.url",
+        "regex": "://(?<link>.*)-user-(?<version>\\d+\\.\\d+\\.\\d+)\\.(?<build>.+)\\.exe"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://$matchLink-user-$version.$matchBuild.exe",
+                "hash": {
+                    "url": "https://copilot.tencent.com/v2/update?platform=ide-win32-x64-user",
+                    "jsonpath": "$.sha256hash",
+                    "type": "sha256"
+                }
+            }
+        }
+    }
+}
