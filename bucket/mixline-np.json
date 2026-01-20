@@ -1,0 +1,49 @@
+{
+   "$schema": "https://raw.githubusercontent.com/lukesampson/scoop/master/schema.json",
+   "version": "1.1.64.9364",
+   "description": "This is an audio mixing software that makes the process of audio routing, mixing, and streaming easier and less painful.",
+   "homepage": "https://www.logitechg.com/software/mixline",
+   "license": "Proprietary",
+   "url": "https://updates-mixline.logitech.io/builds/1.1.64.9364.f609329143f60caf22886ef5c0898abc/MIXLINE-1.1.64.9364.msi#/dl.msi_",
+   "hash": "md5:d5b33f96eed08b2c1f661ac8138eb54b",
+   "installer": {
+      "script": [
+         "if (-not (is_admin)) { abort 'This package requires admin privileges to install' }",
+         "Expand-MsiArchive -Path \"$dir\\dl.msi_\" -DestinationPath \"$dir\" -ExtractDir 'LocalAppDataFolder/Logi/MIXLINE'",
+         "New-Item -Type Directory -Path \"$env:LocalAppData\\Logi\\MIXLINE\" -ErrorAction SilentlyContinue | Out-Null",
+         "New-DirectoryJunction \"$env:LocalAppData\\Logi\\MIXLINE\\DriverInstaller\" \"$dir\\DriverInstaller\" | Out-Null",
+         ". \"$env:LocalAppData\\Logi\\MIXLINE\\DriverInstaller\\MIXLINE.DriverInstaller.Helper.exe\"",
+         "Invoke-ExternalCommand msiexec -ArgumentList @(",
+         "    '/i',",
+         "    \"$dir\\dl.msi_\",",
+         "    '/qn',",
+         "    '/norestart'",
+         ") -RunAs > $null"
+      ]
+   },
+   "uninstaller": {
+      "script": [
+         "if (-not (is_admin)) { abort 'This package requires admin privileges to uninstall' }",
+         ". \"$env:LocalAppData\\Logi\\MIXLINE\\DriverInstaller\\MIXLINE.DriverUnInstaller.Helper.exe\"",
+         "Invoke-ExternalCommand msiexec -ArgumentList @(",
+         "    '/x',",
+         "    \"$dir\\dl.msi_\",",
+         "    '/qn',",
+         "    '/norestart'",
+         ") -RunAs > $null"
+      ]
+   },
+   "checkver": {
+      "url": "https://updates-mixline.logitech.io/appgate/beta/channels/prod/updater.json",
+      "jsonpath": "$.msi",
+      "regex": "(?<path>^.+/MIXLINE-(?<version>[\\.\\d]+?)\\.msi$)"
+   },
+   "autoupdate": {
+      "url": "https://updates-mixline.logitech.io$matchPath#/dl.msi_",
+      "hash": {
+         "url": "https://updates-mixline.logitech.io/appgate/beta/channels/prod/updater.json",
+         "jsonpath": "$.msiMd5",
+         "type": "md5"
+      }
+   }
+}
