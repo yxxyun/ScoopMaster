@@ -1,0 +1,65 @@
+{
+    "version": "1.4.1",
+    "description": "ClipShare - A cross-platform clipboard sharing tool with cloud sync support",
+    "homepage": "https://github.com/aa2013/ClipShare",
+    "license": "GPL-3.0-only",
+    "notes": [
+        "ClipShare 是一个跨平台的剪贴板共享工具",
+        "用户数据目录：%USERPROFILE%\\Documents\\ClipShare\\",
+        "本包会将该目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist"
+    ],
+    "url": "https://github.com/aa2013/ClipShare/releases/download/v1.4.1/clipshare-1.4.1%2B23-windows-setup.zip#/dl.7z",
+    "hash": "adf503f517f1a679cb4fc4716657cadab80e2ffd80efffcbeefe67a989773b68",
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
+        "Remove-Item \"$dir\\`$*\" -Force -Recurse -ErrorAction SilentlyContinue"
+    ],
+    "bin": "ClipShare.exe",
+    "shortcuts": [
+        [
+            "ClipShare.exe",
+            "ClipShare"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'ClipShare'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"配置路径已存在且不是目录：$source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"迁移失败，保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原配置目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原目录：$source\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "persist": "data",
+    "checkver": {
+        "github": "https://github.com/aa2013/ClipShare",
+        "regex": "v([\\d.]+)\\+([\\d]+)"
+    },
+    "autoupdate": {
+        "url": "https://github.com/aa2013/ClipShare/releases/download/v$version/clipshare-$version%2B$match2-windows-setup.zip#/dl.7z"
+    }
+}
