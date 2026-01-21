@@ -5,7 +5,7 @@
     "license": "MIT",
     "notes": [
         "Also installs the AutoHotkey library that binds to the DLL and a CLI helper utility",
-        "❗ BUT to actually use it you'd either need to move ahk/dll to your AutoHotkey ‘lib’ folder or change the path to the DLL in the ahk file",
+        "❗ the .dll is copied to the scoop/shims folder, so should be available for import in AutoHotkey direclty without specifying path, but you could change the path to the DLL in the ahk file",
     ],
     "architecture": {
         "64bit": {
@@ -19,6 +19,11 @@
                 "1b91f3d12119f068d104e6149cdd0a85309fde2ec6ca1312de62e9ecc96dd216",
                 "0c939af1cd0463434b03914fc68ca20f2694ee3212345da80a81b6ac705a7b82",
             ],
+            "post_install": [
+                "# copy .dll to a PATH'ed shims dir so that AHK can load it without referencing scoop path",
+                "Write-Host \"Copying ‘mptrsz.dll’ to $(friendly_path \"$(shimdir)\")\"",
+                "Copy-Item \"$dir\\mptrsz.dll\" \"$scoopdir\\shims\"",
+            ],
         },
         "arm64": {
             "url": [
@@ -31,8 +36,17 @@
                 "4b546819b18163edaccd14fedd7fba55f911765c07323f89e0c8083ee6a4f19b",
                 "0c939af1cd0463434b03914fc68ca20f2694ee3212345da80a81b6ac705a7b82",
             ],
+            "post_install": [
+                "Write-Host \"Copying ‘mptrsz-arm64.dll’ as ‘mptrsz.dll’ to $(friendly_path \"$(shimdir)\")\"",
+                "Copy-Item \"$dir\\mptrsz-arm64.dll\" \"$scoopdir\\shims\\mptrsz.dll\"",
+            ],
         }
     },
+    "post_uninstall": [
+        "# Remove copied .dll",
+        "Write-Host \"Removing mptrsz.dll from $(friendly_path \"$(shimdir)\")\"",
+        "Remove-Item \"$(shimdir)\\mptrsz.dll\" -Force -ErrorAction SilentlyContinue"
+    ],
     "bin": [
         [
             "mptrsz.exe",
