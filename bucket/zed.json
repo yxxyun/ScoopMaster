@@ -1,16 +1,12 @@
 {
-    "version": "0.219.5",
+    "version": "0.220.2",
     "description": "Zed is a high-performance, multiplayer code editor from the creators of Atom and Tree-sitter. It's also open source.",
     "homepage": "https://zed.dev/",
     "license": "AGPL-3.0, Apache-2.0, GPL-3.0",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/zed-industries/zed/releases/download/v0.219.5/Zed-x86_64.exe",
-            "hash": "edd67beecc19fcb7bc2fb1dfcc3f58c42f6c515e694f514756dc9cb3c65cdc7e"
-        },
-        "arm64": {
-            "url": "https://github.com/zed-industries/zed/releases/download/v0.219.5/Zed-aarch64.exe",
-            "hash": "eb17631ba90dd5847d0511f3f967ce7c1e049bcb2daeca3747c200a54ee2c706"
+            "url": "https://github.com/zed-industries/zed/releases/download/v0.220.2/Zed-x86_64.exe",
+            "hash": "9cd831d02bc0d20de1a9d2a37b3616d159c36da6bbb6f45c85afd6c233b611c8"
         }
     },
     "installer": {
@@ -19,11 +15,26 @@
             "Expand-InnoArchive -Path \"$dir\\$fname\" -ExtractDir '{code_GetInstallDir}' -Removal"
         ]
     },
-    "bin": "bin\\zed.exe",
+    "bin": [
+        "bin\\zed",
+        "bin\\zed.exe"
+    ],
+    "persist": "data",
+    "post_install": [
+        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:LocalAppData\\Zed\")) {",
+        "    info '[Portable Mode] Copying user data...'",
+        "    Copy-Item \"$env:LocalAppData\\Zed\\*\" \"$dir\\data\" -Recurse",
+        "}",
+        "if (!(Test-Path \"$dir\\data\\config\") -and (Test-Path \"$env:AppData\\Zed\")) {",
+        "    info '[Portable Mode] Copying config...'",
+        "    Copy-Item \"$env:AppData\\Zed\" \"$dir\\data\\config\" -Recurse",
+        "}"
+    ],
     "shortcuts": [
         [
             "zed.exe",
-            "Zed"
+            "Zed",
+            "--user-data-dir=\"$dir\\data\""
         ]
     ],
     "checkver": {
@@ -33,9 +44,6 @@
         "architecture": {
             "64bit": {
                 "url": "https://github.com/zed-industries/zed/releases/download/v$version/Zed-x86_64.exe"
-            },
-            "arm64": {
-                "url": "https://github.com/zed-industries/zed/releases/download/v$version/Zed-aarch64.exe"
             }
         }
     }
