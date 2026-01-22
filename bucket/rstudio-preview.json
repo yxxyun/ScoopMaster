@@ -1,20 +1,31 @@
 {
-    "version": "2026.01.0+392",
-    "homepage": "https://www.rstudio.com/",
-    "description": "An IDE for R, which includes a console, syntax-highlighting editor that supports direct code execution, as well as tools for plotting, history, debugging and workspace management.",
+    "version": "2026.01.0-392",
+    "description": "An IDE for R with console, syntax-highlighting, editor that supports direct code execution, as well as tools for plotting, history, debugging and workspace management.",
+    "homepage": "https://www.rstudio.com",
     "license": "AGPL-3.0-only",
+    "notes": "For 32bit, please install 'versions/rstudio11",
+    "depends": "r",
     "architecture": {
         "64bit": {
-            "url": "https://s3.amazonaws.com/rstudio-ide-build/electron/windows/RStudio-2026.01.0-392.zip",
-            "hash": "b1ff9631e5bc4f08a1caf1b82b72e3a3da2ed7a0c5d2f04576760420feb36e65"
+            "url": "https://s3.amazonaws.com/rstudio-ide-build/electron/windows/RStudio-2026.01.0-392.exe#/dl.7z",
+            "hash": "525403c0c773cb4562a9e614f96298a2afc31c1ca5a12f8b9534e26f8658852e",
+            "post_install": [
+                "Remove-Item \"$dir\\`$*\" -Recurse",
+                "if (!(Test-Path \"$env:Appdata\\RStudio\")) {",
+                "    New-Item \"$env:Appdata\\RStudio\" -ItemType Directory -Force | Out-Null",
+                "}",
+                "$conf = \"$env:Appdata\\RStudio\\desktop.ini\"",
+                "$rpath = \"$(appdir r $global)\\current\\bin\\x64\".Replace('\\', '/')",
+                "if (!(Test-Path $conf)) {",
+                "    @(",
+                "        '[General]'",
+                "        \"RBinDir=$rpath\"",
+                "    ) | Add-Content -Path $conf -Encoding UTF8 -Force",
+                "}"
+            ]
         }
     },
-    "bin": [
-        [
-            "rstudio.exe",
-            "rstudio-preview"
-        ]
-    ],
+    "bin": "rstudio.exe",
     "shortcuts": [
         [
             "rstudio.exe",
@@ -22,19 +33,17 @@
         ]
     ],
     "checkver": {
-        "url": "https://posit.co/wp-content/uploads/downloads.json",
-        "jsonpath": ".rstudio['open_source'].preview.desktop.archive.windows.version",
-        "regex": "(?<date>[\\d.]+)(?<type>-preview)?\\+(?<build>\\d+)",
-        "replace": "${date}+${build}${type}"
+        "url": "https://www.rstudio.com/wp-content/downloads.json",
+        "jsonpath": "$.rstudio.open_source.preview.desktop.installer.windows.basename",
+        "regex": "RStudio-([\\d.-]+).exe"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://s3.amazonaws.com/rstudio-ide-build/electron/windows/RStudio-$matchDate$matchType-$matchBuild.zip",
+                "url": "https://s3.amazonaws.com/rstudio-ide-build/electron/windows/RStudio-$version.exe#/dl.7z",
                 "hash": {
-                    "mode": "json",
-                    "jsonpath": ".rstudio['open_source'].preview.desktop.archive.windows.sha256",
-                    "url": "https://posit.co/wp-content/uploads/downloads.json"
+                    "url": "https://www.rstudio.com/wp-content/downloads.json",
+                    "jsonpath": "$.rstudio.open_source.preview.desktop.installer.windows.sha256"
                 }
             }
         }
