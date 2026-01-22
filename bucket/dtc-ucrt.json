@@ -1,0 +1,67 @@
+{
+    "version": "1.7.2-1",
+    "description": "Device Tree Compiler and YAML library for Windows (mignw-ucrt)",
+    "homepage": "https://packages.msys2.org/package/mingw-w64-ucrt-x86_64-dtc",
+    "license": "GPL-2.0-or-later",
+    "architecture": {
+        "64bit": {
+            "url": [
+                "https://mirror.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-dtc-1.7.2-1-any.pkg.tar.zst",
+                "https://mirror.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-libyaml-0.2.5-2-any.pkg.tar.zst"
+            ],
+            "hash": [
+                "f1d8e41b39609e9e028059d6951b66ffda0713465582eadff1c8c449ec55d805",
+                "bf4c28a3a92a46db3c809b0789aef731ae9a0c4283db368c7e8624550fed07f3"
+            ]
+        }
+    },
+    "pre_install": [
+        "movedir \"$dir\\ucrt64\" \"$dir\" | Out-Null",
+        "$keep_dirs = @(\"$dir\\bin\",",
+        "                \"$dir\\share\")",
+        "",
+        "Get-ChildItem \"$dir\" -Dir                                    |",
+        "    Select-Object -ExpandProperty FullName                     |",
+        "    Sort-Object Length -Descending                             |",
+        "    Where-Object {$_ -notin $keep_dirs }                       |",
+        "    ForEach-Object { if ((Test-Path $_ -Type Container) -and (Get-ChildItem $_)) {  Remove-Item $_ -Recurse -Force } }"
+    ],
+    "bin": "bin\\dtc.exe",
+    "checkver": {
+        "script": [
+            "$base_url = 'https://packages.msys2.org/package/'",
+            "$version_regex = \"Version:.+\\s+<.+>([\\d.-]+)\"",
+            "",
+            "$dtc_page = (Invoke-WebRequest \"${base_url}mingw-w64-ucrt-x86_64-dtc\" -UseBasicParsing).Content",
+            "$libyaml_page = (Invoke-WebRequest \"${base_url}mingw-w64-ucrt-x86_64-libyaml\" -UseBasicParsing).Content",
+            "",
+            "if(!($dtc_page -match $version_regex)) { error \"No match found for version\"; continue }",
+            "$scriptver = $matches[1]",
+            "if(!($libyaml_page -match $version_regex)) { error \"No match found for version\"; continue }",
+            "$libyaml_version = $matches[1]",
+            "",
+            "Write-Output $scriptver $libyaml_version"
+        ],
+        "regex": "(?<version>[\\d.-]+)\\s(?<libyamlversion>[\\d.-]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": [
+                    "https://mirror.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-dtc-$matchVersion-any.pkg.tar.zst",
+                    "https://mirror.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-libyaml-$matchLibyamlversion-any.pkg.tar.zst"
+                ],
+                "hash": [
+                    {
+                        "url": "https://packages.msys2.org/package/mingw-w64-ucrt-x86_64-dtc",
+                        "regex": "SHA256:.+\\s+<.+>$sha256"
+                    },
+                    {
+                        "url": "https://packages.msys2.org/package/mingw-w64-ucrt-x86_64-libyaml",
+                        "regex": "SHA256:.+\\s+<.+>$sha256"
+                    }
+                ]
+            }
+        }
+    }
+}
