@@ -1,5 +1,5 @@
 {
-    "version": "146.0.7650.0",
+    "version": "146.0.7651.0",
     "description": "Fast, secure, and free web browser, built for the modern web.",
     "homepage": "https://www.google.com/chrome/canary",
     "license": {
@@ -8,56 +8,75 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://dl.google.com/release2/chrome/g2njr5df2xwt45fov3zem6j7rq_146.0.7650.0/146.0.7650.0_chrome_installer.exe#/dl.7z",
-            "hash": "9fab63ca54fc9f5740ed55d13d09e297fe342e5dd10d64da1fa7df51a660c7a1"
+            "url": "https://dl.google.com/release2/chrome/acuytrmarpqfc3ebmrwj5c42jb4a_146.0.7651.0/146.0.7651.0_chrome_installer_uncompressed.exe#/dl.7z",
+            "hash": "8dc535ce7c4d32f32888fed45e2609682630eab6927206214fc2138dcac4c14d"
         },
         "32bit": {
-            "url": "https://dl.google.com/release2/chrome/ksm7uhhy7ueduigykh4u75ogwa_146.0.7650.0/146.0.7650.0_chrome_installer.exe#/dl.7z",
-            "hash": "9266be65d47ef65e8b86d2ec336cb84dc6e2367a110b9aa51b6dfd7878e95d2f"
+            "url": "https://dl.google.com/release2/chrome/acyu2tdb2wkkotdpwhv34tydndkq_146.0.7651.0/146.0.7651.0_chrome_installer_uncompressed.exe#/dl.7z",
+            "hash": "952f95e9e5af74217cf9840ff52e5893c98291e307e461a5b7df41b8ded639f6"
+        },
+        "arm64": {
+            "url": "https://dl.google.com/release2/chrome/itoqp3ibo3egj6ofrvwcp6qkkm_146.0.7651.0/146.0.7651.0_chrome_installer_uncompressed.exe#/dl.7z",
+            "hash": "aad51d925033c648c128c32e3b4eae457b124526993a5f57f116117ef5fa62ba"
         }
     },
-    "installer": {
-        "script": "Expand-7zipArchive \"$dir\\chrome.7z\" -ExtractDir 'Chrome-bin' -Removal"
-    },
+    "extract_dir": "Chrome-bin",
     "bin": [
         [
             "chrome.exe",
-            "chrome-canary",
-            "--user-data-dir=\"$dir\\User Data\""
-        ],
-        [
-            "chrome.exe",
-            "google-chrome-canary",
-            "--user-data-dir=\"$dir\\User Data\""
+            "chrome-canary"
         ]
     ],
     "shortcuts": [
         [
             "chrome.exe",
-            "Google Chrome (Canary)",
-            "--user-data-dir=\"$dir\\User Data\""
+            "Google Chrome (Canary)"
         ]
     ],
-    "persist": "User Data",
     "checkver": {
-        "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
-        "regex": "(?sm)<canary32><version>(?<ver32>[\\d.]+)</version>.+release2/chrome/(?<32>[\\w-]+)_.+<canary64><version>(?<version>[\\d.]+)</version>.+release2/chrome/(?<64>[\\w-]+)_.+</canary64>"
+        "script": [
+            "$AppID = '{4EA16AC7-FD5A-47C3-875B-DBF4A2008C20}'",
+            "$ArchParams  = @{",
+            "    'x64'   ='x64-statsdef_1'",
+            "    'x86'   ='x86-canary'",
+            "    'arm64' ='arm64-canary'",
+            "}",
+            "$BodyTemplate = @(",
+            "    '<?xml version=\"1.0\" encoding=\"UTF-8\"?>',",
+            "    '<request protocol=\"3.0\">',",
+            "    '  <os platform=\"win\" version=\"10.0.22000.0\" arch=\"{0}\"/>',",
+            "    '  <app appid=\"{1}\" ap=\"{2}\" version=\"\">',",
+            "    '    <updatecheck/>',",
+            "    '  </app>',",
+            "    '</request>'",
+            ") -join \"`n\"",
+            "$ArchURLs = @{}",
+            "$Version = $null",
+            "forEach ($Arch in $ArchParams.Keys) {",
+            "    $Body = $BodyTemplate -f $Arch, $AppID, $ArchParams[$Arch]",
+            "    $Response = Invoke-RestMethod -Uri 'https://update.googleapis.com/service/update2' -Method Post -Body $Body",
+            "    if ($Arch -eq 'x64') {",
+            "        $Version = $Response.response.app.updatecheck.manifest.version",
+            "    }",
+            "    $BaseURL = $Response.SelectSingleNode(\"//url[starts-with(@codebase, 'https://dl.google.com/release2/chrome/')]\")",
+            "    $BaseURL.GetAttribute('codebase') -match '^https://dl\\.google\\.com/release2/chrome/(?<URL>[^/]+)/'",
+            "    $FileName = $Response.SelectSingleNode('//package').GetAttribute('name')",
+            "    $ArchURLs[$Arch] = \"$($Matches['URL'])/$FileName\"",
+            "}",
+            "Write-Output \"$Version,$($ArchURLs['x64']),$($ArchURLs['x86']),$($ArchURLs['arm64'])\""
+        ],
+        "regex": "(?<version>[\\d.]+),(?<archx64>[^,]+),(?<archx86>[^,]+),(?<archarm64>[^,]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://dl.google.com/release2/chrome/$match64_$version/$version_chrome_installer.exe#/dl.7z",
-                "hash": {
-                    "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
-                    "xpath": "/chromechecker/canary64[version='$version']/sha256"
-                }
+                "url": "https://dl.google.com/release2/chrome/$matchArchx64#/dl.7z"
             },
             "32bit": {
-                "url": "https://dl.google.com/release2/chrome/$match32_$matchVer32/$matchVer32_chrome_installer.exe#/dl.7z",
-                "hash": {
-                    "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
-                    "xpath": "/chromechecker/canary32[version='$matchVer32']/sha256"
-                }
+                "url": "https://dl.google.com/release2/chrome/$matchArchx86#/dl.7z"
+            },
+            "arm64": {
+                "url": "https://dl.google.com/release2/chrome/$matchArcharm64#/dl.7z"
             }
         }
     }
