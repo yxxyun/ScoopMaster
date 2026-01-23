@@ -1,44 +1,21 @@
 {
     "version": "3.2.2",
-    "description": "PicList - 高效的云存储和图床平台管理工具，基于 PicGo 深度二次开发",
-    "homepage": "https://piclist.cn",
+    "description": "PicList is an efficient cloud storage and image hosting platform management tool. An image upload and manage tool, base on PicGo.",
+    "homepage": "https://piclist.cn/",
     "license": "MIT",
-    "notes": [
-        "PicList 数据文件位置: %APPDATA%\\piclist",
-        "插件目录: %APPDATA%\\piclist\\node_modules"
-    ],
     "architecture": {
         "64bit": {
             "url": "https://github.com/Kuingsmile/PicList/releases/download/v3.2.2/PicList-Setup-3.2.2-x64.exe#/dl.7z",
-            "hash": "5048743289b3f718ad896a152ec03bba228eb86e2a08c09d98c011bcd36c940f"
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+            "hash": "sha512:a12e5ffe77d991bf52184ac552e5e5e4ec5e5bccb7c99c6cd402e6e5e4281859c8bb306cdbcfffede13eee480938de23ca736b3a45e231f354191b5cdaa1f372"
         },
         "32bit": {
-            "url": "https://github.com/Kuingsmile/PicList/releases/download/v3.2.2/PicList-Setup-3.2.2.exe#/dl.7z",
-            "hash": "3877fc8d0c2b42da15754e00afc2108acaef1598b94cb5810c846859382f92cc"
+            "url": "https://github.com/Kuingsmile/PicList/releases/download/v3.2.2/PicList-Setup-3.2.2-ia32.exe#/dl.7z",
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-32.7z\" \"$dir\"",
+            "hash": "sha512:575f6a66551842c9fe4460725184a869ecaacb384daa637fa8a680dd2cea3a74238c68d9205577e8f67fdf355409f88dceefee5ac004e936980fd264c7bcc251"
         }
     },
-    "pre_install": [
-        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
-        "Remove-Item \"$dir\\`$*\" -Force -Recurse -ErrorAction SilentlyContinue"
-    ],
-    "post_install": [
-        "$source = Join-Path $env:APPDATA 'piclist'",
-        "$target = Join-Path $persist_dir 'data'",
-        "ensure $target",
-        "",
-        "if (Test-Path $source) {",
-        "    $item = Get-Item -LiteralPath $source -Force",
-        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
-        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
-        "        return",
-        "    }",
-        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
-        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
-        "    Move-Item -LiteralPath $source -Destination $backup -Force",
-        "}",
-        "",
-        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
-    ],
+    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\", \"$dir\\resources\\app-update.yml\"  -Force -Recurse",
     "bin": "PicList.exe",
     "shortcuts": [
         [
@@ -46,10 +23,11 @@
             "PicList"
         ]
     ],
-    "persist": "data",
+    "##": "\"regex\":\"/PicGo-Setup-([\\d.]+)-(x64|ia32)\\.exe\"",
     "checkver": {
         "github": "https://github.com/Kuingsmile/PicList"
     },
+    "notes": "PicList is NOT portable.",
     "autoupdate": {
         "architecture": {
             "64bit": {
@@ -58,6 +36,10 @@
             "32bit": {
                 "url": "https://github.com/Kuingsmile/PicList/releases/download/v$version/PicList-Setup-$version-ia32.exe#/dl.7z"
             }
+        },
+        "hash": {
+            "url": "$baseurl/latest.yml",
+            "regex": "$basename\\s+sha512:\\s$base64"
         }
     }
 }
