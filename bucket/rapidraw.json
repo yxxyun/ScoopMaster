@@ -1,12 +1,13 @@
 {
-    "version": "1.4.9",
-    "description": "A beautiful, non-destructive, and GPU-accelerated RAW image editor built with performance in mind.",
+    "##": "ltguillaume/schep",
+    "version": "1.4.10",
+    "description": "A beautiful, non-destructive, and GPU-accelerated RAW image editor built with performance in mind. Portable.",
     "homepage": "https://github.com/CyberTimon/RapidRAW",
     "license": "AGPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/CyberTimon/RapidRAW/releases/download/v1.4.9/01_RapidRAW_v1.4.9_windows_x64.exe#/dl.7z",
-            "hash": "0a286674d4b44a75c2597db0132dbc263a8998b5e73c8e8019c3d2ce033d78b5"
+            "url": "https://github.com/CyberTimon/RapidRAW/releases/download/v1.4.10/01_RapidRAW_v1.4.10_windows_x64.exe#/dl.7z",
+            "hash": "0b382f322a2c7182b6dec923ce45f8b24036f86d601b7a30fd378f660bb3e419"
         }
     },
     "shortcuts": [
@@ -15,11 +16,25 @@
             "RapidRAW"
         ]
     ],
-    "post_install": "Remove-Item \"$dir\\uninstall*\", \"$dir\\`$*\" -Force -Recurse",
-    "post_uninstall": "if ($purge) { Remove-Item \"$env:APPDATA\\com.rapidraw.app\", \"$env:LOCALAPPDATA\\com.rapidraw.app\" -Force -Recurse -ErrorAction SilentlyContinue }",
-    "notes": [
-        "RapidRAW is NOT portable.",
-        "Settings are stored in '%APPDATA%\\com.rapidraw.app', and will be purged during uninstallation."
+    "post_install": [
+        "'AppData', 'LocalAppData' | ForEach-Object {",
+        "    $data = [Environment]::GetEnvironmentVariable($_) +\"\\io.github.CyberTimon.RapidRAW\"",
+        "    if (-not (Test-Path \"$data\\*\")) {",
+        "        Remove-Item \"$data\" 2>$null",
+        "        if (-not (Test-Path \"$persist_dir\\$_\")) {",
+        "            New-Item -ItemType Directory -Path \"$persist_dir\\$_\" >$null",
+        "        }",
+        "        New-DirectoryJunction \"$data\" \"$persist_dir\\$_\" >$null",
+        "    }",
+        "}"
+    ],
+    "post_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    'AppData', 'LocalAppData' | ForEach-Object {",
+        "        $data = Get-Item ([Environment]::GetEnvironmentVariable($_) +\"\\io.github.CyberTimon.RapidRAW\")",
+        "        if (\"$($data.Target)\" -eq \"$persist_dir\\$_\") { $data.Delete() }",
+        "    }",
+        "}"
     ],
     "checkver": "github",
     "autoupdate": {
