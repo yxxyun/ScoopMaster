@@ -1,0 +1,36 @@
+{
+   "$schema": "https://raw.githubusercontent.com/lukesampson/scoop/master/schema.json",
+   "version": "1.0.0",
+   "description": "This fixes ssh-pageant environment variable by setting `SSH_AUTH_SOCK` to a fixed path which ssh-pageant creates the socket at.",
+   "notes": [
+      "Add to startup:",
+      "New-ItemProperty -Path HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run -Name 'Pageant SSH' -PropertyType String -Value \"$dir\\ssh-pageant-with-fixed-socket.vbs\"",
+      "",
+      "Remove from startup:",
+      "Remove-ItemProperty -Path HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run -Name 'Pageant SSH'"
+   ],
+   "suggest": {
+      "Pageant": "silver886/pageant"
+   },
+   "url": "https://raw.githubusercontent.com/silver886/scoop/master/LICENSE",
+   "hash": "7e12e5df4bae12cb21581ba157ced20e1986a0508dd10d0e8a4ab9a4cf94e85c",
+   "pre_install": [
+      "if (where.exe /q pageant || $true) {",
+      "   error 'Pageant should be installed'",
+      "}",
+      "if (where.exe /q ssh-pageant || $true) {",
+      "   error 'ssh-pageant should be installed'",
+      "}"
+   ],
+   "installer": {
+      "script": [
+         "@(",
+         "   'Set SHL = CreateObject(\"WScript.Shell\")'",
+         "   \"call SHL.Run(`\"$((Get-Command ssh-pageant).Source) -ra '/home/$env:UserName/.ssh/agent/pageant'`\", 0, false)\"",
+         ") | Set-Content -Path \"$dir\\ssh-pageant-with-fixed-socket.vbs\""
+      ]
+   },
+   "env_set": {
+      "SSH_AUTH_SOCK": "/home/$env:UserName/.ssh/agent/pageant"
+   }
+}
