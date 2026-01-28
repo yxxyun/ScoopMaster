@@ -1,31 +1,63 @@
 {
     "version": "7.60.8",
-    "description": "The Next-Gen Collaboration Suite",
     "homepage": "https://www.feishu.cn/",
+    "description": "Connect with teammates anytime and anywhere",
     "license": {
-        "identifier": "Proprietary",
-        "url": "https://www.feishu.cn/terms"
+        "identifier": "EULA",
+        "url": "https://www.feishu.cn/en/terms"
     },
-    "notes": "Runtime data are stored in '%APPDATA%\\LarkShell', and are not persisted by Scoop.",
-    "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/36d88e8c/Feishu-win32_ia32-7.60.8-signed.exe#/dl.7z",
-    "hash": "md5:d63560406a38b162c1bbdb4c16b650f3",
+    "architecture": {
+        "32bit": {
+            "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/36d88e8c/Feishu-win32_ia32-7.60.8-signed.exe#/dl.7z",
+            "hash": "md5:d63560406a38b162c1bbdb4c16b650f3"
+        },
+        "64bit": {
+            "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/05b74b85/Feishu-win32_x64-7.60.8-signed.exe#/dl.7z",
+            "hash": "md5:fbed393ea8840707f8c6d006dd2beaea"
+        }
+    },
     "extract_to": "app",
     "shortcuts": [
         [
             "app/Feishu.exe",
-            "Feishu"
+            "飞书"
         ]
     ],
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:APPDATA\\LarkShell\" \"$persist_dir\\AppData\" -Migrate"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\LarkShell\""
+    ],
     "checkver": {
-        "url": "https://www.feishu.cn/api/downloads",
-        "jsonpath": "$.versions.Windows.download_link",
-        "regex": "https://(?<path>[\\w.-/].*?)-(?<version>[\\d.]+)(?<suffix>[\\w.-].*?).exe"
+        "script": [
+            "$resp = Invoke-RestMethod 'https://www.feishu.cn/api/downloads'",
+            "return $resp.versions.Windows.version_number + '=====' + $resp.versions.Windows.download_link + '=====' + $resp.versions.Windows_x64.download_link"
+        ],
+        "regex": "Windows@V(.*)=====(?<url32>.*)=====(?<url64>.*)"
     },
     "autoupdate": {
-        "url": "https://$matchPath-$version$matchSuffix.exe#/dl.7z",
-        "hash": {
-            "url": "https://www.feishu.cn/api/downloads",
-            "jsonpath": "$.versions.Windows.hash"
+        "architecture": {
+            "32bit": {
+                "url": "$matchUrl32#/dl.7z",
+                "hash": {
+                    "url": "https://www.feishu.cn/api/downloads",
+                    "jsonpath": "$.versions.Windows.hash"
+                }
+            },
+            "64bit": {
+                "url": "$matchUrl64#/dl.7z",
+                "hash": {
+                    "url": "https://www.feishu.cn/api/downloads",
+                    "jsonpath": "$.versions.Windows_x64.hash"
+                }
+            }
         }
     }
 }
