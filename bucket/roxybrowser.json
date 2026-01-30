@@ -1,0 +1,76 @@
+{
+    "version": "3.7.0",
+    "description": "Antidetect Browser",
+    "homepage": "https://roxybrowser.com",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://roxybrowser.com/copyright/user"
+    },
+    "url": "https://dl.roxybrowser.com/app-download/Windows-64-latest?version=3.7.0#/dl.7z",
+    "hash": "91f06c41c37888ea037c3cd164b073b3862d798400dd3d34ae3aaf4d231acf72",
+    "pre_install": [
+        "Move-Item \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+        "Move-Item \"$dir\\`$R0\\Uninstall RoxyBrowser.exe\" \"$dir\"",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse -Force",
+        "Remove-Item \"$dir\\`$R0\" -Recurse -Force",
+        "Expand-7zipArchive \"$dir\\app-64.7z\" \"$dir\" -Removal"
+    ],
+    "installer": {
+        "script": [
+            "$appDir = \"$env:LOCALAPPDATA\\Programs\\RoxyBrowser\"",
+            "if (Test-Path \"$appDir\") {",
+            "  $f = (Get-Item -LiteralPath \"$appDir\")",
+            "  if ($f.LinkType -Eq \"Junction\") {",
+            "    $f.Delete()",
+            "  } else {",
+            "    Remove-Item \"$appDir\" -Recurse -Force",
+            "  }",
+            "}",
+            "# Junction does not require administrator privileges",
+            "New-Item -ItemType Junction -Path \"$appDir\" -Target \"$dir\" | Out-Null",
+            "$runtimeCache = \"$env:APPDATA\\RoxyBrowser\"",
+            "$runtimeCachePersist = \"$persist_dir\\Cache\"",
+            "if (Test-Path \"$runtimeCachePersist\") {",
+            "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+            "    New-Item -Type Junction -Path \"$runtimeCache\" -Target \"$runtimeCachePersist\" | Out-Null",
+            "} else {",
+            "    if (Test-Path \"$runtimeCache\") {",
+            "        Move-Item \"$runtimeCache\" \"$runtimeCachePersist\" -Force",
+            "        New-Item -Type Junction -Path \"$runtimeCache\" -Target \"$runtimeCachePersist\" | Out-Null",
+            "    }",
+            "}"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$appDir = \"$env:LOCALAPPDATA\\Programs\\RoxyBrowser\"",
+            "if (Test-Path \"$appDir\") {",
+            "  $f = (Get-Item -LiteralPath \"$appDir\")",
+            "  if ($f.LinkType -Eq \"Junction\") {",
+            "    $f.Delete()",
+            "  }",
+            "}",
+            "$runtimeCache = \"$env:APPDATA\\RoxyBrowser\"",
+            "$runtimeCachePersist = \"$persist_dir\\Cache\"",
+            "if (!(Test-Path \"$runtimeCachePersist\")) {",
+            "    ensure \"$persist_dir\"",
+            "    Move-Item \"$runtimeCache\" \"$runtimeCachePersist\" -Force -ErrorAction SilentlyContinue",
+            "} else {",
+            "    Remove-Item \"$runtimeCache\" -Force -Recurse -ErrorAction SilentlyContinue",
+            "}"
+        ]
+    },
+    "shortcuts": [
+        [
+            "RoxyBrowser.exe",
+            "RoxyBrowser"
+        ]
+    ],
+    "checkver": {
+        "url": "https://roxybrowser.com/app_statistics/get_official_website_version_data_config",
+        "jsonpath": "$.data.winVersion"
+    },
+    "autoupdate": {
+        "url": "https://dl.roxybrowser.com/app-download/Windows-64-latest?version=$version#/dl.7z"
+    }
+}
