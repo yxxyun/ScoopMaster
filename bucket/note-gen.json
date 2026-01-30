@@ -1,6 +1,6 @@
 {
     "version": "0.25.2",
-    "description": "A cross-platform Markdown note-taking application dedicated to using AI to bridge recording and writing, organizing fragmented knowledge into a readable note.",
+    "description": "(scoop bucket by arch3rPro)A cross-platform Markdown note-taking application dedicated to using AI to bridge recording and writing, organizing fragmented knowledge into a readable note.",
     "homepage": "https://notegen.top/",
     "license": {
         "identifier": "MIT license",
@@ -15,19 +15,33 @@
     },
     "installer": {
         "script": [
-            "# handle runtime cache",
-            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
-            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:LOCALAPPDATA\\com.codexu.NoteGen\"",
-            "Mount-ExternalRuntimeData -Source \"$persist_dir\\userdata\" -Target \"$env:APPDATA\\com.codexu.NoteGen\"",
-            "Remove-Module -Name AppsUtils"
+            "# Create persist subdirectories for app/local and user/roaming data",
+            "$persistRoot = $persist_dir",
+            "New-Item -ItemType Directory -Force -Path (Join-Path $persistRoot 'appdata') | Out-Null",
+            "New-Item -ItemType Directory -Force -Path (Join-Path $persistRoot 'userdata') | Out-Null",
+            "",
+            "# Targets used by NoteGen",
+            "$localTarget = Join-Path $env:LOCALAPPDATA 'com.codexu.NoteGen'",
+            "$roamingTarget = Join-Path $env:APPDATA 'com.codexu.NoteGen'",
+            "",
+            "# If NoteGen was previously launched and created real folders, remove them (consider backing up first)",
+            "if (Test-Path $localTarget -PathType Container) { Remove-Item $localTarget -Recurse -Force }",
+            "if (Test-Path $roamingTarget -PathType Container) { Remove-Item $roamingTarget -Recurse -Force }",
+            "",
+            "# Junctions to persist",
+            "$appPersist = Join-Path $persistRoot 'appdata'",
+            "$userPersist = Join-Path $persistRoot 'userdata'",
+            "New-Item -ItemType Junction -Path $localTarget -Target $appPersist | Out-Null",
+            "New-Item -ItemType Junction -Path $roamingTarget -Target $userPersist | Out-Null"
         ]
     },
     "uninstaller": {
         "script": [
-            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
-            "Dismount-ExternalRuntimeData -Target \"$env:LOCALAPPDATA\\com.codexu.NoteGen\"",
-            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\com.codexu.NoteGen\"",
-            "Remove-Module -Name AppsUtils"
+            "# Remove junctions created during install",
+            "$localTarget = Join-Path $env:LOCALAPPDATA 'com.codexu.NoteGen'",
+            "$roamingTarget = Join-Path $env:APPDATA 'com.codexu.NoteGen'",
+            "if (Test-Path $localTarget) { Remove-Item $localTarget -Force }",
+            "if (Test-Path $roamingTarget) { Remove-Item $roamingTarget -Force }"
         ]
     },
     "bin": [
