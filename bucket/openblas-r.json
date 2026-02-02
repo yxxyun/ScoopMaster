@@ -1,0 +1,80 @@
+{
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+    "version": "0.3.31",
+    "description": "OpenBLAS optimized BLAS/LAPACK library for R",
+    "homepage": "https://www.openblas.net/",
+    "license": "BSD-3-Clause",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.31/OpenBLAS-0.3.31-x64.zip",
+            "hash": "e7595359700e8bb5a15c41af1920850b1be37078eb22813201b3d4bc5bd9227e"
+        }
+    },
+    "extract_dir": "win64/bin",
+    "post_install": [
+        "$r_bin = \"$env:SCOOP_GLOBAL\\apps\\r\\current\\bin\\x64\"",
+        "if (!(Test-Path $r_bin)) { throw \"R not found at $r_bin\" }",
+        "",
+        "$backup_dir = \"$dir\\r_backup\"",
+        "New-Item -ItemType Directory -Path $backup_dir -Force | Out-Null",
+        "",
+        "# Backup original R BLAS/LAPACK",
+        "foreach ($dll in @('Rblas.dll', 'Rlapack.dll')) {",
+        "    $src = \"$r_bin\\$dll\"",
+        "    if (Test-Path $src) {",
+        "        Copy-Item $src \"$backup_dir\\$dll\" -Force",
+        "        Write-Host \"Backed up $dll\"",
+        "    }",
+        "}",
+        "",
+        "# Copy OpenBLAS DLL to R directory",
+        "Copy-Item \"$dir\\libopenblas.dll\" $r_bin -Force",
+        "Write-Host \"Copied libopenblas.dll\"",
+        "",
+        "# Replace Rblas.dll with libopenblas.dll",
+        "Copy-Item \"$dir\\libopenblas.dll\" \"$r_bin\\Rblas.dll\" -Force",
+        "Write-Host \"Replaced Rblas.dll with libopenblas.dll\"",
+        "",
+        "Write-Host \"`nOpenBLAS installed for R. Backups saved to: $backup_dir\""
+    ],
+    "pre_uninstall": [
+        "$r_bin = \"$env:SCOOP_GLOBAL\\apps\\r\\current\\bin\\x64\"",
+        "$backup_dir = \"$dir\\r_backup\"",
+        "",
+        "# Remove OpenBLAS DLL from R",
+        "$path = \"$r_bin\\libopenblas.dll\"",
+        "if (Test-Path $path) {",
+        "    Remove-Item $path -Force",
+        "    Write-Host \"Removed libopenblas.dll\"",
+        "}",
+        "",
+        "# Restore original R BLAS/LAPACK",
+        "if (Test-Path $backup_dir) {",
+        "    foreach ($dll in @('Rblas.dll', 'Rlapack.dll')) {",
+        "        $bak = \"$backup_dir\\$dll\"",
+        "        if (Test-Path $bak) {",
+        "            Copy-Item $bak \"$r_bin\\$dll\" -Force",
+        "            Write-Host \"Restored $dll\"",
+        "        }",
+        "    }",
+        "}",
+        "",
+        "Write-Host \"`nOriginal R BLAS/LAPACK restored.\""
+    ],
+    "notes": [
+        "OpenBLAS has been installed to R at: $env:SCOOP_GLOBAL\\apps\\r\\current\\bin\\x64",
+        "Original Rblas.dll and Rlapack.dll backed up to: $dir\\r_backup",
+        "Uninstalling this package will restore the original R libraries."
+    ],
+    "checkver": {
+        "github": "https://github.com/OpenMathLib/OpenBLAS"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/OpenMathLib/OpenBLAS/releases/download/v$version/OpenBLAS-$version-x64.zip"
+            }
+        },
+        "extract_dir": "win64/bin"
+    }
+}
