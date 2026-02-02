@@ -3,32 +3,23 @@
     "description": "An open source Minecraft launcher with the ability to manage multiple instances, accounts and mods. Focused on user freedom and free redistributability.",
     "homepage": "https://prismlauncher.org/",
     "license": "GPL-3.0-only",
-    "notes": [
-        "This manifest does NOT install in portable mode. Instance data will remain in %APPDATA%\\PrismLauncher.",
-        "This manifest uses the MinGW build of PrismLauncher, and does NOT require Visual C++ Redistributable to be installed",
-        "",
-        "Add Prism Launcher .mrpack file associations by running:",
-        "reg import \"$dir\\install-associations.reg\""
-    ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/PrismLauncher/PrismLauncher/releases/download/10.0.2/PrismLauncher-Windows-MinGW-w64-10.0.2.zip",
-            "hash": "06383bfcdb3fac9c4dbb455580ea8d279c8ca42969c5897508c92c94c42b1085"
+            "url": "https://github.com/PrismLauncher/PrismLauncher/releases/download/10.0.2/PrismLauncher-Windows-MSVC-Portable-10.0.2.zip",
+            "hash": "9e30e1fe0615184766d2a14b9d27b60c1c6c482b0fcc6174cb326a5fe276f2bf"
         }
     },
+    "suggest": {
+        "Microsoft Visual C++ Redistributables": "extras/vcredist2022"
+    },
     "pre_install": [
-        "# Delete auto-updater",
-        "if (Test-Path \"$dir\\prismlauncher_updater.exe\") { Remove-Item \"$dir\\prismlauncher_updater.exe\" -Force }"
-    ],
-    "post_install": [
-        "'install-associations', 'uninstall-associations' | ForEach-Object {",
-        "    if (Test-Path \"$bucketsdir\\jack-mil\\scripts\\prismlauncher\\$_.reg\") {",
-        "        $exePath = \"$dir\\prismlauncher.exe\".Replace('\\', '\\\\')",
-        "        $content = (Get-Content \"$bucketsdir\\jack-mil\\scripts\\prismlauncher\\$_.reg\").Replace('$EXEPATH', $exePath)",
-        "        if ($global) { $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE') }",
-        "        Set-Content \"$dir\\$_.reg\" $content -Encoding Ascii -Force",
+        "'accounts.json', 'metacache', 'prismlauncher.cfg' | ForEach-Object {",
+        "    if (!(Test-Path -Path $persist_dir\\$_)) {",
+        "        New-Item -Type File $dir/$_ | Out-Null",
         "    }",
-        "}"
+        "}",
+        "Add-Content $dir/metacache '{}'",
+        "Remove-Item $original_dir/prismlauncher_updater.exe"
     ],
     "bin": "prismlauncher.exe",
     "shortcuts": [
@@ -37,14 +28,30 @@
             "Prism Launcher"
         ]
     ],
-    "pre_uninstall": "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-associations.reg\" }",
+    "persist": [
+        "assets",
+        "cache",
+        "catpacks",
+        "icons",
+        "iconthemes",
+        "instances",
+        "libraries",
+        "logs",
+        "meta",
+        "mods",
+        "themes",
+        "translations",
+        "accounts.json",
+        "metacache",
+        "prismlauncher.cfg"
+    ],
     "checkver": {
         "github": "https://github.com/PrismLauncher/PrismLauncher"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/PrismLauncher/PrismLauncher/releases/download/$version/PrismLauncher-Windows-MinGW-w64-$version.zip"
+                "url": "https://github.com/PrismLauncher/PrismLauncher/releases/download/$version/PrismLauncher-Windows-MSVC-Portable-$version.zip"
             }
         }
     }
