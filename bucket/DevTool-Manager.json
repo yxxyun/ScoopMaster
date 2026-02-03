@@ -1,0 +1,53 @@
+{
+    "version": "0.1.0",
+    "description": "开发工具管理器 - 统一管理 npm、pip、cargo 等包管理工具，监控端口、进程，清理缓存等",
+    "homepage": "https://github.com/dengyuwu/dev-tools",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/dengyuwu/dev-tools/releases/download/v0.1.0/devtool-manager_0.1.0_x64-setup.exe#/dl.7z",
+            "hash": "994c11857ba35b4e078aa2460a481e2777da02cdc8af67f3b2cc3e1b412a3e6d"
+        },
+        "32bit": {
+            "url": "https://github.com/dengyuwu/dev-tools/releases/download/v0.1.0/devtool-manager_0.1.0_x86-setup.exe#/dl.7z",
+            "hash": "a55935f692c4a849c9e14888c161d37409a2f08adae1acddbabf61303ca83140"
+        }
+    },
+    "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "shortcuts": [
+        [
+            "devtool-manager.exe",
+            "DevTool Manager"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path $env:LOCALAPPDATA 'com.administrator.devtool-manager'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    Move-Item -LiteralPath $source -Destination $backup -Force",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "persist": "data",
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/dengyuwu/dev-tools/releases/download/v$version/devtool-manager_$version_x64-setup.exe#/dl.7z"
+            },
+            "32bit": {
+                "url": "https://github.com/dengyuwu/dev-tools/releases/download/v$version/devtool-manager_$version_x86-setup.exe#/dl.7z"
+            }
+        }
+    }
+}
