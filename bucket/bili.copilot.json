@@ -1,8 +1,8 @@
 {
     "version": "2.2505.2.0",
-    "description": "一款哔哩哔哩第三方桌面应用，适用于 Windows 11",
-    "homepage": "https://github.com/Richasy/Bili.Copilot",
-    "license": "GPL-3.0",
+    "description": "哔哩助理 | B站第三方 Windows 桌面客户端，使用 Windows App SDK 构建的原生应用",
+    "homepage": "https://bili.richasy.net/",
+    "license": "GPL-3.0-or-later",
     "architecture": {
         "64bit": {
             "url": "https://github.com/Richasy/Bili.Copilot/releases/download/v2.2505.2.0/BiliCopilot_2.2505.2.0_x64.7z",
@@ -13,37 +13,37 @@
             "hash": "22df89c510a43966ba040f403ba899b0e354c573d8b85272ab3da1641a31c4bd"
         }
     },
+    "extract_to": "Deploy",
     "pre_install": [
-        "if ([System.Environment]::OSVersion.Version.Build -lt 22000) {",
-        "    throw 'Bili.Copilot requires Windows 11 or later.'",
+        "if ([Environment]::OSVersion.Version.Major -lt \"10\" -or [System.Environment]::OSVersion.Version.Build -lt 22000) {",
+        "    throw \"Bili.Copilot requires Windows 11 or later to work.\"",
         "}"
     ],
     "installer": {
         "script": [
-            "$main = Get-ChildItem \"$dir\\*.msix\" | Where-Object { $_.Name -notmatch 'WindowsAppRuntime' }",
-            "if (!$main) { throw 'Main MSIX package not found.' }",
-            "$arch = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'arm64' } else { 'x64' }",
-            "$depsPath = \"$dir\\Dependencies\\$arch\"",
-            "$deps = @()",
-            "if (Test-Path $depsPath) { $deps = Get-ChildItem \"$depsPath\\*.msix\" }",
-            "try {",
-            "    Add-AppxPackage -Path $main.FullName -DependencyPath ($deps.FullName) -ForceTargetApplicationShutdown -AllowUnsigned -ForceUpdateFromAnyVersion -ErrorAction Stop",
-            "} catch {",
-            "    Write-Warning \"Failed to install Bili.Copilot MSIX package automatically. You may need to install it manually in developer mode: $_\"",
-            "}"
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "Enable-DevelopmentMode",
+            "Get-ChildItem \"$dir\\Deploy\\*.msix\" | ForEach-Object { Expand-7zipArchive $_ $dir }",
+            "Get-ChildItem \"$dir\\Deploy\\Dependencies\\*64\\*.msix\" | Add-AppxPackage -ForceTargetApplicationShutdown -AllowUnsigned -ForceUpdateFromAnyVersion",
+            "Remove-Item \"$dir\\Deploy\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+            "Import-AppxPSModule",
+            "Add-AppxPackage -Path \"$dir\\AppxManifest.xml\" -Register"
         ]
     },
-    "uninstaller": {
-        "script": [
-            "$packages = Get-AppxPackage Richasy.BiliCopilot* -ErrorAction SilentlyContinue",
-            "if (!$packages) { warn 'Bili.Copilot is not installed as an AppX package.' ; return }",
-            "$packages | ForEach-Object {",
-            "    Write-Host \"Removing AppX package: $($_.PackageFullName)\"",
-            "    Remove-AppxPackage $_.PackageFullName",
-            "}"
-        ]
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Import-AppxPSModule",
+        "if ($cmd -eq 'uninstall') {",
+        "    Get-AppxPackage -Name \"Richasy.Bili.Copilot\" | Remove-AppxPackage",
+        "} else {",
+        "    Get-AppxPackage -Name \"Richasy.Bili.Copilot\" | Remove-AppxPackage -PreserveApplicationData",
+        "}"
+    ],
+    "checkver": {
+        "github": "https://github.com/Richasy/Bili.Copilot"
     },
-    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
