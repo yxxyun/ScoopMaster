@@ -1,0 +1,45 @@
+{
+    "version": "1.2",
+    "description": "Quick Launcher - 快速启动器，基于 Tauri 构建",
+    "homepage": "https://github.com/heheda123123/my-quickstart",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/heheda123123/my-quickstart/releases/download/1.2/my-quickstart.zip",
+            "hash": "3067b531e188adc0b3fb9f2bcb4e3f09f9b4119f16309d6b4423cf969842183a"
+        }
+    },
+    "shortcuts": [
+        [
+            "my-quickstart.exe",
+            "Quick Launcher"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path $env:LOCALAPPDATA 'com.cat.tauri-app'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    Move-Item -LiteralPath $source -Destination $backup -Force",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "persist": "data",
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/heheda123123/my-quickstart/releases/download/$version/my-quickstart.zip"
+            }
+        }
+    }
+}
