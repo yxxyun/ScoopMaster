@@ -1,0 +1,50 @@
+{
+    "version": "0.2.0",
+    "description": "MShell - 现代化 SSH 客户端，支持 AI 辅助功能",
+    "homepage": "https://github.com/inspoaibox/Mshell",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/inspoaibox/Mshell/releases/download/MShell.Setup.0.2.0/win-unpacked.zip",
+            "hash": "c390a78aa597cf8bb4ffd6d589313046c4e7adbaebbf5196feda355f4ea73ae9",
+            "extract_dir": "win-unpacked"
+        }
+    },
+    "shortcuts": [
+        [
+            "MShell.exe",
+            "MShell"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'MShell'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    Move-Item -LiteralPath $source -Destination $backup -Force",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "persist": "data",
+    "checkver": {
+        "github": "https://github.com/inspoaibox/Mshell",
+        "regex": "MShell\\.Setup\\.([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/inspoaibox/Mshell/releases/download/MShell.Setup.$version/win-unpacked.zip",
+                "extract_dir": "win-unpacked"
+            }
+        }
+    }
+}
