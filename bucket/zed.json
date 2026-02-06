@@ -15,36 +15,56 @@
             "Expand-InnoArchive -Path \"$dir\\$fname\" -ExtractDir '{code_GetInstallDir}' -Removal"
         ]
     },
-    "bin": [
-        "bin\\zed",
-        "bin\\zed.exe"
+    "pre_install": [
+        "$local=Join-Path $env:LOCALAPPDATA \"Zed\"",
+        "$persist_local=Join-Path $persist_dir \"local\"",
+        "& \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $local $persist_local",
+        "$appdata=Join-Path $env:APPDATA \"Zed\"",
+        "$persist_appdata=Join-Path $persist_dir \"appdata\"",
+        "& \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $appdata $persist_appdata"
     ],
-    "persist": "data",
     "post_install": [
-        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:LocalAppData\\Zed\")) {",
-        "    info '[Portable Mode] Copying user data...'",
-        "    Copy-Item \"$env:LocalAppData\\Zed\\*\" \"$dir\\data\" -Recurse",
+        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
+        "$exepath = \"$dir\\zed.exe\".Replace('\\', '\\\\')",
+        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context', 'install-context-it', 'uninstall-context-it', 'install-github-integration', 'uninstall-github-integration' | ForEach-Object {",
+        "  if (Test-Path \"$bucketsdir\\$bucket\\scripts\\zed\\$_.reg\") {",
+        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\zed\\$_.reg\"",
+        "    $content = $content.Replace('$zeddir', $dirpath)",
+        "    $content = $content.Replace('$zed', $exepath)",
+        "    if ($global) {",
+        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
+        "  }",
         "}",
-        "if (!(Test-Path \"$dir\\data\\config\") -and (Test-Path \"$env:AppData\\Zed\")) {",
-        "    info '[Portable Mode] Copying config...'",
-        "    Copy-Item \"$env:AppData\\Zed\" \"$dir\\data\\config\" -Recurse",
-        "}"
+        "# 自动导入注册表（可选）",
+        "reg import \"$dir\\install-context.reg\"",
+        "reg import \"$dir\\install-associations.reg\""
     ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall')",
+            "{",
+            "   reg import \"$dir\\uninstall-context.reg\" ",
+            "   reg import \"$dir\\uninstall-github-integration.reg\" ",
+            "}"
+        ]
+    },
+    "persist": [
+        "local",
+        "appdata"
+    ],
+    "bin": "bin\\zed.exe",
     "shortcuts": [
         [
-            "zed.exe",
-            "Zed",
-            "--user-data-dir=\"$dir\\data\""
+            "Zed.exe",
+            "Zed"
         ]
     ],
     "checkver": {
         "github": "https://github.com/zed-industries/zed"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/zed-industries/zed/releases/download/v$version/Zed-x86_64.exe"
-            }
-        }
+        "url": "https://github.com/zed-industries/zed/releases/download/v$version/Zed-x86_64.exe"
     }
 }
