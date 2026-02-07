@@ -2,10 +2,7 @@
     "version": "3.1.2",
     "description": "Browserpass native client app",
     "homepage": "https://github.com/browserpass/browserpass-native",
-    "license": "isc",
-    "notes": [
-        "Import by running 'regedt32 \"$dir\\register.reg\"'"
-    ],
+    "license": "ISC",
     "architecture": {
         "64bit": {
             "url": "https://github.com/browserpass/browserpass-native/releases/download/v3.1.2/browserpass-windows64-3.1.2.msi",
@@ -13,28 +10,38 @@
         }
     },
     "extract_dir": "PFiles/Browserpass",
-    "post_install": [
-        "$exePath = \"$dir\\browserpass-windows64.exe\"",
-        "$chromiumPath = \"$dir\\chromium-host.json\"",
-        "$firefoxPath = \"$dir\\firefox-host.json\"",
-        "$chromiumJson = Get-Content \"$chromiumPath\" -Raw | ConvertFrom-Json",
-        "$chromiumJson.path = \"$exePath\"",
-        "$chromiumJson | ConvertTo-Json -Depth 10 | Set-Content \"$chromiumPath\" -Encoding UTF8",
-        "$firefoxJson = Get-Content \"$firefoxPath\" -Raw | ConvertFrom-Json",
-        "$firefoxJson.path = \"$exePath\"",
-        "$firefoxJson | ConvertTo-Json -Depth 10 | Set-Content \"$firefoxPath\" -Encoding UTF8",
-        "@\"",
-        "Windows Registry Editor Version 5.00",
-        "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Google\\Chrome\\NativeMessagingHosts\\com.github.browserpass.native]",
-        "@=\"$($chromiumPath.Replace('\\', '\\\\'))\"",
-        "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Mozilla\\NativeMessagingHosts\\com.github.browserpass.native]",
-        "@=\"$($firefoxPath.Replace('\\', '\\\\'))\"",
-        "\"@ | Out-File -FilePath \"$dir\\register.reg\" -Encoding ASCII"
-    ],
-    "checkver": {
-        "github": "https://github.com/browserpass/browserpass-native"
+    "installer": {
+        "script": [
+            "$appid = 'com.github.browserpass.native'",
+            "$browsers = @('firefox', 'chromium')",
+            "$regkeys = @('Mozilla', 'Google\\Chrome')",
+            "For ($i = 0; $i -lt 2; $i++) {",
+            "    $jsonpath = Join-Path -Path $dir -ChildPath ('{0}-{1}.json' -f $appid, $browsers[$i])",
+            "    $jsonstr = gc (Join-Path -Path $dir ('{0}-host.json' -f $browsers[$i]))",
+            "    $jsonstr -replace 'C:\\\\\\\\Program Files\\\\\\\\Browserpass\\\\\\\\browserpass-windows64.exe', ((Join-Path -Path $dir -ChildPath 'browserpass-windows64.exe' | ConvertTo-json) -replace '^\"|\"$', '') | Out-File -Encoding ASCII $jsonpath",
+            "    $regPath = 'hkcu:\\Software\\{0}\\NativeMessagingHosts' -f $regkeys[$i]",
+            "    If (-NOT (Test-Path -Path $regPath)) { New-Item -Path $regPath -force }",
+            "    New-Item -Path \"$regPath\\$appid\" -force",
+            "    New-ItemProperty -Path \"$regPath\\$appid\"` -Name '(Default)'` -Value $jsonpath",
+            "}"
+        ]
     },
+    "uninstaller": {
+        "script": [
+            "$appid = 'com.github.browserpass.native'",
+            "$regkeys = @('Mozilla', 'Google\\Chrome')",
+            "Foreach ($regkey in $regkeys) {",
+            "    $regPath = \"hkcu:\\Software\\$regkey\\NativeMessagingHosts\\$appid\"",
+            "    If (Test-Path -Path $regPath) { Remove-Item -Path $regPath }",
+            "}"
+        ]
+    },
+    "checkver": "github",
     "autoupdate": {
-        "url": "https://github.com/browserpass/browserpass-native/releases/download/v$version/browserpass-windows64-$version.msi"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/browserpass/browserpass-native/releases/download/v$version/browserpass-windows64-$version.msi"
+            }
+        }
     }
 }
