@@ -1,23 +1,28 @@
 {
     "##": [
         "Why here? For testing while waiting for some kinks with Grayjay Desktop to be ironed out.",
+        "* Cannot override data directory, uses \"%APPDATA%\\Grayjay\".",
+        "  * Thus we cannot persist data within \"%USERPROFILE%\\scoop\".",
+        "* Unclear how one should disable built-in updater in a reliable, supported way.",
+        "  * Thus this manifest just deletes it for the time being.",
         "Scoop feature request with more info: <https://github.com/ScoopInstaller/Extras/issues/14672>"
     ],
-    "version": "16",
+    "version": "16-90bcf",
     "description": "Follow Creators, Not Platforms.",
     "homepage": "https://grayjay.app/desktop/",
     "license": {
         "identifier": "Unknown",
-        "url": "https://github.com/futo-org/Grayjay.Desktop/blob/master/LICENSE.md"
+        "url": "https://gitlab.futo.org/videostreaming/Grayjay.Desktop/-/blob/master/LICENSE.md"
     },
     "architecture": {
         "64bit": {
             "url": "https://updater.grayjay.app/Apps/Grayjay.Desktop/16/Grayjay.Desktop-win-x64-v16.zip",
-            "hash": "a39efb733c2e5225a17fcb8569410c100815337f75ec2af53c49eb9ec67689e8",
+            "hash": "95cdc53c155cc14a44cfd808c0c5e8a9c3b51b32b5b81b84e6a8ea572ba0e041",
             "extract_dir": "Grayjay.Desktop-win-x64-v16"
         }
     },
     "post_install": [
+        "# Remove built-in updater",
         "$(",
         "    [string[]](",
         "        [System.IO.Path]::Combine($dir,'FUTO.Updater.Client.exe'),",
@@ -35,9 +40,8 @@
             "Grayjay"
         ]
     ],
-    "persist": "data",
     "post_uninstall": [
-        "if ($purge) {",
+        "if ($purge -and -not $global) {",
         "    $Directories = [string[]](",
         "        # New location",
         "        [System.IO.Path]::Combine($env:APPDATA,'Grayjay'),",
@@ -52,14 +56,48 @@
         "}"
     ],
     "checkver": {
-        "url": "https://updater.grayjay.app/Apps/Grayjay.Desktop/VersionLast.json",
-        "regex": "(\\d+)"
+        "script": [
+            "<#",
+            "    # Problem",
+            "    FUTO replaced v16 ZIP without bumping the version number,",
+            "    which created a hash mismatch.",
+            "    * Was first: a39efb733c2e5225a17fcb8569410c100815337f75ec2af53c49eb9ec67689e8",
+            "    * And then: 95cdc53c155cc14a44cfd808c0c5e8a9c3b51b32b5b81b84e6a8ea572ba0e041",
+            "    # Solution",
+            "    Add the five first chars of the SHA256 checksum of the \"Last-Modified\"",
+            "    response header to create a unique version number.",
+            "#>",
+            "# Version",
+            "$Version = [string](",
+            "    Invoke-RestMethod -Method 'Get' -Uri 'https://updater.grayjay.app/Apps/Grayjay.Desktop/VersionLast.json'",
+            ")",
+            "$DownloadUri = [string] 'https://updater.grayjay.app/Apps/Grayjay.Desktop/{0}/Grayjay.Desktop-win-x64-v{0}.zip' -f $Version",
+            "# SHA256 of \"Last-Modified\" header",
+            "$Request = [System.Net.HttpWebRequest]::Create($DownloadUri)",
+            "$Request.'Method' = [string] 'HEAD'",
+            "$Response = [System.Net.HttpWebResponse] $Request.GetResponse()",
+            "$LastModified = [string] $Response.Headers['Last-Modified']",
+            "$Response.Close()",
+            "$MemoryStream = [IO.MemoryStream]::new([Text.Encoding]::Utf8.GetBytes($LastModified))",
+            "$LastModifiedSha256 = [string](",
+            "    (Get-FileHash -InputStream $MemoryStream -Algorithm 'SHA256').Hash.ToLower()",
+            ")",
+            "# Output",
+            "[string]::Format(",
+            "    '{0}-{1}',",
+            "    $Version,",
+            "    $LastModifiedSha256.Substring(0, 5)",
+            "),",
+            "($DownloadUri -as [uri]).'AbsolutePath'.TrimStart('/'),",
+            "$DownloadUri.Split('/')[-1].TrimEnd('.zip') -join '||'"
+        ],
+        "regex": "(?<version>.+)[|]{2}(?<urlpath>.+)[|]{2}(?<extractdir>.+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://updater.grayjay.app/Apps/Grayjay.Desktop/$version/Grayjay.Desktop-win-x64-v$version.zip",
-                "extract_dir": "Grayjay.Desktop-win-x64-v$version"
+                "url": "https://updater.grayjay.app/Apps/Grayjay.Desktop/$majorVersion/Grayjay.Desktop-win-x64-v$majorVersion.zip",
+                "extract_dir": "$matchExtractdir"
             }
         }
     }
