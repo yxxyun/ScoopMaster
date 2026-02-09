@@ -1,0 +1,78 @@
+{
+    "version": "0.1.1",
+    "description": "An AI coding assistant desktop client integrating Claude Code, Codex, Gemini CLI and more, built with Tauri",
+    "homepage": "https://github.com/zhukunpenglinyutong/codemoss",
+    "license": "AGPL-3.0-only",
+    "notes": [
+        "CodeMoss 是一个多 AI 编程助手桌面客户端，集成 Claude Code、Codex、Gemini CLI 等工具",
+        "用户数据目录 1：%LOCALAPPDATA%\\com.zhukunpenglinyutong.codemoss\\",
+        "用户数据目录 2：%USERPROFILE%\\.codemoss\\",
+        "本包会将这两个目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/zhukunpenglinyutong/codemoss/releases/download/v0.1.1/CodeMoss_0.1.1_x64-setup.exe#/dl.7z",
+            "hash": "5a7a11118610a5970b560cfd83295e05f8f0fc4c02630b8d4e08be906904127d"
+        }
+    },
+    "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\uninstall.exe\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "bin": "code-moss.exe",
+    "shortcuts": [
+        [
+            "code-moss.exe",
+            "CodeMoss"
+        ]
+    ],
+    "post_install": [
+        "$createJunction = {",
+        "    param($source, $name)",
+        "    $target = Join-Path $persist_dir $name",
+        "    ensure $target",
+        "",
+        "    if (Test-Path $source) {",
+        "        $item = Get-Item -LiteralPath $source -Force",
+        "        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "            Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "            return",
+        "        }",
+        "        if (-not $item.PSIsContainer) {",
+        "            throw \"配置路径已存在且不是目录：$source\"",
+        "        }",
+        "",
+        "        & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "        if ($LASTEXITCODE -gt 7) {",
+        "            Write-Host \"迁移失败，保留原目录：$source\"",
+        "            return",
+        "        }",
+        "",
+        "        $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "        try {",
+        "            Move-Item -LiteralPath $source -Destination $backup -Force",
+        "            Write-Host \"已备份原配置目录：$backup\"",
+        "        } catch {",
+        "            Write-Host \"无法重命名原目录：$source\"",
+        "            return",
+        "        }",
+        "    }",
+        "",
+        "    New-Item -Path $source -ItemType Junction -Value $target | Out-Null",
+        "}",
+        "",
+        "& $createJunction (Join-Path $env:LOCALAPPDATA 'com.zhukunpenglinyutong.codemoss') 'data'",
+        "& $createJunction (Join-Path $env:USERPROFILE '.codemoss') 'dotcodemoss'"
+    ],
+    "persist": [
+        "data",
+        "dotcodemoss"
+    ],
+    "checkver": {
+        "github": "https://github.com/zhukunpenglinyutong/codemoss"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/zhukunpenglinyutong/codemoss/releases/download/v$version/CodeMoss_$version_x64-setup.exe#/dl.7z"
+            }
+        }
+    }
+}
