@@ -1,13 +1,24 @@
 {
     "version": "9.8.0",
-    "description": "A HDD/SSD utility software which supports a part of USB, RAID and NVMe",
-    "homepage": "https://crystalmark.info/en/software/crystaldiskinfo/",
+    "description": "HDD/SSD utility software which supports S.M.A.R.T and a part of USB-HDD",
+    "homepage": "https://crystalmark.info/en/",
     "license": "MIT",
-    "url": "https://sourceforge.net/projects/crystaldiskinfo/files/9.8.0/CrystalDiskInfo9_8_0.zip",
+    "url": "https://downloads.sourceforge.net/projects/crystaldiskinfo/9.8.0/CrystalDiskInfo9_8_0.zip",
     "hash": "sha1:9a371819887260bc1d7040532172da1d1ef8b531",
+    "pre_install": [
+        "if (!(Test-Path \"$persist_dir\\DiskInfo.ini\")) { New-Item \"$dir\\DiskInfo.ini\" | Out-Null }",
+        "# Manually persist AMD RAID plugins (AMD_RC2t7x64.dll, AMD_RC2t7x86.dll)",
+        "if (Test-Path \"$persist_dir\\AMD_RC2t7*.dll\") { Copy-Item \"$persist_dir\\AMD_RC2t7*.dll\" \"$dir\\\" }"
+    ],
+    "pre_uninstall": "if (Test-Path \"$dir\\AMD_RC2t7*.dll\") { Copy-Item \"$dir\\AMD_RC2t7*.dll\" \"$persist_dir\\\" }",
     "architecture": {
         "64bit": {
-            "post_install": "Remove-Item $dir\\DiskInfo32.exe, $dir\\DiskInfoA64.exe",
+            "bin": [
+                [
+                    "DiskInfo64.exe",
+                    "DiskInfo"
+                ]
+            ],
             "shortcuts": [
                 [
                     "DiskInfo64.exe",
@@ -15,8 +26,27 @@
                 ]
             ]
         },
+        "32bit": {
+            "bin": [
+                [
+                    "DiskInfo32.exe",
+                    "DiskInfo"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "DiskInfo32.exe",
+                    "CrystalDiskInfo"
+                ]
+            ]
+        },
         "arm64": {
-            "post_install": "Remove-Item $dir\\DiskInfo32.exe, $dir\\DiskInfo64.exe",
+            "bin": [
+                [
+                    "DiskInfoA64.exe",
+                    "DiskInfo"
+                ]
+            ],
             "shortcuts": [
                 [
                     "DiskInfoA64.exe",
@@ -25,19 +55,15 @@
             ]
         }
     },
-    "pre_install": [
-        "if (!(Test-Path $persist_dir\\DiskInfo.ini)) { New-Item $dir\\DiskInfo.ini | Out-Null }",
-        "Get-ChildItem $dir\\CdiResource\\language -Exclude English* | Remove-Item"
-    ],
     "persist": [
         "Smart",
         "DiskInfo.ini"
     ],
     "checkver": {
-        "sourceforge": "crystaldiskinfo",
-        "regex": "((\\d+\\.)(\\d+\\.)(\\d+))/CrystalDiskInfo.*.zip"
+        "url": "https://sourceforge.net/projects/crystaldiskinfo/files/",
+        "regex": "href=\"/projects/crystaldiskinfo/files/latest/download\" title=\"/([\\w.]+)"
     },
     "autoupdate": {
-        "url": "https://sourceforge.net/projects/crystaldiskinfo/files/$version/CrystalDiskInfo$underscoreVersion.zip"
+        "url": "https://downloads.sourceforge.net/projects/crystaldiskinfo/$version/CrystalDiskInfo$underscoreVersion.zip"
     }
 }
