@@ -1,36 +1,36 @@
 {
-    "version": "1.17.1",
-    "description": "An enhanced edition of Sandboxie that provides sandbox-based application isolation on Windows with additional features and a modern interface.",
-    "homepage": "https://sandboxie-plus.com",
-    "license": {
-        "identifier": "Freeware",
-        "url": "https://github.com/sandboxie-plus/Sandboxie/blob/HEAD/LICENSE.Plus"
-    },
-    "notes": [
-        "If RamDisk or Encrypted Sandboxes are required, the ImDisk driver must be installed.",
-        "",
-        "For command-line usage, see: https://sandboxie-plus.com/sandboxie/startcommandline/.",
-        "Please note that `sandboxie-start` should be used instead of the `start` command mentioned in the documentation."
+    "##": [
+        "For command-line usage, see: https://sandboxie-plus.com/sandboxie/startcommandline/",
+        "The installer is made with InnoSetup, but the app will not work without installing the drivers (via the installer)"
     ],
+    "version": "1.17.2",
+    "description": "Sandbox isolation software (plus variant)",
+    "homepage": "https://sandboxie-plus.com/",
+    "license": "GPL-3.0-or-later",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/sandboxie-plus/Sandboxie/releases/download/v1.17.1/Sandboxie-Plus-x64-v1.17.1.exe",
-            "hash": "62fd54e5f124a706d0a0339b9848110f368cff0309ed8fb484529120af220a14"
+            "url": "https://github.com/sandboxie-plus/Sandboxie/releases/download/v1.17.2/Sandboxie-Plus-x64-v1.17.2.exe#/setup.exe",
+            "hash": "b7ab56c83f9f56f712d4e9ca57f5ac5a93ab11147805d0ab11f11b97d835908d"
         },
         "arm64": {
-            "url": "https://github.com/sandboxie-plus/Sandboxie/releases/download/v1.17.1/Sandboxie-Plus-ARM64-v1.17.1.exe",
-            "hash": "63a15373b233caa04d9796c3a40447f9898bf69e8e0226d041995a57f6396721"
+            "url": "https://github.com/sandboxie-plus/Sandboxie/releases/download/v1.17.2/Sandboxie-Plus-ARM64-v1.17.2.exe#/setup.exe",
+            "hash": "bde888614c737f2c6274ee53200ad1bd4834a796318bceb19a3f147f5e4b888d"
         }
     },
-    "pre_install": "if (-not (is_admin)) { abort \"`n[ERROR]  $app requires admin rights to $cmd.\" }",
     "installer": {
         "script": [
-            "$args_list = @('/verysilent', \"/dir=`\"$dir`\"\")",
-            "Start-Process -FilePath \"$dir\\$fname\" -ArgumentList $args_list -WindowStyle 'Hidden' -Wait",
-            "@(",
-            "    \"$dir\\$fname\", \"$env:USERPROFILE\\Desktop\\Sandboxie-Plus.lnk\"",
-            "    \"$([Environment]::GetFolderPath('CommonStartMenu'))\\Programs\\Sandboxie-Plus\"",
-            ") | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue"
+            "if (!(is_admin)) { error \"$app requires admin rights to install\"; break }",
+            "Start-Process \"$dir\\setup.exe\" -ArgumentList @('/verysilent', \"/dir=`\"$dir`\"\") -Wait -Verb RunAs | Out-Null",
+            "Remove-Item \"$([Environment]::GetFolderPath('commonstartmenu'))\\Programs\\Sandboxie-Plus\" -Recurse",
+            "Remove-Item \"$([Environment]::GetFolderPath('Desktop'))\\Sandboxie-Plus.lnk\"",
+            "Remove-Item \"$dir\\setup.exe\""
+        ]
+    },
+    "pre_uninstall": "Stop-Process -Name 'SbieSvc' -Force -ErrorAction SilentlyContinue",
+    "uninstaller": {
+        "script": [
+            "if (!(is_admin)) { error \"$app requires admin rights to uninstall\"; break }",
+            "Invoke-ExternalCommand \"$dir\\unins000.exe\" -ArgumentList '/verysilent' -RunAs | Out-Null"
         ]
     },
     "bin": [
@@ -42,52 +42,36 @@
     "shortcuts": [
         [
             "SandMan.exe",
-            "Sandboxie-Plus\\Sandboxie-Plus"
+            "Sandboxie-Plus"
         ],
         [
             "Start.exe",
-            "Sandboxie-Plus\\Run any program sandboxed",
+            "Sandboxie Start Menu",
+            "/box:__ask__ start_menu"
+        ],
+        [
+            "Start.exe",
+            "Run any program sandboxed",
             "/box:__ask__ run_dialog"
         ],
         [
             "Start.exe",
-            "Sandboxie-Plus\\Run Web browser sandboxed",
+            "Run Web browser sandboxed",
             "default_browser"
-        ],
-        [
-            "Start.exe",
-            "Sandboxie-Plus\\Run Windows Explorer sandboxed",
-            "."
-        ],
-        [
-            "Start.exe",
-            "Sandboxie-Plus\\Sandboxie Start Menu",
-            "/box:__ask__ start_menu"
         ]
     ],
-    "pre_uninstall": "if (-not (is_admin)) { abort \"`n[ERROR]  $app requires admin rights to $cmd.\" }",
-    "uninstaller": {
-        "script": [
-            "Stop-Process -Name 'SbieSvc' -Force -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 1500",
-            "Start-Process -FilePath \"$dir\\unins000.exe\" -ArgumentList @('/verysilent') -WindowStyle 'Hidden' -Wait"
-        ]
-    },
     "checkver": {
-        "url": "https://api.github.com/repositories/254327261/releases/latest",
-        "jsonpath": "$.assets[?(@.name =~ /Plus/i)].browser_download_url",
-        "regex": "(?i)download/(?<tag>[^/]+)/Sandboxie-Plus-(?:x|ARM)64-v([\\d.]+)\\.exe"
+        "url": "https://api.github.com/repos/sandboxie-plus/Sandboxie/releases",
+        "regex": "releases/download/(?<tag>[vV]?[\\d.]+)/Sandboxie-Plus-x64-v([\\d.]+).exe"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/sandboxie-plus/Sandboxie/releases/download/$matchTag/Sandboxie-Plus-x64-v$version.exe"
+                "url": "https://github.com/sandboxie-plus/Sandboxie/releases/download/$matchTag/Sandboxie-Plus-x64-v$version.exe#/setup.exe"
             },
             "arm64": {
-                "url": "https://github.com/sandboxie-plus/Sandboxie/releases/download/$matchTag/Sandboxie-Plus-ARM64-v$version.exe"
+                "url": "https://github.com/sandboxie-plus/Sandboxie/releases/download/$matchTag/Sandboxie-Plus-ARM64-v$version.exe#/setup.exe"
             }
-        },
-        "hash": {
-            "url": "$baseurl/sha256-checksums.txt"
         }
     }
 }
