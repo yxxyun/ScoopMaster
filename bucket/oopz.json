@@ -1,36 +1,37 @@
 {
     "version": "1.3.0",
-    "license": "Unlicense",
-    "description": "Oopz - 让游戏连接彼此",
+    "description": "Game voice platform",
     "homepage": "https://oopz.cn/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://help.oopz.cn/agreement/service"
+    },
     "url": "https://downloadcdn.oopz.cn/release/130/oopz_setup_v1.3.0.exe#/dl.7z",
     "hash": "e91dd1b57077f3436f1739bc4294cc0339e41fbe7f8c70021ca1cf730c75ee3c",
-    "checkver": {
-        "script": [
-            "$dl_url = 'https://www.oopz.cn/download/xx'",
-            "try {",
-            "   $response = Invoke-WebRequest -Uri $dl_url -Method HEAD -MaximumRedirection 0 -ErrorAction Stop",
-            "} catch {",
-            "$_.Exception.Response.Headers.Location",
-            "}"
-        ],
-        "regex": "https://downloadcdn.oopz.cn/release/(?<folder>[^/]+)/oopz_setup_v([\\d.]+).exe"
-    },
-    "autoupdate": {
-        "url": "https://downloadcdn.oopz.cn/release/$matchFolder/oopz_setup_v$version.exe#/dl.7z"
-    },
     "installer": {
         "script": [
             "Move-Item \"$dir\\`$TEMP\\oopz_nsis\\app.7z\" \"$dir\\app.7z\"",
             "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$TEMP\" -Force -Recurse",
-            "Expand-7zipArchive \"$dir\\app.7z\" \"$dir\"",
+            "Expand-7zipArchive \"$dir\\app.7z\" \"$dir\\app\"",
             "Remove-Item \"$dir\\app.7z\" -Force"
         ]
     },
     "shortcuts": [
         [
-            "oopz.exe",
+            "app/oopz.exe",
             "Oopz"
         ]
-    ]
+    ],
+    "checkver": {
+        "script": [
+            "$url = 'https://www.oopz.cn/download/xx?v=' + $([DateTimeOffset]::Now.ToUnixTimeMilliseconds() / 1e3 -bor 0)",
+            "$resp = Invoke-WebRequest -Uri $url -Method Head",
+            "$resp.Baseresponse.RequestMessage.RequestUri.AbsoluteUri"
+        ],
+        "regex": "/([\\d]+)/oopz_([\\w]+)_v([\\d\\.]+)\\.exe",
+        "replace": "$3"
+    },
+    "autoupdate": {
+        "url": "https://downloadcdn.oopz.cn/release/$match1/oopz_$match2_v$match3.exe#/dl.7z"
+    }
 }
