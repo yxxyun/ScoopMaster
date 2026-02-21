@@ -1,22 +1,59 @@
 {
-    "version": "3.14",
-    "description": "NetTime is a Simple Network Time Protocol (SNTP) client for Windows. If you're looking for a program to keep your system time accurate, you've just found it!",
+    "version": "3.20-alpha.3",
+    "description": "A free, open-source SNTP client to keep your Windows system clock accurate, plus the optional Windows Time Zone Editor tool.",
     "homepage": "https://www.timesynctool.com/",
-    "license": "BSD-Source-Code",
-    "url": "https://sourceforge.net/projects/nettime/files/NetTime/3.14/NetTimeSetup-314.exe",
-    "hash": "sha1:fcd9c88aa5f6e85e997bda6f7df02595f45329a4",
-    "innosetup": true,
+    "license": {
+        "identifier": "Freeware",
+        "notes": "Open source. Originally BSD-style licensed."
+    },
+    "url": [
+        "https://www.timesynctool.com/NetTimeSetup-320a3.exe",
+        "https://www.timesynctool.com/tzedit.exe"
+    ],
+    "hash": [
+        "sha256:27a27e8b1b84d484544ab7f28a30fbc997c2c9b9409879f1f9c9571fc847aef3",
+        "sha256:2de3658f0511b8dfce1d370309dc3447dc63cb322fb769bca8487d24bc36694c"
+    ],
+    "pre_install": [
+        "# NetTime installs a system service and requires admin rights",
+        "if (-not (is_admin)) { abort \"$app requires admin rights to $cmd\" }"
+    ],
+    "installer": {
+        "script": [
+            "# 1. Extract and install the NetTime InnoSetup package",
+            "Start-Process -FilePath \"$dir\\NetTimeSetup-320a3.exe\" -ArgumentList \"/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=`\"$dir`\"\" -Wait",
+            "Remove-Item \"$dir\\NetTimeSetup-320a3.exe\" -Force",
+            "",
+            "# 2. tzedit.exe is already downloaded. Ensure it stays in the install folder.",
+            "# No further action needed; it will remain alongside NetTime.exe"
+        ]
+    },
+    "bin": [
+        "NetTime.exe",
+        "tzedit.exe"
+    ],
     "shortcuts": [
         [
             "NetTime.exe",
             "NetTime"
+        ],
+        [
+            "tzedit.exe",
+            "Time Zone Editor"
         ]
     ],
     "checkver": {
-        "url": "http://www.timesynctool.com/",
-        "regex": "Version ([\\d.]+) - Current Stable Version"
+        "url": "https://www.timesynctool.com/",
+        "regex": "Version ([\\d.]+[a-z]?\\d?) - Current Alpha Version"
     },
     "autoupdate": {
-        "url": "https://sourceforge.net/projects/nettime/files/NetTime/$version/NetTimeSetup-$cleanVersion.exe"
-    }
+        "url": [
+            "https://www.timesynctool.com/NetTimeSetup-$match1.exe",
+            "https://www.timesynctool.com/tzedit.exe"
+        ],
+        "hash": {
+            "mode": "download"
+        }
+    },
+    "notes": "This package includes NetTime (which runs as a system service) and the separate tzedit.exe tool. Install globally with: scoop install --global nettime.json"
 }

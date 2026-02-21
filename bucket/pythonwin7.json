@@ -1,0 +1,86 @@
+{
+    "version": "3.13.7",
+    "description": "A programming language that lets you work quickly and integrate systems more effectively, for Windows 7",
+    "homepage": "https://www.python.org/",
+    "license": "Python-2.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/adang1345/PythonWin7/raw/master/3.13.7/python-3.13.7-amd64-full.exe#/setup.exe",
+            "hash": "3d794a145b71951ebdb4fb00efa866569576c962502940e823f3a715a808d50f"
+        },
+        "32bit": {
+            "url": "https://github.com/adang1345/PythonWin7/raw/master/3.13.7/python-3.13.7-full.exe#/setup.exe",
+            "hash": "fa9406c58d32f87dfe6fa282cb4ec5ae5eb286222a69b07f414d7a45a9607f87"
+        }
+    },
+    "installer": {
+        "script": [
+            "Expand-DarkArchive \"$dir\\setup.exe\" \"$dir\\_tmp\"",
+            "@('path.msi', 'pip.msi') | ForEach-Object {",
+            "    Remove-Item \"$dir\\_tmp\\AttachedContainer\\$_\"",
+            "}",
+            "(Get-ChildItem \"$dir\\_tmp\\AttachedContainer\\*.msi\").FullName | ForEach-Object {",
+            "    # appendpath.msi does not contain any file, which causes 'msiexec /a' to fail",
+            "    if($((Get-Item $_).Basename) -eq 'appendpath') { return }",
+            "    Expand-MsiArchive $_ \"$dir\" ",
+            "}",
+            "Remove-Item \"$dir\\_tmp\", \"$dir\\setup.exe\" -Force -Recurse",
+            "if ($global) {",
+            "    $pathext = (env 'PATHEXT' $true) -replace ';.PYW?', ''",
+            "    env 'PATHEXT' $true \"$pathext;.PY;.PYW\"",
+            "}"
+        ]
+    },
+    "post_install": [
+        "python -E -s -m ensurepip -U --default-pip | Out-Null",
+        "Write-Output \"$([char]0x1b)[0m\" # Reset ansi to prevent color leak from installer"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($global) {",
+            "    $pathext = (env 'PATHEXT' $true) -replace ';.PYW?', ''",
+            "    env 'PATHEXT' $true \"$pathext\"",
+            "}"
+        ]
+    },
+    "bin": [
+        [
+            "python.exe",
+            "python3"
+        ],
+        [
+            "python.exe",
+            "python311"
+        ],
+        "Lib\\idlelib\\idle.bat",
+        [
+            "Lib\\idlelib\\idle.bat",
+            "idle3"
+        ],
+        [
+            "Lib\\idlelib\\idle.bat",
+            "idle311"
+        ]
+    ],
+    "env_add_path": [
+        "Scripts",
+        "."
+    ],
+    "persist": [
+        "Scripts",
+        "Lib\\site-packages"
+    ],
+    "checkver": {
+        "github": "https://github.com/adang1345/PythonWin7"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/adang1345/PythonWin7/raw/master/$majorVersion.$minorVersion.${patchVersion:-0}/python-$version-amd64-full.exe#/setup.exe"
+            },
+            "32bit": {
+                "url": "https://github.com/adang1345/PythonWin7/raw/master/$majorVersion.$minorVersion.${patchVersion:-0}/python-$version-full.exe#/setup.exe"
+            }
+        }
+    }
+}
