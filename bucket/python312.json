@@ -1,47 +1,47 @@
 {
-    "version": "3.12.12",
+    "version": "3.12.10",
     "description": "A programming language that lets you work quickly and integrate systems more effectively.",
-    "homepage": "https://github.com/coatl-dev/python3.12",
+    "homepage": "https://www.python.org/",
     "license": "Python-2.0",
     "notes": "Allow applications and third-party installers to find python by running: \"$dir\\install-pep-514.reg\"",
     "architecture": {
         "64bit": {
-            "url": [
-                "https://github.com/coatl-dev/python3.12/releases/download/3.12.12/python-3.12.12-amd64.exe#/setup.exe",
-                "https://raw.githubusercontent.com/coatl-dev/scoop-coatl-dev/coatl/scripts/python/install-pep-514.reg",
-                "https://raw.githubusercontent.com/coatl-dev/scoop-coatl-dev/coatl/scripts/python/uninstall-pep-514.reg"
-            ],
-            "hash": [
-                "e4152082dcecd2bbae448f4e23d182d987fd0a388834c0a1720909de92c84d8a",
-                "8dc7b951b12b03d6949a09cff7ce0f57cf5eb125aa590fccac500f2f75212ef0",
-                "65a46d5a9fec455b6fbc5d75f8a57cd5ee958d31873ef438766866a53759e9f6"
-            ]
+            "url": "https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe#/setup.exe",
+            "hash": "md5:5eddb0b6f12c852725de071ae681dde4"
         },
         "32bit": {
-            "url": [
-                "https://github.com/coatl-dev/python3.12/releases/download/3.12.12/python-3.12.12.exe#/setup.exe",
-                "https://raw.githubusercontent.com/coatl-dev/scoop-coatl-dev/coatl/scripts/python/install-pep-514.reg",
-                "https://raw.githubusercontent.com/coatl-dev/scoop-coatl-dev/coatl/scripts/python/uninstall-pep-514.reg"
-            ],
-            "hash": [
-                "44cafac22509ea5cad726d4feb6640001238a9d93cb0fee3b65c6d1b8e3921a9",
-                "8dc7b951b12b03d6949a09cff7ce0f57cf5eb125aa590fccac500f2f75212ef0",
-                "65a46d5a9fec455b6fbc5d75f8a57cd5ee958d31873ef438766866a53759e9f6"
-            ]
+            "url": "https://www.python.org/ftp/python/3.12.10/python-3.12.10.exe#/setup.exe",
+            "hash": "md5:ff3e7e2582811ade44916d9c3d2a64b2"
         },
         "arm64": {
-            "url": [
-                "https://github.com/coatl-dev/python3.12/releases/download/3.12.12/python-3.12.12-arm64.exe#/setup.exe",
-                "https://raw.githubusercontent.com/coatl-dev/scoop-coatl-dev/coatl/scripts/python/install-pep-514.reg",
-                "https://raw.githubusercontent.com/coatl-dev/scoop-coatl-dev/coatl/scripts/python/uninstall-pep-514.reg"
-            ],
-            "hash": [
-                "48949cccd87afd6b8065cf27d0b650072a4e5e25b8f27f24cafd2f9c867c41f9",
-                "8dc7b951b12b03d6949a09cff7ce0f57cf5eb125aa590fccac500f2f75212ef0",
-                "65a46d5a9fec455b6fbc5d75f8a57cd5ee958d31873ef438766866a53759e9f6"
-            ]
+            "url": "https://www.python.org/ftp/python/3.12.10/python-3.12.10-arm64.exe#/setup.exe",
+            "hash": "md5:37df52717faa6c514342b8d43cae7026"
         }
     },
+    "pre_install": [
+        "$py_root = \"$dir\".Replace('\\', '\\\\')",
+        "$py_archLabel = '64-bit'",
+        "$bit = '64'",
+        "if ($architecture -eq '32bit') {",
+        "    $py_archLabel = '32-bit'",
+        "    $bit = '32'",
+        "}",
+        "if ($architecture -eq 'arm64') { $py_archLabel = 'ARM64' }",
+        "'install-pep-514.reg', 'uninstall-pep-514.reg' | ForEach-Object {",
+        "    $py_version = ($version -split '\\.')[0..1] -join '.'",
+        "    $content = Get-Content \"$bucketsdir\\main\\scripts\\python\\$_\"",
+        "    $content = $content.Replace('$py_root', $py_root)",
+        "    $content = $content.Replace('$py_version', $py_version)",
+        "    $content = $content.Replace('$py_fullversion', $version)",
+        "    $content = $content.Replace('$py_cleanVersion', $version -replace '\\.')",
+        "    $content = $content.Replace('$py_archLabel', $py_archLabel)",
+        "    $content = $content.Replace('$py_arch', \"$bit\")",
+        "    if ($global) {",
+        "       $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    Set-Content \"$dir\\$_\" $content -Encoding Ascii",
+        "}"
+    ],
     "installer": {
         "script": [
             "Expand-DarkArchive \"$dir\\setup.exe\" \"$dir\\_tmp\"",
@@ -62,46 +62,30 @@
     },
     "post_install": [
         "python -E -s -m ensurepip -U --default-pip | Out-Null",
-        "Write-Output \"$([char]0x1b)[0m\" # Reset ansi to prevent color leak from installer",
-        "",
-        "New-Item -Path $dir\\Scripts\\ -Name .keepme -ItemType File -Force | Out-Null",
-        "",
-        "$_dir = \"$dir\".Replace('\\', '\\\\')",
-        "$py_root = \"$_dir\".Replace(\"$version\", 'current')",
-        "$py_archLabel = '64-bit'",
-        "$bit = '64'",
-        "if ($architecture -eq '32bit') {",
-        "    $py_archLabel = '32-bit'",
-        "    $bit = '32'",
-        "}",
-        "if ($architecture -eq 'arm64') { $py_archLabel = 'ARM64' }",
-        "'install-pep-514.reg', 'uninstall-pep-514.reg' | ForEach-Object {",
-        "    $py_version = ($version -split '\\.')[0..1] -join '.'",
-        "    $content = Get-Content \"$dir\\$_\"",
-        "    $content = $content.Replace('$py_root', $py_root)",
-        "    $content = $content.Replace('$py_version', $py_version)",
-        "    $content = $content.Replace('$py_fullversion', $version)",
-        "    $content = $content.Replace('$py_archLabel', $py_archLabel)",
-        "    $content = $content.Replace('$py_arch', \"$bit\")",
-        "    if ($global) {",
-        "       $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
-        "    }",
-        "    Set-Content \"$dir\\$_\" $content -Encoding Ascii",
-        "}"
-    ],
-    "bin": [
-        [
-            "python.exe",
-            "python3.12"
-        ],
-        [
-            "Lib\\idlelib\\idle.bat",
-            "idle3.12"
-        ]
+        "Write-Output \"$([char]0x1b)[0m\" # Reset ansi to prevent color leak from installer"
     ],
     "env_add_path": [
         "Scripts",
         "."
+    ],
+    "bin": [
+        [
+            "python.exe",
+            "python3"
+        ],
+        [
+            "python.exe",
+            "python312"
+        ],
+        "Lib\\idlelib\\idle.bat",
+        [
+            "Lib\\idlelib\\idle.bat",
+            "idle3"
+        ],
+        [
+            "Lib\\idlelib\\idle.bat",
+            "idle312"
+        ]
     ],
     "persist": [
         "Scripts",
@@ -115,31 +99,25 @@
             "}"
         ]
     },
-    "post_uninstall": [
-        "if ($global) {",
-        "    $regBase = 'HKEY_LOCAL_MACHINE'",
-        "} else {",
-        "    $regBase = 'HKEY_CURRENT_USER'",
-        "}",
-        "",
-        "$registryPath = \"Registry::$regBase\\Software\\Python\\PythonCore\\3.12\"",
-        "",
-        "if (Test-Path $registryPath) {",
-        "    Remove-Item -Path $registryPath -Recurse",
-        "}"
-    ],
-    "checkver": "github",
+    "checkver": {
+        "url": "https://www.python.org/downloads/windows/",
+        "regex": "python-(3\\.12\\.[\\d.]+)-"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/coatl-dev/python3.12/releases/download/$version/python-$version-amd64.exe#/setup.exe"
+                "url": "https://www.python.org/ftp/python/$version/python-$version-amd64.exe#/setup.exe"
             },
             "32bit": {
-                "url": "https://github.com/coatl-dev/python3.12/releases/download/$version/python-$version.exe#/setup.exe"
+                "url": "https://www.python.org/ftp/python/$version/python-$version.exe#/setup.exe"
             },
             "arm64": {
-                "url": "https://github.com/coatl-dev/python3.12/releases/download/$version/python-$version-arm64.exe#/setup.exe"
+                "url": "https://www.python.org/ftp/python/$version/python-$version-arm64.exe#/setup.exe"
             }
+        },
+        "hash": {
+            "url": "https://www.python.org/downloads/release/python-$cleanVersion/",
+            "regex": "(?sm)$basename.*?$md5"
         }
     }
 }
