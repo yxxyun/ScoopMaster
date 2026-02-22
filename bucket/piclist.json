@@ -1,21 +1,36 @@
 {
     "version": "3.3.2",
-    "description": "An image upload and manage tool, base on PicGo.",
-    "homepage": "https://piclist.cn/",
+    "description": "PicList - 高效的云存储和图床平台管理工具，基于 PicGo 深度二次开发",
+    "homepage": "https://piclist.cn",
     "license": "MIT",
+    "notes": [
+        "PicList 数据文件位置: %APPDATA%\\piclist",
+        "插件目录: %APPDATA%\\piclist\\node_modules"
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://release.piclist.cn/latest/PicList-Setup-3.3.2-x64.exe#/dl.7z",
-            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-            "hash": "7956b89e3f19da72c47bc11a9d31f844f12e9dde43734bbb26fabb85553adccf"
-        },
-        "arm64": {
-            "url": "https://release.piclist.cn/latest/PicList-Setup-3.3.2-arm64.exe#/dl.7z",
-            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\"",
-            "hash": "75c56f244432efa0e0fd9f731acd83030c68d8d29b161cab86c20ee01583410d"
+            "url": "https://github.com/Kuingsmile/PicList/releases/download/v3.3.2/PicList-Setup-3.3.2-x64-portable.7z",
+            "hash": "8c5471c56ca7692070e90e29c9eca9b8658877875b7aeda6e3f67f5457d1e286"
         }
     },
-    "post_install": "Remove-Item \"$dir\\`$*\", \"$dir\\resources\\app-update.yml\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'piclist'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    Move-Item -LiteralPath $source -Destination $backup -Force",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
     "bin": "PicList.exe",
     "shortcuts": [
         [
@@ -23,17 +38,14 @@
             "PicList"
         ]
     ],
+    "persist": "data",
     "checkver": {
         "github": "https://github.com/Kuingsmile/PicList"
     },
-    "notes": "PicList is NOT portable.",
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://release.piclist.cn/latest/PicList-Setup-$version-x64.exe#/dl.7z"
-            },
-            "arm64": {
-                "url": "https://release.piclist.cn/latest/PicList-Setup-$version-arm64.exe#/dl.7z"
+                "url": "https://github.com/Kuingsmile/PicList/releases/download/v$version/PicList-Setup-$version-x64-portable.7z"
             }
         }
     }
