@@ -1,0 +1,78 @@
+{
+    "version": "2.042R-u_1.062R-i",
+    "url": "https://github.com/adobe-fonts/source-code-pro/releases/download/2.042R-u%2F1.062R-i%2F1.026R-vf/TTF-source-code-pro-2.042R-u_1.062R-i.zip",
+    "homepage": "https://github.com/adobe-fonts/source-code-pro",
+    "description": "Monospaced font family for user interface and coding environments.",
+    "hash": "0c85bac90d15c040b82939aa92bc8404420fccc02e37bbcb9c93a7f21abb52c6",
+    "license": "OFL-1.1",
+    "installer": {
+        "script": [
+            "$currentBuildNumber = [int] (Get-ItemProperty \"HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\").CurrentBuildNumber",
+            "$windows10Version1809BuildNumber = 17763",
+            "if ($currentBuildNumber -lt $windows10Version1809BuildNumber -and !$global) {",
+            "    Write-Host \"\"",
+            "    Write-Host \"For Windows versions prior to 1809, fonts can only be installed for all users.\" -Foreground DarkRed",
+            "    Write-Host \"Please run 'scoop install -g $app' to install this font globally.\" -Foreground DarkRed",
+            "    Write-Host \"\"",
+            "    exit 1",
+            "}",
+            "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
+            "if (-not (Test-Path $fontInstallDir)) { New-Item -ItemType Directory -Path $fontInstallDir -ErrorAction SilentlyContinue | Out-Null }",
+            "$registryRoot = if ($global) { \"HKLM\" } else { \"HKCU\" }",
+            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
+            "Get-ChildItem $dir -Recurse -Include '*.ttf' | ForEach-Object {",
+            "    $fontName = $_.Name",
+            "    $fontFile = \"$fontInstallDir\\$fontName\"",
+            "    Copy-Item $_.FullName -Destination $fontFile -Force",
+            "    $fontRegistryName = \"$($_.BaseName) (TrueType)\"",
+            "    $fontRegistryValue = if ($global) { $fontName } else { $fontFile }",
+            "    New-ItemProperty -Path $registryKey -Name $fontRegistryName -Value $fontRegistryValue -PropertyType String -Force | Out-Null",
+            "}"
+        ]
+    },
+    "pre_uninstall": [
+        "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
+        "Get-ChildItem $dir -Recurse -Include '*.ttf' | ForEach-Object {",
+        "    $fontFile = \"$fontInstallDir\\$($_.Name)\"",
+        "    if (-not (Test-Path $fontFile)) { return }",
+        "    try {",
+        "        Rename-Item -Path $fontFile -NewName $_.Name -ErrorAction Stop",
+        "    } catch {",
+        "        Write-Host \"\"",
+        "        Write-Host \" Error \" -Background DarkRed -Foreground White -NoNewline",
+        "        Write-Host \" Cannot uninstall '$app' font.\"",
+        "        Write-Host \" Reason \" -Background DarkCyan -Foreground White -NoNewline",
+        "        Write-Host \" The font is currently in use by an application.\"",
+        "        Write-Host \" Suggestion \" -Background Magenta -Foreground White -NoNewline",
+        "        Write-Host \" Close applications using the font (e.g., text editors) and try again.\"",
+        "        Write-Host \"\"",
+        "        exit 1",
+        "    }",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
+            "$registryRoot = if ($global) { \"HKLM\" } else { \"HKCU\" }",
+            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
+            "Get-ChildItem $dir -Recurse -Include '*.ttf' | ForEach-Object {",
+            "    $fontName = $_.Name",
+            "    $fontRegistryName = \"$($_.BaseName) (TrueType)\"",
+            "    Remove-ItemProperty -Path $registryKey -Name $fontRegistryName -ErrorAction SilentlyContinue",
+            "    Remove-Item \"$fontInstallDir\\$fontName\" -Force -ErrorAction SilentlyContinue",
+            "}",
+            "if ($cmd -eq 'uninstall') {",
+            "    Write-Host \"The '$app' font family has been uninstalled.\" -Foreground Magenta",
+            "    Write-Host \"A system restart may be required for changes to take full effect.\" -Foreground Magenta",
+            "}"
+        ]
+    },
+    "checkver": {
+        "github": "https://github.com/adobe-fonts/source-code-pro",
+        "regex": "([\\d.]+R-u)\\%2F([\\d.]+R-i)\\%2F([\\d.]+R-vf)",
+        "replace": "${1}_${2}"
+    },
+    "autoupdate": {
+        "url": "https://github.com/adobe-fonts/source-code-pro/releases/download/$match1%2F$match2%2F$match3/TTF-source-code-pro-$version.zip"
+    }
+}
