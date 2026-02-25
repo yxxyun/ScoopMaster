@@ -1,13 +1,10 @@
 {
+    "##": "TODO: 利用cloud init 实现安装后自动配置，而不是chezmoi",
     "version": "2026.01.08.213101",
     "description": "安装archlinux",
     "homepage": "https://gitlab.archlinux.org/archlinux/archlinux-wsl",
     "license": "Freeware",
-    "depends": [
-        "ChuckieChen945_Tangyuan/microsoft-wsl-customized",
-        "ChuckieChen945_Tangyuan/wsldl-archlinux",
-        "main/chezmoi"
-    ],
+    "depends": ["ChuckieChen945_Tangyuan/wsl-customized", "main/chezmoi"],
     "architecture": {
         "64bit": {
             "url": "https://mirrors.tuna.tsinghua.edu.cn/archlinux/wsl/latest/archlinux.wsl"
@@ -16,13 +13,12 @@
     "pre_install": ["ensure \"$persist_dir\\data\""],
     "installer": {
         "script": [
-            "Copy-Item \"$(appdir wsldl-archlinux $global)\\current\\Arch.exe\" \"$persist_dir\\data\\Arch.exe\"",
-            "Invoke-ExternalCommand \"$persist_dir\\data\\Arch.exe\" 'install', \"$dir\\archlinux.wsl\""
+            "info \"Importing WSL distribution...\"",
+            "wsl --import arch \"$persist_dir\\data\" \"$dir\\archlinux.wsl\""
         ]
     },
     "post_install": [
-        "Remove-Item \"$persist_dir\\data\\Arch.exe\" -Force -ErrorAction SilentlyContinue",
-        "Remove-Item \"$dir\\archlinux.wsl\" -Force -ErrorAction SilentlyContinue",
+        "Get-ChildItem -Path $dir -Recurse | Remove-Item -Force -ErrorAction SilentlyContinue -Recurse",
         "# init wsl",
         "init_chezmoi",
         "$post_install = '/mnt/d/scoop/buckets/ChuckieChen945_Tangyuan/scripts/archlinux-customized/post_install.sh'",
@@ -33,7 +29,7 @@
         "wsl bash $pre_uninstall"
     ],
     "uninstaller": {
-        "script": ["Invoke-ExternalCommand Arch 'clean', '-y'"]
+        "script": ["wsl --unregister arch"]
     },
     "persist": "data",
     "checkver": {
