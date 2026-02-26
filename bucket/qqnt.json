@@ -22,9 +22,9 @@
     },
     "installer": {
         "script": [
-            "$configpath = \"$env:PUBLIC\\Documents\\Tencent\\QQ\"",
+            "$configpath = \"$([Environment]::GetFolderPath('CommonDocuments'))\\Tencent\\QQ\"",
             "if (!(Test-Path -Path \"$configpath\")) {",
-            "    New-Item -Path \"$configpath\" -Type Directory -Force | Out-Null",
+            "    New-Item -Path \"$configpath\" -Type Directory -Force -ErrorAction SilentlyContinue | Out-Null",
             "}",
             "if (!(Test-Path -Path \"$configpath\\UserDataInfo.ini\" -PathType leaf)) {",
             "    Set-Content -NoNewline -Path \"$configpath\\UserDataInfo.ini\" -Value \"[UserDataSet]`nUserDataSavePathType=2`nUserDataSavePath=`\"$persist_dir\\Tencent Files`\"\"",
@@ -38,8 +38,18 @@
         ]
     ],
     "persist": "Tencent Files",
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App"
+    ],
     "uninstaller": {
-        "script": "Remove-Item -Path \"$env:PUBLIC\\Documents\\Tencent\" -Recurse -Force | Out-Null"
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    Remove-Item -Path \"$([Environment]::GetFolderPath('CommonDocuments'))\\Tencent\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+            "    Remove-Item -Path \"$env:AppData\\QQ\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+            "}"
+        ]
     },
     "checkver": {
         "script": [
@@ -51,19 +61,19 @@
             "$url = $url -Replace [regex]::Escape($hostname), $ip",
             "Invoke-WebRequest -Uri $url -UseBasicParsing -Headers @{'Host' = $hostname} | Select-Object -ExpandProperty Content"
         ],
-        "regex": "([\\d\\w]+).qq.com/qqfile/qq/QQNT/Windows/QQ_([\\d\\.]+)_([\\d]+)_x86_01.exe",
-        "replace": "${2}.${3}"
+        "regex": "QQNT/Windows/QQ_([\\d\\.]+)_([\\d]+)_x86_01.exe",
+        "replace": "${1}.${2}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$match2_$match3_x64_01.exe#/dl.7z"
+                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$match1_$match2_x64_01.exe#/dl.7z"
             },
             "32bit": {
-                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$match2_$match3_x86_01.exe#/dl.7z"
+                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$match1_$match2_x86_01.exe#/dl.7z"
             },
             "arm64": {
-                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$match2_$match3_arm64_01.exe#/dl.7z"
+                "url": "https://dldir1v6.qq.com/qqfile/qq/QQNT/Windows/QQ_$match1_$match2_arm64_01.exe#/dl.7z"
             }
         }
     }
