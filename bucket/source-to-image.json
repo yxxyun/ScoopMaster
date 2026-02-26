@@ -11,13 +11,19 @@
     },
     "bin": "s2i.exe",
     "checkver": {
-        "github": "https://github.com/openshift/source-to-image",
-        "regex": "v([\\d.]+)-(?<commit>[\\da-f]{8})"
+        "script": [
+            "$release = Invoke-RestMethod -Uri 'https://api.github.com/repos/openshift/source-to-image/releases/latest'",
+            "$asset = $release.assets | Where-Object { $_.name -match 'windows-amd64\\.zip$' } | Select-Object -First 1",
+            "if ($asset.name -match 'v([\\d.]+)-([\\da-f]{8})') {",
+            "    Write-Output \"$($Matches[1]) $($Matches[2])\"",
+            "}"
+        ],
+        "regex": "(?<version>[\\d.]+)\\s+(?<commit>[\\da-f]{8})"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/openshift/source-to-image/releases/download/v$version/source-to-image-v$version-$matchCommit-windows-amd64.zip"
+                "url": "https://github.com/openshift/source-to-image/releases/download/v$matchVersion/source-to-image-v$matchVersion-$matchCommit-windows-amd64.zip"
             }
         }
     }
