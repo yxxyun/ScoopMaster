@@ -1,0 +1,68 @@
+{
+    "version": "2.5.4",
+    "description": "AI prompt optimization tool - optimize, iterate, and manage prompts with multiple LLM providers",
+    "homepage": "https://github.com/linshenkx/prompt-optimizer",
+    "license": "AGPL-3.0-only",
+    "notes": [
+        "PromptOptimizer 是一个 AI 提示词优化工具，支持多种 LLM 提供商",
+        "用户数据目录：%APPDATA%\\PromptOptimizer\\",
+        "本包会将该目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/linshenkx/prompt-optimizer/releases/download/v2.5.4/PromptOptimizer-2.5.4-win-x64.zip",
+            "hash": "8029e69b7fbafda9abc7334d4b17d3d40e4936f790002abb6704c53c543f81af"
+        }
+    },
+    "bin": "PromptOptimizer.exe",
+    "shortcuts": [
+        [
+            "PromptOptimizer.exe",
+            "PromptOptimizer"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'PromptOptimizer'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"配置路径已存在且不是目录：$source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"迁移失败，保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原配置目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原目录：$source\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "persist": "data",
+    "checkver": {
+        "github": "https://github.com/linshenkx/prompt-optimizer"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/linshenkx/prompt-optimizer/releases/download/v$version/PromptOptimizer-$version-win-x64.zip"
+            }
+        }
+    }
+}
