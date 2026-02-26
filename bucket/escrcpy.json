@@ -1,30 +1,41 @@
 {
-    "version": "2.4.0",
-    "description": "📱 使用图形化的 Scrcpy 显示和控制您的 Android 设备，由 Electron 驱动",
+    "version": "2.4.2",
+    "description": "Graphical Scrcpy to display and control Android devices, powered by Electron",
     "homepage": "https://github.com/viarotel-org/escrcpy",
-    "license": "MIT",
+    "license": "Apache-2.0",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/viarotel-org/escrcpy/releases/download/v2.4.0/Escrcpy-2.4.0-win-setup-x64.exe#/dl.7z",
-            "hash": "sha512:d22eb503b932ded85dd5d5c174f0c9653610a2fe3f612eff54c7d51494f4f1f796d755dae32df645b66e5f55d23ac913246f65927ea06b3ec41da18218a060ae"
+            "url": "https://github.com/viarotel-org/escrcpy/releases/download/v2.4.2/Escrcpy-2.4.2-win-setup-x64.exe#/dl.7z",
+            "hash": "sha512:022fe51441126b46905a57765b6df77e3d762bdf1e802d4cb148556effde193fcd66deeb022bd1502654ce34d65211d929336c9d3049bcce1ac9ea6dbcd81d9e"
         },
         "arm64": {
-            "url": "https://github.com/viarotel-org/escrcpy/releases/download/v2.4.0/Escrcpy-2.4.0-win-setup-arm64.exe#/dl.7z",
-            "hash": "sha512:fd0c367b88efa860096ad598fad3008b328f688c77680617b292d7b5c37bd8bd22aec3d4365df328743f5c3e0cfa8e20d0eec51601d608cb03b6f47a338a87df"
+            "url": "https://github.com/viarotel-org/escrcpy/releases/download/v2.4.2/Escrcpy-2.4.2-win-setup-arm64.exe#/dl.7z",
+            "hash": "sha512:397a276469b3b60571c5c36203182ccfb5dfe447e5ca4ee04119a1d46dcdf88bb4f865366d85c81fb087eb56ec8398852edf2b03096502b543f88e757c51d6b6"
         }
     },
     "pre_install": [
-        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app*.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\`$R0\", \"$dir\\`$PLUGINSDIR\" -Force -Recurse"
+        "Get-ChildItem \"$dir\\`$PLUGINSDIR\\app*.7z\" | Rename-Item -NewName 'app.7z'",
+        "Expand-7zipArchive -Path \"$dir\\`$PLUGINSDIR\\app.7z\" \"$dir\"",
+        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Recurse"
     ],
+    "installer": {
+        "script": [
+            "if (Test-Path \"$env:AppData\\escrcpy\") {",
+            "    info '[Persistent AppData]: Moving user data...'",
+            "    ensure \"$persist_dir\\UserData\" | Out-Null",
+            "    Copy-Item \"$env:AppData\\escrcpy\\*\" \"$persist_dir\\UserData\\\" -Recurse -Force -ErrorAction 'SilentlyContinue'",
+            "    Remove-Item \"$env:AppData\\escrcpy\" -Recurse -Force -ErrorAction 'SilentlyContinue'",
+            "}"
+        ]
+    },
     "shortcuts": [
         [
             "Escrcpy.exe",
             "Escrcpy",
-            "--user-data-dir=\"$dir\\User Data\""
+            "--user-data-dir=\"$persist_dir\\UserData\""
         ]
     ],
-    "persist": "User Data",
+    "persist": "UserData",
     "checkver": "github",
     "autoupdate": {
         "architecture": {
@@ -37,7 +48,7 @@
         },
         "hash": {
             "url": "$baseurl/latest.yml",
-            "regex": "$basename\\s+sha512:\\s+$base64"
+            "regex": "(?sm)$basename.*?sha512:\\s+$base64"
         }
     }
 }
