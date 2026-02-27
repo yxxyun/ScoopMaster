@@ -1,25 +1,45 @@
 {
-  "homepage": "https://www.openshift.com/",
-  "description": "Red Hat OpenShift is a hybrid cloud, enterprise Kubernetes application platform, trusted by 2,000+ organizations. This manifest installs the OpenShift Client (OC).",
-  "license": "Apache-2.0",
-  "version": "3.9.99",
-  "architecture": {
-    "64bit": {
-      "url": "https://mirror.openshift.com/pub/openshift-v3/clients/3.9.99/windows/oc.zip",
-      "hash": "9a67de588abdf308b82f7697e0b83bd371835bb17ce994a1767d53ca4c360b85"
-    }
-  },
-  "bin": "oc.exe",
-  "checkver": {
-    "url": "https://mirror.openshift.com/pub/openshift-v3/clients/",
-    "regex": "<a href=\"([\\d.-]+)/\">",
-    "reverse": true
-  },
-  "autoupdate": {
+    "homepage": "https://www.openshift.com/",
+    "description": "Red Hat OpenShift is a hybrid cloud, enterprise Kubernetes application platform, trusted by 2,000+ organizations. This manifest installs the OpenShift Client (OC).",
+    "license": "Apache-2.0",
+    "version": "3.11.1938-1",
     "architecture": {
-      "64bit": {
-        "url": "https://mirror.openshift.com/pub/openshift-v3/clients/$version/windows/oc.zip"
-      }
+        "64bit": {
+            "url": "https://mirror.openshift.com/pub/openshift-v3/clients/3.11.1938-1/windows/oc.zip",
+            "hash": "9167892a140a9c6b8628db52b31b117a71da51acd69895ada8e1be9fd5b08a01"
+        }
+    },
+    "bin": "oc.exe",
+    "checkver": {
+        "script": [
+            "$allVersions = @()",
+            "$offset = 0",
+            "$maxPages = 10",
+            "$pageCount = 0",
+            "do {",
+            "    $url = \"https://mirror.openshift.com/pub/openshift-v3/clients/?C=M;O=D;F=0;entry=$offset\"",
+            "    $page = Invoke-WebRequest -Uri $url -UseBasicParsing",
+            "    $versions = $page.Content | Select-String -Pattern '<a href=\"([\\d.-]+)/\">' -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value }",
+            "    if ($versions.Count -eq 0) { break }",
+            "    $newVersions = $versions | Where-Object { $_ -notin $allVersions }",
+            "    if ($newVersions.Count -eq 0) { break }",
+            "    $allVersions += $newVersions",
+            "    $offset += 1000",
+            "    $pageCount++",
+            "} while ($pageCount -lt $maxPages)",
+            "$latest = $allVersions | Sort-Object {",
+            "    $parts = $_ -split '[.-]'",
+            "    [int]$parts[0] * 1000000 + [int]$parts[1] * 10000 + [int]$parts[2]",
+            "} -Descending | Select-Object -First 1",
+            "Write-Output $latest"
+        ],
+        "regex": "([\\d.-]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://mirror.openshift.com/pub/openshift-v3/clients/$version/windows/oc.zip"
+            }
+        }
     }
-  }
 }
