@@ -1,21 +1,104 @@
 {
     "version": "1.2.2",
-    "description": "Proof-of-origin token provider plugin for yt-dlp",
     "homepage": "https://github.com/Brainicism/bgutil-ytdlp-pot-provider",
-    "license": "GPL-3.0-only",
-    "url": "https://github.com/Brainicism/bgutil-ytdlp-pot-provider/releases/download/1.2.2/bgutil-ytdlp-pot-provider.zip",
-    "hash": "ccda519078ff64f3a4016ebdf34c2d5f07becf62b2b43a66c43b9833c34fa766",
-    "notes": [
-        "Run something like:",
-        "New-Item -ItemType Junction -Target (scoop prefix bgutil-ytdlp-pot-provider) -Path \"$(scoop prefix yt-dlp)/yt-dlp-plugins/bgutil-ytdlp-pot-provider\""
+    "description": "A PO Token provider for yt-dlp.",
+    "license": "GPL-3.0",
+    "url": [
+        "https://github.com/Brainicism/bgutil-ytdlp-pot-provider/releases/download/1.2.2/bgutil-ytdlp-pot-provider.zip#/bgutil-ytdlp-pot-provider.zip.KEEP",
+        "https://github.com/Brainicism/bgutil-ytdlp-pot-provider/archive/refs/tags/1.2.2.zip"
     ],
-    "suggest": {
-        "yt-dlp": "main/yt-dlp",
-        "yt-dlp-nightly": "versions/yt-dlp-nightly",
-        "yt-dlp-master": "versions/yt-dlp-master"
-    },
+    "hash": [
+        "ccda519078ff64f3a4016ebdf34c2d5f07becf62b2b43a66c43b9833c34fa766",
+        "e008f8a1536f7487dd26f47f121cac34daef0b5d42c90eeb29427245fac6dcf2"
+    ],
     "checkver": "github",
     "autoupdate": {
-        "url": "https://github.com/Brainicism/bgutil-ytdlp-pot-provider/releases/download/$version/bgutil-ytdlp-pot-provider.zip"
-    }
+        "url": [
+            "https://github.com/Brainicism/bgutil-ytdlp-pot-provider/releases/download/$version/bgutil-ytdlp-pot-provider.zip#/bgutil-ytdlp-pot-provider.zip.KEEP",
+            "https://github.com/Brainicism/bgutil-ytdlp-pot-provider/archive/refs/tags/$version.zip"
+        ]
+    },
+    "notes": [
+        "This manifest is specifically for the PO Token Generation Script option of bgutil-ytdlp-pot-provider.",
+        "As such, it requires Node.js to be installed in order to transpile the PO Token Generation script from the source TypeScript into JavaScript that can be used by the yt-dlp plugin part of bgutil-ytdlp-pot-provider."
+    ],
+    "suggest": {
+        "Node.js": "nodejs-lts"
+    },
+    "post_install": [
+        "$currentdir = Get-Item -Path . | Select-Object -ExpandProperty FullName",
+        "$node_installed = $true",
+        "$required = @('npm', 'npx')",
+        "if ($required | Where-Object { -not (Get-Command $_ -ErrorAction SilentlyContinue) }) {",
+        "$node_installed = $false",
+        "}",
+        "Get-ChildItem -Path $dir -Filter '*.zip.KEEP' | Rename-Item -NewName { $_.Name -replace '.KEEP', '' }",
+        "Write-Host \"`n`nMoving yt-dlp plugin provider for $app v$version to a yt-dlp plugin folder\" -ForegroundColor Magenta",
+        "$xdg_config_home = ([System.Environment]::GetEnvironmentVariable('XDG_CONFIG_HOME'))",
+        "$xdg_config_home_set = [bool]$xdg_config_home",
+        "if (($xdg_config_home_set) -and (Resolve-Path $xdg_config_home -ErrorAction SilentlyContinue)) {",
+        "$plugin_outdir = \"$env:XDG_CONFIG_HOME\\yt-dlp-plugins\"",
+        "Write-Host \"Moving yt-dlp plugin provider to '$plugin_outdir'\" -ForegroundColor Magenta",
+        "if (!(Test-Path $plugin_outdir -PathType Container)) {",
+        "Write-Host \"'$plugin_outdir' does not exist, creating folder now...\" -ForegroundColor Magenta",
+        "New-Item -ItemType Directory -Path $plugin_outdir | Out-Null",
+        "}",
+        "$plugin_outpath = \"$plugin_outdir\\bgutil-ytdlp-pot-provider.zip\"",
+        "Copy-Item \"$dir\\bgutil-ytdlp-pot-provider.zip\" -Destination $plugin_outpath",
+        "Write-Host \"yt-dlp plugin provider copied to '$plugin_outpath'\" -ForegroundColor Magenta",
+        "} else {",
+        "$plugin_outdir = \"$env:APPDATA\\yt-dlp-plugins\"",
+        "Write-Host \"Moving yt-dlp plugin provider to '$plugin_outdir'\" -ForegroundColor Magenta",
+        "if (!(Test-Path $plugin_outdir -PathType Container -ErrorAction SilentlyContinue)) {",
+        "Write-Host \"'$plugin_outdir' does not exist, creating folder now...\" -ForegroundColor Magenta",
+        "New-Item -ItemType Directory -Path $plugin_outdir | Out-Null",
+        "}",
+        "$plugin_outpath = \"$plugin_outdir\\bgutil-ytdlp-pot-provider.zip\"",
+        "Copy-Item \"$dir\\bgutil-ytdlp-pot-provider.zip\" -Destination $plugin_outpath",
+        "Write-Host \"yt-dlp plugin provider copied to '$plugin_outpath'\" -ForegroundColor Magenta",
+        "}",
+        "$typescript = Get-ChildItem -Path $dir -Filter \"bgutil-ytdlp-pot-provider-$version\" -Directory",
+        "if ($node_installed) {",
+        "Write-Host \"`nNode.js is installed`nnpm & npx are available on the PATH`nProceeding with steps that require npm & npx\" -ForegroundColor Magenta",
+        "$typescript | Get-ChildItem -Directory -Filter 'server' | Set-Location",
+        "Write-Host \"`nRunning npm install for $app v$version\" -ForegroundColor Magenta",
+        "npm install",
+        "Write-Host \"`nAttempting to address any Node security vulnerabilities present in $app v$version\" -ForegroundColor Magenta",
+        "npm audit fix",
+        "Write-Host \"`nTranspiling TypeScript into JavaScript for $app v$version`n\" -ForegroundColor Magenta",
+        "npx tsc",
+        "Set-Location $dir",
+        "$typescript | Rename-Item -NewName typescript",
+        "$typescript = Get-ChildItem -Path $dir -Directory",
+        "$pot_generation_script = Get-ChildItem -Path $typescript -File -Filter 'server\\build\\generate_once.js'",
+        "$plugin_readme_location = Get-ChildItem -Path $typescript -File -Filter 'README.md'",
+        "Write-Host \"The PO Token Generation Script for $app v$version is now located at:`n$($pot_generation_script.FullName)`n\" -ForegroundColor DarkCyan -BackgroundColor Black",
+        "Write-Host \"To use the PO Token Generation Script, yt-dlp must be called with the following extractor arguement:`n--extractor-args 'youtubepot-bgutilscript:script_path=$($pot_generation_script.FullName)'`n\" -ForegroundColor DarkCyan -BackgroundColor Black",
+        "Write-Host \"For more information, refer to the plugin's README.md file located at:`n$($plugin_readme_location.FullName)'`n\" -ForegroundColor DarkCyan -BackgroundColor Black",
+        "} else {",
+        "Write-Host \"`nNode.js is not installed`nPlease install Node.js using your method of choice (e.g. Scoop using main/nodejs-lts, Official Node.js MSI installer)`nand run the following commands:`n\" -ForegroundColor Yellow",
+        "Write-Host \"Set-Location '$($typescript.FullName)\\server'\" -ForegroundColor DarkCyan -BackgroundColor Black",
+        "Write-Host \"npm install\" -ForegroundColor DarkCyan -BackgroundColor Black",
+        "Write-Host \"npm audit fix\" -ForegroundColor DarkCyan -BackgroundColor Black",
+        "Write-Host \"npx tsc\" -ForegroundColor DarkCyan -BackgroundColor Black",
+        "Write-Host \"Set-Location '..\\..'\" -ForegroundColor DarkCyan -BackgroundColor Black",
+        "Write-Host \"Rename-Item '$($typescript.FullName)' -NewName 'typescript'`n\" -ForegroundColor DarkCyan -BackgroundColor Black",
+        "Write-Host \"After all commands have been successfully run, the PO Token Generation Script for $app v$version will be located at:\" -ForegroundColor Yellow",
+        "Write-Host \"$(Split-Path -Parent $typescript)\\typescript\\server\\build\\generate_once.js`n\" -ForegroundColor DarkCyan -BackgroundColor Black",
+        "Write-Host \"To use the PO Token Generation Script, yt-dlp must be called with the following extractor arguement:`n--extractor-args 'youtubepot-bgutilscript:script_path=$(Split-Path -Parent $typescript)\\typescript\\server\\build\\generate_once.js'`n\" -ForegroundColor Yellow",
+        "Write-Host \"For more information, refer to the plugin's README.md file located at:`n$(Split-Path -Parent $typescript)\\README.md'`n\" -ForegroundColor Yellow",
+        "}",
+        "Set-Location $currentdir",
+        "Write-Host 'post_install script ' -NoNewline"
+    ],
+    "post_uninstall": [
+        "$plugin_xdgconfighome = \"$env:XDG_CONFIG_HOME\\yt-dlp-plugins\\bgutil-ytdlp-pot-provider.zip\"",
+        "$plugin_appdata = \"$env:APPDATA\\yt-dlp-plugins\\bgutil-ytdlp-pot-provider.zip\"",
+        "if (Test-Path -LiteralPath $plugin_xdgconfighome) {",
+        "Get-ChildItem \"$env:XDG_CONFIG_HOME\\yt-dlp-plugins\\bgutil-ytdlp-pot-provider.zip\" | Remove-Item -ErrorAction SilentlyContinue",
+        "}",
+        "if (Test-Path -LiteralPath $plugin_appdata) {",
+        "Get-ChildItem \"$env:APPDATA\\yt-dlp-plugins\\bgutil-ytdlp-pot-provider.zip\" | Remove-Item -ErrorAction SilentlyContinue",
+        "}"
+    ]
 }
