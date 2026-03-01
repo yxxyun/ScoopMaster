@@ -1,0 +1,57 @@
+{
+    "version": "3.3",
+    "description": "A Nintendo Switch USB and network server for managing and installing NSP files.",
+    "homepage": "https://github.com/blawar/nut",
+    "license": "GPL-3.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/blawar/nut/releases/download/v3.3/nut.exe",
+            "hash": "9629147b64b746754d92eb7974919f5fa831ad2e1fce186b7745a2c73145e706"
+        }
+    },
+    "bin": [
+        [
+            "nut.exe",
+            "nut"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "nut.exe",
+            "Nut"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/blawar/nut",
+        "regex": "/releases/tag/v([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/blawar/nut/releases/download/v$version/nut.exe"
+            }
+        }
+    },
+    "persist": ["data", "titledb", "conf"],
+    "post_install": [
+        "if (!(Test-Path \"$dir\\conf\\nut.conf\")) {",
+        "    Invoke-WebRequest -Uri \"https://raw.githubusercontent.com/blawar/nut/refs/heads/master/conf/nut.default.conf\" -OutFile \"$dir\\conf\\nut.conf\"",
+        "    $config = Get-Content \"$dir\\conf\\nut.conf\" | Out-String | ConvertFrom-Json",
+        "    foreach ($key in $config.paths.PSObject.Properties.Name) {",
+        "        if ($key -ne 'scan' -and $key -ne 'titleDatabase') {",
+        "            $config.paths.$key = \"./data/\" + $config.paths.$key",
+        "        }",
+        "    }",
+        "    $config | ConvertTo-Json -Depth 32 | Set-Content \"$dir\\conf\\nut.conf\"",
+        "}",
+        "if (!(Test-Path \"$dir\\data\\keys.txt\")) {",
+        "    New-Item -Path \"$dir\\data\\keys.txt\" -ItemType File | Out-Null",
+        "    $CreatedKeysTxt = $true",
+        "}",
+        "New-Item -ItemType SymbolicLink -Path \"$dir\\keys.txt\" -Target \"$dir\\data\\keys.txt\" | Out-Null",
+        "if ($CreatedKeysTxt) {",
+        "    Remove-Item \"$dir\\data\\keys.txt\" -Force",
+        "    Write-Host \"`nPlease add your keys to $persist_dir\\data\\keys.txt\" -ForegroundColor Yellow",
+        "}"
+    ]
+}
