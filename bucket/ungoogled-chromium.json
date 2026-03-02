@@ -1,47 +1,74 @@
 {
-    "version": "145.0.7632.75-1.2",
-    "description": "Google Chromium, sans integration with Google.",
+    "version": "145.0.7632.116-1.1",
+    "description": "Chromium, sans Google integration (downloads Widevine & cert. revocation lists separately, stored passwords/profile not encrypted)",
     "homepage": "https://ungoogled-software.github.io/ungoogled-chromium-binaries/",
     "license": "BSD-3-Clause",
+    "depends": [
+        "scoop-alts/widevinecdm",
+        "scoop-alts/chromium-crlset"
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/ungoogled-software/ungoogled-chromium-windows/releases/download/145.0.7632.75-1.2/ungoogled-chromium_145.0.7632.75-1.1_windows_x64.zip",
-            "hash": "658871a488662b26a5eb3ce9266519deba2208198fadd21fb0843e3e6def7c54",
-            "extract_dir": "ungoogled-chromium_145.0.7632.75-1.1_windows_x64"
+            "url": "https://github.com/ungoogled-software/ungoogled-chromium-windows/releases/download/145.0.7632.116-1.1/ungoogled-chromium_145.0.7632.116-1.1_windows_x64.zip",
+            "hash": "cd7d0d95242dd7816f0c3510e5007bac9b7cb43e0f9e8f04a16e1cd2f54532b0",
+            "extract_dir": "ungoogled-chromium_145.0.7632.116-1.1_windows_x64"
         },
         "32bit": {
-            "url": "https://github.com/ungoogled-software/ungoogled-chromium-windows/releases/download/145.0.7632.75-1.2/ungoogled-chromium_145.0.7632.75-1.1_windows_x86.zip",
-            "hash": "3ce721a54c11d8f799d74cb9d1ea134c5fb4441fdfd8f68414fe4804991832cf",
-            "extract_dir": "ungoogled-chromium_145.0.7632.75-1.1_windows_x86"
-        },
-        "arm64": {
-            "url": "https://github.com/ungoogled-software/ungoogled-chromium-windows/releases/download/145.0.7632.75-1.2/ungoogled-chromium_145.0.7632.75-1.1_windows_arm64.zip",
-            "hash": "5f7a657f2d579c7e77971606a36b95702816e1ec6901feed30eb7e7c39b25de9",
-            "extract_dir": "ungoogled-chromium_145.0.7632.75-1.1_windows_arm64"
+            "url": "https://github.com/ungoogled-software/ungoogled-chromium-windows/releases/download/145.0.7632.116-1.1/ungoogled-chromium_145.0.7632.116-1.1_windows_x86.zip",
+            "hash": "e73bf1894ec8d746e67e2afc677159c8a9b046d3e0f0903a70e359cdb3c6f703",
+            "extract_dir": "ungoogled-chromium_145.0.7632.116-1.1_windows_x86"
         }
     },
     "bin": [
         [
             "chrome.exe",
             "chromium",
-            "--user-data-dir=\"$dir\\User Data\""
+            "--user-data-dir=\"$dir\\User Data\" --disable-machine-id --disable-encryption --no-default-browser-check"
         ]
     ],
     "shortcuts": [
         [
             "chrome.exe",
             "Chromium",
-            "--user-data-dir=\"$dir\\User Data\""
+            "--user-data-dir=\"$dir\\User Data\" --disable-machine-id --disable-encryption --no-default-browser-check"
         ]
     ],
-    "env_set": {
-        "CHROME_EXECUTABLE": "$dir\\chrome.exe"
-    },
-    "persist": "User Data",
+    "persist": [
+        "User Data",
+        "Dictionaries",
+        "hyphen-data",
+        "initial_preferences"
+    ],
     "checkver": {
         "github": "https://github.com/ungoogled-software/ungoogled-chromium-windows",
         "regex": "releases/tag/((?<main>[\\d.]+-\\d).(?<release>\\d))"
     },
+    "pre_install": [
+        "if (-not (Test-Path \"$persist_dir\\initial_preferences\")) { New-Item \"$dir\\initial_preferences\" -Force -ItemType File | Out-Null }",
+        "$manifest.persist | ForEach-Object {",
+        "    $dest = \"$dir\\$_\"",
+        "    if ((-not (Test-Path \"$persist_dir\\$_\")) -and (-not (Test-Path $dest -PathType Leaf))) {",
+        "       New-Item $dest -Force -ItemType Directory | Out-Null",
+        "    }",
+        "}"
+    ],
+    "post_install": [
+        "$ace = [System.Security.AccessControl.FileSystemAccessRule]::new([System.Security.Principal.SecurityIdentifier]::new('S-1-15-2-2'), [System.Security.AccessControl.FileSystemRights]::ReadAndExecute, [System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [System.Security.AccessControl.InheritanceFlags]::ObjectInherit, [System.Security.AccessControl.PropagationFlags]::None, [System.Security.AccessControl.AccessControlType]::Allow)",
+        "foreach ($d in @($dir, $original_dir)) {",
+        "   $acl = Get-Acl $d",
+        "   if (-not ($acl.Access | Where-Object { $_.IdentityReference -eq $ace.IdentityReference -and $_.FileSystemRights -eq $ace.FileSystemRights -and $_.InheritanceFlags -eq $ace.InheritanceFlags -and $_.PropagationFlags -eq $ace.PropagationFlags -and $_.AccessControlType -eq $ace.AccessControlType })) {",
+        "       $acl.AddAccessRule($ace)",
+        "       Set-Acl -Path $d -AclObject $acl",
+        "   }",
+        "}",
+        "$componentPackage = @{",
+        "    'WidevineCdm' = 'widevinecdm'",
+        "    'CertificateRevocation' = 'chromium-crlset'",
+        "}",
+        "$componentPackage.GetEnumerator() | ForEach-Object {",
+        "    New-Item -Path \"$dir\\$($_.Key)\" -Target \"$(versiondir $_.Value 'current' $global)\\$($_.Key)\" -ItemType Junction -Force | Out-Null",
+        "}"
+    ],
     "autoupdate": {
         "architecture": {
             "64bit": {
@@ -59,14 +86,6 @@
                     "xpath": "//ul/li/a[contains(text(), \"$basename\")]/../ul/li[contains(text(), \"SHA256:\")]/code"
                 },
                 "extract_dir": "ungoogled-chromium_$version_windows_x86"
-            },
-            "arm64": {
-                "url": "https://github.com/ungoogled-software/ungoogled-chromium-windows/releases/download/$version/ungoogled-chromium_$version_windows_arm64.zip",
-                "hash": {
-                    "url": "https://ungoogled-software.github.io/ungoogled-chromium-binaries/releases/windows/arm64/$matchMain",
-                    "xpath": "//ul/li/a[contains(text(), \"$basename\")]/../ul/li[contains(text(), \"SHA256:\")]/code"
-                },
-                "extract_dir": "ungoogled-chromium_$version_windows_arm64"
             }
         }
     }
