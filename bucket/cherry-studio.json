@@ -16,14 +16,13 @@
             "hash": "e00cf0cc257a0d1fb030a80ddad3ab7fc44161736d7ba67292d49a8c68c5405c"
         }
     },
-    "persist": "data",
-    "post_install": [
-        "if (Test-Path $env:APPDATA\\CherryStudio) {",
-        "    Copy-Item -Path $env:APPDATA\\CherryStudio\\* -Destination \"$persist_dir\\data\" -Force -Recurse",
-        "    Remove-Item $env:APPDATA\\CherryStudio -Force -Recurse",
-        "}",
-        "Remove-Item \"$env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs\\Cherry Studio.lnk\" -ErrorAction SilentlyContinue -Confirm:$false -Force",
-        "New-Item -ItemType Junction -Path $env:APPDATA\\CherryStudio -Target $persist_dir\\data | Out-Null"
+    "pre_install": [
+        "if (-not (Test-Path \"$persist_dir\\data\") -and (Test-Path \"$env:APPDATA\\CherryStudio\")) {",
+        "    ensure \"$persist_dir\\data\" | Out-Null",
+        "    info '[Portable Mode] Copying user data...'",
+        "    Move-Item \"$env:APPDATA\\CherryStudio\\*\" \"$persist_dir\\data\"",
+        "    Remove-Item \"$env:APPDATA\\CherryStudio\" -Recurse -Force",
+        "}"
     ],
     "shortcuts": [
         [
@@ -31,9 +30,7 @@
             "Cherry Studio"
         ]
     ],
-    "uninstaller": {
-        "script": "Remove-Item $env:APPDATA\\CherryStudio -Force -Recurse"
-    },
+    "persist": "data",
     "checkver": {
         "github": "https://github.com/CherryHQ/cherry-studio"
     },
