@@ -1,16 +1,16 @@
 {
-    "version": "9.0-beta.7",
+    "version": "9.0-beta.8",
     "description": "Open-source reference management software to manage bibliographic data and related research materials.",
     "homepage": "https://www.zotero.org/",
     "license": "AGPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": "https://download.zotero.org/client/beta/9.0-beta.7%2Bc0c9437da/Zotero-9.0-beta.7%2Bc0c9437da_x64_setup.exe#/dl.7z",
-            "hash": "fa035bcb8b698411f7b4d2e8e30562ba038cddd8823e1dd10b2decb361aea6db"
+            "url": "https://download.zotero.org/client/beta/9.0-beta.8%2Bb80bcea18/Zotero-9.0-beta.8%2Bb80bcea18_x64_setup.exe#/dl.7z",
+            "hash": "73a3efae9692aa3a2df1e8d3e537cb113dd53074402d8c2e90a28b93b9fc5179"
         },
         "32bit": {
-            "url": "https://download.zotero.org/client/beta/9.0-beta.7%2Bc0c9437da/Zotero-9.0-beta.7%2Bc0c9437da_win32_setup.exe#/dl.7z",
-            "hash": "0dbbe96a19fddc7b75130ecf94fc2a6526a5409bc282c2097b419c69ba38995f"
+            "url": "https://download.zotero.org/client/beta/9.0-beta.8%2Bb80bcea18/Zotero-9.0-beta.8%2Bb80bcea18_win32_setup.exe#/dl.7z",
+            "hash": "aec67ead8c8a90b7ba5f068af2da8182aa7aebcab29eb25824d14cb8c3076f67"
         }
     },
     "extract_dir": "core",
@@ -20,6 +20,51 @@
             "zotero.exe",
             "Zotero"
         ]
+    ],
+    "notes": [
+        "To register the 'zotero://' URL protocol, run:",
+        "$dir\\install-zotero-url-protocol.ps1",
+        "",
+        "Existing 'zotero://' URL protocol may be overwrite.",
+        "",
+        "To unregister the 'zotero://' URL protocol, run:",
+        "$dir\\uninstall-zotero-url-protocol.ps1"
+    ],
+    "post_install": [
+        "if (!(Test-Path -Path $dir\\install-zotero-url-protocol.ps1)) {",
+        "    New-Item -Path $dir\\install-zotero-url-protocol.ps1 -ItemType File -Force | Out-Null",
+        "}",
+        "Set-Content -Path $dir\\install-zotero-url-protocol.ps1 -Force -Value @'",
+        "Write-Host 'Registering the ''zotero://'' URL protocol...'",
+        "New-Item 'HKCU:\\SOFTWARE\\Classes\\zotero' -Value 'Zotero Protocol' -Force | Out-Null",
+        "New-Item 'HKCU:\\SOFTWARE\\Classes\\zotero\\DefaultIcon' -Value \"REPLACE_HERE\\zotero.exe,1\" -Force | Out-Null",
+        "New-Item 'HKCU:\\SOFTWARE\\Classes\\zotero\\shell\\open\\command' -Value \"\"\"REPLACE_HERE\\zotero.exe\"\" -url \"\"%1\"\"\" -Force | Out-Null",
+        "New-ItemProperty 'HKCU:\\SOFTWARE\\Classes\\zotero' -Name 'FriendlyTypeName' -Value 'Zotero Protocol' -Force | Out-Null",
+        "New-ItemProperty 'HKCU:\\SOFTWARE\\Classes\\zotero' -Name 'URL Protocol' -Value '' -Force | Out-Null",
+        "New-ItemProperty 'HKCU:\\SOFTWARE\\Classes\\zotero' -Name 'EditFlags' -PropertyType 'DWord' -Value '2' -Force | Out-Null",
+        "Write-Host 'Done!'",
+        "'@",
+        "if (!(Test-Path -Path $dir\\uninstall-zotero-url-protocol.ps1)) {",
+        "    New-Item -Path $dir\\uninstall-zotero-url-protocol.ps1 -ItemType File -Force | Out-Null",
+        "}",
+        "Set-Content -Path $dir\\uninstall-zotero-url-protocol.ps1 -Force -Value @'",
+        "Write-Host 'Unregistering the ''zotero://'' URL protocol...'",
+        "Remove-Item 'HKCU:\\SOFTWARE\\Classes\\zotero' -Recurse -Force",
+        "Write-Host 'Done!'",
+        "'@",
+        "Get-ChildItem \"$dir\\*.ps1\" | ForEach-Object {",
+        "    $content = Get-Content $_",
+        "    $content = $content.Replace('REPLACE_HERE', $dir)",
+        "    if ($global) { $content = $content.Replace('HKCU', 'HKLM') }",
+        "    Set-Content \"$dir\\$($_.Name)\" $content -Encoding 'utf8' -Force",
+        "}"
+    ],
+    "pre_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    Write-Host 'Unregistering the ''zotero://'' URL protocol...'",
+        "    Remove-Item 'HKCU:\\SOFTWARE\\Classes\\zotero', 'HKLM:\\SOFTWARE\\Classes\\zotero' -ErrorAction 'SilentlyContinue' -Recurse -Force",
+        "    Write-Host 'Done!'",
+        "}"
     ],
     "checkver": {
         "script": [
