@@ -20,11 +20,16 @@
          "hash": "dca05df266fe018463eaa5061fb2d80ae477c66327dcaea08267bb10113618c4"
       }
    },
+   "pre_install": [
+      "if ((Get-ItemPropertyValue -Path 'Registry::HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock' -Name AllowDevelopmentWithoutDevLicense) -eq 1) { $AppModelUnlocked = $true }",
+      "if (-not $AppModelUnlocked) {",
+      "   if (-not (is_admin)) { abort 'This package requires admin privileges to install' }",
+      "}"
+   ],
    "installer": {
       "script": [
          "if ((Get-ItemPropertyValue -Path 'Registry::HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock' -Name AllowDevelopmentWithoutDevLicense) -eq 1) { $AppModelUnlocked = $true }",
          "if (-not $AppModelUnlocked) {",
-         "   if (-not (is_admin)) { abort 'This package requires admin privileges to install' }",
          "   New-ItemProperty -Force -Path 'Registry::HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock' -Name 'AllowDevelopmentWithoutDevLicense' -PropertyType DWord -Value '1' > $null",
          "}",
          "if ($PSVersionTable.PSVersion.Major -ge 6) { Import-Module Appx -UseWindowsPowershell 3>$null }",

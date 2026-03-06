@@ -1,0 +1,59 @@
+{
+   "$schema": "https://raw.githubusercontent.com/lukesampson/scoop/master/schema.json",
+   "version": "0.4.0",
+   "description": "This bridges communication between Pageant and Windows Subsystem for Linux (WSL).",
+   "suggest": {
+      "Pageant": "silver886/pageant",
+      "npiperelay": "extras/npiperelay"
+   },
+   "url": [
+      "https://raw.githubusercontent.com/silver886/scoop/wsl-ssh-pageant-bridge/v0.4.0/assets/wsl-ssh-pageant-bridge/script.ps1",
+      "https://raw.githubusercontent.com/silver886/scoop/wsl-ssh-pageant-bridge/v0.4.0/assets/wsl-ssh-pageant-bridge/task-scheduler.xml"
+   ],
+   "hash": [
+      "b4a65aefe7f4f8c9c92e3be20a0367536d073a24324095c931d22ef8cd2eeef3",
+      "472eb8133fcb1916d1a11f2184a8c9a3fca41ce1ebd269e9b7614b4ceb2e7746"
+   ],
+   "pre_install": [
+      "if (where.exe /q wsl || $true) {",
+      "   error 'wsl should be installed'",
+      "}",
+      "if (where.exe /q pageant || $true) {",
+      "   error 'Pageant should be installed'",
+      "}",
+      "if (where.exe /q npiperelay || $true) {",
+      "   error 'npiperelay should be installed'",
+      "}"
+   ],
+   "installer": {
+      "script": [
+         "$taskSchedulerXml = \"$dir\\task-scheduler.xml\"",
+         "(Get-Content $taskSchedulerXml).Replace('{{whoami}}', $(whoami)).Replace('{{dir}}', $dir) |",
+         "   Set-Content -Force -Path $taskSchedulerXml -Encoding Ascii",
+         "schtasks /Create /TN '\\scoop\\wsl-ssh-pageant-bridge' /XML $taskSchedulerXml"
+      ]
+   },
+   "uninstaller": {
+      "script": "schtasks /Delete /TN '\\scoop\\wsl-ssh-pageant-bridge' /F"
+   },
+   "bin": [
+      [
+         "script.ps1",
+         "wsl-ssh-pageant-bridge"
+      ]
+   ],
+   "env_set": {
+      "WSL_SSH_PAGEANT_BRIDGE_SOCK": "`$HOME/.ssh/wsl-ssh-pageant-bridge",
+      "WSLENV": "$($env:WSLENV):WSL_SSH_PAGEANT_BRIDGE_SOCK"
+   },
+   "checkver": {
+      "url": "https://api.github.com/repos/silver886/scoop/tags",
+      "regex": "\"name\": *\"wsl-ssh-pageant-bridge/v([\\d.]+)\","
+   },
+   "autoupdate": {
+      "url": [
+         "https://raw.githubusercontent.com/silver886/scoop/wsl-ssh-pageant-bridge/v$version/assets/wsl-ssh-pageant-bridge/script.ps1",
+         "https://raw.githubusercontent.com/silver886/scoop/wsl-ssh-pageant-bridge/v$version/assets/wsl-ssh-pageant-bridge/task-scheduler.xml"
+      ]
+   }
+}
