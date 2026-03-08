@@ -1,0 +1,42 @@
+{
+    "version": "0.70b",
+    "description": "One of the biggest and most reliable peer-to-peer file sharing clients around the world.",
+    "homepage": "https://www.emule-project.net/",
+    "license": "GPL-2.0-or-later",
+    "url": "https://github.com/irwir/eMule/releases/download/eMule_v0.70b-community/eMule0.70b-Sources.zip",
+    "hash": "e1937f171d02387f579b5096436c84a017c92407722f77786180eb5253b6a6a9",
+    "depends": "emule-community",
+    "extract_dir": "eMule0.70b-Sources\\srchybrid",
+    "extract_to": "source",
+    "pre_install": [
+        "(Get-Content -Encoding UTF8 \"$dir\\source\\lang\\zh_CN.rc\").Replace('#include \"afxres.h\"', '#include \"Windows.h\"') | Out-File -Encoding UTF8 \"$dir\\source\\lang\\zh_CN.rc\""
+    ],
+    "installer": {
+        "script": [
+            "Push-Location \"$dir\\source\\lang\"",
+            "$bucket = (scoop bucket list | Where-Object { (Convert-RepositoryUri -Uri $_.Source) -eq \"github.com/amorphobia/ScoopSources\" }).Name",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name $bucket) scripts/Utils.psm1)",
+            "Initialize-VsDevShell | Out-Null",
+            "switch ($env:PROCESSOR_ARCHITECTURE) {",
+            "    \"AMD64\" { $Arch = \"x64\" }",
+            "    Default { $Arch = \"Win32\" }",
+            "}",
+            "msbuild zh_CN.vcxproj /p:platformtoolset=v143 /p:configuration=Dynamic /p:platform=$Arch /v:q",
+            "Move-Item \"$dir\\source\\$Arch\\lang\\zh_CN.dll\" \"$dir\"",
+            "Pop-Location",
+            "Remove-Item -Recurse -Force \"$dir\\source\" -ErrorAction SilentlyContinue",
+            "New-Item -ItemType HardLink -Force -Path \"$(appdir emule-community $global)\\current\\lang\\zh_CN.dll\" -Value \"$dir\\zh_CN.dll\" | Out-Null"
+        ]
+    },
+    "uninstaller": {
+        "script": "Remove-Item \"$(appdir emule-community $global)\\current\\lang\\zh_CN.dll\" -Force -Confirm:$False -ErrorAction SilentlyContinue"
+    },
+    "checkver": {
+        "github": "https://github.com/irwir/eMule",
+        "regex": "eMule v(([\\d\\.]+)[a-z])"
+    },
+    "autoupdate": {
+        "url": "https://github.com/irwir/eMule/releases/download/eMule_v$version-community/eMule$version-Sources.zip",
+        "extract_dir": "eMule$version-Sources\\srchybrid"
+    }
+}

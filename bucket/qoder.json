@@ -1,87 +1,53 @@
 {
-    "version": "0.5.2",
-    "description": "Agentic Coding Platform for Real Software",
+    "version": "0",
+    "description": "Agentic Coding Platform",
     "homepage": "https://qoder.com/",
     "license": "Proprietary",
-    "notes": [
-        "For github integration, run:",
-        "'reg import \"$dir\\install-github-integration.reg\"'"
-    ],
     "architecture": {
         "64bit": {
-            "url": "https://download.qoder.com/release/0.5.2/QoderUserSetup-x64.exe",
-            "hash": "83c49a511e4a1175f36f05a7a105eb9ea55838953fe752688a7d93cbc3bd38c6",
+            "url": "https://download.qoder.com/release/latest/QoderUserSetup-x64.exe",
+            "hash": "1a2acc91deee604cffc5c4618f285a97a22e3a5640fc07866be79bd21a099e4b",
             "extract_dir": "{code_GetDestDir}"
         }
     },
     "innosetup": true,
-    "pre_install": [
-        "# 处理用户配置目录",
-        "$config_dirs = @(",
-        "    '.qoder'",
-        ")",
-        "foreach ($config_dir in $config_dirs) {",
-        "    $target_dir = Join-Path $env:USERPROFILE $config_dir",
-        "    $link_dir = Join-Path $persist_dir $config_dir",
-        "    & \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $target_dir $link_dir",
-        "}",
-        "",
-        "# 链接 $env:APPDATA\\Qoder 到 persist_dir/data",
-        "$appdata_dir = Join-Path $env:APPDATA \"Qoder\"",
-        "$persist_data_dir = Join-Path $persist_dir data",
-        "& \"$bucketsdir\\$bucket\\scripts\\link.ps1\" $appdata_dir $persist_data_dir"
-    ],
     "post_install": [
-        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
-        "$exepath = \"$dir\\Qoder.exe\".Replace('\\', '\\\\')",
-        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context', 'install-github-integration', 'uninstall-github-integration' | ForEach-Object {",
-        "  if (Test-Path \"$bucketsdir\\$bucket\\scripts\\qoder\\$_.reg\") {",
-        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\qoder\\$_.reg\"",
-        "    $content = $content.Replace('$qoderdir', $dirpath)",
-        "    $content = $content.Replace('$qoder', $exepath)",
-        "    if ($global) {",
-        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
-        "    }",
-        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
-        "  }",
+        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.qoder\\extensions\")) {",
+        "    info '[Portable Mode] Copying extensions...'",
+        "    Copy-Item \"$env:USERPROFILE\\.qoder\\extensions\" \"$dir\\data\" -Recurse",
         "}",
-        "# 自动导入注册表（可选）",
-        "reg import \"$dir\\install-context.reg\"",
-        "reg import \"$dir\\install-associations.reg\""
+        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Qoder\")) {",
+        "    info '[Portable Mode] Copying user data...'",
+        "    Copy-Item \"$env:AppData\\Qoder\" \"$dir\\data\\user-data\" -Recurse",
+        "}",
+        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
+        "if ((Test-Path \"$extensions_file\")) {",
+        "    info 'Adjusting path in extensions file...'",
+        "    (Get-Content \"$extensions_file\") -replace '(?<=qoder(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
+        "}"
     ],
-    "uninstaller": {
-        "script": [
-            "if ($cmd -eq 'uninstall')",
-            "{",
-            "   reg import \"$dir\\uninstall-context.reg\" ",
-            "   reg import \"$dir\\uninstall-github-integration.reg\" ",
-            "}"
-        ]
-    },
     "bin": [
         [
             "bin/qoder.cmd",
-            "qoder"
+            "qoder",
+            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
         ]
     ],
     "shortcuts": [
         [
             "Qoder.exe",
-            "Qoder"
+            "Qoder",
+            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
         ]
     ],
-    "persist": [
-        "data",
-        ".qoder"
-    ],
+    "persist": "data",
     "checkver": {
-        "url": "https://api.github.com/repos/QoderAI/changelog/releases",
-        "jp": "$[0].tag_name"
+        "url": "https://qoder.com/changelog"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://download.qoder.com/release/$version/QoderUserSetup-x64.exe"
+                "url": "https://download.qoder.com/release/latest/QoderUserSetup-x64.exe"
             }
         }
     }
