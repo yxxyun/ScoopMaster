@@ -1,20 +1,32 @@
 {
     "version": "0.16.3",
-    "description": "Game Launcher for miHoYo - 米家游戏启动器",
-    "homepage": "https://starward.scighost.com/",
-    "license": "MIT license",
+    "description": "Game Launcher for miHoYo",
+    "homepage": "https://github.com/Scighost/Starward",
+    "license": "MIT",
     "architecture": {
         "64bit": {
             "url": "https://github.com/Scighost/Starward/releases/download/0.16.3/Starward_Portable_0.16.3_x64.7z",
-            "hash": "5f00384009e0d1ed9947d7c0f238209d6d880c7f01adf5b3cd168492a86cc583",
-            "extract_dir": "Starward"
+            "hash": "5f00384009e0d1ed9947d7c0f238209d6d880c7f01adf5b3cd168492a86cc583"
+        },
+        "arm64": {
+            "url": "https://github.com/Scighost/Starward/releases/download/0.16.3/Starward_Portable_0.16.3_arm64.7z",
+            "hash": "ec4ffaa44f5aca8ec9f5cc3e03a952f82d64e47e9aa7c8703fea32f1a67a7471"
         }
     },
+    "extract_dir": "Starward",
+    "depends": "main/sqlite",
     "pre_install": [
-        "New-Item -Path \"$dir\" -Name \"config.ini\" -ItemType \"file\" -Force | out-null",
-        "New-Item -Path \"$dir\" -Name \"StarwardDatabase.db\" -ItemType \"file\" -Force | out-null"
+        "if (-not (Test-Path \"$dir\\config.ini\"))",
+        "{",
+        "  New-Item \"$dir\\config.ini\" -ItemType File | Out-Null",
+        "  Add-Content \"$dir\\config.ini\" \"Language=\"",
+        "  Add-Content \"$dir\\config.ini\" \"UserDataFolder=$persist_dir\\data\"",
+        "}"
     ],
-    "bin": "Starward.exe",
+    "post_install": [
+        "sqlite3 \"$dir\\data\\StarwardDatabase.db\" \"CREATE TABLE IF NOT EXISTS Setting (Key TEXT PRIMARY KEY, Value TEXT);\"",
+        "sqlite3 \"$dir\\data\\StarwardDatabase.db\" \"INSERT OR REPLACE INTO Setting (Key, Value) VALUES ('DefaultGameInstallationPath', '$persist_dir\\games');\""
+    ],
     "shortcuts": [
         [
             "Starward.exe",
@@ -22,15 +34,21 @@
         ]
     ],
     "persist": [
-        "config.ini",
-        "StarwardDatabase.db",
-        "DatabaseBackup",
-        "bg"
+        "data",
+        "games",
+        "config.ini"
     ],
     "checkver": {
         "github": "https://github.com/Scighost/Starward"
     },
     "autoupdate": {
-        "url": "https://github.com/Scighost/Starward/releases/download/$version/Starward_Portable_$version_x64.7z"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Scighost/Starward/releases/download/$version/Starward_Portable_$version_x64.7z"
+            },
+            "arm64": {
+                "url": "https://github.com/Scighost/Starward/releases/download/$version/Starward_Portable_$version_arm64.7z"
+            }
+        }
     }
 }
