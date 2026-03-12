@@ -1,5 +1,5 @@
 {
-    "version": "128.0.5807.51",
+    "version": "128.0.5807.71",
     "description": "Opera GX is a special version of the Opera browser built specifically for gamers.",
     "homepage": "https://www.opera.com/gx",
     "license": {
@@ -8,61 +8,78 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://get.opera.com/pub/opera_gx/128.0.5807.51/win/Opera_GX_128.0.5807.51_Setup_x64.exe",
-            "hash": "fa3623683f05243c535dc56f811f9a64abf1077e6fb3912cf6892243b468837e"
+            "url": "https://get.opera.com/pub/opera_gx/128.0.5807.71/win/Opera_GX_128.0.5807.71_Setup_x64.exe#/dl.7z",
+            "hash": "31e4ba35e72c8b74f4a33e3f2d192a8db0ac18c14e160007affb475bdcdd7169"
         },
         "32bit": {
-            "url": "https://get.opera.com/pub/opera_gx/128.0.5807.51/win/Opera_GX_128.0.5807.51_Setup.exe",
-            "hash": "2d6c594b182095a90eb205c7fe11ae1d6a812d6fb06d4ced457e9e233d90a85c"
+            "url": "https://get.opera.com/pub/opera_gx/128.0.5807.71/win/Opera_GX_128.0.5807.71_Setup.exe#/dl.7z",
+            "hash": "98a0fa1d77a98e6eabe1bb5d2b86ca007decb9faaaa4fb7f299af871179cee67"
         }
     },
+    "pre_install": [
+        "$operagx_root = \"$dir\".Replace('\\', '\\\\')",
+        "'install-context.reg', 'uninstall-context.reg' | ForEach-Object {",
+        "    $content = Get-Content \"$bucketsdir\\business\\assets\\opera-gx\\$_\"",
+        "    $content = $content.Replace('$operagx_root', $operagx_root)",
+        "    if ($global) {",
+        "       $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    Set-Content \"$dir\\$_\" $content -Encoding Ascii",
+        "}"
+    ],
     "installer": {
         "script": [
-            "Expand-7zipArchive -Path \"$dir\\$fname\" -DestinationPath $dir -Removal",
-            "$version, 'autoupdate' | ForEach-Object { ensure \"$dir\\$_\" | Out-Null }",
-            "Move-Item -Path \"$dir\\opera_autoupdate*\" -Destination \"$dir\\autoupdate\" -Force",
-            "Remove-Item -Path \"$dir\\*\" -Include '*_list' -Force -ErrorAction SilentlyContinue",
-            "$exclude_list = @('Assets', $version, 'autoupdate', 'Resources.pri', 'opera.visualelementsmanifest.xml')",
-            "Get-ChildItem -Path $dir | Where-Object { $exclude_list -notcontains $_.Name } | ForEach-Object {",
-            "    Move-Item -Path $_.FullName -Destination \"$dir\\$version\\$($_.Name)\" -Force -ErrorAction SilentlyContinue",
+            "Remove-Item -Path \"$dir\\*_list\" -Force",
+            "if (!(Test-Path \"$dir\\localization\")) {",
+            "   New-Item -Path \"$dir\\localization\" -ItemType Directory | Out-Null",
+            "   Move-Item -Path \"$dir\\*.pak\" -Destination \"$dir\\localization\" -Exclude 'opera*' -ErrorAction Ignore",
             "}",
-            "Copy-Item -Path \"$dir\\$version\\opera.exe\" -Destination $dir",
-            "$cfg = @{ 'autoupdate'= $false; 'enable_stats' = $false; 'single_profile' = $true } | ConvertTo-Json -Depth 5",
-            "Set-Content -Path \"$dir\\installer_prefs.json\" -Value $cfg -Encoding ascii"
+            "Set-Content -Path \"$dir\\installer_prefs.json\" -Value (@{ 'autoupdate'= $false; 'enable_stats' = $false; 'single_profile' = $true } | ConvertTo-Json) -Encoding ASCII"
         ]
     },
+    "post_install": [
+        "reg import \"$dir\\install-context.reg\"",
+        "Write-Host Registering the app with : \"$dir\\install-context.reg\""
+    ],
+    "uninstaller": {
+        "script": [
+            "reg import \"$dir\\uninstall-context.reg\"",
+            "Write-Host UnRegistering the app with : \"$dir\\uninstall-context.reg\""
+        ]
+    },
+    "bin": [
+        [
+            "opera.exe",
+            "Opera GX",
+            "--user-data-dir=$persist_dir\\profile\\data"
+        ]
+    ],
     "shortcuts": [
         [
             "opera.exe",
-            "Opera GX"
+            "Opera GX",
+            "--user-data-dir=$persist_dir\\profile\\data"
         ]
     ],
     "persist": "profile",
     "checkver": {
         "script": [
-            "$path_regex = '^(?!\\.)[\\d.]+/$'",
-            "$version_sort = { [version]$_.href.TrimEnd('/') }",
-            "$releases_url = 'https://get.opera.com/pub/opera_gx/'",
-            "$releases_page = Invoke-WebRequest -Uri $releases_url -UseBasicParsing -ErrorAction Stop",
-            "$path_segments = $releases_page.links | Where-Object { $_.href -match $path_regex } |",
-            "        Sort-Object -Property $version_sort -Descending | ForEach-Object -MemberName href",
-            "foreach ($path_segment in $path_segments.TrimEnd('/')) {",
-            "    $release_url = 'https://get.opera.com/pub/opera_gx/{0}/win/' -f $path_segment",
-            "    $download_page = Invoke-WebRequest -Uri $release_url -UseBasicParsing -ErrorAction Stop",
-            "    $installer_name = $download_page.Links | Where-Object { $_.href -match '(?<=Setup\\w+)\\.exe$' } |",
-            "            Select-Object -ExpandProperty href -First 1",
-            "    if ($null -ne $installer_name) { Write-Output $installer_name; break }",
-            "}"
+            "$releases = 'https://get.opera.com/pub/opera_gx/'",
+            "$download_page = Invoke-WebRequest -Uri $releases -UseBasicParsing",
+            "$versionSort   = { [version]$_.href.TrimEnd('/') }",
+            "$last_ver = $download_page.links | Where-Object href -match '^[\\d]+[\\d\\.]+/$' | Sort-Object $versionSort -Descending | Select-Object -first 1 -expand href",
+            "$version = $last_ver -replace '/', ''",
+            "Write-Output $version"
         ],
-        "regex": "Opera_GX_([\\d.]+)_Setup"
+        "regex": "(\\S+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://get.opera.com/pub/opera_gx/$version/win/Opera_GX_$version_Setup_x64.exe"
+                "url": "https://get.opera.com/pub/opera_gx/$version/win/Opera_GX_$version_Setup_x64.exe#/dl.7z"
             },
             "32bit": {
-                "url": "https://get.opera.com/pub/opera_gx/$version/win/Opera_GX_$version_Setup.exe"
+                "url": "https://get.opera.com/pub/opera_gx/$version/win/Opera_GX_$version_Setup.exe#/dl.7z"
             }
         },
         "hash": {
