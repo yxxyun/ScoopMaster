@@ -1,49 +1,65 @@
 {
-  "version": "1.9.1",
-  "description": "Pure Writer Desktop is currently basic, providing only two-directions real-time synchronous editing for your current article.",
-  "homepage": "https://writer.drakeet.com/desktop",
-  "license": {
-    "identifier": "GPL-3.0-or-only",
-    "url": "https://github.com/PureWriter/desktop/raw/master/LICENSE"
-  },
-  "notes": [
-    "- Pure Writer Desktop 1.4.0 version must be used with Pure Writer 19.92.0 or above.",
-    "- Pure Writer Desktop must be on the same Wi-Fi or hotspot network as the phone to connect to each other.",
-    "- During the development of this desktop version, I have encountered some situations that will cause the current article on Pure Writer Android to be emptied. Although this problem has been fixed, I am not completely sure if some scenes may trigger this again. But don't worry, because Pure Writer for Android supports multiple Backups. You can recover/restore it by using 'History' or 'Undo'. More about automatic backup and cloud backup: <https://writer.drakeet.com/backups>"
-  ],
-  "architecture": {
-    "64bit": {
-      "url": "https://github.com/PureWriter/desktop/releases/download/1.9.0/PureWriter-1.9.1-Windows-x64.exe#/installer.exe",
-      "hash": "1338db8bf9be038cf1d31d3adabe6e854e621fe3487bddab21f3e1ace150cd44"
-    }
-  },
-  "installer": {
-    "script": "Start-Process \"$dir\\installer.exe\" -ArgumentList @('/passive', \"/log `\"scoop_install.log`\"\", \"TARGETDIR=`\"$dir`\"\") -WorkingDirectory \"$dir\" -Wait"
-  },
-  "post_install": "Remove-Item -Path \"$dir\\installer.exe\" -Force",
-  "uninstaller": {
-    "script": [
-      "$productId = (Get-WmiObject win32_product | Where-Object { $_.name -eq \"`\"Pure Writer`\"\" }).IdentifyingNumber",
-      "Start-Process msiexec -ArgumentList @('/uninstall', \"`\"$productId`\"\", '/passive', '/norestart') -Wait | Out-Null"
-    ]
-  },
-  "shortcuts": [
-    [
-      "Pure Writer.exe",
-      "Pure Writer"
-    ]
-  ],
-  "checkver": {
-    "url": "https://api.github.com/repos/PureWriter/desktop/releases/latest",
-    "regex": "releases/download/(?<tag>[\\d.]+)/PureWriter-(?<version>[\\d.]+)-Windows-x64.exe",
-    "reverse": true,
-    "replace": "${version}"
-  },
-  "autoupdate": {
+    "version": "1.9.1",
+    "description": "Pure Writer Desktop",
+    "homepage": "https://github.com/PureWriter/desktop",
+    "license": "GPL-3.0",
     "architecture": {
-      "64bit": {
-        "url": "https://github.com/PureWriter/desktop/releases/download/$matchTag/PureWriter-$matchVersion-Windows-x64.exe#/installer.exe"
-      }
+        "64bit": {
+            "url": "https://github.com/PureWriter/desktop/releases/download/1.9.0/PureWriter-1.9.1-Windows-x64.exe#/purewriter.exe",
+            "hash": "1338db8bf9be038cf1d31d3adabe6e854e621fe3487bddab21f3e1ace150cd44"
+        }
+    },
+    "pre_install": [
+        "$process = Start-Process -File \"$dir\\purewriter.exe\" -ArgumentList '/extract' -PassThru",
+        "try {",
+        "    Start-Sleep 3",
+        "    $folders = Get-ChildItem -Path $env:TEMP -Directory | ",
+        "        Where-Object { $_.Name -match \"^\\d{8,9}\\.tmp$\" } |",
+        "        Sort-Object $_.Name -Descending",
+        "    $msiPath = $null",
+        "    foreach ($folder in $folders) {",
+        "        $msiPath = Join-Path -Path $folder.FullName -ChildPath 'main.msi'",
+        "        if (Test-Path -Path $msiPath -PathType Leaf) {",
+        "            break",
+        "        }",
+        "        $msiPath = $null",
+        "    }",
+        "    if ($msiPath -eq $null) {",
+        "        throw \"not found: main.msi \"",
+        "    }",
+        "    Copy-Item -Path \"$msiPath\" \"$dir\"",
+        "    Expand-MsiArchive \"$dir\\main.msi\" -ExtractDir \"Pure Writer\" -Removal",
+        "} finally {",
+        "    Stop-Process -Id $process.Id -Force",
+        "    $process.WaitForExit()",
+        "    if (Test-Path \"$msiPath\") { Remove-Item \"$msiPath\" }",
+        "    if (Test-Path \"$dir\\purewriter.exe\") { Remove-Item \"$dir\\purewriter.exe\" }",
+        "}",
+        ""
+    ],
+    "shortcuts": [
+        [
+            "Pure Writer.exe",
+            "Pure Writer"
+        ]
+    ],
+    "checkver": {
+        "script": [
+            "$url = \"https://api.github.com/repos/PureWriter/desktop/releases/latest\"",
+            "$releases = Invoke-RestMethod -Uri $url -Headers @{ 'User-Agent' = 'Scoop Installer' }",
+            "$releases.assets.browser_download_url | Sort-Object -Descending {",
+            "    if ($_ -match 'PureWriter-(\\d+)\\.(\\d+)\\.(\\d+)-') {",
+            "        return \"{0:D3}.{1:D3}.{2:D3}\" -f [int]$matches[1], [int]$matches[2], [int]$matches[3]",
+            "    }",
+            "} | Where-Object { $_ -like \"*.exe\" } | Select-Object -First 1"
+        ],
+        "regex": "/(?<tag>[\\d+\\.]+)/PureWriter-([\\d+\\.]+)-Windows-x64.exe"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/PureWriter/desktop/releases/download/$matchTag/PureWriter-$version-Windows-x64.exe#/purewriter.exe"
+            }
+        }
     }
-  }
 }
