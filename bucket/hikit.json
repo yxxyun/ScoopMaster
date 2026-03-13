@@ -1,0 +1,68 @@
+{
+    "version": "0.0.1",
+    "description": "A modern, lightweight SSH/database management tool with web UI",
+    "homepage": "https://github.com/hsqbyte/hikit",
+    "license": "MIT",
+    "notes": [
+        "HiKit 是一个现代化的 SSH 和数据库管理工具",
+        "用户数据存储在：%LOCALAPPDATA%\\HiKit\\",
+        "  - hikit.db : SQLite 数据库文件",
+        "本包会将该目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist"
+    ],
+    "url": "https://github.com/hsqbyte/hikit/releases/download/v0.0.1/HiKit-v0.0.1-windows-amd64.zip",
+    "hash": "2796659d32ae5cdd760d71c03a150a479ff7456f4f78b31da8827c3778a6f0f6",
+    "extract_dir": "",
+    "bin": [
+        [
+            "HiKit-windows-amd64.exe",
+            "hikit"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "HiKit-windows-amd64.exe",
+            "HiKit"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path $env:LOCALAPPDATA 'HiKit'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"配置路径已存在且不是目录：$source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"迁移失败，保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原配置目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原目录：$source\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "persist": "data",
+    "checkver": {
+        "github": "https://github.com/hsqbyte/hikit",
+        "regex": "v([\\d.]+)"
+    },
+    "autoupdate": {
+        "url": "https://github.com/hsqbyte/hikit/releases/download/v$version/HiKit-v$version-windows-amd64.zip"
+    }
+}
