@@ -1,32 +1,50 @@
 {
-    "description": "A cross-platform app made for e-hentai & exhentai by Flutter",
-    "homepage": "https://github.com/jiangtian616/JHenTai",
-    "license": "Apache-2.0",
     "version": "8.0.12+308",
-    "depends": "jq",
-    "checkver": {
-        "script": "(Invoke-WebRequest -Uri 'https://api.github.com/repos/jiangtian616/JHenTai/releases/latest').Content | jq -r '.assets[] | select(.name | endswith(\"Windows.zip\")) | (.name + \"以及\" + .browser_download_url)'",
-        "regex": "JHenTai_(?<Version>\\d+(\\.\\d+)*(\\+\\d+)?)_Windows\\.zip以及(?<URL>.*)$",
-        "replace": "${Version}"
+    "description": "A cross-platform manga app made for e-hentai & exhentai by Flutter.",
+    "homepage": "https://github.com/jiangtian616/JHenTai",
+    "license": {
+        "identifier": "Apache-2.0",
+        "url": "https://github.com/jiangtian616/JHenTai/blob/master/LICENSE"
     },
-    "autoupdate": {
-        "url": "$matchURL",
-        "extract_dir": "JHenTai_$matchVersion",
-        "hash": {
-            "mode": "download"
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/jiangtian616/JHenTai/releases/download/v8.0.12/JHenTai_8.0.12+308_Windows.zip",
+            "hash": "7e3113e997217254642d2c641966c6014a2776e8d46ef9be01d6623dc6df7d8d"
         }
     },
-    "url": "https://github.com/jiangtian616/JHenTai/releases/download/v8.0.12/JHenTai_8.0.12%2B308_Windows.zip",
-    "hash": "7e3113e997217254642d2c641966c6014a2776e8d46ef9be01d6623dc6df7d8d",
-    "extract_dir": "JHenTai_8.0.12+308",
+    "bin": "jhentai.exe",
+    "pre_install": [
+        "Move-Item -Path \"$dir\\JHenTai_*\\*\" -Destination \"$dir\"",
+        "Remove-Item \"$dir\\JHenTai_*\" -Force -Recurse"
+    ],
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\apeiraco\\bin\\persist-utils.ps1\"",
+            "Set-PersistLinks -PersistDir $persist_dir -LinkMap @{ 'appdata' = '$env:APPDATA\\top.jtmonster\\jhentai' }"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            ". \"$bucketsdir\\apeiraco\\bin\\persist-utils.ps1\"",
+            "Remove-PersistLinks -PersistDir $persist_dir -LinkMap @{ 'appdata' = '$env:APPDATA\\top.jtmonster\\jhentai' }"
+        ]
+    },
     "shortcuts": [
         [
             "jhentai.exe",
             "JHenTai"
         ]
     ],
-    "notes": [
-        "Config and data are stored in %USERPROFILE%\\AppData\\Roaming\\top.jtmonster\\jhentai",
-        "They will not be automatically removed during uninstallation even with -p flag. Delete them manually if needed."
-    ]
+    "checkver": {
+        "url": "https://api.github.com/repos/jiangtian616/JHenTai/releases/latest",
+        "regex": "\"tag_name\":\\s*\"(?P<tag>v[\\d.]+(?:\\+\\d+)?)[\\s\\S]*?\"name\":\\s*\"JHenTai_(?P<fileversion>[\\d.]+(?:\\+\\d+)?)_Windows\\.zip\"",
+        "replace": "${fileversion}"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/jiangtian616/JHenTai/releases/download/$matchTag/JHenTai_$version_Windows.zip"
+            }
+        }
+    }
 }
