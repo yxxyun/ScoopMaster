@@ -1,0 +1,41 @@
+{
+    "version": "2.0.0.1",
+    "description": "Headphone Surround Virtualizations for Equalizer APO",
+    "homepage": "https://sourceforge.net/projects/hesuvi/",
+    "url": "https://downloads.sourceforge.net/project/hesuvi/HeSuVi_2.0.0.1.exe#/HeSuVi.7z",
+    "hash": "sha1:c5f47896b7bfb311ae2e0df6b2d7f5f1df743e18",
+    "post_install": [
+        "$apoPath = (Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\EqualizerAPO' -Name 'ConfigPath' -ErrorAction SilentlyContinue).ConfigPath",
+        "if ($null -eq $apoPath -or -not (Test-Path $apoPath)) {",
+        "    Write-Host 'Warning: Equalizer APO was not found on this system!' -ForegroundColor Yellow",
+        "    Write-Host 'Install Equalizer APO first, then reinstall HeSuVi.' -ForegroundColor Yellow",
+        "} else {",
+        "    Write-Host 'Copying HeSuVi to Equalizer APO config directory and fixing permissions...' -ForegroundColor Green",
+        "    if (Test-Path \"$apoPath\\HeSuVi\") { Remove-Item \"$apoPath\\HeSuVi\" -Force -Recurse }",
+        "    Copy-Item -Path \"$dir\\HeSuVi\" -Destination \"$apoPath\\HeSuVi\" -Recurse -Force",
+        "    Remove-Item -Path \"$dir\\HeSuVi\" -Recurse -Force",
+        "    icacls \"$apoPath\\HeSuVi\" /reset /T /C /Q | Out-Null",
+        "    New-Item -ItemType Junction -Path \"$dir\\HeSuVi\" -Target \"$apoPath\\HeSuVi\" -Force | Out-Null",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$apoPath = (Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\EqualizerAPO' -Name 'ConfigPath' -ErrorAction SilentlyContinue).ConfigPath",
+        "if (Test-Path \"$dir\\HeSuVi\") { cmd.exe /c rmdir \"$dir\\HeSuVi\" }",
+        "if ($apoPath -and (Test-Path \"$apoPath\\HeSuVi\")) {",
+        "    Remove-Item \"$apoPath\\HeSuVi\" -Force -Recurse -ErrorAction SilentlyContinue",
+        "}"
+    ],
+    "shortcuts": [
+        [
+            "HeSuVi\\HeSuVi.exe",
+            "HeSuVi"
+        ]
+    ],
+    "checkver": {
+        "url": "https://sourceforge.net/projects/hesuvi/rss",
+        "regex": "HeSuVi_([\\d.]+)\\.exe"
+    },
+    "autoupdate": {
+        "url": "https://downloads.sourceforge.net/project/hesuvi/HeSuVi_$version.exe#/HeSuVi.7z"
+    }
+}

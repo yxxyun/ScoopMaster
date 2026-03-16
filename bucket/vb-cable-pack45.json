@@ -1,0 +1,54 @@
+{
+    "version": "45",
+    "description": "VB-Audio Virtual Cable (Pack 45). Includes 16-channel endpoint support.",
+    "homepage": "https://vb-audio.com/Cable/",
+    "license": "Freeware",
+    "url": "https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack45.zip",
+    "hash": "B950E39F01AF1D04EA623C8F6D8EB9B6EA5C477C637295FABF20631C85116BFB",
+    "notes": "Requires running Scoop in an Administrator PowerShell to install the Virtual Device Driver.",
+    "pre_install": [
+        "if (!(is_admin)) { error \"Admin rights are required to install this driver.\"; break }"
+    ],
+    "installer": {
+        "script": [
+            "Write-Host 'Trusting VB-Audio certificate to prevent security prompts...'",
+            "$sysFile = if ($architecture -eq '64bit') { 'vbaudio_cable64_win10.sys' } else { 'vbaudio_cable_win7.sys' }",
+            "$cert = (Get-AuthenticodeSignature \"$dir\\$sysFile\").SignerCertificate",
+            "if ($cert) {",
+            "    $store = New-Object System.Security.Cryptography.X509Certificates.X509Store 'TrustedPublisher', 'LocalMachine'",
+            "    $store.Open('ReadWrite')",
+            "    $store.Add($cert)",
+            "    $store.Close()",
+            "}",
+            "Write-Host 'Installing driver silently...'",
+            "if ($architecture -eq '64bit') {",
+            "    & \"$dir\\VBCABLE_Setup_x64.exe\" -i -h | Out-Null",
+            "} else {",
+            "    & \"$dir\\VBCABLE_Setup.exe\" -i -h | Out-Null",
+            "}"
+        ]
+    },
+    "pre_uninstall": [
+        "if (!(is_admin)) { error \"Admin rights are required to uninstall this driver.\"; break }"
+    ],
+    "uninstaller": {
+        "script": [
+            "Write-Host 'Uninstalling driver...'",
+            "if ($architecture -eq '64bit') {",
+            "    & \"$dir\\VBCABLE_Setup_x64.exe\" -u -h | Out-Null",
+            "} else {",
+            "    & \"$dir\\VBCABLE_Setup.exe\" -u -h | Out-Null",
+            "}",
+            "Start-Sleep -Seconds 2"
+        ]
+    },
+    "bin": [
+        "VBCABLE_ControlPanel.exe"
+    ],
+    "shortcuts": [
+        [
+            "VBCABLE_ControlPanel.exe",
+            "VB-CABLE Control Panel"
+        ]
+    ]
+}

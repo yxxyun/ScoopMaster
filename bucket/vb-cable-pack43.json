@@ -1,0 +1,54 @@
+{
+    "version": "43",
+    "description": "VB-Audio Virtual Cable. A virtual audio device working as a virtual audio cable.",
+    "homepage": "https://vb-audio.com/Cable/",
+    "license": "Freeware",
+    "url": "https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip",
+    "hash": "66FD0A4D9F4896FF41632B7E3D53892C085C4561F53E8AE8D0F0BC10EEDD1CDD",
+    "notes": "Requires running Scoop in an Administrator PowerShell to install the Virtual Device Driver.",
+    "pre_install": [
+        "if (!(is_admin)) { error \"Admin rights are required to install this driver.\"; break }"
+    ],
+    "installer": {
+        "script": [
+            "Write-Host 'Trusting VB-Audio certificate to prevent security prompts...'",
+            "$sysFile = if ($architecture -eq '64bit') { 'vbaudio_cable64_win7.sys' } else { 'vbaudio_cable_win7.sys' }",
+            "$cert = (Get-AuthenticodeSignature \"$dir\\$sysFile\").SignerCertificate",
+            "if ($cert) {",
+            "    $store = New-Object System.Security.Cryptography.X509Certificates.X509Store 'TrustedPublisher', 'LocalMachine'",
+            "    $store.Open('ReadWrite')",
+            "    $store.Add($cert)",
+            "    $store.Close()",
+            "}",
+            "Write-Host 'Installing driver silently...'",
+            "if ($architecture -eq '64bit') {",
+            "    & \"$dir\\VBCABLE_Setup_x64.exe\" -i -h | Out-Null",
+            "} else {",
+            "    & \"$dir\\VBCABLE_Setup.exe\" -i -h | Out-Null",
+            "}"
+        ]
+    },
+    "pre_uninstall": [
+        "if (!(is_admin)) { error \"Admin rights are required to uninstall this driver.\"; break }"
+    ],
+    "uninstaller": {
+        "script": [
+            "Write-Host 'Uninstalling driver...'",
+            "if ($architecture -eq '64bit') {",
+            "    & \"$dir\\VBCABLE_Setup_x64.exe\" -u -h | Out-Null",
+            "} else {",
+            "    & \"$dir\\VBCABLE_Setup.exe\" -u -h | Out-Null",
+            "}",
+            "Start-Sleep -Seconds 2"
+        ]
+    },
+    "bin": [
+        "VBCABLE_ControlPanel.exe"
+    ],
+    "shortcuts": [
+        [
+            "VBCABLE_ControlPanel.exe",
+            "VB-CABLE Control Panel"
+        ]
+    ]
+}
