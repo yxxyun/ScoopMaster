@@ -1,0 +1,50 @@
+{
+    "version": "12.2.1.4.0",
+    "description": "Oracle SOA Suite Quickstart 12c",
+    "homepage": "https://www.oracle.com/middleware/soa/",
+    "license": "Oracle",
+    "architecture": {
+        "64bit": {
+            "url": "https://scoop-packages.itsmtaxud.priv/packages/soaqs/V983385-01.zip",
+            "hash": "086138bb03422267d97271da353a1d694e2c5acbc4f03b0222fd192878da3f8e"
+        }
+    },
+    "extract_dir": "",
+    "installer": {
+        "script": [
+            "# 1. Find the SOA QuickStart JAR",
+            "$jar = Get-ChildItem $dir -Recurse -Filter *.jar | Where-Object { $_.Name -match 'soa_quickstart' } | Select-Object -First 1",
+            "if (-not $jar) {",
+            "    Write-Error 'JAR installer not found!'",
+            "    exit 1",
+            "}",
+
+            "# 2. Silent install using bundled RSP",
+            "& java -jar $jar.FullName -silent -responseFile \"$dir\\soa_quickstart.rsp\"",
+
+            "# 3. Create SOA Domain",
+            "$MW_HOME = 'C:\\Oracle'",
+            "$ORACLE_HOME = Join-Path $MW_HOME 'Middleware'",
+            "$DOMAIN_HOME = Join-Path $ORACLE_HOME 'Domains\\soa_domain'",
+            "$configCmd = Join-Path $ORACLE_HOME 'oracle_common\\common\\bin\\config.cmd'",
+
+            "if (-not (Test-Path $ORACLE_HOME\\Domains)) {",
+            "    New-Item -ItemType Directory -Path $ORACLE_HOME\\Domains | Out-Null",
+            "}",
+
+            "Write-Host 'Creating SOA Domain...'",
+            "& $configCmd -mode=silent -silent_xml \"$ORACLE_HOME\\oracle_common\\common\\templates/wls/soa_quickstart_domain_template.xml\" -domain_home $DOMAIN_HOME -admin_user 'weblogic' -admin_pass 'Welcome1'",
+            "Write-Host 'SOA Domain created at ' $DOMAIN_HOME"
+        ]
+    },
+    "checkver": {
+        "regex": "V([\\d-]+)\\.zip"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://scoop-packages.itsmtaxud.priv/packages/soaqs/V$version.zip"
+            }
+        }
+    }
+}
