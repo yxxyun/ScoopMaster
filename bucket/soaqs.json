@@ -6,28 +6,53 @@
     "architecture": {
         "64bit": {
             "url": "https://scoop-packages.itsmtaxud.priv/packages/soaqs/V983385-01.zip",
-            "hash": "79b3bce2421a75b1e90c0d636ad80a3bae8ef4f518e2870256ecedbe24621a76"
+            "hash": "7a0c3e5307f9a0abd69bed9954c75e78c4d50bee68d7d49c2f09a2c05995e06c"
         }
     },
     "extract_dir": "",
     "installer": {
         "script": [
-            "# 1. Find the SOA QuickStart JAR",
-            "$jar = Get-ChildItem $dir -Recurse -Filter *.jar | Where-Object { $_.Name -match 'soa_quickstart' } | Select-Object -First 1",
-            "if (-not $jar) {",
-            "    Write-Error 'JAR installer not found!'",
+            "# 1. Find SOA QuickStart installer JAR",
+            "$jar = Get-ChildItem $dir -Recurse -Filter *.jar | Where-Object { $_.Name -match 'soa.*quickstart' } | Select-Object -First 1",
+            "if (-not $jar) { Write-Error 'SOA QuickStart JAR not found!'; exit 1 }",
+
+            "# 2. Run silent installation (creates full ORACLE_HOME)",
+            "Write-Host 'Starting Oracle SOA QuickStart installation...'",
+            "& java -jar $jar.FullName -silent -responseFile \"$dir\\soa_quickstart.rsp\"",
+
+            "# 3. Define Middleware Home and WLST path",
+            "$MW_HOME = 'C:\\Oracle\\Middleware'",
+            "$WLST = \"$MW_HOME\\oracle_common\\common\\bin\\wlst.cmd\"",
+
+            "# 4. Wait for WLST to become available",
+            "Write-Host 'Waiting for WLST to be available...'",
+            "$timeout = 180",
+            "while (!(Test-Path $WLST) -and $timeout -gt 0) {",
+            "    Start-Sleep -Seconds 2",
+            "    $timeout--",
+            "}",
+            "if (!(Test-Path $WLST)) {",
+            "    Write-Error 'wlst.cmd not found! Installation likely failed.'",
             "    exit 1",
             "}",
-            "",
-            "# 2. Silent install using RSP",
-            "& java -jar $jar.FullName -silent -responseFile \"$dir\\soa_quickstart.rsp\"",
-            "",
-            "# 3. Silent creation of domain using WLST",
-            "& \"$dir\\Middleware\\oracle_common\\common\\bin\\wlst.cmd\" \"$dir\\create_soa_domain.py\"",
-            "",
-            "# 4. Report the domain path",
+
+            "# 5. Run WLST to create SOA domain",
+            "$domainScript = \"$dir\\create_soa_domain.py\"",
+            "if (!(Test-Path $domainScript)) {",
+            "    Write-Error 'create_soa_domain.py not found!'",
+            "    exit 1",
+            "}",
+
+            "Write-Host 'Creating SOA domain using WLST...'",
+            "& $WLST $domainScript",
+
+            "# 6. Verify domain creation",
             "$DOMAIN_HOME = 'C:\\Oracle\\Middleware\\user_projects\\domains\\soa_quickstart'",
-            "Write-Host 'SOA Domain should now exist at ' $DOMAIN_HOME"
+            "if (Test-Path $DOMAIN_HOME) {",
+            "    Write-Host 'SOA Domain created successfully at:' $DOMAIN_HOME",
+            "} else {",
+            "    Write-Warning 'Domain not found. Check WLST logs.'",
+            "}"
         ]
     },
     "checkver": {
