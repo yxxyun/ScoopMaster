@@ -12,49 +12,24 @@
     "extract_dir": "",
     "installer": {
         "script": [
-            "# 1. Find SOA QuickStart installer JAR",
+            "# 1. Find the QuickStart JAR",
             "$jar = Get-ChildItem $dir -Recurse -Filter *.jar | Where-Object { $_.Name -match 'soa.*quickstart' } | Select-Object -First 1",
             "if (-not $jar) { Write-Error 'SOA QuickStart JAR not found!'; exit 1 }",
 
-            "# 2. Run silent installation (creates full ORACLE_HOME)",
+            "# 2. Run silent install",
             "Write-Host 'Starting Oracle SOA QuickStart installation...'",
             "& java -jar $jar.FullName -silent -responseFile \"$dir\\soa_quickstart.rsp\"",
 
-            "# 3. Define Middleware Home and WLST path",
-            "$MW_HOME = 'C:\\Oracle\\Middleware'",
-            "$WLST = \"$MW_HOME\\oracle_common\\common\\bin\\wlst.cmd\"",
-
-            "# 4. Wait for WLST to become available",
-            "Write-Host 'Waiting for WLST to be available...'",
-            "$timeout = 180",
-            "while (!(Test-Path $WLST) -and $timeout -gt 0) {",
-            "    Start-Sleep -Seconds 2",
-            "    $timeout--",
-            "}",
-            "if (!(Test-Path $WLST)) {",
-            "    Write-Error 'wlst.cmd not found! Installation likely failed.'",
-            "    exit 1",
-            "}",
-
-            "# 5. Run WLST to create SOA domain",
-            "$domainScript = \"$dir\\create_soa_domain.py\"",
-            "if (!(Test-Path $domainScript)) {",
-            "    Write-Error 'create_soa_domain.py not found!'",
-            "    exit 1",
-            "}",
-
-            "Write-Host 'Creating SOA domain using WLST...'",
-            "& $WLST $domainScript",
-
-            "# 6. Verify domain creation",
-            "$DOMAIN_HOME = 'C:\\Oracle\\Middleware\\user_projects\\domains\\soa_quickstart'",
-            "if (Test-Path $DOMAIN_HOME) {",
-            "    Write-Host 'SOA Domain created successfully at:' $DOMAIN_HOME",
-            "} else {",
-            "    Write-Warning 'Domain not found. Check WLST logs.'",
-            "}"
+            "# 3. Inform user",
+            "Write-Host 'Installation complete.'",
+            "Write-Host 'Use Start Menu -> Oracle SOA QuickStart to run config.cmd or start Admin Server.'"
         ]
     },
+    "bin": "wlserver\\common\\bin\\config.cmd",
+    "shortcuts": [
+        ["C:\\Oracle\\Middleware\\wlserver\\common\\bin\\config.cmd", "Oracle SOA QuickStart Config"],
+        ["C:\\Oracle\\Middleware\\user_projects\\domains\\soa_quickstart\\startWebLogic.cmd", "Oracle SOA QuickStart Admin Server"]
+    ],
     "checkver": {
         "regex": "V([\\d-]+)\\.zip"
     },
