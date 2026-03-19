@@ -1,47 +1,56 @@
 {
     "##": [
         "Why here? I want multiple PowerShell versions side by side.",
-        "Strategy: Add current stable version of PowerShell to PATH (env_add_path), the others as Scoop shims (bin)."
+        "Strategy for having multiple versions installed side by side:",
+        "* Add all versions to PATH (env_add_path), because a shim (bin) does not carry over the icon.",
+        "* Rename all versions but the current newest stable one to avoid naming conflict."
     ],
     "version": "7.6.0-rc.1",
-    "description": "Cross-platform automation and configuration tool/framework, known as Powershell Core, that works well with existing tools and is optimized for dealing with structured data.",
+    "description": "Latest PowerShell preview. Cross-platform automation and configuration tool/framework, known as Powershell Core, that works well with existing tools and is optimized for dealing with structured data.",
     "homepage": "https://github.com/PowerShell/PowerShell",
     "license": "MIT",
     "architecture": {
-        "64bit": {
-            "url": "https://github.com/PowerShell/PowerShell/releases/download/v7.6.0-rc.1/PowerShell-7.6.0-rc.1-win-x64.zip",
-            "hash": "fe32e8abb312c99be468f0c0b1c417cd3f9a6e85591729b1be2de24b426027fd"
-        },
         "32bit": {
             "url": "https://github.com/PowerShell/PowerShell/releases/download/v7.6.0-rc.1/PowerShell-7.6.0-rc.1-win-x86.zip",
-            "hash": "85ed19bdccc7ca48ea1ff2bc29aef74ad5f7738288c316807f4c46460d7f77d7"
+            "hash": "aee334bc258db05f50d303f69db998641d7a779a815dbb33b50487490e51eec0"
+        },
+        "64bit": {
+            "url": "https://github.com/PowerShell/PowerShell/releases/download/v7.6.0-rc.1/PowerShell-7.6.0-rc.1-win-x64.zip",
+            "hash": "3aab783413832cabbcfeae524fe905c7787710af324d773315de457bfa9a3157"
         },
         "arm64": {
             "url": "https://github.com/PowerShell/PowerShell/releases/download/v7.6.0-rc.1/PowerShell-7.6.0-rc.1-win-arm64.zip",
-            "hash": "d49f5914d1ff248ecb5506133e218d79503edf848a55b43b399c8f48a09a2bc7"
+            "hash": "67928c14b65bd29f69780440e23391efaf5431f3130b68f8d9fc7b77ef3705ea"
         }
     },
-    "post_install": [
-        "$Directories = [string[]](",
-        "    [System.IO.Path]::Combine($dir,'Modules','Microsoft.PowerShell.PSResourceGet')",
+    "pre_install": [
+        "# Rename and add to path instead of shimming, as the shim will not show the app icon",
+        "Rename-Item -Path \"$dir\\pwsh.exe\" -NewName \"pwshp.exe\"",
+        "# Delete some included modules",
+        "$ModulesToRemove = [string[]](",
+        "    'Microsoft.PowerShell.PSResourceGet',",
+        "    'PackageManagement',",
+        "    'PowerShellGet'",
         ")",
-        "$Directories.ForEach{",
-        "    if ([System.IO.Directory]::Exists($_)) {",
-        "        $null = [System.IO.Directory]::Delete($_,$true)",
+        "$ModulesToRemove.ForEach{",
+        "    $Path = [System.IO.Path]::Combine($dir, 'Modules', $_)",
+        "    if ([System.IO.Directory]::Exists($Path)) {",
+        "        info ('Removing included module \"{0}\".' -f $_)",
+        "        $null = [System.IO.Directory]::Delete($Path, $true)",
         "    }",
         "}"
     ],
-    "bin": [
-        [
-            "pwsh.exe",
-            "pwshp"
-        ]
-    ],
+    "env_add_path": ".",
     "shortcuts": [
         [
-            "pwsh.exe",
+            "pwshp.exe",
             "PowerShell Preview",
             "-WorkingDirectory ~"
+        ],
+        [
+            "pwshp.exe",
+            "PowerShell Preview -NoProfile",
+            "-WorkingDirectory ~ -NoProfile"
         ]
     ],
     "checkver": {
@@ -60,9 +69,6 @@
             "arm64": {
                 "url": "https://github.com/PowerShell/PowerShell/releases/download/v$version/PowerShell-$version-win-arm64.zip"
             }
-        },
-        "hash": {
-            "url": "$baseurl/hashes.sha256"
         }
     }
 }

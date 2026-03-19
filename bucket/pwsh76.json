@@ -1,0 +1,72 @@
+{
+    "##": [
+        "Why here? I want multiple PowerShell versions side by side.",
+        "Strategy for having multiple versions installed side by side:",
+        "* Add all versions to PATH (env_add_path), because a shim (bin) does not carry over the icon.",
+        "* Rename all versions but the current newest stable one to avoid naming conflict."
+    ],
+    "version": "7.6.0",
+    "description": "Latest stable PowerShell 7.6.x. Cross-platform automation and configuration tool/framework, known as Powershell Core, that works well with existing tools and is optimized for dealing with structured data.",
+    "homepage": "https://github.com/PowerShell/PowerShell",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/PowerShell/PowerShell/releases/download/v7.6.0/PowerShell-7.6.0-win-x64.zip",
+            "hash": "9e725837af682b87bb212cd1efe3657c06c540404203810857ec2516ae2ca322"
+        },
+        "arm64": {
+            "url": "https://github.com/PowerShell/PowerShell/releases/download/v7.6.0/PowerShell-7.6.0-win-arm64.zip",
+            "hash": "c2ac26385210ebff5b0696bfb26bc74a9867fd9d561a75ea52635e553974f0cb"
+        }
+    },
+    "pre_install": [
+        "# Rename and add to path instead of shimming, as the shim will not show the app icon",
+        "Rename-Item -Path \"$dir\\pwsh.exe\" -NewName \"pwshp76.exe\"",
+        "# Delete some included modules",
+        "$ModulesToRemove = [string[]](",
+        "    'Microsoft.PowerShell.PSResourceGet',",
+        "    'PackageManagement',",
+        "    'PowerShellGet'",
+        ")",
+        "$ModulesToRemove.ForEach{",
+        "    $Path = [System.IO.Path]::Combine($dir, 'Modules', $_)",
+        "    if ([System.IO.Directory]::Exists($Path)) {",
+        "        info ('Removing included module \"{0}\".' -f $_)",
+        "        $null = [System.IO.Directory]::Delete($Path, $true)",
+        "    }",
+        "}"
+    ],
+    "env_add_path": ".",
+    "env_set": {
+        "POWERSHELL_UPDATECHECK": "Off"
+    },
+    "shortcuts": [
+        [
+            "pwsh76.exe",
+            "PowerShell 7.6",
+            "-WorkingDirectory ~"
+        ],
+        [
+            "pwsh76.exe",
+            "PowerShell 7.6 -NoProfile",
+            "-WorkingDirectory ~ -NoProfile"
+        ]
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/PowerShell/PowerShell/releases",
+        "regex": "v(7\\.6\\.\\d+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "32bit": {
+                "url": "https://github.com/PowerShell/PowerShell/releases/download/v$version/PowerShell-$version-win-x86.zip"
+            },
+            "64bit": {
+                "url": "https://github.com/PowerShell/PowerShell/releases/download/v$version/PowerShell-$version-win-x64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/PowerShell/PowerShell/releases/download/v$version/PowerShell-$version-win-arm64.zip"
+            }
+        }
+    }
+}
