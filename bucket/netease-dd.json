@@ -1,8 +1,8 @@
 {
     "architecture": {
         "64bit": {
-            "hash": "a3ae9bd07825ed4486986129126a4878bb38d0b082b5cb2cb43372b93ae69316",
-            "url": "https://cc.gdl.netease.com/NetEase_DD_Setup_100108_312370_x64.exe?key1=c5a23d100787c721be80ca7e5305f0e7&key2=69a00ae4#/dl.7z"
+            "hash": "3c6aae31e7b4476abcc3e9d372b882d7b72151c071288f4c9c7747c62b6dad3d",
+            "url": "https://cc.gdl.netease.com/NetEase_DD_Setup_100109_312573_x64.exe?key1=637c3057f1785668c1e733966f69cad1&key2=69bc0ae7#/dl.7z"
         }
     },
     "autoupdate": {
@@ -28,12 +28,39 @@
         "identifier": "Freeware",
         "url": "https://dd.163.com/policy/privacy"
     },
-    "post_install": "Remove-Item \"$dir\\`$*\" -Recurse -Force -ErrorAction SilentlyContinue",
+    "pre_install": [
+        "$targetPath = \"$env:LocalAppData\\NeteaseDD\"",
+        "if (Test-Path \"$targetPath\") {",
+        "    Remove-Item -Path \"$targetPath\" -Force -Recurse",
+        "}",
+        "New-Item \"$targetPath\" -ItemType Junction -Target \"$dir\" | Out-Null"
+    ],
+    "post_install": [
+        "Remove-Item \"$dir\\`$*\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "ensure \"$persist_dir\" | Out-Null",
+        "$targetPath = \"$env:AppData\\CCVoiceHub\"",
+        "$linkType = (Get-Item -Path \"$targetPath\" -ErrorAction SilentlyContinue).LinkType",
+        "if (Test-Path \"$targetPath\") {",
+        "    if ($linkType -eq 'Junction') {",
+        "        Remove-Item -Path \"$targetPath\" -Force",
+        "    } else {",
+        "        Get-ChildItem -Path \"$targetPath\" -Force | Move-Item -Destination $persist_dir -Force",
+        "        Remove-Item -Path \"$targetPath\" -Force -Recurse",
+        "    }",
+        "}",
+        "New-Item \"$targetPath\" -ItemType Junction -Target \"$persist_dir\" | Out-Null"
+    ],
+    "uninstaller": {
+        "script": [
+            "Remove-Item -Path \"$env:LocalAppData\\NeteaseDD\" -Force -Recurse -ErrorAction SilentlyContinue",
+            "Remove-Item -Path \"$env:AppData\\CCVoiceHub\" -Force -Recurse -ErrorAction SilentlyContinue"
+        ]
+    },
     "shortcuts": [
         [
             "Start.exe",
             "网易DD"
         ]
     ],
-    "version": "1.1.8"
+    "version": "1.1.9"
 }

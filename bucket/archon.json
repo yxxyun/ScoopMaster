@@ -1,0 +1,69 @@
+{
+    "version": "9.0.34",
+    "description": "The complete toolkit for mastering endgame content.",
+    "homepage": "https://www.archon.gg/download",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://www.archon.gg/privacy-policy"
+    },
+    "url": "https://github.com/RPGLogs/Uploaders-archon/releases/download/v9.0.34/archon-v9.0.34.exe#/dl.7z",
+    "hash": "89b12a670103ab69a63b0fda9e0096d304aaf3b42f3a7ca5d4ebd168867df151",
+    "extract_dir": "$PLUGINSDIR",
+    "architecture": {
+        "32bit": {
+            "installer": {
+                "script": [
+                    "Remove-Item \"$dir\\*\" -Exclude 'app-32.7z'",
+                    "Expand-7zipArchive \"$dir\\app-32.7z\" \"$dir\" -Removal"
+                ]
+            }
+        },
+        "64bit": {
+            "installer": {
+                "script": [
+                    "Remove-Item \"$dir\\*\" -Exclude 'app-64.7z'",
+                    "Expand-7zipArchive \"$dir\\app-64.7z\" \"$dir\" -Removal"
+                ]
+            }
+        }
+    },
+    "pre_install": [
+        "$targetPath = \"$env:LocalAppData\\Programs\\Archon App\"",
+        "if (Test-Path \"$targetPath\") {",
+        "    Remove-Item -Path \"$targetPath\" -Force -Recurse",
+        "}",
+        "New-Item \"$targetPath\" -ItemType Junction -Target \"$dir\" | Out-Null"
+    ],
+    "post_install": [
+        "ensure \"$persist_dir\" | Out-Null",
+        "$targetPath = \"$env:AppData\\Archon App\"",
+        "$linkType = (Get-Item -Path \"$targetPath\" -ErrorAction SilentlyContinue).LinkType",
+        "if (Test-Path \"$targetPath\") {",
+        "    if ($linkType -eq 'Junction') {",
+        "        Remove-Item -Path \"$targetPath\" -Force",
+        "    } else {",
+        "        Get-ChildItem -Path \"$targetPath\" -Force | Move-Item -Destination $persist_dir -Force",
+        "        Remove-Item -Path \"$targetPath\" -Force -Recurse",
+        "    }",
+        "}",
+        "New-Item \"$targetPath\" -ItemType Junction -Target \"$persist_dir\" | Out-Null"
+    ],
+    "uninstaller": {
+        "script": [
+            "Remove-Item -Path \"$env:LocalAppData\\Programs\\Archon App\" -Force -Recurse -ErrorAction SilentlyContinue",
+            "Remove-Item -Path \"$env:AppData\\Archon App\" -Force -Recurse -ErrorAction SilentlyContinue"
+        ]
+    },
+    "shortcuts": [
+        [
+            "Archon App.exe",
+            "Archon App"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/RPGLogs/Uploaders-archon"
+    },
+    "autoupdate": {
+        "url": "https://github.com/RPGLogs/Uploaders-archon/releases/download/v$version/archon-v$version.exe#/dl.7z"
+    }
+}
