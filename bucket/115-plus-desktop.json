@@ -1,0 +1,165 @@
+{
+    "version": "1.0.7",
+    "description": "A third-party open-source desktop client for the 115 Open Platform",
+    "homepage": "https://github.com/lvzhenbo/115-plus-desktop",
+    "license": "MIT",
+    "notes": [
+        "115+ 是一个基于 Tauri 2 + Vue 3 的 115 网盘第三方开源桌面客户端",
+        "内部状态目录 1：%APPDATA%\\io.github.lvzhenbo.115-plus-desktop\\",
+        "  - tauri-plugin-pinia\\setting.json：下载设置、更新代理、播放器与字幕偏好",
+        "  - tauri-plugin-pinia\\user.json：accessToken、refreshToken、用户信息与最近目录",
+        "内部状态目录 2：%LOCALAPPDATA%\\io.github.lvzhenbo.115-plus-desktop\\",
+        "下载/上传任务数据库由 Tauri SQL 插件维护（downloads.db / uploads.db）",
+        "本包会将上述应用目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist",
+        "启动器会在每次启动前将默认下载目录重写为 Scoop 的 persist\\downloads，并把 TEMP/TMP 指向 persist\\temp",
+        "若你在应用运行中手动改下载目录，本次会话后续下载会遵循你的设置；下次启动会重置回 Scoop 目录"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/lvzhenbo/115-plus-desktop/releases/download/v1.0.7/115%2B_1.0.7_x64-setup.exe#/dl.7z",
+            "hash": "8fa35c6e1ebe8de22d2d8487e0f04ea8c2082416fedf776cb053a93774a1eaf2"
+        }
+    },
+    "pre_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "bin": [
+        [
+            "115-plus-desktop.cmd",
+            "115-plus-desktop"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "115-plus-desktop.cmd",
+            "115+"
+        ]
+    ],
+    "post_install": [
+        "$ensureJunction = {",
+        "    param([string]$Source, [string]$Target)",
+        "    ensure $Target",
+        "",
+        "    if (Test-Path $Source) {",
+        "        $item = Get-Item -LiteralPath $Source -Force",
+        "        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "            Write-Host \"检测到已存在的联接点：$Source，跳过创建\"",
+        "            return",
+        "        }",
+        "        if (-not $item.PSIsContainer) {",
+        "            throw \"配置路径已存在且不是目录：$Source\"",
+        "        }",
+        "",
+        "        & robocopy $Source $Target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "        if ($LASTEXITCODE -gt 7) {",
+        "            Write-Host \"迁移失败，保留原目录：$Source\"",
+        "            return",
+        "        }",
+        "",
+        "        $backup = \"$Source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "        try {",
+        "            Move-Item -LiteralPath $Source -Destination $backup -Force",
+        "            Write-Host \"已备份原配置目录：$backup\"",
+        "        } catch {",
+        "            Write-Host \"无法重命名原目录：$Source\"",
+        "            return",
+        "        }",
+        "    }",
+        "",
+        "    New-Item -Path $Source -ItemType Junction -Value $Target | Out-Null",
+        "}",
+        "",
+        "ensure (Join-Path $persist_dir 'data')",
+        "ensure (Join-Path $persist_dir 'localdata')",
+        "ensure (Join-Path $persist_dir 'downloads')",
+        "ensure (Join-Path $persist_dir 'temp')",
+        "ensure (Join-Path $persist_dir 'data\\tauri-plugin-pinia')",
+        "",
+        "& $ensureJunction (Join-Path $env:APPDATA 'io.github.lvzhenbo.115-plus-desktop') (Join-Path $persist_dir 'data')",
+        "& $ensureJunction (Join-Path $env:LOCALAPPDATA 'io.github.lvzhenbo.115-plus-desktop') (Join-Path $persist_dir 'localdata')",
+        "",
+        "$launcherPs1 = @(",
+        "    'param([switch]$PrepareOnly)',",
+        "    '$ErrorActionPreference = ''Stop''',",
+        "    ('$persistDir = ''{0}''' -f $persist_dir),",
+        "    ('$appDir = ''{0}''' -f $dir),",
+        "    '$dataDir = Join-Path $persistDir ''data''',",
+        "    '$downloadsDir = Join-Path $persistDir ''downloads''',",
+        "    '$tempDir = Join-Path $persistDir ''temp''',",
+        "    '$settingsDir = Join-Path $dataDir ''tauri-plugin-pinia''',",
+        "    '$settingsPath = Join-Path $settingsDir ''setting.json''',",
+        "    'New-Item -ItemType Directory -Force -Path $dataDir,$downloadsDir,$tempDir,$settingsDir | Out-Null',",
+        "    '$state = $null',",
+        "    'if (Test-Path $settingsPath) {',",
+        "    '    try {',",
+        "    '        $state = Get-Content -Path $settingsPath -Encoding UTF8 -Raw | ConvertFrom-Json -AsHashtable -Depth 100',",
+        "    '    } catch {',",
+        "    '        $state = $null',",
+        "    '    }',",
+        "    '}',",
+        "    'if ($null -eq $state -or $state -isnot [hashtable]) {',",
+        "    '    $state = [ordered]@{',",
+        "    '        generalSetting = [ordered]@{ customOrder = 0; skipExitConfirm = $false; autoCheckUpdate = $true; updateProxy = ''''; apiRateLimit = 2 }',",
+        "    '        videoPlayerSetting = [ordered]@{ defaultVolume = 1; defaultRate = 1; autoPlay = $true; isHistory = $true }',",
+        "    '        cloudDownloadSetting = [ordered]@{ deleteSourceFile = $true }',",
+        "    '        downloadSetting = [ordered]@{ aria2Port = 6800; downloadPath = $downloadsDir; maxRetry = 5; maxConcurrent = 5 }',",
+        "    '        uploadSetting = [ordered]@{ maxRetry = 3; maxConcurrent = 5 }',",
+        "    '        subtitleStyleSetting = [ordered]@{ defaultEnabled = $true; fontSize = 22; fontColor = ''#FFFFFF''; fontBold = $false; strokeColor = ''#000000''; strokeWidth = 1; backgroundColor = ''#00000099''; bottomOffset = 64 }',",
+        "    '    }',",
+        "    '}',",
+        "    'if (-not ($state[''downloadSetting''] -is [hashtable])) {',",
+        "    '    $state[''downloadSetting''] = [ordered]@{ aria2Port = 6800; maxRetry = 5; maxConcurrent = 5 }',",
+        "    '}',",
+        "    '$state[''downloadSetting''][''downloadPath''] = $downloadsDir',",
+        "    '$json = $state | ConvertTo-Json -Depth 100',",
+        "    '[IO.File]::WriteAllText($settingsPath, $json, [Text.UTF8Encoding]::new($false))',",
+        "    'if (-not $PrepareOnly) {',",
+        "    '    $env:TEMP = $tempDir',",
+        "    '    $env:TMP = $tempDir',",
+        "    '    Start-Process -FilePath (Join-Path $appDir ''oof-plus-desktop.exe'') -WorkingDirectory $appDir | Out-Null',",
+        "    '}'",
+        ") -join \"`r`n\"",
+        "[IO.File]::WriteAllText((Join-Path $dir '115-plus-desktop-launcher.ps1'), $launcherPs1, [Text.UTF8Encoding]::new($false))",
+        "",
+        "$launcherCmd = @(",
+        "    '@echo off',",
+        "    'powershell -NoProfile -ExecutionPolicy Bypass -File \"%~dp0115-plus-desktop-launcher.ps1\"'",
+        ") -join \"`r`n\"",
+        "[IO.File]::WriteAllText((Join-Path $dir '115-plus-desktop.cmd'), $launcherCmd, [Text.UTF8Encoding]::new($false))",
+        "",
+        "& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $dir '115-plus-desktop-launcher.ps1') -PrepareOnly"
+    ],
+    "post_uninstall": [
+        "$paths = @(",
+        "    (Join-Path $env:APPDATA 'io.github.lvzhenbo.115-plus-desktop'),",
+        "    (Join-Path $env:LOCALAPPDATA 'io.github.lvzhenbo.115-plus-desktop')",
+        ")",
+        "foreach ($path in $paths) {",
+        "    if (Test-Path $path) {",
+        "        $item = Get-Item -LiteralPath $path -Force",
+        "        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "            Remove-Item -LiteralPath $path -Force",
+        "        }",
+        "    }",
+        "}"
+    ],
+    "persist": [
+        "data",
+        "localdata",
+        "downloads",
+        "temp",
+        [
+            "oof-plus-desktop.exe.WebView2",
+            "webview2"
+        ]
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/lvzhenbo/115-plus-desktop/releases/download/v$version/115%2B_$version_x64-setup.exe#/dl.7z"
+            }
+        },
+        "hash": {
+            "mode": "download"
+        }
+    }
+}

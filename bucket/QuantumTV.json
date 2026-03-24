@@ -1,0 +1,97 @@
+{
+    "version": "0.6.6",
+    "description": "A cross-platform local media aggregator player built with Next.js and Tauri",
+    "homepage": "https://github.com/Geon97/QuantumTV",
+    "license": {
+        "identifier": "CC-BY-NC-SA-4.0",
+        "url": "https://github.com/Geon97/QuantumTV/blob/main/LICENSE"
+    },
+    "notes": [
+        "QuantumTV 是基于 Next.js 和 Tauri 的跨平台本地影视聚合播放器",
+        "用户数据目录：%APPDATA%\\com.geon.quantumtv\\",
+        "  - data.json：配置、订阅、偏好设置",
+        "  - quantumtv.db：播放记录、收藏、搜索历史、图片缓存与页面缓存",
+        "本包会将该目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist",
+        "若程序目录生成 quantumtv.exe.WebView2，也会一并持久化到 Scoop 的 persist",
+        "用户手动导出的配置/数据库 JSON 文件走系统下载流程，不纳入 Scoop persist"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Geon97/QuantumTV/releases/download/v0.6.6/QuantumTV_0.6.6_x64-setup.exe#/dl.7z",
+            "hash": "8b2b23a2fabe2d1ff46a9137a7a47ed18bfead6d32339249c94576a9b058e359"
+        }
+    },
+    "pre_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "bin": [
+        [
+            "quantumtv.exe",
+            "quantumtv"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "quantumtv.exe",
+            "QuantumTV"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'com.geon.quantumtv'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"配置路径已存在且不是目录：$source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"迁移失败，保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原配置目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原目录：$source\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "post_uninstall": [
+        "$source = Join-Path $env:APPDATA 'com.geon.quantumtv'",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Remove-Item -LiteralPath $source -Force",
+        "    }",
+        "}"
+    ],
+    "persist": [
+        "data",
+        [
+            "quantumtv.exe.WebView2",
+            "webview2"
+        ]
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Geon97/QuantumTV/releases/download/v$version/QuantumTV_$version_x64-setup.exe#/dl.7z"
+            }
+        },
+        "hash": {
+            "mode": "download"
+        }
+    }
+}
