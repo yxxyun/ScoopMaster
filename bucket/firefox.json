@@ -1,40 +1,79 @@
 {
     "version": "149.0",
-    "description": "Popular open source web browser. (tete009 private build)",
-    "homepage": "http://www1.plala.or.jp/tete009/en-US/software.html#FIREFOX",
+    "description": "Popular open source web browser.",
+    "homepage": "https://www.mozilla.org/firefox/",
     "license": "MPL-2.0",
+    "notes": [
+        "To set profile 'Scoop' as *DEFAULT*, or profiles/settings was lost after update:",
+        "  - Run 'Firefox Profile Manager', choose 'Scoop' then click 'Start Firefox'.",
+        "  - Visit 'about:profiles' page in Firefox to check *DEFAULT* profile.",
+        "For details: https://support.mozilla.org/en-US/kb/profile-manager-create-remove-switch-firefox-profiles"
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/by275/scoop-bucket/releases/download/firefox-tete009/firefox-149.0-2026031819.en-US.win32-tete009-x64-sse3-cspgo.7z",
-            "hash": "f7f9ebda01d6bf2e6f934a39a5d67a7d2ac235c54395fbb53c91c548ebe9d914",
-            "extract_dir": "firefox-149.0-2026031819.en-US.win32-tete009-x64-sse3-cspgo",
-            "bin": "firefox.exe",
-            "shortcuts": [
-                [
-                    "firefox.exe",
-                    "Firefox"
-                ]
-            ]
+            "url": "https://archive.mozilla.org/pub/firefox/releases/149.0/win64/en-US/Firefox%20Setup%20149.0.exe#/dl.7z",
+            "hash": "sha512:9376e9f74677cca8ca7ebee521fd4b43de4091ea72c92bbe95212df0c8581c4e003dffe72279fb46f5149b0a71dc7c7e20befb09616d54feeda63108fc26925d"
+        },
+        "32bit": {
+            "url": "https://archive.mozilla.org/pub/firefox/releases/149.0/win32/en-US/Firefox%20Setup%20149.0.exe#/dl.7z",
+            "hash": "sha512:3534cd016cbe0932844c9d80c20fc9521027fcf740d9631c7555a1762bf7360c407dba58c9df5d22a100db9ff0c8a86817c7fea42cb2ca779bb59d543f116675"
         }
     },
-    "pre_install": [
-        "\"[General]`r`Portable=1\" | Out-File -Encoding ASCII \"$dir\\tmemutil.ini\"",
-        "ForEach ($emptyFile in $manifest.persist | Where-Object { $_ -ne 'PortableData' }) {New-Item \"$dir\\$emptyFile\" -ItemType file -ErrorAction SilentlyContinue | Out-Null}"
+    "extract_dir": "core",
+    "post_install": [
+        "firefox -CreateProfile \"Priv $persist_dir\\profiles\\priv\"",
+        "firefox -CreateProfile \"Work $persist_dir\\profiles\\work\"",
+        "$Addition = \"$persist_dir\\addition\"",
+        "if (Test-Path $Addition) {",
+        "    info 'Copying additional items...'",
+        "    Copy-Item -Path $Addition\\* -Destination $dir -Force -Recurse -ErrorAction SilentlyContinue",
+        "}"
+    ],
+    "bin": "firefox.exe",
+    "shortcuts": [
+        [
+            "firefox.exe",
+            "Firefox"
+        ],
+        [
+            "firefox.exe",
+            "Firefox Profile Manager",
+            "-P"
+        ],
+        [
+            "firefox.exe",
+            "Firefox Priv",
+            "-P Priv"
+        ],
+        [
+            "firefox.exe",
+            "Firefox Work",
+            "-P Work"
+        ]
     ],
     "persist": [
-        "PortableData",
-        "tmemutil.ini"
+        "distribution",
+        "profiles"
     ],
     "checkver": {
-        "url": "https://api.github.com/repos/by275/scoop-bucket/releases",
-        "regex": "firefox-([\\d.]+)-(?<date>\\d+)\\.en-US\\.win32-tete009-x64(?<buildtag>[\\w-]+)?\\.7z",
-        "reverse": true
+        "url": "https://product-details.mozilla.org/1.0/firefox_versions.json",
+        "jsonpath": "$.LATEST_FIREFOX_VERSION"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/by275/scoop-bucket/releases/download/firefox-tete009/firefox-$version-$matchDate.en-US.win32-tete009-x64$matchBuildtag.7z",
-                "extract_dir": "firefox-$version-$matchDate.en-US.win32-tete009-x64$matchBuildtag"
+                "url": "https://archive.mozilla.org/pub/firefox/releases/$version/win64/en-US/Firefox%20Setup%20$version.exe#/dl.7z",
+                "hash": {
+                    "url": "https://archive.mozilla.org/pub/firefox/releases/$version/SHA512SUMS",
+                    "regex": "$sha512\\s+win64/en-US/$basename"
+                }
+            },
+            "32bit": {
+                "url": "https://archive.mozilla.org/pub/firefox/releases/$version/win32/en-US/Firefox%20Setup%20$version.exe#/dl.7z",
+                "hash": {
+                    "url": "https://archive.mozilla.org/pub/firefox/releases/$version/SHA512SUMS",
+                    "regex": "$sha512\\s+win32/en-US/$basename"
+                }
             }
         }
     }
