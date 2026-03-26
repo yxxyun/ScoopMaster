@@ -1,53 +1,49 @@
 {
-    "version": "9.3.2.912-beta",
-    "description": "A lightweight, versatile image viewer (Beta)",
-    "homepage": "https://imageglass.org",
-    "license": "GPL-3.0-only",
-    "suggest": {
-        "exifglass": "kazzarin/exifglass"
-    },
-    "notes": [
-        "Optional dependency WebView2 to be installed: https://go.microsoft.com/fwlink/p/?LinkId=2124703",
-        "Config has moved to '$dir\\igconfig.json' in 9.x; settings are not migrated from 8.x",
-        "Delete '$persist_dir\\Themes' prior to upgrading to 9.x to resolve theme incompatibility"
-    ],
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/d2phap/ImageGlass/releases/download/9.3.2.912-beta/ImageGlass_9.3.2.912-beta_x64.zip",
-            "hash": "322d4f874ae1414dcb89db4af5d5ac60c379467be30a67f530d881db57d76d6f",
-            "extract_dir": "ImageGlass_9.3.2.912-beta_x64"
-        }
-    },
-    "pre_install": [
-        "if (!(Test-Path \"$persist_dir\\igconfig.json\")) {",
-        "    Add-Content \"$dir\\igconfig.json\" '{\"_Metadata\":{\"Description\":\"ImageGlass configuration file\",\"Version\":\"9.0\"},\"AutoUpdate\":\"0\"}' -Encoding utf8",
-        "}"
-    ],
-    "bin": [
-        "ImageGlass.exe",
-        "igcmd.exe"
-    ],
-    "shortcuts": [
-        [
-            "ImageGlass.exe",
-            "ImageGlass"
-        ]
-    ],
-    "persist": [
-        "Themes",
-        "igconfig.json"
-    ],
-    "checkver": {
-        "url": "https://api.github.com/repos/d2phap/ImageGlass/releases",
-        "jsonpath": "$[?(@.prerelease == true)].tag_name",
-        "regex": "([\\w.-]+)"
-    },
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/d2phap/ImageGlass/releases/download/$version/ImageGlass_$version_x64.zip",
-                "extract_dir": "ImageGlass_$version_x64"
-            }
-        }
-    }
+	"version": "10.0.0.314-beta-1",
+	"description": "A lightweight, versatile image viewer",
+	"homepage": "https://imageglass.org",
+	"license": "GPL-3.0-only",
+	"notes": "If this app doesn't work maybe you need to clean '$dir\\igconfig.json' and reinstall '$dir\\Themes'.",
+	"architecture": {
+		"64bit": {
+			"url": "https://github.com/d2phap/ImageGlass/releases/download/10.0.0.314-beta-1/ImageGlass_10.0.0.314-beta-1_win-x64.zip",
+			"hash": "f5ec6fc03ff411eed8ea9074b0b11ab05bccb2e2ba356f27239dfcff5f7bb319",
+			"extract_dir": "ImageGlass_win-x64"
+		},
+		"arm64": {
+			"url": "https://github.com/d2phap/ImageGlass/releases/download/10.0.0.314-beta-1/ImageGlass_10.0.0.314-beta-1_win-arm64.zip",
+			"hash": "de2e89bd3ec1aec806308aba1bca7914dd1d218dfba3ad858265e81ad7a13b05",
+			"extract_dir": "ImageGlass_win-arm64"
+		}
+	},
+	"pre_install": [
+		"if (!(Test-Path \"$persist_dir\\igconfig.json\")) {",
+		" Add-Content \"$dir\\igconfig.json\" '{\"AutoUpdate\": \"0\"}' -Encoding utf8",
+		"}"
+	],
+	"bin": ["ImageGlass.exe"],
+	"shortcuts": [["ImageGlass.exe", "ImageGlass"]],
+	"persist": ["Themes", "igconfig.json"],
+	"checkver": {
+		"script": [
+			"$rel_info = Invoke-RestMethod -Uri 'https://api.github.com/repos/d2phap/ImageGlass/releases'",
+			"$latest = $rel_info | Sort-Object {$_.published_at} | Select-Object -last 1",
+			"$latest_x64 = $latest.assets | Where-Object {$_.name.EndsWith('win-x64.zip')} | Select-Object -first 1",
+			"$latest_arm64 = $latest.assets | Where-Object {$_.name.EndsWith('win-arm64.zip')} | Select-Object -first 1",
+			"Write-Output $latest.tag_name $latest_x64.digest $latest_arm64.digest"
+		],
+		"regex": "(?<version>[\\d.]+(?:-[\\w\\-\\d\\.]+)?)\\s(?<x64hash>[^\\s]+)?\\s(?<armhash>[^\\s]+)?"
+	},
+	"autoupdate": {
+		"architecture": {
+			"64bit": {
+				"url": "https://github.com/d2phap/ImageGlass/releases/download/$version/ImageGlass_$version_win-x64.zip",
+				"hash": "$matchX64hash"
+			},
+			"arm64": {
+				"url": "https://github.com/d2phap/ImageGlass/releases/download/$version/ImageGlass_$version_win-arm64.zip",
+				"hash": "$matchArmhash"
+			}
+		}
+	}
 }
