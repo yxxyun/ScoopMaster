@@ -1,0 +1,90 @@
+{
+    "version": "17.06",
+    "description": "Find out what files, registry keys and other objects processes have open, which DLLs they have loaded, and more.",
+    "homepage": "https://learn.microsoft.com/sysinternals/downloads/process-explorer",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://learn.microsoft.com/sysinternals/license-terms"
+    },
+    "notes": [
+        "Start Process-Explorer with Windows by running:",
+        "reg import \"$dir\\add-startup.reg\""
+    ],
+    "url": "https://download.sysinternals.com/files/ProcessExplorer.zip",
+    "hash": "54336cd4f4608903b1f89a43ca88f65c2f209f4512a5201cebd2b38ddc855f24",
+    "architecture": {
+        "64bit": {
+            "bin": [
+                [
+                    "procexp64.exe",
+                    "procexp"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "procexp64.exe",
+                    "SysInternals/Process Explorer",
+                    "/accepteula",
+                    "/p:h",
+                    "/t"
+                ]
+            ]
+        },
+        "32bit": {
+            "bin": "procexp.exe",
+            "shortcuts": [
+                [
+                    "procexp.exe",
+                    "SysInternals/Process Explorer",
+                    "/accepteula",
+                    "/p:l",
+                    "/t"
+                ]
+            ]
+        },
+        "arm64": {
+            "bin": [
+                [
+                    "procexp64a.exe",
+                    "procexp"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "procexp64a.exe",
+                    "SysInternals/Process Explorer",
+                    "/accepteula",
+                    "/p:l",
+                    "/t"
+                ]
+            ]
+        }
+    },
+    "pre_install": "if (!(is_admin)) {error 'This package requires admin rights to install'; break}",
+    "post_install": [
+        "$dirpath = $dir.Replace('\\', '\\\\')",
+        "'add-startup.reg', 'remove-startup.reg' | ForEach-Object {",
+        "    if (Test-Path \"$bucketsdir\\extras\\scripts\\$app\\$_\") {",
+        "        $content = Get-Content \"$bucketsdir\\extras\\scripts\\$app\\$_\"",
+        "        $content = $content.Replace('$dir', $dirpath)",
+        "        if ($global) { $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE') }",
+        "        $content | Set-Content -Path \"$dir\\$_\"",
+        "    }",
+        "}"
+    ],
+    "pre_uninstall": [
+        "if (!(is_admin)) { error 'Admin rights are required to uninstall'; break }"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') { reg import \"$dir\\remove-startup.reg\" }"
+        ]
+    },
+    "checkver": {
+        "url": "https://raw.githubusercontent.com/MicrosoftDocs/sysinternals/main/sysinternals/downloads/process-explorer.md",
+        "regex": "#.*?v([\\d.]+)"
+    },
+    "autoupdate": {
+        "url": "https://download.sysinternals.com/files/ProcessExplorer.zip"
+    }
+}
