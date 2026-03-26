@@ -1,12 +1,18 @@
 {
-    "version": "4.8.5.1",
-    "description": "A unlimited speed multifunctional remote control software",
     "homepage": "https://www.todesk.com/",
-    "license": "Proprietary",
+    "description": "A unlimited speed multifunctional remote control software",
+    "version": "4.8.5.1",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.todesk.com/licence.html"
+    },
+    "url": "https://dl.todesk.com/windows/ToDesk_Setup.exe#/dl.7z",
+    "hash": "4055f47da713ea1971eb0421489b14bb06aa7b444835406ccbb568e7b794281c",
     "architecture": {
         "64bit": {
-            "url": "https://dl.todesk.com/irrigation/ToDesk_4.8.5.1.exe#/dl.7z",
-            "hash": "bb04aa0052cbc340ff242bc61cb5aea599e67e411e8d696d92676e82ab5574a3"
+            "installer": {
+                "script": "Expand-7ZipArchive \"$dir\\app64.7z\" \"$dir\" -Removal"
+            }
         }
     },
     "pre_install": [
@@ -14,7 +20,16 @@
         "    New-Item -Force -Path \"$persist_dir\\config.ini\" -ItemType File -Value \"[ConfigInfo]`nautoStart=0\" | Out-Null",
         "}"
     ],
-    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\uninst.exe\" -Force -Recurse",
+    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\app*.7z\",\"$dir\\uninst.exe\" -Force -Recurse",
+    "pre_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    if (!(is_admin)) {",
+        "        Start-Process -Wait powershell.exe -ArgumentList \"-Command sc.exe delete ToDesk_Service\" -Verb RunAs -WindowStyle Hidden",
+        "    } else {",
+        "        sc.exe delete ToDesk_Service",
+        "    }",
+        "}"
+    ],
     "shortcuts": [
         [
             "ToDesk.exe",
@@ -26,14 +41,10 @@
         "config.ini"
     ],
     "checkver": {
-        "url": "https://www.todesk.com/download.html",
-        "regex": "ToDesk_([\\d.]+).exe"
+        "url": "https://update.todesk.com/windows/uplog.html",
+        "regex": "<div class=\"text\">([\\d.]+)</div>"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://dl.todesk.com/irrigation/ToDesk_$version.exe#/dl.7z"
-            }
-        }
+        "url": "https://dl.todesk.com/windows/ToDesk_Setup.exe#/dl.7z"
     }
 }
