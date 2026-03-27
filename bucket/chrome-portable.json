@@ -1,54 +1,47 @@
 {
     "version": "146.0.7680.165",
-    "description": "Portable with Chrome++.",
+    "description": "Fast, secure, and free web browser, built for the modern web.",
     "homepage": "https://www.google.com/chrome/",
     "license": {
         "identifier": "Freeware",
-        "url": "https://www.google.com/chrome/terms/"
+        "url": "https://www.google.com/chrome/privacy/eula_text.html"
     },
-    "depends": "chrome-plus",
     "architecture": {
         "64bit": {
             "url": "https://dl.google.com/release2/chrome/ac5kxwl4otjxw4z27mutly4ktmxq_146.0.7680.165/146.0.7680.165_chrome_installer_uncompressed.exe#/dl.7z",
-            "hash": "d1c0363d67dab609414e2f05a9f99ca6ca015e816be0278c00dc63d04a51113c",
-            "pre_install": [
-                "Copy-Item -Path \"$dir\\..\\..\\chrome-plus\\current\\x64\\*\" -Destination \"$dir\" -Recurse",
-                "Move-Item -Path \"$dir\\Chrome-bin\\*\" -Destination \"$dir\\App\\\"",
-                "Remove-Item \"$dir\\Chrome-bin\""
-            ]
+            "hash": "d1c0363d67dab609414e2f05a9f99ca6ca015e816be0278c00dc63d04a51113c"
         },
         "32bit": {
             "url": "https://dl.google.com/release2/chrome/admeqwype7xnx62ccd2ue2mqxjbq_146.0.7680.165/146.0.7680.165_chrome_installer_uncompressed.exe#/dl.7z",
-            "hash": "6bebeb51af47ef48f551a19e09930f7cdebf10c8fc2917346f7b8900cbeffb8f",
-            "pre_install": [
-                "Copy-Item -Path \"$dir\\..\\..\\chrome-plus\\current\\x86\\*\" -Destination \"$dir\" -Recurse",
-                "Move-Item -Path \"$dir\\Chrome-bin\\*\" -Destination \"$dir\\App\\\"",
-                "Remove-Item \"$dir\\Chrome-bin\""
-            ]
+            "hash": "6bebeb51af47ef48f551a19e09930f7cdebf10c8fc2917346f7b8900cbeffb8f"
         }
     },
-    "persist": [
-        "App\\chrome++.ini",
-        "Cache",
-        "Data"
-    ],
+    "extract_dir": "Chrome-bin",
     "bin": [
         [
-            "App\\chrome.exe",
+            "chrome.exe",
             "chrome",
-            "--no-default-browser-check --no-first-run --disable-logging --disable-background-networking --disable-crash-reporter --disable-breakpad"
+            "--user-data-dir=\"$dir\\User Data\""
+        ],
+        [
+            "chrome.exe",
+            "google-chrome",
+            "--user-data-dir=\"$dir\\User Data\""
         ]
     ],
+    "post_install": [
+        "Remove-Item -Force -Recurse -ErrorAction SilentlyContinue -Path \"$ENV:LOCALAPPDATA\\Google\\Chrome\\User Data\"",
+        "New-Item -ItemType Junction -target \"$dir\\User Data\" -Path \"$ENV:LOCALAPPDATA\\Google\\Chrome\\User Data\""
+    ],
+    "post_uninstall": "Remove-Item -Force -Recurse -ErrorAction SilentlyContinue -Path \"$ENV:LOCALAPPDATA\\Google\\Chrome\\User Data\"",
     "shortcuts": [
         [
-            "App\\chrome.exe",
+            "chrome.exe",
             "Google Chrome",
-            "--no-default-browser-check --no-first-run --disable-logging --disable-background-networking --disable-crash-reporter --disable-breakpad"
+            "--user-data-dir=\"$dir\\User Data\""
         ]
     ],
-    "env_set": {
-        "CHROME_EXECUTABLE": "$dir\\App\\chrome.exe"
-    },
+    "persist": "User Data",
     "checkver": {
         "url": "https://scoopinstaller.github.io/UpdateTracker/googlechrome/chrome.min.xml",
         "regex": "(?sm)<stable32><version>(?<version>[\\d.]+)</version>.+release2/chrome/(?<32>[\\w-]+)_.+<stable64>.+release2/chrome/(?<64>[\\w-]+)_.+</stable64>"
