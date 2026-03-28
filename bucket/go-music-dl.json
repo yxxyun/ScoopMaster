@@ -1,136 +1,40 @@
 {
     "version": "1.0.12",
-    "description": "Desktop GUI shell for Go Music DL with Web and TUI powered backend",
-    "homepage": "https://github.com/guohuiyuan/go-music-dl",
-    "license": "AGPL-3.0-only",
-    "notes": [
-        "本包使用 go-music-dl 的 Windows 桌面端资产（music-dl-desktop.exe）",
-        "应用数据目录：%LOCALAPPDATA%\\go-music-dl\\",
-        "  - data\\settings.db：Web 设置、本地歌单与 Cookie 数据库",
-        "  - data\\downloads：桌面端受管下载目录",
-        "本包只会将上述 data 目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist\\data",
-        "桌面壳日志与 WebView 缓存不纳入 persist，会保留在 %LOCALAPPDATA%\\go-music-dl\\ 下作为非持久化运行数据",
-        "启动器会在每次启动前将桌面端下载模式强制切换为“保存到本地目录”，并锁定到 Scoop 的 persist\\data\\downloads",
-        "启动器会把 TEMP/TMP 指向程序目录下的临时目录，用于承载嵌入式后端临时二进制"
-    ],
+    "description": "一个基于 Go 语言的全网音乐搜索与下载工具。支持 CLI 命令行与 Web 服务双模式，内置网易云、QQ、酷狗、Bilibili、汽水音乐等 10+ 个主流平台，支持多源并发搜索与无损音质解析。music-dl交流群：1074285005",
+    "homepage": "https://music.kukuqaq.com/",
+    "license": {
+        "identifier": "AGPL-3.0 license",
+        "url": "https://github.com/guohuiyuan/go-music-dl#AGPL-3.0-1-ov-file"
+    },
     "architecture": {
         "64bit": {
             "url": "https://github.com/guohuiyuan/go-music-dl/releases/download/v1.0.12/go-music-dl-desktop-windows-amd64.zip",
-            "hash": "55f913c5cc805eae6167755f1b2f5537cdb8d956c4a351236cf63a30682992ad"
+            "hash": "e5d2dbde4a9b157ae54814698c0bf25a699ddc01455161632726af4efa205411"
         }
     },
-    "pre_install": [
-        "$launcherPs1 = @(",
-        "    '$ErrorActionPreference = ''Stop''',",
-        "    ('$persistDir = ''{0}''' -f $persist_dir),",
-        "    ('$appDir = ''{0}''' -f $dir),",
-        "    '$tempDir = Join-Path $appDir ''temp''',",
-        "    '$dataDir = Join-Path $persistDir ''data''',",
-        "    '$downloadDir = Join-Path $dataDir ''downloads''',",
-        "    '$settingsDb = Join-Path $dataDir ''settings.db''',",
-        "    '$cookieFile = Join-Path $dataDir ''cookies.json''',",
-        "    'New-Item -ItemType Directory -Force -Path $tempDir,$dataDir,$downloadDir | Out-Null',",
-        "    '$env:TEMP = $tempDir',",
-        "    '$env:TMP = $tempDir',",
-        "    '$env:MUSIC_DL_CONFIG_DB = $settingsDb',",
-        "    '$env:MUSIC_DL_COOKIE_FILE = $cookieFile',",
-        "    '$exe = Join-Path $appDir ''music-dl-desktop.exe''',",
-        "    '$proc = Start-Process -FilePath $exe -WorkingDirectory $appDir -PassThru',",
-        "    '$settingsUrl = ''http://127.0.0.1:37777/music/settings''',",
-        "    '$payload = @{ embedDownload = $false; downloadToLocal = $true; downloadDir = $downloadDir } | ConvertTo-Json -Compress',",
-        "    'for ($i = 0; $i -lt 80; $i++) {',",
-        "    '    try {',",
-        "    '        Invoke-RestMethod -Method Post -Uri $settingsUrl -ContentType ''application/json'' -Body $payload | Out-Null',",
-        "    '        break',",
-        "    '    } catch {',",
-        "    '        Start-Sleep -Milliseconds 250',",
-        "    '    }',",
-        "    '}'",
-        ") -join \"`r`n\"",
-        "[IO.File]::WriteAllText((Join-Path $dir 'go-music-dl-launcher.ps1'), $launcherPs1, [Text.UTF8Encoding]::new($false))",
-        "$launcherCmd = @(",
-        "    '@echo off',",
-        "    'powershell -NoProfile -ExecutionPolicy Bypass -File \"%~dp0go-music-dl-launcher.ps1\" %*'",
-        ") -join \"`r`n\"",
-        "[IO.File]::WriteAllText((Join-Path $dir 'go-music-dl.cmd'), $launcherCmd, [Text.UTF8Encoding]::new($false))"
-    ],
-    "bin": [
-        [
-            "go-music-dl.cmd",
-            "go-music-dl"
-        ]
-    ],
+    "bin": "music-dl-desktop.exe",
     "shortcuts": [
         [
-            "go-music-dl.cmd",
-            "Go Music DL"
+            "music-dl-desktop.exe",
+            "music-dl-desktop"
         ]
     ],
-    "post_install": [
-        "$sourceRoot = Join-Path $env:LOCALAPPDATA 'go-music-dl'",
-        "$source = Join-Path $sourceRoot 'data'",
-        "$target = Join-Path $persist_dir 'data'",
-        "ensure $sourceRoot",
-        "ensure (Join-Path $persist_dir 'data')",
-        "ensure (Join-Path $persist_dir 'data\\downloads')",
-        "",
-        "if (Test-Path $sourceRoot) {",
-        "    $rootItem = Get-Item -LiteralPath $sourceRoot -Force",
-        "    if ($rootItem.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
-        "        Remove-Item -LiteralPath $sourceRoot -Force",
-        "        New-Item -Path $sourceRoot -ItemType Directory -Force | Out-Null",
-        "    } elseif (-not $rootItem.PSIsContainer) {",
-        "        throw \"配置根路径已存在且不是目录：$sourceRoot\"",
-        "    }",
-        "}",
-        "",
-        "if (Test-Path $source) {",
-        "    $item = Get-Item -LiteralPath $source -Force",
-        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
-        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
-        "        return",
-        "    }",
-        "    if (-not $item.PSIsContainer) {",
-        "        throw \"配置路径已存在且不是目录：$source\"",
-        "    }",
-        "",
-        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
-        "    if ($LASTEXITCODE -gt 7) {",
-        "        Write-Host \"迁移失败，保留原目录：$source\"",
-        "        return",
-        "    }",
-        "",
-        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
-        "    try {",
-        "        Move-Item -LiteralPath $source -Destination $backup -Force",
-        "        Write-Host \"已备份原配置目录：$backup\"",
-        "    } catch {",
-        "        Write-Host \"无法重命名原目录：$source\"",
-        "        return",
-        "    }",
-        "}",
-        "",
-        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
-    ],
-    "post_uninstall": [
-        "$source = Join-Path (Join-Path $env:LOCALAPPDATA 'go-music-dl') 'data'",
-        "if (Test-Path $source) {",
-        "    $item = Get-Item -LiteralPath $source -Force",
-        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
-        "        Remove-Item -LiteralPath $source -Force",
-        "    }",
-        "}"
-    ],
-    "persist": "data",
-    "checkver": "github",
+    "checkver": {
+        "url": "https://api.github.com/repos/guohuiyuan/go-music-dl/releases",
+        "jp": "$[0].assets[*].browser_download_url",
+        "regex": "/releases/download/v([\\d.]+)/go-music-dl-desktop-windows"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
                 "url": "https://github.com/guohuiyuan/go-music-dl/releases/download/v$version/go-music-dl-desktop-windows-amd64.zip"
+            },
+            "32bit": {
+                "url": "https://github.com/guohuiyuan/go-music-dl/releases/download/v$version/go-music-dl-desktop-windows-386.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/guohuiyuan/go-music-dl/releases/download/v$version/go-music-dl-desktop-windows-arm64.zip"
             }
-        },
-        "hash": {
-            "mode": "download"
         }
     }
 }
