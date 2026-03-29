@@ -1,43 +1,53 @@
 {
-    "homepage": "https://azahar-emu.org/",
     "version": "2124.3",
     "description": "Nintendo 3DS Emulator",
-    "pre_install": [
-        "function create($path, $type, $content) {",
-        "   if (-not (Test-Path \"$path\")) {",
-        "       New-Item \"$path\" -ItemType $type -Value $content | Out-Null",
-        "       Write-Output \"Creating $path...\"",
-        "   }",
-        "}",
-        "create $dir/user Directory"
-    ],
-    "persist": "user",
+    "homepage": "https://github.com/azahar-emu/azahar",
+    "license": "GPL-2.0",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/azahar-emu/azahar/releases/download/2124.3/azahar-2124.3-windows-msvc.zip",
-            "hash": "3aec840451cb5c9d800336abe2bc2aa5114f24fc06cf95182e2d1765242d20fc",
-            "extract_dir": "azahar-2124.3-windows-msvc",
-            "bin": [
-                "azahar.exe",
-                "azahar-room.exe"
-            ],
-            "shortcuts": [
-                [
-                    "azahar.exe",
-                    "3DS"
-                ]
-            ]
+            "url": "https://github.com/azahar-emu/azahar/releases/download/2124.3/azahar-2124.3-windows-msys2.zip",
+            "hash": "cb95fea3ae87f456c2b5b5c3bafa6b8931b8a1ba6473d437497d316159630b62"
         }
     },
+    "extract_dir": "azahar-2124.3-windows-msys2",
+    "pre_install": [
+        "",
+        "# Ensure user folder exists",
+        "if (-not (Test-Path \"$dir\\user\")) {",
+        "New-Item -ItemType Directory -Path \"$dir\\user\" -Force | Out-Null",
+        "}",
+        "$appDataPath = $env:APPDATA",
+        "$documentsPath = [Environment]::GetFolderPath('MyDocuments')",
+        "",
+        "# Migrate application data from common locations",
+        "$appDataPath, $documentsPath | ForEach-Object {",
+        "$path = if ($_ -eq $appDataPath) { \"$appDataPath\\azahar\" } else { \"$documentsPath\\azahar\" }",
+        "if (Test-Path $path) {",
+        "$items = Get-ChildItem -Path $path -Force",
+        "if ($items) {",
+        "Write-Host \"Migrating data from $path\"",
+        "$items | Copy-Item -Destination \"$dir\\portable_data\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "}",
+        "}",
+        "}"
+    ],
+    "bin": "azahar.exe",
+    "shortcuts": [
+        [
+            "azahar.exe",
+            "Nintendo 3DS [3ds][azahar]"
+        ]
+    ],
+    "persist": "user",
     "checkver": {
-        "github": "https://github.com/Lime3DS/Lime3DS/"
+        "github": "https://github.com/azahar-emu/azahar"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/azahar-emu/azahar/releases/download/$version/azahar-$version-windows-msvc.zip",
-                "extract_dir": "azahar-$version-windows-msvc"
+                "url": "https://github.com/azahar-emu/azahar/releases/download/$version/azahar-$version-windows-msys2.zip"
             }
-        }
+        },
+        "extract_dir": "azahar-$version-windows-msys2"
     }
 }
