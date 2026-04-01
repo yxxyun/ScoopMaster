@@ -5,19 +5,31 @@
     "license": "proprietary",
     "notes": [
         "Jump Desktop Connect enables your Windows computer to accept remote desktop connections using the Fluid protocol with end-to-end encryption.",
-        "This is a nonportable application that requires admin rights to install."
+        "This is a non-portable, machine-scoped application that requires admin rights to install and uninstall."
     ],
     "url": "https://jumpdesktop.com/downloads/connect/win",
     "hash": "8a4dfcb55ae3e059b469fbe3e31012ec678bd1c60638e1e427c88460f34eedb1",
     "installer": {
         "script": [
             "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
-            "Start-Process -Wait \"$dir\\JumpDesktopConnect.exe\" -ArgumentList '/VERYSILENT' -Verb RunAs | Out-Null",
-            "Remove-Item \"$dir\\JumpDesktopConnect.exe\""
+            "$p = Start-Process -FilePath \"$dir\\JumpDesktopConnect.exe\" -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/ALLUSERS' -Wait -PassThru",
+            "if ($p.ExitCode -ne 0) { throw \"Installer exited with code $($p.ExitCode).\" }",
+            "Remove-Item \"$dir\\JumpDesktopConnect.exe\" -Force"
         ]
     },
     "uninstaller": {
-        "script": "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }"
+        "script": [
+            "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+            "$candidates = @(",
+            "    (Join-Path ${env:ProgramFiles} 'Jump Desktop Connect\\unins000.exe'),",
+            "    (Join-Path ${env:ProgramW6432} 'Jump Desktop Connect\\unins000.exe'),",
+            "    (Join-Path ${env:ProgramFiles(x86)} 'Jump Desktop Connect\\unins000.exe')",
+            ")",
+            "$uninstaller = $candidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1",
+            "if (-not $uninstaller) { warning 'Jump Desktop Connect uninstaller not found. It may have already been removed.'; break }",
+            "$p = Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait -PassThru",
+            "if ($p.ExitCode -ne 0) { throw \"Uninstaller exited with code $($p.ExitCode).\" }"
+        ]
     },
     "checkver": {
         "url": "https://mirror.jumpdesktop.com/downloads/connect/connect-win3.txt",

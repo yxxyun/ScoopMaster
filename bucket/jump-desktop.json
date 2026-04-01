@@ -5,19 +5,32 @@
     "license": "proprietary",
     "notes": [
         "Jump Desktop provides remote desktop access via RDP, VNC, and Fluid protocols with end-to-end encryption.",
-        "This is a nonportable application that requires admin rights to install."
+        "Installs per-machine when run elevated and per-user when run without admin rights."
     ],
     "url": "https://jumpdesktop.com/downloads/jdwin#/JumpDesktop.exe",
     "hash": "54718ea03fd669f88b4592711e4309e6f9fd875dbe3caf709f502013de363726",
     "installer": {
         "script": [
-            "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
-            "Start-Process -Wait \"$dir\\JumpDesktop.exe\" -ArgumentList '/VERYSILENT' -Verb RunAs | Out-Null",
-            "Remove-Item \"$dir\\JumpDesktop.exe\""
+            "$installArgs = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART')",
+            "if (is_admin) { $installArgs += '/ALLUSERS' } else { $installArgs += '/CURRENTUSER' }",
+            "$p = Start-Process -FilePath \"$dir\\JumpDesktop.exe\" -ArgumentList $installArgs -Wait -PassThru",
+            "if ($p.ExitCode -ne 0) { throw \"Installer exited with code $($p.ExitCode).\" }",
+            "Remove-Item \"$dir\\JumpDesktop.exe\" -Force"
         ]
     },
     "uninstaller": {
-        "script": "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }"
+        "script": [
+            "$candidates = @(",
+            "    (Join-Path $env:LOCALAPPDATA 'Programs\\Jump Desktop\\unins000.exe'),",
+            "    (Join-Path ${env:ProgramFiles} 'Jump Desktop\\unins000.exe'),",
+            "    (Join-Path ${env:ProgramW6432} 'Jump Desktop\\unins000.exe'),",
+            "    (Join-Path ${env:ProgramFiles(x86)} 'Jump Desktop\\unins000.exe')",
+            ")",
+            "$uninstaller = $candidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1",
+            "if (-not $uninstaller) { warning 'Jump Desktop uninstaller not found. It may have already been removed.'; break }",
+            "$p = Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait -PassThru",
+            "if ($p.ExitCode -ne 0) { throw \"Uninstaller exited with code $($p.ExitCode).\" }"
+        ]
     },
     "checkver": {
         "url": "https://mirror.jumpdesktop.com/downloads/jdwin/client-win3.txt",
