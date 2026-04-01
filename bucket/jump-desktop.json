@@ -11,24 +11,19 @@
     "hash": "54718ea03fd669f88b4592711e4309e6f9fd875dbe3caf709f502013de363726",
     "installer": {
         "script": [
-            "$installArgs = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART')",
-            "if (is_admin) { $installArgs += '/ALLUSERS' } else { $installArgs += '/CURRENTUSER' }",
-            "$p = Start-Process -FilePath \"$dir\\JumpDesktop.exe\" -ArgumentList $installArgs -Wait -PassThru",
+            "$p = Start-Process -FilePath \"$dir\\JumpDesktop.exe\" -Wait -PassThru",
             "if ($p.ExitCode -ne 0) { throw \"Installer exited with code $($p.ExitCode).\" }",
             "Remove-Item \"$dir\\JumpDesktop.exe\" -Force"
         ]
     },
     "uninstaller": {
         "script": [
-            "$candidates = @(",
-            "    (Join-Path $env:LOCALAPPDATA 'Programs\\Jump Desktop\\unins000.exe'),",
-            "    (Join-Path ${env:ProgramFiles} 'Jump Desktop\\unins000.exe'),",
-            "    (Join-Path ${env:ProgramW6432} 'Jump Desktop\\unins000.exe'),",
-            "    (Join-Path ${env:ProgramFiles(x86)} 'Jump Desktop\\unins000.exe')",
-            ")",
-            "$uninstaller = $candidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1",
-            "if (-not $uninstaller) { warning 'Jump Desktop uninstaller not found. It may have already been removed.'; break }",
-            "$p = Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait -PassThru",
+            "$entry = Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq 'Jump Desktop' -and $_.Publisher -eq 'Phase Five Systems' } | Select-Object -First 1",
+            "if (-not $entry) { warning 'Jump Desktop uninstall entry not found. It may have already been removed.'; break }",
+            "if ($entry.PSPath -like 'Microsoft.PowerShell.Core\\Registry::HKEY_LOCAL_MACHINE*' -and !(is_admin)) { error \"$app requires admin rights to uninstall machine-wide install\"; break }",
+            "$productCode = if ($entry.PSChildName -match '^\\{[0-9A-F-]+\\}$') { $entry.PSChildName } elseif ($entry.UninstallString -match '\\{[0-9A-F-]+\\}') { $matches[0] }",
+            "if (-not $productCode) { throw 'Unable to determine Jump Desktop MSI product code.' }",
+            "$p = Start-Process -FilePath 'msiexec.exe' -ArgumentList '/x', $productCode, '/qn', '/norestart' -Wait -PassThru",
             "if ($p.ExitCode -ne 0) { throw \"Uninstaller exited with code $($p.ExitCode).\" }"
         ]
     },
