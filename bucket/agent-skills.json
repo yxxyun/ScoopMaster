@@ -1,0 +1,81 @@
+{
+    "version": "0.1.6",
+    "description": "A desktop app for managing AI agent skills across Claude Code, Cursor, Copilot, Gemini CLI, and more",
+    "homepage": "https://github.com/chrlsio/agent-skills",
+    "license": "MIT",
+    "notes": [
+        "AgentSkills 是一个用于统一管理 AI Agent Skills 的桌面应用",
+        "用户数据目录 1：%USERPROFILE%\\.skills-app\\",
+        "用户数据目录 2：%LOCALAPPDATA%\\skills-app\\",
+        "本包会将这两个目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/chrlsio/agent-skills/releases/download/v0.1.6/AgentSkills_0.1.6_x64-setup.exe#/dl.7z",
+            "hash": "e7515df531e9b678bf9a9c6700fb01d526f38e85d766b695b872b37a1b212ab9"
+        }
+    },
+    "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\uninstall.exe\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "bin": "agent-skills.exe",
+    "shortcuts": [
+        [
+            "agent-skills.exe",
+            "AgentSkills"
+        ]
+    ],
+    "post_install": [
+        "$createJunction = {",
+        "    param($source, $name)",
+        "    $target = Join-Path $persist_dir $name",
+        "    ensure $target",
+        "",
+        "    if (Test-Path $source) {",
+        "        $item = Get-Item -LiteralPath $source -Force",
+        "        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "            Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "            return",
+        "        }",
+        "        if (-not $item.PSIsContainer) {",
+        "            throw \"配置路径已存在且不是目录：$source\"",
+        "        }",
+        "",
+        "        & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "        if ($LASTEXITCODE -gt 7) {",
+        "            Write-Host \"迁移失败，保留原目录：$source\"",
+        "            return",
+        "        }",
+        "",
+        "        $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "        try {",
+        "            Move-Item -LiteralPath $source -Destination $backup -Force",
+        "            Write-Host \"已备份原配置目录：$backup\"",
+        "        } catch {",
+        "            Write-Host \"无法重命名原目录：$source\"",
+        "            return",
+        "        }",
+        "    }",
+        "",
+        "    New-Item -Path $source -ItemType Junction -Value $target | Out-Null",
+        "}",
+        "",
+        "& $createJunction (Join-Path $env:USERPROFILE '.skills-app') 'dot-skills-app'",
+        "& $createJunction (Join-Path $env:LOCALAPPDATA 'skills-app') 'cache'"
+    ],
+    "persist": [
+        "dot-skills-app",
+        "cache"
+    ],
+    "checkver": {
+        "github": "https://github.com/chrlsio/agent-skills"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/chrlsio/agent-skills/releases/download/v$version/AgentSkills_$version_x64-setup.exe#/dl.7z"
+            }
+        },
+        "hash": {
+            "mode": "download"
+        }
+    }
+}
