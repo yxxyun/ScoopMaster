@@ -1,20 +1,107 @@
 {
     "version": "3.6.1",
-    "description": "现代化 Android & OpenHarmony 工具箱 | A Modern Toolbox for Android & OpenHarmony Devices",
-    "homepage": "https://toolbox.uotan.cn/",
-    "license": "GPL-3.0 license",
-    "url": "https://github.com/Uotan-Dev/UotanToolboxNT/releases/download/3.6.1/UotanToolbox_Windows_x64_3.6.1.zip",
-    "hash": "f3f4087a0e4be4a4ffb35dfd682465ef4cef08218a74b3f5728a046592ace164",
-    "shortcuts": [
+    "description": "A modern toolbox for Android and OpenHarmony devices",
+    "homepage": "https://github.com/Uotan-Dev/UotanToolboxNT",
+    "license": "GPL-3.0-only",
+    "notes": [
+        "本包会托管默认日志、备份、临时解包目录以及 %LOCALAPPDATA%\\UotanToolbox\\ 下的用户设置",
+        "软件内“导出 APK 到桌面”是上游固定行为，不纳入 Scoop persist",
+        "若你在软件设置中手动修改备份目录，后续备份将保存到你指定的位置"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Uotan-Dev/UotanToolboxNT/releases/download/3.6.1/UotanToolbox_Windows_x64_3.6.1.zip",
+            "hash": "f3f4087a0e4be4a4ffb35dfd682465ef4cef08218a74b3f5728a046592ace164"
+        },
+        "arm64": {
+            "url": "https://github.com/Uotan-Dev/UotanToolboxNT/releases/download/3.6.1/UotanToolbox_Windows_arm64_3.6.1.zip",
+            "hash": "e5d8e28cd76dc8a4c88e45c1239f24b34a1ed7ed575ef8adcd2b5f24a0cece97"
+        }
+    },
+    "bin": [
         [
-            "UotanToolbox.exe",
-            "柚坛工具箱"
+            "UotanToolbox.cmd",
+            "uotantoolboxnt"
         ]
     ],
-    "checkver": {
-        "github": "https://github.com/Uotan-Dev/UotanToolboxNT"
-    },
+    "shortcuts": [
+        [
+            "UotanToolbox.cmd",
+            "Uotan Toolbox NT"
+        ]
+    ],
+    "post_install": [
+        "ensure (Join-Path $persist_dir 'Log')",
+        "ensure (Join-Path $persist_dir 'Backup')",
+        "ensure (Join-Path $persist_dir 'Temp')",
+        "ensure (Join-Path $persist_dir 'data')",
+        "",
+        "$launcher = @(",
+        "    '@echo off',",
+        "    \"set \\\"TEMP=$persist_dir\\Temp\\\"\",",
+        "    \"set \\\"TMP=$persist_dir\\Temp\\\"\",",
+        "    'start \"\" \"%~dp0UotanToolbox.exe\" %*'",
+        ") -join \"`r`n\"",
+        "[IO.File]::WriteAllText((Join-Path $dir 'UotanToolbox.cmd'), $launcher, [Text.UTF8Encoding]::new($false))",
+        "",
+        "$source = Join-Path $env:LOCALAPPDATA 'UotanToolbox'",
+        "$target = Join-Path $persist_dir 'data'",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"配置路径已存在且不是目录：$source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"迁移失败，保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原配置目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原目录：$source\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "post_uninstall": [
+        "$source = Join-Path $env:LOCALAPPDATA 'UotanToolbox'",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Remove-Item -LiteralPath $source -Force",
+        "    }",
+        "}"
+    ],
+    "persist": [
+        "Backup",
+        "Log",
+        "Temp",
+        "data"
+    ],
+    "checkver": "github",
     "autoupdate": {
-        "url": "https://github.com/Uotan-Dev/UotanToolboxNT/releases/download/$version/UotanToolbox_Windows_x64_$version.zip"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Uotan-Dev/UotanToolboxNT/releases/download/$version/UotanToolbox_Windows_x64_$version.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/Uotan-Dev/UotanToolboxNT/releases/download/$version/UotanToolbox_Windows_arm64_$version.zip"
+            }
+        },
+        "hash": {
+            "mode": "download"
+        }
     }
 }
