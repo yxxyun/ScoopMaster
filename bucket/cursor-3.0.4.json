@@ -1,0 +1,52 @@
+{
+    "version": "3.0.4",
+    "description": "The AI Code Editor",
+    "homepage": "https://www.cursor.com",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.cursor.com/terms-of-service"
+    },
+    "innosetup": true,
+    "architecture": {
+        "64bit": {
+            "url": "https://downloads.cursor.com/production/63715ffc1807793ce209e935e5c3ab9b79fddc85/win32/x64/user-setup/CursorUserSetup-x64-3.0.4.exe",
+            "hash": "aca39cfec68cd5a1ec8cbe1166250f6705bdc433e7f04840c93b725e9cdaf134"
+        },
+        "arm64": {
+            "url": "https://downloads.cursor.com/production/63715ffc1807793ce209e935e5c3ab9b79fddc85/win32/arm64/user-setup/CursorUserSetup-arm64-3.0.4.exe",
+            "hash": "9b37b8a82f8ea9a7e24ab3c4c889a8032b4ea4ef6c92b97633c016ff1712da42"
+        }
+    },
+    "extract_dir": "{code_GetDestDir}",
+    "post_install": [
+        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Recurse",
+        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.cursor\\extensions\")) {",
+        "    info '[Portable Mode] Copying extensions...'",
+        "    Copy-Item \"$env:USERPROFILE\\.cursor\\extensions\" \"$dir\\data\" -Recurse",
+        "}",
+        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Cursor\")) {",
+        "    info '[Portable Mode] Copying user data...'",
+        "    Copy-Item \"$env:AppData\\Cursor\" \"$dir\\data\\user-data\" -Recurse",
+        "}",
+        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
+        "if ((Test-Path \"$extensions_file\")) {",
+        "    info 'Adjusting path in extensions file...'",
+        "    (Get-Content \"$extensions_file\") -replace '(?<=cursor(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
+        "}"
+    ],
+    "bin": [
+        [
+            "resources\\app\\bin\\cursor.cmd",
+            "cursor_3.0.4",
+            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
+        ]
+    ],
+    "shortcuts": [
+        [
+            "Cursor.exe",
+            "Cursor 3.0.4",
+            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
+        ]
+    ],
+    "persist": "data"
+}

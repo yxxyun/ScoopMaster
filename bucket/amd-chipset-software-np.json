@@ -1,0 +1,34 @@
+{
+    "##": "Running installer ... error. ERROR Exit code was 2! Installation aborted.",
+    "version": "8.02.18.557",
+    "description": "AMD Chipset Driver for Ryzen processors",
+    "homepage": "https://www.amd.com/en/support/download/drivers.html",
+    "license": "Proprietary",
+    "notes": "Only compatible with AMD Ryzen processors",
+    "depends": "extras/vcredist2022",
+    "url": "https://drivers.amd.com/drivers/amd_chipset_software_8.02.18.557.exe",
+    "hash": "7fbf24e6d890b2339ad0c51a12029064d9e1cef51426ffff1265c9927eebfc62",
+    "pre_install": [
+        "# Detect AMD system from SMBus vendor ID",
+        "$pnpDevices = Get-WmiObject -Class Win32_PnPEntity",
+        "$amdPattern = \"PCI\\\\VEN_(1002&DEV_(4353|4363|4372|4385)|1022&DEV_(780B|790B))\"",
+        "if (!($pnpDevices.DeviceID -match $amdPattern)) { error \"AMD system not detected.\"; break }"
+    ],
+    "installer": {
+        "script": [
+            "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+            "Start-Process \"$dir\\$fname\" -Wait -Verb RunAs"
+        ]
+    },
+    "checkver": {
+        "url": "https://www.techpowerup.com/download/amd-ryzen-chipset-drivers/",
+        "regex": "AMD Ryzen Chipset Drivers ([\\d.]+)(?=\\s+Download)"
+    },
+    "autoupdate": {
+        "url": "https://drivers.amd.com/drivers/amd_chipset_software_$version.exe",
+        "hash": {
+            "url": "https://www.techpowerup.com/download/amd-ryzen-chipset-drivers/",
+            "find": "$basename[\\S\\s]+?$sha256"
+        }
+    }
+}
