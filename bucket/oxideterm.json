@@ -1,0 +1,82 @@
+{
+    "version": "1.0.13",
+    "description": "Native Rust SSH terminal and DevOps workspace with SFTP, AI, port forwarding and plugins",
+    "homepage": "https://github.com/AnalyseDeCircuit/oxideterm",
+    "license": "GPL-3.0-only",
+    "notes": [
+        "OxideTerm 是一个原生 Rust SSH 终端与 DevOps 工作台，支持 SFTP、AI、端口转发和插件",
+        "用户数据目录 1：%APPDATA%\\OxideTerm\\",
+        "用户数据目录 2：%LOCALAPPDATA%\\OxideTerm\\（CLI 安装目录）",
+        "本包会将这两个目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist",
+        "若你在应用内将 data_dir 改到其他绝对路径，那个自定义目录不会被本 manifest 自动接管"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/AnalyseDeCircuit/oxideterm/releases/download/v1.0.13/OxideTerm_1.0.13_x64-setup.exe#/dl.7z",
+            "hash": "88371fbe0f4168b12f1d98f4f161e67992e204cdfb61cbadeeb63bc3e3021599"
+        }
+    },
+    "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\uninstall.exe\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "bin": "oxideterm.exe",
+    "shortcuts": [
+        [
+            "oxideterm.exe",
+            "OxideTerm"
+        ]
+    ],
+    "post_install": [
+        "$createJunction = {",
+        "    param($source, $name)",
+        "    $target = Join-Path $persist_dir $name",
+        "    ensure $target",
+        "",
+        "    if (Test-Path $source) {",
+        "        $item = Get-Item -LiteralPath $source -Force",
+        "        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "            Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "            return",
+        "        }",
+        "        if (-not $item.PSIsContainer) {",
+        "            throw \"配置路径已存在且不是目录：$source\"",
+        "        }",
+        "",
+        "        & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "        if ($LASTEXITCODE -gt 7) {",
+        "            Write-Host \"迁移失败，保留原目录：$source\"",
+        "            return",
+        "        }",
+        "",
+        "        $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "        try {",
+        "            Move-Item -LiteralPath $source -Destination $backup -Force",
+        "            Write-Host \"已备份原配置目录：$backup\"",
+        "        } catch {",
+        "            Write-Host \"无法重命名原目录：$source\"",
+        "            return",
+        "        }",
+        "    }",
+        "",
+        "    New-Item -Path $source -ItemType Junction -Value $target | Out-Null",
+        "}",
+        "",
+        "& $createJunction (Join-Path $env:APPDATA 'OxideTerm') 'data'",
+        "& $createJunction (Join-Path $env:LOCALAPPDATA 'OxideTerm') 'localdata'"
+    ],
+    "persist": [
+        "data",
+        "localdata"
+    ],
+    "checkver": {
+        "github": "https://github.com/AnalyseDeCircuit/oxideterm"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/AnalyseDeCircuit/oxideterm/releases/download/v$version/OxideTerm_$version_x64-setup.exe#/dl.7z"
+            }
+        },
+        "hash": {
+            "mode": "download"
+        }
+    }
+}
