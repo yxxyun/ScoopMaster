@@ -1,29 +1,14 @@
 {
     "version": "2.0.3",
-    "description": "A full-featured download manager.",
+    "description": "Smooth,high-speed,powerful,and convenient download tool.",
     "homepage": "https://imfile.io/",
-    "license": {
-        "identifier": "MIT license",
-        "url": "https://github.com/imfile-io/imfile-desktop#MIT-1-ov-file"
-    },
+    "license": "MIT",
     "architecture": {
         "64bit": {
             "url": "https://github.com/imfile-io/imfile-desktop/releases/download/v2.0.3/imFile-Setup-2.0.3.exe#/dl.7z",
             "hash": "sha512:92825544c820be885c4ccc08850188ddc7c0aa03745531f4e50048a6c0a0426689a7452c0e223a1a5745ee9842f1da28e43a5beecbdcd04ee6cf0c621b3b29b8",
-            "pre_install": [
-                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\" -Force -Recurse"
-            ]
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
         }
-    },
-    "installer": {
-        "script": [
-            "ensure \"$persist_dir\" | Out-Null",
-            "New-Item \"$env:APPDATA\\imFile\" -ItemType Junction -Target \"$persist_dir\" | Out-Null"
-        ]
-    },
-    "uninstaller": {
-        "script": "Remove-Item \"$env:APPDATA\\imFile\" -Recurse -Force -ErrorAction 'SilentlyContinue'"
     },
     "shortcuts": [
         [
@@ -31,9 +16,21 @@
             "imFile"
         ]
     ],
+    "installer": {
+        "script": [
+            "Remove-Item \"$dir\\`$*\" -Force -Recurse",
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:APPDATA\\imFile\" \"$persist_dir\\AppData\" -Migrate"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\imFile\""
+    ],
     "checkver": {
-        "url": "https://api.github.com/repos/imfile-io/imfile-desktop/releases",
-        "regex": "/releases/tag/v([\\d.]+)"
+        "github": "https://github.com/imfile-io/imfile-desktop"
     },
     "autoupdate": {
         "architecture": {
