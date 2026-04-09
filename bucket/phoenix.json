@@ -5,9 +5,7 @@
     "license": "GPL-3.0-or-later",
     "notes": [
         "To select another Firefox installation, be sure to run 'scoop uninstall phoenix --purge',",
-        "as this ensures the persisted .ini file is deleted.",
-        "For Scooped Firefox Users only:",
-        "Please be aware to run 'scoop update phoenix --force' after every Firefox update."
+        "as this ensures the persisted .ini file is deleted."
     ],
     "url": "https://codeberg.org/celenity/Phoenix/raw/branch/dev/archives/phoenix-windows.zip",
     "hash": "9afe8d82e32d387fd95e3fe2690ff9f15775277f47e6e82c07c7f900e531ab8c",
@@ -113,9 +111,13 @@
         "    \"appname=$($selected.AppName)\"",
         "    \"location=$($selected.Location)\"",
         ")",
-        "Set-Content -Path \"$dir\\InstallConfig.ini\" -Value $configContent",
+        "Set-Content -Path \"$dir\\InstallConfig.ini\" -Value $configContent -Force",
         "",
-        "success \"Selected browser: $($selected.AppName)\""
+        "success \"Selected browser: $($selected.AppName)\"",
+        "# ---- 6. Workaround ----",
+        "if ($selected.Source -eq \"scoop\") {",
+        "    add_alias \"update $($selected.AppName)\" \"update $($selected.AppName) && update $app --force\" \"Workaround to reapply Phoenix after Firefox update\"",
+        "}"
     ],
     "post_install": [
         "# Parse the INI file (simple key=value lines, ignoring section headers)",
@@ -170,6 +172,7 @@
         "",
         "if ($source -eq 'scoop') {",
         "    $firefoxPath = \"$(appdir $appname)\\current\"",
+        "    rm_alias \"update $appname\"",
         "} elseif (is_admin) {",
         "    $firefoxPath = $location",
         "} else {",
