@@ -1,13 +1,29 @@
 {
-    "version": "2.9.0-34",
+    "version": "2.29.0-Release.11",
     "description": "浙政钉",
     "homepage": "https://www.ding.zj.gov.cn/pc/index.html",
     "license": {
-        "identifier": "Freeware"
+        "identifier": "EULA"
     },
-    "url": "https://gov-cdn-pro.ding.zj.gov.cn/pc/DingTalkGov_v2.9.0-Release.34.exe#/dl.7z",
-    "pre_install": "Remove-Item -R -Path \"$dir\\uninst.exe.nsis\",\"$dir\\`$PLUGINSDIR\"",
-    "hash": "aa4e655866236d8ec96226f00f347f9a70ae2607b16af14b0685859e69cd9532",
+    "url": "https://gov-cdn-pro.ding.zj.gov.cn/pc/DingTalkGov_v2.29.0-Release.11.exe#/dl.7z",
+    "hash": "f37982dfc21be5c227987c34a99b4ba4c4cb1a486b883713a7e5e3a3c806b263",
+    "pre_install": [
+        "Remove-Item \"$dir\\DingTalkGovUpdater.exe\" -Force",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Write-Host (\"`nPersisting $env:APPDATA\\DingTalkGov ... \") -NoNewline",
+        "New-PersistDirectory \"$env:APPDATA\\DingTalkGov\" \"$persist_dir\\AppData\" -Migrate"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Write-Host (\"`nDeleting $env:APPDATA\\DingTalkGov ... \") -f DarkGray -NoNewline",
+        "Remove-Junction \"$env:APPDATA\\DingTalkGov\" -ErrorAction SilentlyContinue | Out-Null",
+        "Write-Host (\"`nDeleting $env:APPDATA\\DingTalkGov_91 ... \") -f DarkGray -NoNewline",
+        "Remove-Item \"$env:LOCALAPPDATA\\DingTalkGov_91\" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null",
+        "Write-Host (\"`nDeleting $env:APPDATA\\DingTalkGov_108 ... \") -f DarkGray -NoNewline",
+        "Remove-Item \"$env:LOCALAPPDATA\\DingTalkGov_108\" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null"
+    ],
     "shortcuts": [
         [
             "DingTalkGovLauncher.exe",
@@ -16,10 +32,9 @@
     ],
     "checkver": {
         "url": "https://www.ding.zj.gov.cn/pc/index.html",
-        "regex": "DingTalkGov_v(?<main>[\\d\\.]+)\\-Release\\.(?<rel>\\d+)\\.exe",
-        "replace": "${main}-${rel}"
+        "regex": "\"downloadLinkAddress\":\"[^\"]*?DingTalkGov_v(?<version>[\\d.]+-Release\\.\\d+)\\.exe\""
     },
     "autoupdate": {
-        "url": "https://gov-cdn-pro.ding.zj.gov.cn/pc/DingTalkGov_v$matchMain-Release.$matchRel.exe#/dl.7z"
+        "url": "https://gov-cdn-pro.ding.zj.gov.cn/pc/DingTalkGov_v$version.exe#/dl.7z"
     }
 }
