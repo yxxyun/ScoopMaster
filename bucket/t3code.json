@@ -1,34 +1,61 @@
 {
-    "version": "0.0.16",
+    "##": "Why here? It is in alpha, which does meet Scoop extras bucket criterias.",
+    "version": "0.0.17",
     "description": "A minimal web GUI for coding agents",
-    "homepage": "https://t3.codes",
+    "homepage": "https://t3.codes/",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/pingdotgg/t3code/releases/download/v0.0.16/T3-Code-0.0.16-x64.exe#/dl.7z",
-            "hash": "sha512:b910af227e00a35d6da535fb680ece6e37ce90cd94df18b8508583b65d0430b957f228b653bd052612303f28f5e3ce15d0996355ea7786aa7cfbbb02f0eaf720"
+            "url": "https://github.com/pingdotgg/t3code/releases/download/v0.0.17/T3-Code-0.0.17-x64.exe#t3code.7z",
+            "hash": "d8fac3c4404b1f6e8e41f5849ef43a8307838a91abf92665b3118b2082faa9d3",
+            "pre_install": "Expand-7zipArchive -Path \"$dir\\`$PLUGINSDIR\\app-64.7z\" -DestinationPath \"$dir\""
         }
     },
-    "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
+    "post_install": [
+        "# Clean up leftovers",
+        "$Directories = [string[]](",
+        "    \"$dir\\`$PLUGINSDIR\",",
+        "    \"$dir\\`$R0\"",
+        ")",
+        "Start-Sleep -Milliseconds 50",
+        "$Directories.ForEach{",
+        "    if ([System.IO.Directory]::Exists($_)) {",
+        "        $null = [System.IO.Directory]::Delete($_,$true)",
+        "        debug \"Deleted '$_'.\"",
+        "    }",
+        "}"
+    ],
+    "bin": "T3 Code (Alpha).exe",
     "shortcuts": [
         [
             "T3 Code (Alpha).exe",
-            "T3 Code"
+            "T3 Code (Alpha)",
+            "--user-data-dir=\"$dir\\data\""
         ]
     ],
-    "bin": "T3 Code (Alpha).exe",
+    "persist": "data",
+    "post_uninstall": [
+        "# Inform of leftover directories if any was found",
+        "$LeftoverDirs = [string[]](",
+        "    Get-ChildItem -Path ([System.IO.Directory]::GetParent($env:APPDATA).FullName) -Directory -Depth 1 |",
+        "        Where-Object -Property 'Name' -Like 'T3 Code*' |",
+        "        Select-Object -ExpandProperty 'FullName'",
+        ")",
+        "if ($LeftoverDirs.Count -gt 0) {",
+        "    $Message = [string] \"`r`nFound some leftover directories you might want to delete:\"",
+        "    $LeftoverDirs.ForEach{",
+        "        $Message += \"`r`n* '{0}'\" -f $_",
+        "    }",
+        "    info $Message",
+        "}"
+    ],
     "checkver": {
-        "url": "https://github.com/pingdotgg/t3code/releases/latest",
-        "regex": "/releases/tag/v([\\d.]+)"
+        "github": "https://github.com/pingdotgg/t3code"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/pingdotgg/t3code/releases/download/v$version/T3-Code-$version-x64.exe#/dl.7z",
-                "hash": {
-                    "url": "https://github.com/pingdotgg/t3code/releases/download/v$version/latest.yml",
-                    "regex": "sha512:\\s+$base64"
-                }
+                "url": "https://github.com/pingdotgg/t3code/releases/download/v$version/T3-Code-$version-x64.exe#t3code.7z"
             }
         }
     }
