@@ -1,26 +1,79 @@
 {
     "version": "0.6.0",
-    "description": "A modern, high-performance, and lightweight WSL (Windows Subsystem for Linux) instance management dashboard.",
+    "description": "Modern native dashboard for managing WSL distributions",
     "homepage": "https://github.com/owu/wsl-dashboard",
     "license": "GPL-3.0-only",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/owu/wsl-dashboard/releases/download/v0.6.0/wsldashboard.v0.6.0.exe#/wsldashboard.exe",
-            "hash": "b6050108f2efe4526131ee9cff79484f1b165577c18829fe96e3d7df5738b70b"
-        }
-    },
+    "url": "https://github.com/owu/wsl-dashboard/releases/download/v0.6.0/wsldashboard.v0.6.0.exe",
+    "hash": "b6050108f2efe4526131ee9cff79484f1b165577c18829fe96e3d7df5738b70b",
+    "notes": [
+        "源码确认默认用户数据根目录：%USERPROFILE%\\.wsldashboard\\",
+        "  - settings.toml：主配置、日志目录、更新周期、深浅色、托盘选项等",
+        "  - instances.toml：实例级终端目录、VS Code 目录、自动启动脚本与最近实例缓存",
+        "  - logs\\wsl-dashboard.YYYY-MM-DD.log：按天滚动日志",
+        "  - temp\\：导入/导出/克隆等操作的临时工作目录",
+        "默认 WSL 实例安装目录是 D:\\linux 或 C:\\linux，由用户设置决定，不属于应用数据，不纳入 Scoop persist",
+        "Startup 目录下的 wsl-dashboard.vbs / dashboard-autostart.vbs 和 HKCU\\...\\Run 注册表项属于系统集成状态，不视为应用数据，未纳入 Scoop persist",
+        "本包会将 %USERPROFILE%\\.wsldashboard 持久化到 Scoop 的 persist，并在原路径创建 Junction"
+    ],
+    "pre_install": [
+        "if (!(Test-Path \"$dir\\wsldashboard.exe\")) {",
+        "    Get-ChildItem \"$dir\\wsldashboard*.exe\" | Where-Object { $_.Name -ne 'wsldashboard.exe' } | Select-Object -First 1 | Rename-Item -NewName 'wsldashboard.exe'",
+        "}"
+    ],
+    "bin": "wsldashboard.exe",
     "shortcuts": [
         [
             "wsldashboard.exe",
             "WSL Dashboard"
         ]
     ],
-    "checkver": "github",
+    "post_install": [
+        "$source = Join-Path $env:USERPROFILE '.wsldashboard'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"配置路径已存在且不是目录：$source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"迁移失败，保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原配置目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原目录：$source\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "post_uninstall": [
+        "$source = Join-Path $env:USERPROFILE '.wsldashboard'",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Remove-Item -LiteralPath $source -Force",
+        "    }",
+        "}"
+    ],
+    "persist": "data",
+    "checkver": {
+        "github": "https://github.com/owu/wsl-dashboard"
+    },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/owu/wsl-dashboard/releases/download/v$version/wsldashboard.v$version.exe#/wsldashboard.exe"
-            }
-        }
+        "url": "https://github.com/owu/wsl-dashboard/releases/download/v$version/wsldashboard.v$version.exe"
     }
 }

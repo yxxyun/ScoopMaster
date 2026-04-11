@@ -1,7 +1,7 @@
 {
-    "homepage": "https://music.163.com/",
-    "description": "The official NetEase Cloud Music client.",
     "version": "3.1.30.205130",
+    "description": "网易云音乐客户端，发现好音乐。",
+    "homepage": "https://music.163.com/",
     "license": {
         "identifier": "EULA",
         "url": "https://music.163.com/html/web2/service.html"
@@ -16,28 +16,20 @@
             "hash": "b38e0448c75451c7f52799153197120a88322a09b080db1489e7917d73bf8ae9"
         }
     },
-    "installer": {
-        "script": [
-            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-            "Get-ChildItem \"$dir\\redist_packages\" | Move-Item -Destination \"$dir\" -Force",
-            "New-PersistDirectory \"$env:LOCALAPPDATA\\Netease\\CloudMusic\" \"$persist_dir\\AppData\" -Migrate"
-        ]
-    },
-    "post_install": [
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Get-ChildItem \"$dir\\redist_packages\" | Move-Item -Destination \"$dir\" -Force",
         "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\redist_packages\" -Force -Recurse",
-        "New-NetFirewallRule -DisplayName 'Block NetEase Cloud Music UDP Inbound (Scoop)' -Program \"$original_dir\\cloudmusic.exe\" -Protocol UDP -Direction Inbound -Action Block -ErrorAction SilentlyContinue",
-        "New-NetFirewallRule -DisplayName 'Block NetEase Cloud Music UDP Outbound (Scoop)' -Program \"$original_dir\\cloudmusic.exe\" -Protocol UDP -Direction Outbound -Action Block -ErrorAction SilentlyContinue"
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Write-Host (\"`nPersisting $env:LOCALAPPDATA\\Netease\\CloudMusic ... \") -NoNewline",
+        "New-PersistDirectory \"$env:LOCALAPPDATA\\Netease\\CloudMusic\" \"$persist_dir\\AppData\" -Migrate"
     ],
-    "uninstaller": {
-        "script": [
-            "$bucket = $install.bucket",
-            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-            "Stop-App",
-            "Remove-Junction \"$env:LOCALAPPDATA\\Netease\\CloudMusic\"",
-            "Remove-NetFirewallRule -DisplayName 'Block NetEase Cloud Music UDP Inbound (Scoop)' -ErrorAction SilentlyContinue",
-            "Remove-NetFirewallRule -DisplayName 'Block NetEase Cloud Music UDP Outbound (Scoop)' -ErrorAction SilentlyContinue"
-        ]
-    },
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Write-Host (\"`nDeleting $env:LOCALAPPDATA\\Netease\\CloudMusic ... \") -f DarkGray -NoNewline",
+        "Remove-Junction \"$env:LOCALAPPDATA\\Netease\\CloudMusic\" -ErrorAction SilentlyContinue | Out-Null"
+    ],
     "bin": "cloudmusic.exe",
     "shortcuts": [
         [
@@ -46,13 +38,9 @@
         ]
     ],
     "checkver": {
-        "script": [
-            "Import-Module \"$pwd\\bin\\WinGet.psm1\"",
-            "$Manifest = Get-WinGetInfo -Id 'NetEase.CloudMusic'",
-            "$version  = $Manifest.latest_version",
-            "return \"$version\""
-        ],
-        "regex": "(.*)"
+        "url": "https://music.163.com/api/appcustomconfig/get",
+        "jsonpath": "$.data.web-new-download.pc64.downloadUrl",
+        "regex": "NeteaseCloudMusic_Music_official_([\\d.]+)_64.exe"
     },
     "autoupdate": {
         "architecture": {
