@@ -1,35 +1,43 @@
 {
-    "version": "3.1.30.205130",
-    "description": "网易云音乐客户端，发现好音乐。",
     "homepage": "https://music.163.com/",
+    "description": "The official NetEase Cloud Music client.",
+    "version": "3.1.31.205174",
     "license": {
         "identifier": "EULA",
         "url": "https://music.163.com/html/web2/service.html"
     },
     "architecture": {
         "64bit": {
-            "url": "https://d8.music.126.net/dmusic2/NeteaseCloudMusic_Music_official_3.1.30.205130_64.exe#/dl.7z",
-            "hash": "9ae0f1fabc4286bc4121176d864b871e85c7b5bc24b40a41883dd19ecbe6aba5"
+            "url": "https://d8.music.126.net/dmusic2/NeteaseCloudMusic_Music_official_3.1.31.205174_64.exe#/dl.7z",
+            "hash": "fe215276fdd68c07cec8f331f4d25d6067c0d8f311fb77343d6e2d19014bb8f1"
         },
         "32bit": {
-            "url": "https://d8.music.126.net/dmusic2/NeteaseCloudMusic_Music_official_3.1.30.205130_32.exe#/dl.7z",
-            "hash": "b38e0448c75451c7f52799153197120a88322a09b080db1489e7917d73bf8ae9"
+            "url": "https://d8.music.126.net/dmusic2/NeteaseCloudMusic_Music_official_3.1.31.205174_32.exe#/dl.7z",
+            "hash": "d519baa4201972f89a67d3faf564df6d3125ee6ee98999a6fdb2509e414854a4"
         }
     },
-    "pre_install": [
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Get-ChildItem \"$dir\\redist_packages\" | Move-Item -Destination \"$dir\" -Force",
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "Get-ChildItem \"$dir\\redist_packages\" | Move-Item -Destination \"$dir\" -Force",
+            "New-PersistDirectory \"$env:LOCALAPPDATA\\Netease\\CloudMusic\" \"$persist_dir\\AppData\" -Migrate"
+        ]
+    },
+    "post_install": [
         "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\redist_packages\" -Force -Recurse",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Write-Host (\"`nPersisting $env:LOCALAPPDATA\\Netease\\CloudMusic ... \") -NoNewline",
-        "New-PersistDirectory \"$env:LOCALAPPDATA\\Netease\\CloudMusic\" \"$persist_dir\\AppData\" -Migrate"
+        "New-NetFirewallRule -DisplayName 'Block NetEase Cloud Music UDP Inbound (Scoop)' -Program \"$original_dir\\cloudmusic.exe\" -Protocol UDP -Direction Inbound -Action Block -ErrorAction SilentlyContinue",
+        "New-NetFirewallRule -DisplayName 'Block NetEase Cloud Music UDP Outbound (Scoop)' -Program \"$original_dir\\cloudmusic.exe\" -Protocol UDP -Direction Outbound -Action Block -ErrorAction SilentlyContinue"
     ],
-    "post_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Write-Host (\"`nDeleting $env:LOCALAPPDATA\\Netease\\CloudMusic ... \") -f DarkGray -NoNewline",
-        "Remove-Junction \"$env:LOCALAPPDATA\\Netease\\CloudMusic\" -ErrorAction SilentlyContinue | Out-Null"
-    ],
+    "uninstaller": {
+        "script": [
+            "$bucket = $install.bucket",
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "Stop-App",
+            "Remove-Junction \"$env:LOCALAPPDATA\\Netease\\CloudMusic\"",
+            "Remove-NetFirewallRule -DisplayName 'Block NetEase Cloud Music UDP Inbound (Scoop)' -ErrorAction SilentlyContinue",
+            "Remove-NetFirewallRule -DisplayName 'Block NetEase Cloud Music UDP Outbound (Scoop)' -ErrorAction SilentlyContinue"
+        ]
+    },
     "bin": "cloudmusic.exe",
     "shortcuts": [
         [
@@ -38,9 +46,13 @@
         ]
     ],
     "checkver": {
-        "url": "https://music.163.com/api/appcustomconfig/get",
-        "jsonpath": "$.data.web-new-download.pc64.downloadUrl",
-        "regex": "NeteaseCloudMusic_Music_official_([\\d.]+)_64.exe"
+        "script": [
+            "Import-Module \"$pwd\\bin\\WinGet.psm1\"",
+            "$Manifest = Get-WinGetInfo -Id 'NetEase.CloudMusic'",
+            "$version  = $Manifest.latest_version",
+            "return \"$version\""
+        ],
+        "regex": "(.*)"
     },
     "autoupdate": {
         "architecture": {
