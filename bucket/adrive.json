@@ -1,46 +1,59 @@
 {
     "version": "6.9.1",
-    "description": "一款速度快、不打扰、够安全、易于分享的网盘",
-    "homepage": "https://alipan.com/",
-    "license": {
-        "identifier": "EULA",
-        "url": "https://alipan.com/protocol/service"
-    },
-    "url": "https://dorado-api.deno.dev/alipan?version=6.9.1&dl#/aDrive-6.9.1.7z",
+    "description": "阿里云盘是一款速度快、不打扰、够安全、易于分享的网盘，由阿里巴巴集团出品",
+    "homepage": "https://www.aliyundrive.com/",
+    "license": "Unknown",
+    "url": "https://scoop-proxy.233366.xyz/https://cdn.aliyundrive.net/downloads/apps/desktop/update/6.9.1/win32/x64/aDrive-6.9.1.exe#/dl.7z",
     "hash": "cc40289de6c35821214c816b8a1101c3ada822f05c7da3b770ae432067eea76a",
-    "post_install": [
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Remove-Item \"$dir\\`$TEMP\" -Force -Recurse",
-        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Write-Host (\"`nPersisting $env:APPDATA\\aDrive ... \") -NoNewline",
-        "New-PersistDirectory \"$env:APPDATA\\aDrive\" \"$persist_dir\\AppData\" -Migrate"
-    ],
-    "post_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Write-Host (\"`nDeleting $env:APPDATA\\aDrive ... \") -f DarkGray -NoNewline",
-        "Remove-Junction \"$env:APPDATA\\aDrive\" -ErrorAction SilentlyContinue | Out-Null",
-        "Write-Host (\"`nDeleting $env:APPDATA\\utForpc ... \") -f DarkGray -NoNewline",
-        "Remove-Item \"$env:APPDATA\\utForpc\" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null",
-        "Write-Host (\"`nDeleting firewall rules ... \") -f DarkGray -NoNewline",
-        "Get-Item 'HKLM:\\SYSTEM\\CurrentControlSet\\services\\SharedAccess\\Parameters\\FirewallPolicy\\FirewallRules' -ErrorAction SilentlyContinue | ForEach-Object { $_.GetValueNames() | Where-Object { $_ -match 'aDrive' } | ForEach-Object { Remove-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\services\\SharedAccess\\Parameters\\FirewallPolicy\\FirewallRules' -Name $_ -ErrorAction SilentlyContinue } }",
-        "Write-Host (\"`nDeleting registry entries ... \") -f DarkGray -NoNewline",
-        "Get-Item 'HKU:\\*\\SOFTWARE\\Classes\\smartdrive' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue | Out-Null",
-        "Get-Item 'HKU:\\*\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run' -ErrorAction SilentlyContinue | Remove-ItemProperty -Name 'com.alicloud.smartdrive' -ErrorAction SilentlyContinue | Out-Null",
-        "Get-Item 'HKU:\\*\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\300f80e0-781e-56db-ae9d-9d0190486ca9' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue | Out-Null"
-    ],
+    "installer": {
+        "script": [
+            "# handle runtime cache",
+            "if (!(Test-Path $persist_dir)) {",
+            "    New-Item $persist_dir -Type Directory -Force | Out-Null",
+            "}",
+            "$runtimeCache = \"$env:APPDATA\\aDrive\"",
+            "$runtimeCachePersist = \"$persist_dir\\appdata\"",
+            "if (Test-Path $runtimeCachePersist) {",
+            "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+            "    New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
+            "} else {",
+            "    if (Test-Path $runtimeCache) {",
+            "        Move-Item $runtimeCache $runtimeCachePersist -Force",
+            "        New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
+            "    }",
+            "}"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$runtimeCache = \"$env:APPDATA\\aDrive\"",
+            "$runtimeCachePersist = \"$persist_dir\\appdata\"",
+            "if (!(Test-Path $runtimeCachePersist)) {",
+            "    Move-Item $runtimeCache $runtimeCachePersist -Force",
+            "} else {",
+            "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+            "}"
+        ]
+    },
     "shortcuts": [
         [
             "aDrive.exe",
             "阿里云盘"
         ]
     ],
+    "post_install": [
+        "Remove-Item -Force -Recurse \"$dir\\`$PLUGINSDIR\"",
+        "Remove-Item -Force -Recurse \"$dir\\`$TEMP\""
+    ],
     "checkver": {
-        "url": "https://dorado-api.deno.dev/alipan",
-        "jsonpath": "$.version"
+        "url": "https://api.github.com/repos/microsoft/winget-pkgs/commits?path=manifests/a/Alibaba/aDrive",
+        "regex": "New version.*? ([\\d.]+)"
     },
     "autoupdate": {
-        "url": "https://dorado-api.deno.dev/alipan?version=$version&dl#/aDrive-$version.7z"
+        "url": "https://scoop-proxy.233366.xyz/https://cdn.aliyundrive.net/downloads/apps/desktop/update/$version/win32/x64/aDrive-$version.exe#/dl.7z",
+        "hash": {
+            "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/a/Alibaba/aDrive/$version/Alibaba.aDrive.installer.yaml",
+            "regex": "$sha256"
+        }
     }
 }
