@@ -1,21 +1,51 @@
 {
-    "version": "13.56",
+    "version": "13.57",
     "description": "A command-line application for reading, writing and editing meta information in a wide variety of files.",
     "homepage": "https://exiftool.org",
     "license": "GPL-1.0-or-later|Artistic-1.0-Perl",
+    "suggest": {
+        "Total Commander Plugin Host": "extras/totalcommander"
+    },
+    "notes": "If Total Commander is detected, this package automatically copies the ExifTool executable to 'plugins\\Wlx\\ExifToolView'. This serves as the required backend binary for the ExifToolView Lister plugin to function correctly.",
     "architecture": {
         "64bit": {
-            "url": "https://exiftool.org/exiftool-13.56_64.zip",
-            "hash": "11236e2222edda18106febcf0649edc0421a78ce6cf60b07fb7da716592ab3ed",
-            "extract_dir": "exiftool-13.56_64"
+            "url": "https://exiftool.org/exiftool-13.57_64.zip",
+            "hash": "2e59d9de0cd520394e8f64b05592a1a1617991108f8c1c5074aec294ae548351",
+            "extract_dir": "exiftool-13.57_64"
         },
         "32bit": {
-            "url": "https://exiftool.org/exiftool-13.56_32.zip",
-            "hash": "d4b2087939d24ad3b0f3e006d8a2ccf81f21fed37b62b29d3a914bf503e421e9",
-            "extract_dir": "exiftool-13.56_32"
+            "url": "https://exiftool.org/exiftool-13.57_32.zip",
+            "hash": "4b65f186c567e1df27fa687fbb4d96cd0a59ac89fc1196cbfdcf4e7ea6bb10da",
+            "extract_dir": "exiftool-13.57_32"
         }
     },
-    "pre_install": "Copy-Item \"$dir\\exiftool(-k).exe\" \"$dir\\exiftool.exe\"",
+    "pre_install": [
+        "Copy-Item \"$dir\\exiftool(-k).exe\" \"$dir\\exiftool.exe\"",
+        "",
+        "$tc_procs = Get-Process -Name \"totalcmd\", \"totalcmd64\" -ErrorAction SilentlyContinue",
+        "if ($tc_procs) {",
+        "    Write-Host \"[Error] Total Commander is currently running!\" -ForegroundColor Red",
+        "    Write-Host \"Installation aborted to protect directory structure. Please close Total Commander and try again.\" -ForegroundColor Yellow",
+        "    exit 1",
+        "}"
+    ],
+    "installer": {
+        "script": [
+            "$TCDir = $(appdir totalcommander $global)",
+            "",
+            "if ($TCDir -and (Test-Path \"$TCDir\\current\")) {",
+            "    Write-Host \"Found Total Commander, integrating ExifTool...\" -ForegroundColor Cyan",
+            "    ",
+            "    $PluginDir = \"$TCDir\\current\\plugins\\Wlx\\ExifToolView\"",
+            "    if (!(Test-Path \"$PluginDir\")) { New-Item \"$PluginDir\" -ItemType Directory -Force | Out-Null }",
+            "    ",
+            "    Copy-Item \"$dir\\*\" \"$PluginDir\" -Recurse -Force -Exclude \"readme.txt\"",
+            "    Write-Host \"ExifTool copied to: $PluginDir\" -ForegroundColor Green",
+            "} else {",
+            "    Write-Host \"Total Commander (Scoop) not found. Skipped plugin integration.\" -ForegroundColor Yellow",
+            "}"
+        ]
+    },
     "bin": [
         "exiftool.exe",
         "exiftool(-k).exe"
