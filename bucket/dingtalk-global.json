@@ -1,0 +1,99 @@
+{
+    "version": "8.2.13.260209001",
+    "description": "钉钉，企业协作与办公沟通平台。国际版。",
+    "homepage": "https://www.dingtalk.io/",
+    "license": {
+        "identifier": "EULA",
+        "url": "https://tms.dingtalk.com/markets/dingtalk/service-terms-zh"
+    },
+    "url": "https://dtapp-pub.dingtalk.com/dingtalk-desktop/win_installer/Release/overseas/DingTalk_v8.2.13.260209001.exe#/dl.7z",
+    "hash": "5f79970b981076d31a63d0833fee16b25221c5c75e4a23ad284511889fbb7005",
+    "pre_install": [
+        "ensure \"$dir\\main\\current\" | Out-Null",
+        "Move-Item \"$dir\\build\\dist\\*\" \"$dir\\main\\current\" -Force | Out-Null",
+        "Move-Item \"$dir\\build\\updater\\*\" \"$dir\" -Force | Out-Null",
+        "Remove-Item \"$dir\\uninst.exe\" -Force | Out-Null",
+        "Remove-Item \"$dir\\DingTalkUpdater.exe\" -Force | Out-Null"
+    ],
+    "post_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Write-Host (\"`nPersisting $env:APPDATA\\DingTalk ... \") -NoNewline",
+        "New-PersistDirectory \"$env:APPDATA\\DingTalk\" \"$persist_dir\\AppData\" -Migrate",
+        "if ($global) {",
+        "    $registry_scope = \"HKEY_LOCAL_MACHINE\"",
+        "} else {",
+        "    $registry_scope = \"HKEY_CURRENT_USER\"",
+        "}",
+        "$instdir = $($dir -replace '\\\\', '\\\\')",
+        "@\"",
+        "Windows Registry Editor Version 5.00",
+        "[$registry_scope\\SOFTWARE\\Classes\\dingtalk]",
+        "\"URL Protocol\"=\"\"",
+        "[$registry_scope\\SOFTWARE\\Classes\\dingtalk\\Shell\\Open]",
+        "[$registry_scope\\SOFTWARE\\Classes\\dingtalk\\Shell\\Open\\Command]",
+        "@=\"\\\"$instdir\\\\DingtalkScheme.exe\\\" %1\"",
+        "[$registry_scope\\SOFTWARE\\Classes\\dingtalkscheme]",
+        "\"URL Protocol\"=\"\"",
+        "[$registry_scope\\SOFTWARE\\Classes\\dingtalkscheme\\Shell\\Open\\Command]",
+        "@=\"\\\"$instdir\\\\DingtalkScheme.exe\\\" %1\"",
+        "[$registry_scope\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\DingTalk.exe]",
+        "@=\"$instdir\\\\DingtalkLauncher.exe\"",
+        "\"path\"=\"$instdir\\\\DingDing\"",
+        "[HKEY_CURRENT_USER\\SOFTWARE\\DingTalk\\Package]",
+        "\"auto_start\"=dword:00000000",
+        "[HKEY_CURRENT_USER\\SOFTWARE\\DingTalk\\Scheme]",
+        "\"钉钉\"=\"$instdir\\\\DingtalkScheme.exe\"",
+        "\"@ | Set-Content -Path \"$dir\\install-dingtalk.reg\" -Encoding Unicode",
+        "reg import \"$dir\\install-dingtalk.reg\" 2>$null | Out-Null"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$localPaths = @(",
+        "    \"$env:APPDATA\\DingTalk\"",
+        "    \"$env:APPDATA\\dinglive\"",
+        "    \"$env:LOCALAPPDATA\\DingTalk_108\"",
+        "    \"$env:LOCALAPPDATA\\DingTalk_91\"",
+        "    \"$env:LOCALAPPDATA\\DingTalk_133\"",
+        ")",
+        "$sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value",
+        "$hkuPath = \"HKU\\$sid\"",
+        "$regPaths = @(",
+        "    \"Registry::$hkuPath\\SOFTWARE\\Classes\\dingtalk\"",
+        "    \"Registry::$hkuPath\\SOFTWARE\\Classes\\dingtalkscheme\"",
+        "    \"Registry::$hkuPath\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\DingTalk.exe\"",
+        "    \"Registry::$hkuPath\\SOFTWARE\\DingTalk\"",
+        ")",
+        "if ($global -and $cmd -eq 'uninstall') {",
+        "    $regPaths += \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{37C2D57E-8AD1-458B-B221-552C666E5FDC}\"",
+        "}",
+        "$regValues = @(",
+        "    \"HKU\\$sid\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{CEBFF5CD-ACE2-4F4F-9178-9926F41749EA}\\Count|Q:\\\\Nccf\\\\Fpbbc\\\\FpbbcNccf\\\\nccf\\\\qvatgnyx\\\\pheerag\\\\QvatgnyxYnhapure.rkr\"",
+        "    \"HKU\\$sid\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{F4E57C4B-2036-45F0-A9AB-443BCFE33D9F}\\Count|{N77S5Q77-2R2O-44P3-N6N2-NON601054N51}\\\\Fpbbc Nccf\\\\钉钉.yax\"",
+        ")",
+        "Remove-AppData -LocalPaths $localPaths -RegistryPaths $regPaths -RegistryValues $regValues"
+    ],
+    "shortcuts": [
+        [
+            "DingTalkLauncher.exe",
+            "钉钉（国际版）"
+        ]
+    ],
+    "checkver": {
+        "script": [
+            "$response = [System.Net.HttpWebRequest]::Create('https://www.dingtalk.com/win/d/qd=oversea?spm=a213l2.14171110.4290834532.4.63e32726MyWurc').GetResponse()",
+            "$finalUrl = $response.ResponseUri.AbsoluteUri",
+            "Write-Output $finalUrl",
+            "$response.Close()"
+        ],
+        "regex": "DingTalk_v([\\d.]+)\\.exe"
+    },
+    "autoupdate": {
+        "url": "https://dtapp-pub.dingtalk.com/dingtalk-desktop/win_installer/Release/overseas/DingTalk_v$version.exe#/dl.7z"
+    }
+}
