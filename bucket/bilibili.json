@@ -1,55 +1,54 @@
 {
     "version": "1.17.6",
-    "description": "哔哩哔哩客户端",
-    "homepage": "https://app.bilibili.com/",
-    "license": "Proprietary",
-    "url": "https://dl.hdslb.com/mobile/fixed/bili_win/bili_win-install.exe#/dl.7z",
-    "hash": "sha512:a5f500836f7f07c27a8e07b6d31d99f67fe7f44dc8a3db9fa932b7c75d73d990d498035269ce68d549c2c4c184b7b792fc92b2bb0acd8cce1adb21f06e12b081",
-    "pre_install": [
-        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse"
-    ],
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.bilibili.com/protocal/licence.html"
+    },
+    "notes": "In Application Auto update has been disable",
+    "architecture": {
+        "64bit": {
+            "url": "https://dl.hdslb.com/mobile/fixed/bili_win/bili_win-install.exe?v=1.17.6#/bili_win-install.exe",
+            "hash": "f0a448040b50b374dd32a7802c32fde90b1c228cccaef65ffcba0463cabf79ca"
+        }
+    },
     "installer": {
         "script": [
-            "if (!(Test-Path \"$persist_dir\\Cache\")) {",
-            "    New-Item \"$persist_dir\\Cache\" -Type Directory -Force | Out-Null",
-            "}",
-            "$runtimeCache = \"$env:APPDATA\\bilibili\"",
-            "$runtimeCachePersist = \"$persist_dir\\Cache\"",
-            "if (Test-Path $runtimeCachePersist) {",
-            "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
-            "    New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
-            "} else {",
-            "    if (Test-Path $runtimeCache) {",
-            "        Move-Item $runtimeCache $runtimeCachePersist -Force",
-            "        New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
-            "    }",
-            "}"
+            "Expand-7zipArchive -Path \"$dir/bili_win-install.exe\" -DestinationPath \"$dir/package\" -ExtractDir '$PLUGINSDIR'",
+            "Expand-7zipArchive -Path \"$dir/package/app-64.7z\" -DestinationPath \"$dir\"",
+            "Remove-Item \"$dir/package\", \"$dir/bili_win-install.exe\" -Recurse -Force",
+            "Set-Content -Value \"\" -Path \"$dir/resources/app-update.yml\"",
+            ". \"$bucketsdir\\apeiraco\\bin\\persist-utils.ps1\"",
+            "Set-PersistLinks -PersistDir $persist_dir -LinkMap @{ 'appdata' = '$env:APPDATA\\bilibili' }"
         ]
     },
+    "pre_uninstall": "taskkill /F /IM 哔哩哔哩.exe",
     "uninstaller": {
         "script": [
-            "$runtimeCache = \"$env:APPDATA\\bilibili\"",
-            "$runtimeCachePersist = \"$persist_dir\"",
-            "Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
-            "Remove-Item $runtimeCachePersist -Force -Recurse -ErrorAction SilentlyContinue"
+            ". \"$bucketsdir\\apeiraco\\bin\\persist-utils.ps1\"",
+            "Remove-PersistLinks -PersistDir $persist_dir -LinkMap @{ 'appdata' = '$env:APPDATA\\bilibili' }"
         ]
     },
     "shortcuts": [
         [
             "哔哩哔哩.exe",
+            "哔哩哔哩"
+        ],
+        [
+            "哔哩哔哩.exe",
             "bilibili"
         ]
     ],
+    "homepage": "https://www.bilibili.com/",
     "checkver": {
-        "url": "http://api.bilibili.com/x/elec-frontend/update/latest.yml",
-        "regex": "bilibili-setup-v([\\d\\.]+)\\.exe"
+        "url": "https://api.bilibili.com/x/web-frontend/getappversion?target=pc_electron&cdn_url=https%3A%2F%2Fdl.hdslb.com%2Fmobile%2Ffixed%2Fbili_win%2Fbili_win-install.exe",
+        "regex": "\\.exe\\?v=([\\d\\.]+)",
+        "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
     },
     "autoupdate": {
-        "url": "https://dl.hdslb.com/mobile/fixed/bili_win/bili_win-install.exe#/dl.7z",
-        "hash": {
-            "url": "http://api.bilibili.com/x/elec-frontend/update/latest.yml",
-            "regex": "sha512: ([\\w\\d+\\/=]{24,88})"
+        "architecture": {
+            "64bit": {
+                "url": "https://dl.hdslb.com/mobile/fixed/bili_win/bili_win-install.exe?v=$version#/bili_win-install.exe"
+            }
         }
     }
 }
