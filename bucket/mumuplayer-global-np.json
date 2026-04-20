@@ -1,0 +1,59 @@
+{
+    "version": "5.25.0.3355",
+    "description": "Run Android games and apps on PC or Mac",
+    "homepage": "https://www.mumuplayer.com",
+    "license": "Freeware",
+    "url": "http://a11.gdl.easebar.com/MuMu-setup-V5.25.0.3355-overseas-0410235437.exe#/setup.exe",
+    "hash": "md5:51daf9b5f83df392f56bcff2853e6d38",
+    "installer": {
+        "script": [
+            "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+            "$installDir = Join-Path $env:ProgramFiles 'Netease\\MuMuPlayerGlobal'",
+            "Start-Process -Wait \"$dir\\setup.exe\" -ArgumentList @('/gv=2', '/S', '/auto_start=false', '/fchannel=gw-overseas12', \"/D=$installDir\") -Verb RunAs",
+            "# Remove-Item \"$Env:USERPROFILE\\Desktop\\MuMuPlayer.lnk\" -ErrorAction SilentlyContinue"
+        ]
+    },
+    "post_install": "Remove-Item \"$dir\\setup.exe\"",
+    "uninstaller": {
+        "script": [
+            "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+            "$is_running = $null -ne $(Get-Process -Name 'MuMuNxMain' -ErrorAction SilentlyContinue)",
+            "if ($is_running) {",
+            "    Write-Host \"`nMuMuPlayer is running, would you like to continue?\" -ForegroundColor Yellow",
+            "    $answer = Read-Host -Prompt \"Enter 'y' to continue, any other key to cancel\"",
+            "    if ('y' -eq $answer) {",
+            "        Write-Host \"Stopping process...\" -ForegroundColor Yellow -NoNewline",
+            "        Stop-Process -Name 'MuMuNxMain' -ErrorAction Stop",
+            "        Start-Sleep -Milliseconds 250",
+            "    } else {",
+            "        Write-Host \"Operation $cmd cancelled.\" -ForegroundColor Red",
+            "        break",
+            "    }",
+            "}",
+            "# Skip uninstall on update to preserve user data.",
+            "if ($cmd -eq \"uninstall\") {",
+            "    $uninstaller = (Get-ItemProperty -ErrorAction Ignore \"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MuMuPlayerGlobal\" -Name UninstallString).UninstallString",
+            "    if (!$uninstaller) { $uninstaller = (Get-ItemProperty -ErrorAction Ignore \"HKLM:\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MuMuPlayerGlobal\" -Name UninstallString).UninstallString }",
+            "    if (!$uninstaller) { warn 'Could not find app info in registry' }",
+            "    $uninstaller = $uninstaller.Substring(1, $uninstaller.Length - 2)",
+            "    Start-Process -Wait \"$uninstaller\" \"/S\" -Verb RunAs",
+            "}"
+        ]
+    },
+    "checkver": {
+        "script": [
+            "$url = 'https://api.mumuglobal.com/api/v1/download/nx?architecture=x86_64&machine=%22%22&usage=1'",
+            "$response = Invoke-RestMethod -Uri $url -Method Post -ErrorAction Stop",
+            "if (!$response.data.version -or !$response.data.mumu.checksum -or !$response.data.mumu.link) { throw 'Invalid API response' }",
+            "Write-Output \"$($response.data.version) $($response.data.mumu.checksum) $($response.data.mumu.link)\""
+        ],
+        "regex": "([\\d.]+)\\s([A-Fa-f0-9]{32})\\s(.+)"
+    },
+    "autoupdate": {
+        "url": "$match3#/setup.exe",
+        "hash": {
+            "url": "https://httpbin.org/get?md5=$match2",
+            "regex": "md5=.*?$md5"
+        }
+    }
+}
