@@ -1,46 +1,45 @@
 {
     "version": "13.3.5",
-    "description": "Librate your library; Audible audiobook manager",
-    "homepage": "https://github.com/rmcrackan/Libation",
-    "license": "GPL-3.0-only",
-    "notes": "Data is stored in $HOME/Libation",
+    "description": "Audible audiobook manager",
+    "homepage": "https://github.com/rmcrackan/Libation/",
+    "license": "GPL-3.0-or-later",
     "architecture": {
         "64bit": {
             "url": "https://github.com/rmcrackan/Libation/releases/download/v13.3.5/Libation.13.3.5-windows-chardonnay-x64.zip",
             "hash": "6a862c27418b142846b27a383d585c7b77319d48845ea89b52ebc998a18a17ea"
-        },
-        "arm64": {
-            "url": "https://github.com/rmcrackan/Libation/releases/download/v13.3.5/Libation.13.3.5-windows-chardonnay-arm64.zip",
-            "hash": "77effeb25380c3d06d1656ec576a366597165ec2fd21f1d0a810b7b5ba416f37"
         }
     },
-    "bin": [
-        "Libation.exe",
-        "Hangover.exe",
-        "LibationCli.exe"
+    "pre_install": [
+        "if (!(Test-Path \"$persist_dir\")) { New-Item \"$persist_dir\" -ItemType Directory | Out-Null }",
+        "if (!(Test-Path \"$persist_dir\\Temp\")) { New-Item \"$persist_dir\\Temp\" -ItemType Directory | Out-Null }",
+        "$scriptsDir = \"$bucketsdir\\404NetworkError\\scripts\"",
+        "Get-ChildItem \"$scriptsDir\\libation\\*.json\" | ForEach-Object {",
+        "    if (!(Test-Path \"$persist_dir\\$($_.Name)\"))",
+        "    {",
+        "        New-Item \"$persist_dir\\$($_.Name)\" -ItemType File | Out-Null",
+        "        $content = Get-Content $_",
+        "        $content = $content.Replace('REPLACE_HERE', $persist_dir)",
+        "        $content = $content.Replace('\\', '\\\\')",
+        "        Set-Content \"$persist_dir\\$($_.Name)\" $content -Encoding 'utf8' -Force",
+        "    }",
+        "}"
     ],
+    "bin": "LibationCli.exe",
     "shortcuts": [
         [
             "Libation.exe",
             "Libation"
-        ],
-        [
-            "Hangover.exe",
-            "Hangover"
         ]
     ],
-    "checkver": {
-        "url": "https://github.com/rmcrackan/Libation",
-        "regex": "tag/v([\\w\\.-]+)",
-        "reverse": false
-    },
+    "persist": [
+        "appsettings.json",
+        "Settings.json"
+    ],
+    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
                 "url": "https://github.com/rmcrackan/Libation/releases/download/v$version/Libation.$version-windows-chardonnay-x64.zip"
-            },
-            "arm64": {
-                "url": "https://github.com/rmcrackan/Libation/releases/download/v$version/Libation.$version-windows-chardonnay-arm64.zip"
             }
         }
     }
