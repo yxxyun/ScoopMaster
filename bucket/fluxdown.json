@@ -1,6 +1,6 @@
 {
     "version": "0.1.40",
-    "description": "多协议下载管理器",
+    "description": "Cross-platform download manager with multi-protocol (HTTP/2/HTTPS/FTP/BitTorrent) support, resumable & segmented downloading, zero ads, zero tracking, local-first privacy design. [Portable Edition]",
     "homepage": "https://fluxdown.zerx.dev/",
     "license": {
         "identifier": "Freeware",
@@ -10,6 +10,10 @@
         "64bit": {
             "url": "https://fluxdown.zerx.dev/api/download/FluxDown-0.1.40-windows-x64-portable.zip",
             "hash": "1a186c076ac2c0d08ffb5c7d4c4ffca222b533d554e113023a481b0fb9ab42fd"
+        },
+        "arm64": {
+            "url": "https://fluxdown.zerx.dev/api/download/FluxDown-0.1.40-windows-arm64-portable.zip",
+            "hash": "5ff47be339d3c5eaef00c416780a7205c4a37dacd8735ba7e0d74c6e9bcb1778"
         }
     },
     "bin": "flux_down.exe",
@@ -21,19 +25,20 @@
     ],
     "installer": {
         "script": [
-            "New-Item \"$persist_dir\\AppData\" -ItemType Directory -Force -ErrorAction SilentlyContinue | Out-Null",
-            "Remove-Item \"$env:APPDATA\\FluxDown\" -Recurse -Force -ErrorAction SilentlyContinue",
-            "New-Item -ItemType Junction -Path \"$env:APPDATA\\FluxDown\" -Target \"$persist_dir\\AppData\" -ErrorAction SilentlyContinue | Out-Null",
-            "Remove-Item \"$dir\\portable\" -Recurse -Force -ErrorAction SilentlyContinue",
-            "New-Item \"$persist_dir\\LocalAppData\" -ItemType Directory -Force -ErrorAction SilentlyContinue | Out-Null",
-            "Remove-Item \"$env:LOCALAPPDATA\\FluxDown\" -Recurse -Force -ErrorAction SilentlyContinue",
-            "New-Item -ItemType Junction -Path \"$env:LOCALAPPDATA\\FluxDown\" -Target \"$persist_dir\\LocalAppData\" -ErrorAction SilentlyContinue | Out-Null"
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:APPDATA\\FluxDown\" \"$persist_dir\\AppData\" -Migrate",
+            "# The portable FluxDown saves SQLite database in program directory.",
+            "# To avoid data loss, we turn it into non-portable.",
+            "Remove-Item \"$dir\\portable\" -Force",
+            "New-PersistDirectory \"$env:LOCALAPPDATA\\FluxDown\" \"$persist_dir\\LocalAppData\" -Migrate"
         ]
     },
     "pre_uninstall": [
-        "Remove-Item \"$env:LOCALAPPDATA\\FluxDown\" -Recurse -Force -ErrorAction SilentlyContinue",
-        "Remove-Item \"$env:APPDATA\\FluxDown\" -Recurse -Force -ErrorAction SilentlyContinue",
-        "Remove-Item \"$env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs\\FluxDown.lnk\" -Force -ErrorAction SilentlyContinue"
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\FluxDown\"",
+        "Remove-Junction \"$env:LOCALAPPDATA\\FluxDown\""
     ],
     "checkver": {
         "url": "https://fluxdown.zerx.dev/api/release",
@@ -43,6 +48,9 @@
         "architecture": {
             "64bit": {
                 "url": "https://fluxdown.zerx.dev/api/download/FluxDown-$version-windows-x64-portable.zip"
+            },
+            "arm64": {
+                "url": "https://fluxdown.zerx.dev/api/download/FluxDown-$version-windows-arm64-portable.zip"
             }
         }
     }
