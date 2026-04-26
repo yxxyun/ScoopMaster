@@ -1,0 +1,54 @@
+{
+    "version": "1.0.9219",
+    "description": "Free Voice and Text Chat",
+    "homepage": "https://discordapp.com/",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://discordapp.com/terms"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://stable.dl2.discordapp.net/distro/app/stable/win/x64/1.0.9219/DiscordSetup.exe#/dl.7z",
+            "hash": "fd0f891e4d72bf23eb5f4bd79e9ffe85a4fe224df48ab021a4eae8e5422f4c2b"
+        }
+    },
+    "extract_to": "_tmp",
+    "installer": {
+        "script": [
+            "# Expand Archive",
+            "Expand-7zipArchive \"$dir\\_tmp\\Discord-*-full.nupkg\" -ExtractDir \"lib\\net45\" -DestinationPath \"$dir\\app-$version\" -Removal | Out-Null",
+            "Remove-Item \"$dir\\_tmp\" -Force -Recurse",
+            "# Rename to $dir/app-0.0.0000",
+            "Rename-Item \"$dir\\app-$version\" \"$dir\\app-0.0.0000\"",
+            "Copy-Item \"C:\\Users\\lucas\\dev\\scoop-lucasoe\\scripts\\discord-stable\\build_info.json\" \"$dir\\app-0.0.0000\\resources\" -Force | Out-Null",
+            "#Copy-Item \"$bucketsdir\\$bucket\\scripts\\$app\\build_info.json\" \"$dir\\app-0.0.0000\\resources\" -Force | Out-Null",
+            "# Create placeholder until Discord has downloaded the correct version for the shortcut",
+            "New-Item \"$dir\\app-$version\" -ItemType 'Directory' | Out-Null",
+            "New-Item \"$dir\\app-$version\\Discord.exe\" -ItemType 'File' | Out-Null"
+        ]
+    },
+    "shortcuts": [
+        [
+            "app-0.0.0000\\Discord.exe",
+            "Discord"
+        ]
+    ],
+    "checkver": {
+        "script": [
+            "$url = 'https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=win&arch=x64'",
+            "$request = [System.Net.WebRequest]::Create($url)",
+            "$request.AllowAutoRedirect = $false",
+            "$location = $request.GetResponse().GetResponseHeader('Location')",
+            "$version = ($location -split '/' | Select-Object -Last 1 -Skip 1)",
+            "$version"
+        ],
+        "regex": "(\\S+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://stable.dl2.discordapp.net/distro/app/stable/win/x64/$version/DiscordSetup.exe#/dl.7z"
+            }
+        }
+    }
+}
