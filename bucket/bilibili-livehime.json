@@ -1,6 +1,6 @@
 {
     "version": "7.53.2.10489",
-    "description": "bilibili直播姬",
+    "description": "哔哩哔哩直播姬",
     "homepage": "https://link.bilibili.com/p/eden/download#/web",
     "license": {
         "identifier": "Unknown"
@@ -13,12 +13,28 @@
     },
     "depends": "innounp",
     "installer": {
-        "script": "Expand-InnoArchive -Path \"$dir\\$fname\" -Removal"
+        "script": [
+            "Expand-InnoArchive -Path \"$dir\\$fname\" -Removal",
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "Write-Host (\"`nPersisting $env:LOCALAPPDATA\\bililive ... \") -NoNewline",
+            "New-PersistDirectory \"$env:LOCALAPPDATA\\bililive\" \"$persist_dir\\AppData\" -Migrate"
+        ]
     },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Write-Host (\"`nDeleting $env:LOCALAPPDATA\\bililive ... \") -NoNewline",
+        "Remove-Junction \"$env:LOCALAPPDATA\\bililive\" -ErrorAction SilentlyContinue | Out-Null"
+    ],
     "shortcuts": [
         [
             "livehime.exe",
-            "livehime"
+            "哔哩哔哩直播姬"
         ]
     ],
     "checkver": {
@@ -35,5 +51,6 @@
             "url": "https://api.live.bilibili.com/xlive/app-blink/v1/liveVersionInfo/getHomePageLiveVersion?system_version=2",
             "jsonpath": "$.data.file_md5"
         }
-    }
+    },
+    "notes": "User data is persisted in \"$persist_dir\"."
 }
