@@ -1,26 +1,58 @@
 {
     "version": "4.3.6.0",
-    "extract_dir": "bypass-paywalls-chrome-clean-master",
-    "extract_to": "crx",
     "architecture": {
         "64bit": {
-            "url": "https://gitflic.ru/project/magnolia1234/bpc_uploads/blob/raw?file=bypass-paywalls-chrome-clean-master.zip&inline=false#/dl.zip",
-            "hash": "c4f4767e9a77f12f398279b38f242770e21a35297abdaaa0bf16243ea354338d"
+            "url": "https://gitflic.ru/project/magnolia1234/bpc_uploads/blob/raw?file=bypass-paywalls-chrome-clean-4.3.6.0.crx&inline=false#/dl.crx",
+            "hash": "a6a1c1fe687186d35101a2fbbf32e0192854704063e4366af6822e23d275d5d9"
         }
     },
     "description": "Extension to bypass paywalls on supported sites.",
     "homepage": "https://gitflic.ru/project/magnolia1234/bpc_uploads",
+    "pre_install": [
+        "$crx = \"$dir\\dl.crx\"",
+        "$zip = \"$dir\\dl.zip\"",
+        "$out = \"$dir\\crx\"",
+        "$bytes = [System.IO.File]::ReadAllBytes($crx)",
+        "$magic = [System.Text.Encoding]::ASCII.GetString($bytes, 0, 4)",
+        "if ($magic -eq 'Cr24') {",
+        "    $crx_version = [System.BitConverter]::ToUInt32($bytes, 4)",
+        "    if ($crx_version -eq 3) {",
+        "        $zip_start = 12 + [int][System.BitConverter]::ToUInt32($bytes, 8)",
+        "    } elseif ($crx_version -eq 2) {",
+        "        $zip_start = 16 + [int][System.BitConverter]::ToUInt32($bytes, 8) + [int][System.BitConverter]::ToUInt32($bytes, 12)",
+        "    } else {",
+        "        throw \"Unsupported CRX version: $crx_version\"",
+        "    }",
+        "} elseif ($bytes[0] -eq 0x50 -and $bytes[1] -eq 0x4b) {",
+        "    $zip_start = 0",
+        "} else {",
+        "    throw 'File is neither CRX nor ZIP format.'",
+        "}",
+        "$in = [System.IO.File]::OpenRead($crx)",
+        "try {",
+        "    $in.Position = $zip_start",
+        "    $zip_file = [System.IO.File]::Create($zip)",
+        "    try { $in.CopyTo($zip_file) } finally { $zip_file.Dispose() }",
+        "} finally {",
+        "    $in.Dispose()",
+        "}",
+        "if (Test-Path $out) { Remove-Item $out -Recurse -Force }",
+        "Expand-Archive -LiteralPath $zip -DestinationPath $out -Force",
+        "Remove-Item $zip -Force",
+        "if (!(Test-Path \"$out\\manifest.json\")) { throw \"Failed to extract extension manifest to $out\" }"
+    ],
+    "notes": "Load the unpacked extension from '$dir\\crx' in Chrome at chrome://extensions with Developer mode enabled.",
     "checkver": {
         "url": "https://gitflic.ru/project/magnolia1234/bpc_uploads/blob/raw?file=release-hashes.txt",
-        "regex": "[\\s\\S]*bypass-paywalls-chrome-clean-([\\d.]+)\\.crx:"
+        "regex": "[\\s\\S]*SHA256 hash of bypass-paywalls-chrome-clean-([\\d.]+)\\.crx:"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://gitflic.ru/project/magnolia1234/bpc_uploads/blob/raw?file=bypass-paywalls-chrome-clean-master.zip&inline=false#/dl.zip",
+                "url": "https://gitflic.ru/project/magnolia1234/bpc_uploads/blob/raw?file=bypass-paywalls-chrome-clean-$version.crx&inline=false#/dl.crx",
                 "hash": {
                     "url": "https://gitflic.ru/project/magnolia1234/bpc_uploads/blob/raw?file=release-hashes.txt",
-                    "regex": "bypass-paywalls-chrome-clean-master\\.zip:\\s+([a-f0-9]{64})"
+                    "regex": "SHA256 hash of bypass-paywalls-chrome-clean-$version\\.crx:\\s+([a-f0-9]{64})"
                 }
             }
         }
