@@ -1,31 +1,44 @@
 {
     "version": "4.4.0",
-    "description": "Beaver Notes is an open-source note taking app built for Privacy and Efficiency.",
-    "homepage": "https://www.beavernotes.com/",
+    "description": "A privacy-focused note-taking application",
+    "homepage": "https://beavernotes.com/",
     "license": "MIT",
-    "url": "https://github.com/Beaver-Notes/Beaver-Notes/releases/download/4.4.0/Beaver-Notes-Setup-4.4.0.exe#/dl.7z",
-    "hash": "7740ac572802f88a58b88095d8f65a48a7ea7577c175480e835282ef30fa1de5",
     "architecture": {
         "64bit": {
-            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
+            "pre_install": "Expand-7zipArchive -Path \"$dir\\`$PLUGINSDIR\\app-64.7z\" -DestinationPath \"$dir\""
         },
         "arm64": {
-            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\""
+            "pre_install": "Expand-7zipArchive -Path \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" -DestinationPath \"$dir\""
         }
     },
-    "post_install": "Remove-Item \"$dir\\`$*\", \"$dir\\resources\\app-update.yml\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "url": "https://github.com/Beaver-Notes/Beaver-Notes/releases/download/4.4.0/Beaver-Notes-4.4.0-portable.exe#/dl.7z",
+    "hash": "40cf1132a38a1c89c7290301cd5838afe74eb6b4764dd151838bf0b830347f5a",
+    "post_install": [
+        "$ScriptBlock = [scriptblock]{Remove-Item -Path \"$dir\\`$PLUGINSDIR\" -Force -Recurse}",
+        "Try {$ScriptBlock.Invoke()} Catch {Start-Sleep -Milliseconds 50; $ScriptBlock.Invoke()}"
+    ],
     "shortcuts": [
         [
-            "Beaver-notes.exe",
-            "Beaver Notes",
-            "--user-data-dir=\"User Data\""
+            "Beaver Notes.exe",
+            "Beaver Notes"
         ]
     ],
-    "persist": "User Data",
+    "post_uninstall": [
+        "if ($purge) {",
+        "    $Directories = [string[]](",
+        "        ('{0}\\Beaver-notes' -f $env:APPDATA)",
+        "    )",
+        "    $Directories.ForEach{",
+        "        if ([System.IO.Directory]::Exists($_)) {",
+        "            $null = [System.IO.Directory]::Delete($_,$true)",
+        "        }",
+        "    }",
+        "}"
+    ],
     "checkver": {
         "github": "https://github.com/Beaver-Notes/Beaver-Notes"
     },
     "autoupdate": {
-        "url": "https://github.com/Beaver-Notes/Beaver-Notes/releases/download/$version/Beaver-Notes-Setup-$version.exe#/dl.7z"
+        "url": "https://github.com/Beaver-Notes/Beaver-Notes/releases/download/$version/Beaver-Notes-$version-portable.exe#/dl.7z"
     }
 }
