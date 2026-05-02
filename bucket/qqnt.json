@@ -1,6 +1,6 @@
 {
     "version": "9.9.30.260429",
-    "description": "An instant messaging software service developed by Tencent",
+    "description": "QQ Windows版，全新NT架构，轻松做自己。",
     "homepage": "https://im.qq.com/pcqq/index.shtml",
     "license": {
         "identifier": "Proprietary",
@@ -20,13 +20,39 @@
             "hash": "7425302a651278d07df3c89072a75bb618fb5da16f1a94ec465a66e77d31b1c1"
         }
     },
-    "extract_dir": "Files",
+    "installer": {
+        "script": [
+            "$configpath = \"$([Environment]::GetFolderPath('CommonDocuments'))\\Tencent\\QQ\"",
+            "if (!(Test-Path -Path \"$configpath\")) {",
+            "    New-Item -Path \"$configpath\" -Type Directory -Force -ErrorAction SilentlyContinue | Out-Null",
+            "}",
+            "if (!(Test-Path -Path \"$configpath\\UserDataInfo.ini\" -PathType leaf)) {",
+            "    Set-Content -NoNewline -Path \"$configpath\\UserDataInfo.ini\" -Value \"[UserDataSet]`nUserDataSavePathType=2`nUserDataSavePath=`\"$persist_dir\\Tencent Files`\"\"",
+            "}"
+        ]
+    },
     "shortcuts": [
         [
-            "QQ.exe",
+            "Files\\QQ.exe",
             "QQ"
         ]
     ],
+    "persist": "Tencent Files",
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\""
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    Remove-Item -Path \"$([Environment]::GetFolderPath('CommonDocuments'))\\Tencent\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+            "    Write-Host \"`nDeleting $env:APPDATA\\QQ ... \" -f DarkGray -NoNewline",
+            "    Remove-Item -Path \"$env:APPDATA\\QQ\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+            "    Write-Host \"`nDeleting $env:APPDATA\\Tencent\\qimei ... \" -f DarkGray -NoNewline",
+            "    Remove-Item -Path \"$env:APPDATA\\Tencent\\qimei\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+            "}"
+        ]
+    },
     "checkver": {
         "script": [
             "# Please keep this script. Using 'cdn-go.cn' may result in receiving expired cache responses.",
