@@ -1,13 +1,35 @@
 {
-    "version": "2.9.0-34",
+    "version": "2.30.0-Release.2",
     "description": "浙政钉",
     "homepage": "https://www.ding.zj.gov.cn/pc/index.html",
     "license": {
-        "identifier": "Freeware"
+        "identifier": "EULA"
     },
-    "url": "https://gov-cdn-pro.ding.zj.gov.cn/pc/DingTalkGov_v2.9.0-Release.34.exe#/dl.7z",
-    "pre_install": "Remove-Item -R -Path \"$dir\\uninst.exe.nsis\",\"$dir\\`$PLUGINSDIR\"",
-    "hash": "aa4e655866236d8ec96226f00f347f9a70ae2607b16af14b0685859e69cd9532",
+    "url": "https://gov-cdn-pro.ding.zj.gov.cn/pc/DingTalkGov_v2.30.0-Release.2.exe#/dl.7z",
+    "hash": "d5a7878421f14450d4246842d3252d7636cb42a7f387f61f31ec014efe24363b",
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Remove-Item \"$dir\\DingTalkGovUpdater.exe\" -Force",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Write-Host (\"`nPersisting $env:APPDATA\\DingTalkGov ... \") -NoNewline",
+        "New-PersistDirectory \"$env:APPDATA\\DingTalkGov\" \"$persist_dir\\AppData\" -Migrate"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$localPaths = @(",
+        "    \"$env:APPDATA\\DingTalkGov\"",
+        "    \"$env:LOCALAPPDATA\\DingTalkGov_91\"",
+        "    \"$env:LOCALAPPDATA\\DingTalkGov_108\"",
+        ")",
+        "Remove-AppData -LocalPaths $localPaths"
+    ],
     "shortcuts": [
         [
             "DingTalkGovLauncher.exe",
@@ -16,10 +38,10 @@
     ],
     "checkver": {
         "url": "https://www.ding.zj.gov.cn/pc/index.html",
-        "regex": "DingTalkGov_v(?<main>[\\d\\.]+)\\-Release\\.(?<rel>\\d+)\\.exe",
-        "replace": "${main}-${rel}"
+        "regex": "\"downloadLinkAddress\":\"[^\"]*?DingTalkGov_v(?<version>[\\d.]+-Release\\.\\d+)\\.exe\""
     },
     "autoupdate": {
-        "url": "https://gov-cdn-pro.ding.zj.gov.cn/pc/DingTalkGov_v$matchMain-Release.$matchRel.exe#/dl.7z"
-    }
+        "url": "https://gov-cdn-pro.ding.zj.gov.cn/pc/DingTalkGov_v$version.exe#/dl.7z"
+    },
+    "notes": "User data is persisted in \"$persist_dir\"."
 }
