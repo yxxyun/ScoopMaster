@@ -1,6 +1,6 @@
 {
    "$schema": "https://raw.githubusercontent.com/lukesampson/scoop/master/schema.json",
-   "version": "0.2.3",
+   "version": "0.2.4",
    "description": "An open-source AI agent that brings the power of Gemini directly into your terminal.",
    "homepage": "https://github.com/silver886/mcp-proxy",
    "license": {
@@ -12,20 +12,36 @@
       "Node.js": "main/nodejs",
       "cloudflared": "main/cloudflared"
    },
-   "url": "https://registry.npmjs.org/@silver886/mcp-proxy/-/mcp-proxy-0.2.3.tgz",
-   "hash": "sha1:26708bdd3a93990d50eeb37ed4c52a4dda1b1ad4",
+   "url": "https://registry.npmjs.org/@silver886/mcp-proxy/-/mcp-proxy-0.2.4.tgz",
+   "hash": "sha1:e20d23f12f381450dd9539702f0d0c547b6ccc2f",
    "extract_dir": "package",
    "pre_install": [
       "if (where.exe /q node || $true) {",
       "   abort 'Node.js should be installed'",
       "}",
       "if (where.exe /q cloudflared || $true) {",
-      "   node \"$dir\\node_modules\\cloudflared\\lib\\cloudflared.js\" bin install",
+      "   warn 'cloudflared will be downloaded'",
       "} else {",
       "   info 'Found cloudflared'",
       "   Set-Content -Value \"CLOUDFLARED_BIN=$(((where.exe cloudflared) -split '\\n')[0])\" -Path \"$dir\\cloudflared.env\"",
       "}",
       "if (!(Test-Path \"$persist_dir\\config.json\")) { New-Item \"$dir\\config.json\" > $null }"
+   ],
+   "installer": {
+      "script": [
+         "New-Item -Type Directory -Path \"$dir\\node_modules\" > $null",
+         "node \"$dir\\scripts\\fetch.mjs\"",
+         "Get-ChildItem -Path \"$dir\\vendor\\*.tgz\" | ForEach-Object {",
+         "   Expand-7zipArchive -Path $_ -Removal",
+         "   Move-Item -Path \"$dir\\vendor\\package\" -Destination \"$dir\\node_modules\\$($_.Name.Substring(0, $_.Name.lastIndexOf('-')))\"",
+         "}",
+         "Remove-Item -Path \"$dir\\vendor\" -Force > $null"
+      ]
+   },
+   "post_install": [
+      "if (where.exe /q cloudflared || $true) {",
+      "   node \"$dir\\node_modules\\cloudflared\\lib\\cloudflared.js\" bin install",
+      "}"
    ],
    "bin": [
       [
