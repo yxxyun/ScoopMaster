@@ -1,38 +1,48 @@
 {
-    "version": "3.8.5",
-    "description": "A full-featured download manager — rebuilt from the ground up.",
-    "homepage": "https://motrix-next.pages.dev/",
+    "version": "3.8.6",
+    "description": "一款功能齐全的下载管理器 | A full-featured download manager",
+    "homepage": "https://github.com/AnInsomniacy/motrix-next",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/AnInsomniacy/motrix-next/releases/download/v3.8.5/MotrixNext_3.8.5_x64-setup.exe#/dl.7z",
-            "hash": "455f665f427cd71ee4b7760426106db06154c7da7624f66f285e7491c95de386"
+            "url": "https://github.com/AnInsomniacy/motrix-next/releases/download/v3.8.6/MotrixNext_3.8.6_x64-setup.exe#/dl.7z",
+            "hash": "b059f940377838e804e629158c7a928fb3b9e90dafcdfb7f83a2b2b7f0134604"
         },
         "arm64": {
-            "url": "https://github.com/AnInsomniacy/motrix-next/releases/download/v3.8.5/MotrixNext_3.8.5_arm64-setup.exe#/dl.7z",
-            "hash": "ef1fc394385f01eda62f63bd009e88493662af99d44977198eee3df5af7df11a"
+            "url": "https://github.com/AnInsomniacy/motrix-next/releases/download/v3.8.6/MotrixNext_3.8.6_arm64-setup.exe#/dl.7z",
+            "hash": "b5525aed5a91ffaf93d65e85062ec7ea8931ae5ecd7358a09871e33068254dba"
         }
+    },
+    "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\uninst*\" -Force -Recurse",
+    "installer": {
+        "script": [
+            "ensure \"$persist_dir\" | Out-Null",
+            "$targetPath = \"$env:APPDATA\\com.motrix.next\"",
+            "$linkType = (Get-Item -Path $targetPath -ErrorAction SilentlyContinue).LinkType",
+            "if (Test-Path $targetPath) {",
+            "    if ($linkType -eq 'Junction') {",
+            "        Remove-Item -Path $targetPath -Force",
+            "    } else {",
+            "        Get-ChildItem -Path $targetPath -Force | Move-Item -Destination $persist_dir -Force",
+            "        Remove-Item -Path $targetPath -Force -Recurse",
+            "    }",
+            "}",
+            "New-Item \"$env:APPDATA\\com.motrix.next\" -ItemType Junction -Target \"$persist_dir\" | Out-Null"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Remove-Item \"$env:APPDATA\\com.motrix.next\" -Recurse -Force -ErrorAction 'SilentlyContinue'",
+            "Remove-Item \"$env:LOCALAPPDATA\\com.motrix.next\" -Recurse -Force -ErrorAction 'SilentlyContinue'"
+        ]
     },
     "shortcuts": [
         [
             "motrix-next.exe",
-            "MotrixNext"
+            "Motrix Next"
         ]
     ],
-    "pre_install": [
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "New-PersistDirectory \"$env:LOCALAPPDATA\\com.motrix.next\" \"$persist_dir\\LocalAppData\" -Migrate"
-    ],
-    "post_install": "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall.exe\" -Force -Recurse",
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App",
-        "Remove-Junction \"$env:LOCALAPPDATA\\com.motrix.next\""
-    ],
-    "checkver": {
-        "github": "https://github.com/AnInsomniacy/motrix-next"
-    },
+    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
