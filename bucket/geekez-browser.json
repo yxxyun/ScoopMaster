@@ -1,0 +1,61 @@
+{
+    "version": "1.5.2",
+    "description": "A fingerprint stealth browser built for e-commerce operations and multi-account management with integrated Xray proxy support",
+    "homepage": "https://github.com/EchoHS/GeekezBrowser",
+    "license": "CC-BY-NC-SA-4.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/EchoHS/GeekezBrowser/releases/download/v1.5.2/GeekEZ.Browser-1.5.2-win-x64-portable.zip",
+            "hash": "0062e16b1f66e41cf9759fcf4eba2fee615f7606f8a17e57e0623ca92067a332",
+            "bin": "GeekEZ Browser.exe"
+        }
+    },
+    "shortcuts": [
+        [
+            "GeekEZ Browser.exe",
+            "GeekEZ Browser"
+        ]
+    ],
+    "persist": "data",
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'geekez-browser'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"Junction already exists: $source, skipping\"",
+        "        return",
+        "    }",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    Move-Item -LiteralPath $source -Destination $backup -Force",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "post_uninstall": [
+        "$source = Join-Path $env:APPDATA 'geekez-browser'",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        (Get-Item $source).Delete()",
+        "        Write-Host \"Removed junction: $source\"",
+        "    }",
+        "}"
+    ],
+    "checkver": {
+        "github": "https://github.com/EchoHS/GeekezBrowser"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/EchoHS/GeekezBrowser/releases/download/v$version/GeekEZ.Browser-$version-win-x64-portable.zip"
+            }
+        },
+        "hash": {
+            "mode": "download"
+        }
+    }
+}

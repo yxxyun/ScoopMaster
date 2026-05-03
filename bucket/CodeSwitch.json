@@ -1,0 +1,70 @@
+{
+    "version": "0.1.8",
+    "description": "Claude Code & Codex 多供应商代理与管理工具",
+    "homepage": "https://github.com/daodao97/code-switch",
+    "license": "Apache-2.0",
+    "notes": [
+        "Code Switch - Claude Code/Codex 多供应商代理管理",
+        "主配置目录：%USERPROFILE%\\.code-switch\\",
+        "  - app.db: 请求日志数据库",
+        "  - claude-code.json/codex.json: 供应商配置",
+        "  - mcp/skills: 扩展配置",
+        "App设置目录：%USERPROFILE%\\.codex-switch\\",
+        "热键数据库：%LOCALAPPDATA%\\SuiNest\\suidemo.db",
+        "本包会将 .code-switch 目录持久化到 Scoop persist"
+    ],
+    "url": "https://github.com/daodao97/code-switch/releases/download/v0.1.8/codeswitch.exe",
+    "hash": "23fdb5cf5f01fc7ff32394171ea25def4c28aa31716144b30ce748c840f7bd66",
+    "bin": [
+        [
+            "codeswitch.exe",
+            "codeswitch"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "codeswitch.exe",
+            "Code Switch"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path $env:USERPROFILE '.code-switch'",
+        "$target = Join-Path $persist_dir 'code-switch'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"配置路径已存在且不是目录：$source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"迁移失败，保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原配置目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原目录：$source\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "persist": "code-switch",
+    "checkver": {
+        "github": "https://github.com/daodao97/code-switch"
+    },
+    "autoupdate": {
+        "url": "https://github.com/daodao97/code-switch/releases/download/v$version/codeswitch.exe"
+    }
+}

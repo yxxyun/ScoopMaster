@@ -1,0 +1,75 @@
+{
+    "version": "0.1.0",
+    "description": "A desktop manager for Scoop and Winget software packages",
+    "homepage": "https://github.com/CrankZ/guan-manager",
+    "license": "Unknown",
+    "notes": [
+        "松鼠软件管家是一个基于 Tauri 的 Scoop 与 Winget 软件管理器",
+        "上游使用 @tauri-apps/plugin-store 持久化本地配置，并以 guanConfig.json 形式保存到 Tauri 的 app_data_dir",
+        "结合 identifier=pro.softsoft.guan-manager，可确认应用数据目录为 %APPDATA%\\pro.softsoft.guan-manager\\",
+        "本包会将该目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/CrankZ/guan-manager/releases/download/v0.1.0/guanManager_0.1.0_x64-setup.exe#/dl.7z",
+            "hash": "6133ca2512aaa8ba5b44355f88e0f006dae03cb84f8e26223bb2dafef9710065"
+        }
+    },
+    "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\uninstall.exe\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "bin": "guanManager.exe",
+    "shortcuts": [
+        [
+            "guanManager.exe",
+            "guanManager"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'pro.softsoft.guan-manager'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"配置路径已存在且不是目录：$source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"迁移失败，保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原配置目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原目录：$source\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "persist": "data",
+    "checkver": {
+        "url": "https://api.github.com/repos/CrankZ/guan-manager/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "v(?<version>[\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/CrankZ/guan-manager/releases/download/v$version/guanManager_$version_x64-setup.exe#/dl.7z"
+            }
+        },
+        "hash": {
+            "mode": "download"
+        }
+    }
+}
