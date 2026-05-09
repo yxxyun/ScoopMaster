@@ -1,0 +1,52 @@
+{
+    "version": "1.7.16",
+    "description": "A modern Desktop/Web UI for command-line AI agents",
+    "homepage": "https://github.com/zhu1090093659/CodeConductor",
+    "license": "Apache-2.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/zhu1090093659/CodeConductor/releases/download/v1.7.16/CodeConductor-1.7.16-win-x64.exe#/dl.7z",
+            "hash": "627ef9a9179c54d15bcc55e3189eb078fe529eff9baf133043f6c5ad60a52baf"
+        }
+    },
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
+        "Remove-Item \"$dir\\`$*\" -Force -Recurse -ErrorAction SilentlyContinue"
+    ],
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'CodeConductor'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    Move-Item -LiteralPath $source -Destination $backup -Force",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "bin": "CodeConductor.exe",
+    "shortcuts": [
+        [
+            "CodeConductor.exe",
+            "CodeConductor"
+        ]
+    ],
+    "persist": "data",
+    "checkver": {
+        "github": "https://github.com/zhu1090093659/CodeConductor"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/zhu1090093659/CodeConductor/releases/download/v$version/CodeConductor-$version-win-x64.exe#/dl.7z"
+            }
+        }
+    }
+}

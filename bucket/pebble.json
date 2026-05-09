@@ -1,29 +1,77 @@
 {
-    "version": "0.0.2",
-    "description": "Pebble Programming Language",
-    "homepage": "https://github.com/pebble-lang/pebble",
-    "license": "MIT",
+    "version": "0.0.6",
+    "description": "A modern email client built with Tauri, featuring IMAP support, search indexing and encrypted credential storage",
+    "homepage": "https://github.com/QingJ01/Pebble",
+    "license": "AGPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/pebble-lang/pebble/releases/download/v0.0.2/peb-0.0.2-windows-x86_64.zip",
-            "hash": "581538fcbb1b9744bd72ab8bcc937c8cb410441049a33baedc6b83db0e811d38"
+            "url": "https://github.com/QingJ01/Pebble/releases/download/v0.0.6/Pebble_0.0.6_x64-setup.exe#/dl.7z",
+            "hash": "407cf3e87742addef54221782b7d8ed903f2a2cb89c9ed2eb3509fed13a6e562"
         }
     },
-    "bin": [
+    "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\uninstall.exe\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "bin": "pebble.exe",
+    "shortcuts": [
         [
-            "peb-windows-x86_64.exe",
-            "peb"
+            "pebble.exe",
+            "Pebble"
         ]
     ],
-    "checkver": "github",
+    "post_install": [
+        "$source = Join-Path $env:LOCALAPPDATA 'com.qingj01.pebble'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"配置路径已存在且不是目录：$source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"迁移失败，保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原配置目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原目录：$source\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "post_uninstall": [
+        "$source = Join-Path $env:LOCALAPPDATA 'com.qingj01.pebble'",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        (Get-Item $source).Delete()",
+        "        Write-Host \"Removed junction: $source\"",
+        "    }",
+        "}"
+    ],
+    "persist": "data",
+    "checkver": {
+        "github": "https://github.com/QingJ01/Pebble"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/pebble-lang/pebble/releases/download/v$version/peb-$version-windows-x86_64.zip"
+                "url": "https://github.com/QingJ01/Pebble/releases/download/v$version/Pebble_$version_x64-setup.exe#/dl.7z"
             }
         },
         "hash": {
-            "url": "$url.sha256"
+            "url": "$baseurl/Pebble_$version_x64-setup.exe.sha256"
         }
     }
 }
