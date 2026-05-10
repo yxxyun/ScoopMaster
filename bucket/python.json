@@ -1,19 +1,43 @@
 {
     "version": "3.14.5",
-    "description": "修改 USER_BASE 和 USER_SITE 到 persist 目录",
+    "description": "A programming language that lets you work quickly and integrate systems more effectively.",
     "homepage": "https://www.python.org/",
     "license": "Python-2.0",
     "notes": "Allow applications and third-party installers to find python by running: \"$dir\\install-pep-514.reg\"",
     "architecture": {
         "64bit": {
-            "url": "https://www.python.org/ftp/python/3.14.5/python-3.14.5-amd64.exe#/setup.exe",
+            "url": "https://registry.npmmirror.com/-/binary/python/3.14.5/python-3.14.5-amd64.exe#/setup.exe",
             "hash": "f9c09f5ed6f796fd1a8bc5ddfa41715a494b453c4781f0e35d5077cf9fa58f6d"
         },
         "32bit": {
-            "url": "https://www.python.org/ftp/python/3.14.5/python-3.14.5.exe#/setup.exe",
+            "url": "https://registry.npmmirror.com/-/binary/python/3.14.5/python-3.14.5.exe#/setup.exe",
             "hash": "a7c9f428d6e3fa20ab2efbecd2bd536670615e54fa585e8f13b57c5786afbb5a"
         }
     },
+    "pre_install": [
+        "$py_root = \"$dir\".Replace('\\', '\\\\')",
+        "$py_archLabel = '64-bit'",
+        "$bit = '64'",
+        "if ($architecture -eq '32bit') {",
+        "    $py_archLabel = '32-bit'",
+        "    $bit = '32'",
+        "}",
+        "if ($architecture -eq 'arm64') { $py_archLabel = 'ARM64' }",
+        "'install-pep-514.reg', 'uninstall-pep-514.reg' | ForEach-Object {",
+        "    $py_version = ($version -split '\\.')[0..1] -join '.'",
+        "    $content = Get-Content \"$bucketsdir\\main\\scripts\\python\\$_\"",
+        "    $content = $content.Replace('$py_root', $py_root)",
+        "    $content = $content.Replace('$py_version', $py_version)",
+        "    $content = $content.Replace('$py_fullversion', $version)",
+        "    $content = $content.Replace('$py_cleanVersion', $version -replace '\\.')",
+        "    $content = $content.Replace('$py_archLabel', $py_archLabel)",
+        "    $content = $content.Replace('$py_arch', \"$bit\")",
+        "    if ($global) {",
+        "       $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    Set-Content \"$dir\\$_\" $content -Encoding Ascii",
+        "}"
+    ],
     "installer": {
         "script": [
             "Expand-DarkArchive \"$dir\\setup.exe\" \"$dir\\_tmp\"",
@@ -27,46 +51,20 @@
             "}",
             "Remove-Item \"$dir\\_tmp\", \"$dir\\setup.exe\" -Force -Recurse",
             "if ($global) {",
-            "    $pathext = (env 'PATHEXT' $true) -replace ';.PYW?', ''",
-            "    env 'PATHEXT' $true \"$pathext;.PY;.PYW\"",
+            "    $pathext = (Get-EnvVar -Name PATHEXT -Global) -replace ';.PYW?', ''",
+            "    Set-EnvVar -Name PATHEXT -Value \"$pathext;.PY;.PYW\" -Global",
             "}"
         ]
     },
     "post_install": [
-        "$py_root = \"$dir\".Replace('\\', '\\\\')",
-        "$bit = '64'",
-        "if ($architecture -eq '32bit') { $bit = '32' }",
-        "'install-pep-514.reg', 'uninstall-pep-514.reg' | ForEach-Object {",
-        "    $py_version = ($version -split '\\.')[0..1] -join '.'",
-        "    $content = Get-Content \"$bucketsdir\\main\\scripts\\python\\$_\"",
-        "    $content = $content.Replace('$py_root', $py_root)",
-        "    $content = $content.Replace('$py_version', $py_version)",
-        "    $content = $content.Replace('$py_fullversion', $version)",
-        "    $content = $content.Replace('$py_cleanVersion', $version -replace '\\.')",
-        "    $content = $content.Replace('$py_arch', \"$bit\")",
-        "    if ($global) {",
-        "       $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
-        "    }",
-        "    Set-Content \"$dir\\$_\" $content -Encoding Ascii",
-        "}",
-        "",
         "python -E -s -m ensurepip -U --default-pip | Out-Null",
-        "Write-Output \"`e[0m\" # Reset ansi to prevent color leak from installer",
-        "",
-        "Copy-Item -Path \"$dir\\Lib\\site.py\" -Destination \"$dir\\Lib\\site.py.original\" -Force",
-        "$user_site = \"$persist_dir\\Lib\\site-packages\".Replace('\\', '\\\\')",
-        "$user_base = \"$persist_dir\\Scripts\".Replace('\\', '\\\\')",
-        "$content = Get-Content \"$dir\\Lib\\site.py.original\"",
-        "$content = $content -creplace \"^USER_SITE = None$\", \"USER_SITE = '$user_site'\"",
-        "$content = $content -creplace \"^USER_BASE = None$\", \"USER_BASE = '$user_base'\"",
-        "Set-Content \"$dir\\Lib\\site.py\" $content -Encoding UTF-8",
-        "Write-Host \"已修改 USER_BASE=$user_site `nUSER_SITE=$user_base\" -ForegroundColor Magenta"
+        "Write-Output \"$([char]0x1b)[0m\" # Reset ansi to prevent color leak from installer"
     ],
     "uninstaller": {
         "script": [
             "if ($global) {",
-            "    $pathext = (env 'PATHEXT' $true) -replace ';.PYW?', ''",
-            "    env 'PATHEXT' $true \"$pathext\"",
+            "    $pathext = (Get-EnvVar -Name PATHEXT -Global) -replace ';.PYW?', ''",
+            "    Set-EnvVar -Name PATHEXT -Value \"$pathext\" -Global",
             "}"
         ]
     },
@@ -96,15 +94,15 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://www.python.org/ftp/python/$version/python-$version-amd64.exe#/setup.exe"
+                "url": "https://registry.npmmirror.com/-/binary/python/$version/python-$version-amd64.exe#/setup.exe"
             },
             "32bit": {
-                "url": "https://www.python.org/ftp/python/$version/python-$version.exe#/setup.exe"
+                "url": "https://registry.npmmirror.com/-/binary/python/$version/python-$version.exe#/setup.exe"
             }
         },
         "hash": {
             "url": "https://www.python.org/downloads/release/python-$cleanVersion/",
-            "regex": "(?sm)$basename.*?$md5"
+            "regex": "(?sm)$basename.*?$sha256"
         }
     }
 }

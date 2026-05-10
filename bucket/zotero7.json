@@ -1,0 +1,64 @@
+{
+    "version": "9.0.3",
+    "description": "Open-source reference management software to manage bibliographic data and related research materials.",
+    "homepage": "https://www.zotero.org/",
+    "license": "AGPL-3.0-only",
+    "architecture": {
+        "64bit": {
+            "url": "https://download.zotero.org/client/release/9.0.3/Zotero-9.0.3_x64_setup.exe#/dl.7z",
+            "hash": "3d3668869fd6f9d5b2f4de8c7f3955de77097924b7c5a8816db0425089c05fb8"
+        },
+        "32bit": {
+            "url": "https://download.zotero.org/client/release/9.0.3/Zotero-9.0.3_win32_setup.exe#/dl.7z",
+            "hash": "2327b1014c32eada07ec83620586f419a2a4cad23b9b98da042189340590bcf1"
+        },
+        "arm64": {
+            "url": "https://download.zotero.org/client/release/9.0.3/Zotero-9.0.3_arm64_setup.exe#/dl.7z",
+            "hash": "5a7534ba45e2d0a506f25415e5e15af8a7801ec243f71eac00ee660756913c33"
+        }
+    },
+    "extract_dir": "core",
+    "bin": "zotero.exe",
+    "shortcuts": [
+        [
+            "zotero.exe",
+            "Zotero"
+        ]
+    ],
+    "post_install": [
+        "$scriptsDir = \"$bucketsdir\\extras\\scripts\"",
+        "Get-ChildItem \"$scriptsDir\\zotero\\*.ps1\" | ForEach-Object {",
+        "    $content = Get-Content $_",
+        "    $content = $content.Replace('REPLACE_HERE', $dir)",
+        "    if ($global) { $content = $content.Replace('HKCU', 'HKLM') }",
+        "    Set-Content \"$dir\\$($_.Name)\" $content -Encoding 'utf8' -Force",
+        "}"
+    ],
+    "pre_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    Write-Host 'Unregistering the ''zotero://'' URL protocol...'",
+        "    Remove-Item 'HKCU:\\SOFTWARE\\Classes\\zotero', 'HKLM:\\SOFTWARE\\Classes\\zotero' -ErrorAction 'SilentlyContinue' -Recurse -Force",
+        "    Write-Host 'Done!'",
+        "}"
+    ],
+    "checkver": {
+        "script": [
+            "try { $detail = Invoke-WebRequest 'https://www.zotero.org/download/client/dl?channel=release&platform=win-x64' -MaximumRedirection 0 -ErrorAction Ignore } catch { $_.Exception.Response }",
+            "return $detail.Headers.Location"
+        ],
+        "regex": "Zotero-([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://download.zotero.org/client/release/$version/Zotero-$version_x64_setup.exe#/dl.7z"
+            },
+            "32bit": {
+                "url": "https://download.zotero.org/client/release/$version/Zotero-$version_win32_setup.exe#/dl.7z"
+            },
+            "arm64": {
+                "url": "https://download.zotero.org/client/release/$version/Zotero-$version_arm64_setup.exe#/dl.7z"
+            }
+        }
+    }
+}
