@@ -1,47 +1,46 @@
 {
     "version": "1.9.5",
-    "description": "A desktop client that supports for multiple LLM providers",
-    "homepage": "https://cherry-ai.com/",
-    "license": {
-        "identifier": "Apache-2.0",
-        "url": "https://github.com/CherryHQ/cherry-studio/raw/refs/heads/main/LICENSE"
+    "description": "A desktop client that supports for multiple LLM providers.",
+    "homepage": "https://cherry-ai.com",
+    "license": "Apache-2.0",
+    "suggest": {
+        "vcredist": "extras/vcredist2022"
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.9.5/Cherry-Studio-1.9.5-x64-setup.exe",
-            "hash": "072a15c6447d4910d230f86d11707a01629b80a38384c4bd5fba162d2aea8988"
+            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.9.5/Cherry-Studio-1.9.5-x64-portable.exe#/cherry-studio.exe",
+            "hash": "ba4847fa39a80f1fe0706d098c013055739f5280ab048c07a5b10b65784d25d9"
+        },
+        "arm64": {
+            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.9.5/Cherry-Studio-1.9.5-arm64-portable.exe#/cherry-studio.exe",
+            "hash": "16e93f94212f45ee93e3838bfa42bd4751c84aa973b69c6e4d35382a3fb2dabd"
         }
     },
-    "installer": {
-        "script": [
-            "Expand-7zipArchive \"$dir\\Cherry-Studio-$version-x64-setup.exe\" \"$dir\\temp\\\" -Removal",
-            "Expand-7zipArchive \"$dir\\temp\\`$PLUGINSDIR\\app-64.7z\" \"$dir\\\" -Removal",
-            "Remove-Item \"$dir\\temp\" -Recurse",
-            ". \"$bucketsdir\\apeiraco\\bin\\persist-utils.ps1\"",
-            "Set-PersistLinks -PersistDir $persist_dir -LinkMap @{ 'appdata' = '$env:APPDATA\\CherryStudio'; 'userdata' = '$env:USERPROFILE\\.cherrystudio' }"
-        ]
-    },
-    "notes": "You'd better turn off update detection in Settings->About Us in Cherry Studio and use scoop to manage updates, otherwise it will cause some errors.",
+    "pre_install": [
+        "if (-not (Test-Path \"$persist_dir\\data\") -and (Test-Path \"$env:APPDATA\\CherryStudio\")) {",
+        "    ensure \"$persist_dir\\data\" | Out-Null",
+        "    info '[Portable Mode] Copying user data...'",
+        "    Move-Item \"$env:APPDATA\\CherryStudio\\*\" \"$persist_dir\\data\"",
+        "    Remove-Item \"$env:APPDATA\\CherryStudio\" -Recurse -Force",
+        "}"
+    ],
     "shortcuts": [
         [
-            "Cherry Studio.exe",
+            "cherry-studio.exe",
             "Cherry Studio"
         ]
     ],
-    "persist": "CherryStudio",
-    "uninstaller": {
-        "script": [
-            ". \"$bucketsdir\\apeiraco\\bin\\persist-utils.ps1\"",
-            "Remove-PersistLinks -PersistDir $persist_dir -LinkMap @{ 'appdata' = '$env:APPDATA\\CherryStudio'; 'userdata' = '$env:USERPROFILE\\.cherrystudio' }"
-        ]
-    },
+    "persist": "data",
     "checkver": {
         "github": "https://github.com/CherryHQ/cherry-studio"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-x64-setup.exe"
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-x64-portable.exe#/cherry-studio.exe"
+            },
+            "arm64": {
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-arm64-portable.exe#/cherry-studio.exe"
             }
         }
     }
