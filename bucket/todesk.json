@@ -1,26 +1,43 @@
 {
     "version": "4.8.8.9",
-    "description": "A unlimited speed multifunctional remote control software",
     "homepage": "https://www.todesk.com/",
-    "license": "Proprietary",
-    "url": "https://dl.todesk.com/irrigation/ToDesk_4.8.8.9.exe#/dl.7z",
-    "hash": "b8f0ce067fde3e9c85822c618c79e7760512a14bf01cf8411429182aba104a6e",
+    "description": "ToDesk远程桌面软件-免费安全流畅的远程连接电脑手机",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.todesk.com/licence.html"
+    },
+    "url": "https://dl.todesk.com/windows/ToDesk_Setup.exe#/dl.7z",
+    "hash": "034a84deae6291c47fa01b11db1385fe05b39210a0033425d37a076e6c791902",
     "pre_install": [
-        "if (!(Test-Path \"$persist_dir\\config.ini\")) {",
-        "    New-Item -Force -Path \"$persist_dir\\config.ini\" -ItemType File -Value \"[ConfigInfo]`nautoStart=0\" | Out-Null",
-        "}",
-        "# 解压对应架构的7z文件",
-        "if ($architecture -eq '64bit') {",
-        "    Get-ChildItem \"$dir\\app64.7z\" | Expand-7zipArchive -DestinationPath \"$dir\"",
-        "} else {",
-        "    Get-ChildItem \"$dir\\app32.7z\" | Expand-7zipArchive -DestinationPath \"$dir\"",
+        "if (!(Test-Path \"$persist_dir\\config.ini\") -or !(Get-Item \"$persist_dir\\config.ini\").Length) {",
+        "New-Item \"$persist_dir\\config.ini\" -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null",
+        "@\"",
+        "[ConfigInfo]",
+        "passUpdate=0",
+        "PrivateScreenLockScreen=0",
+        "autoLockScreen=0",
+        "language=936",
+        "isOpenTempPass=1",
+        "isAdmissionControl=1",
+        "WeakPasswordTip=0",
+        "isUpdate=0",
+        "PresetDialogShowCount=0",
+        "AuthMode=0",
+        "autoupdate=0",
+        "isexpand=0",
+        "UpdateTempPassDefault=1",
+        "Version=$version",
+        "\"@ | Set-Content \"$persist_dir\\config.ini\"",
         "}"
     ],
-    "post_install": [
-        "# 清理不必要的文件",
-        "Remove-Item \"$dir\\app32.7z\", \"$dir\\app64.7z\" -Force -ErrorAction SilentlyContinue",
-        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse -ErrorAction SilentlyContinue",
-        "Remove-Item \"$dir\\uninst.exe\" -Force -ErrorAction SilentlyContinue"
+    "installer": {
+        "script": "Expand-7zipArchive -Path \"$dir\\app64.7z\" -DestinationPath $dir"
+    },
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Remove-Item \"$env:LOCALAPPDATA\\ToDesk\" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null",
+        "Write-Host (\"`nDeleting $env:LOCALAPPDATA\\ToDesk ... \") -f DarkGray -NoNewline"
     ],
     "shortcuts": [
         [
@@ -33,10 +50,10 @@
         "config.ini"
     ],
     "checkver": {
-        "url": "https://www.todesk.com/download.html",
-        "regex": "ToDesk_([\\d.]+).exe"
+        "url": "https://update.todesk.com/windows/uplog.html",
+        "regex": ">([\\d.]+)</div>"
     },
     "autoupdate": {
-        "url": "https://dl.todesk.com/irrigation/ToDesk_$version.exe#/dl.7z"
+        "url": "https://dl.todesk.com/windows/ToDesk_Setup.exe#/dl.7z"
     }
 }
