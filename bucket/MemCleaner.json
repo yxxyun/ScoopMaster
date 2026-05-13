@@ -1,0 +1,55 @@
+{
+    "version": "0.1.0",
+    "description": "High-performance Windows memory optimization tool with Rust core and Python CustomTkinter UI",
+    "homepage": "https://github.com/Kiowx/MemCleaner",
+    "license": "Apache-2.0",
+    "notes": [
+        "Configuration is stored in: $persist_dir\\memcleaner",
+        "The app will create a symlink from %APPDATA%\\memcleaner to the persist directory",
+        "To enable autostart, use the settings page in the app",
+        "Administrator privileges are required for full memory cleaning capabilities"
+    ],
+    "url": "https://github.com/Kiowx/MemCleaner/releases/download/v0.1.0/MemCleaner.exe",
+    "hash": "0b4e3e1c6da2de90362a6cb5da1a8db1a3e0304b580955eb743ec6dc690c128e",
+    "bin": "MemCleaner.exe",
+    "shortcuts": [
+        [
+            "MemCleaner.exe",
+            "MemCleaner"
+        ]
+    ],
+    "persist": "memcleaner",
+    "pre_install": [
+        "$appdata = [Environment]::GetFolderPath('ApplicationData')",
+        "$target = \"$appdata\\memcleaner\"",
+        "$source = \"$persist_dir\\memcleaner\"",
+        "if (Test-Path $target) {",
+        "    if ((Get-Item $target).LinkType -ne 'SymbolicLink') {",
+        "        Write-Host \"Moving existing config from $target to $source\" -ForegroundColor Yellow",
+        "        Move-Item -Path $target -Destination $source -Force",
+        "    }",
+        "} else {",
+        "    New-Item -ItemType Directory -Path $source -Force | Out-Null",
+        "}",
+        "if (-not (Test-Path $target)) {",
+        "    New-Item -ItemType SymbolicLink -Path $target -Target $source -Force | Out-Null",
+        "    Write-Host \"Created symlink: $target -> $source\" -ForegroundColor Green",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "$appdata = [Environment]::GetFolderPath('ApplicationData')",
+            "$target = \"$appdata\\memcleaner\"",
+            "if (Test-Path $target) {",
+            "    if ((Get-Item $target).LinkType -eq 'SymbolicLink') {",
+            "        Remove-Item -Path $target -Force",
+            "        Write-Host \"Removed symlink: $target\" -ForegroundColor Green",
+            "    }",
+            "}"
+        ]
+    },
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/Kiowx/MemCleaner/releases/download/v$version/MemCleaner.exe"
+    }
+}
