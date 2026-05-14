@@ -1,30 +1,102 @@
 {
-    "version": "2026.05.1-2",
+    "version": "2026.05.2-3",
     "description": "A next-generation data science IDE",
     "homepage": "https://positron.posit.co",
     "license": "Elastic-2.0",
+    "notes": [
+        "For github integration, run:",
+        "'reg import \"$dir\\install-github-integration.reg\"'"
+    ],
     "suggest": {
         "R": "r",
         "Python": "python"
     },
     "architecture": {
         "64bit": {
-            "url": "https://cdn.posit.co/positron/releases/win/x86_64/Positron-2026.05.1-2-UserSetup-x64.exe",
-            "hash": "293fa1b25305a508386e591fdcea7aab8fd19b0a7d71a17d4f0d7135f50da6ae"
-        },
-        "arm64": {
-            "url": "https://cdn.posit.co/positron/releases/win/arm64/Positron-2026.05.1-2-UserSetup-arm64.exe",
-            "hash": "a3c9a8ea54b24cd53a9618d447c14dea063919f3fa072920a8169dfd943a9d3f"
+            "url": "https://cdn.posit.co/positron/releases/win/x86_64/Positron-2026.05.2-3-UserSetup-x64.exe",
+            "hash": "80f1f3c92f9ffb5c8b6410cae2e59645a0adecf5f3a6bd57cff69ade77aa082e",
+            "extract_dir": "{code_GetDestDir}"
         }
     },
     "innosetup": true,
-    "extract_dir": "{code_GetDestDir}",
-    "bin": "bin/positron.cmd",
+    "pre_install": [
+        "# 处理用户配置目录",
+        "$config_dirs = @(",
+        "    '.positron'",
+        ")",
+        "foreach ($config_dir in $config_dirs) {",
+        "    $target_dir = Join-Path $env:USERPROFILE $config_dir",
+        "    $link_dir = Join-Path $persist_dir $config_dir",
+        "    if (Test-Path $target_dir) {",
+        "        & \"$bucketsdir\\code\\scripts\\link.ps1\" $target_dir $link_dir",
+        "    }",
+        "}",
+        "",
+        "# 链接 $env:APPDATA\\Positron 到 persist_dir/data",
+        "$appdata_dir = Join-Path $env:APPDATA \"Positron\"",
+        "$persist_data_dir = Join-Path $persist_dir data",
+        "if (Test-Path $appdata_dir) {",
+        "    & \"$bucketsdir\\code\\scripts\\link.ps1\" $appdata_dir $persist_data_dir",
+        "}"
+    ],
+    "post_install": [
+        "$dirpath = \"$dir\".Replace('\\', '\\\\')",
+        "$exepath = \"$dir\\Positron.exe\".Replace('\\', '\\\\')",
+        "'install-associations', 'uninstall-associations', 'install-context', 'uninstall-context', 'install-context-it', 'uninstall-context-it', 'install-github-integration', 'uninstall-github-integration' | ForEach-Object {",
+        "  if (Test-Path \"$bucketsdir\\$bucket\\scripts\\positron\\$_.reg\") {",
+        "    $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\positron\\$_.reg\"",
+        "    $content = $content.Replace('$positrondir', $dirpath)",
+        "    $content = $content.Replace('$positron', $exepath)",
+        "    if ($global) {",
+        "      $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
+        "    }",
+        "    $content | Set-Content -Path \"$dir\\$_.reg\"",
+        "  }",
+        "}",
+        "# 自动导入注册表（可选）",
+        "reg import \"$dir\\install-context.reg\"",
+        "reg import \"$dir\\install-associations.reg\""
+    ],
+    "post_uninstall": [
+        "$config_dirs = @(",
+        "    '.positron'",
+        ")",
+        "foreach ($config_dir in $config_dirs) {",
+        "    $target_dir = Join-Path $env:USERPROFILE $config_dir",
+        "    if (Test-Path $target_dir) {",
+        "        & \"$bucketsdir\\code\\scripts\\unlink.ps1\" $target_dir",
+        "    }",
+        "}",
+        "",
+        "$appdata_dir = Join-Path $env:APPDATA \"Positron\"",
+        "if (Test-Path $appdata_dir) {",
+        "    & \"$bucketsdir\\code\\scripts\\unlink.ps1\" $appdata_dir",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall')",
+            "{",
+            "   reg import \"$dir\\uninstall-context.reg\" ",
+            "   reg import \"$dir\\uninstall-github-integration.reg\" ",
+            "}"
+        ]
+    },
+    "bin": [
+        [
+            "bin/positron.cmd",
+            "positron"
+        ]
+    ],
     "shortcuts": [
         [
             "Positron.exe",
             "Positron"
         ]
+    ],
+    "persist": [
+        "data",
+        ".positron"
     ],
     "checkver": {
         "url": "https://cdn.posit.co/positron/releases/win/x86_64/user-releases.json",
@@ -33,15 +105,12 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://cdn.posit.co/positron/releases/win/x86_64/Positron-$version-UserSetup-x64.exe"
-            },
-            "arm64": {
-                "url": "https://cdn.posit.co/positron/releases/win/arm64/Positron-$version-UserSetup-arm64.exe"
+                "url": "https://cdn.posit.co/positron/releases/win/x86_64/Positron-$version-UserSetup-x64.exe",
+                "hash": {
+                    "url": "$baseurl/user-releases.json",
+                    "jsonpath": "$.sha256hash"
+                }
             }
-        },
-        "hash": {
-            "url": "https://cdn.posit.co/positron/releases/checksums/positron-$version-checksums.json",
-            "jsonpath": "$.['$basename']"
         }
     }
 }
