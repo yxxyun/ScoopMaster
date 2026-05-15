@@ -4,9 +4,18 @@
     "homepage": "https://github.com/Midrags/SFF",
     "license": "GPL-3.0",
     "url": "https://github.com/Midrags/SFF/releases/download/v6.1.1/SteaMidra-6.1.1-windows.zip",
-    "hash": "210cc3f5bcec821fa0189044802678f0eec575ad5ba1578ad03dbb26358ba7d6",
+    "hash": "ed953f8a181b0cbd8e1e9ab558823b4b6727803d515dd034b05acbc7fc4abfc1",
     "extract_dir": "SteaMidra_GUI",
-    "pre_install": "Copy-Item \"$persist_dir\\settings.bin\" \"$dir\" -ErrorAction SilentlyContinue",
+    "pre_install": [
+        "if (!(Test-Path \"$persist_dir\\settings.bin\")) {",
+        "    Write-Host 'File settings.bin does not exists. Creating...' -f Yellow",
+        "    Start-Process -FilePath \"$dir\\SteaMidra_GUI.exe\"",
+        "    while (!(Test-Path \"$dir\\settings.bin\")) {",
+        "        Start-Sleep -Milliseconds 500",
+        "    }",
+        "    Stop-Process -Name 'SteaMidra_GUI' -Force",
+        "}"
+    ],
     "shortcuts": [
         [
             "SteaMidra_GUI.exe",
@@ -17,9 +26,10 @@
         "_internal/GreenLuma",
         "applist_profiles",
         "manifests",
-        "saved_lua"
+        "saved_lua",
+        "settings.bin"
     ],
-    "pre_uninstall": "Copy-Item \"$dir\\settings.bin\" \"$persist_dir\" -Force -ErrorAction SilentlyContinue",
+    "pre_uninstall": "Stop-Process -Name 'SteaMidra_GUI' -Force -ErrorAction SilentlyContinue",
     "checkver": "github",
     "autoupdate": {
         "url": "https://github.com/Midrags/SFF/releases/download/v$version/SteaMidra-$version-windows.zip"
