@@ -1,25 +1,71 @@
 {
     "version": "7.8.0",
-    "description": "短视频社交应用程序",
+    "description": "短视频社交应用程序，记录美好生活",
     "homepage": "https://douyin.com/",
     "license": "Proprietary",
-    "url": "https://douyin.com/download/pc/obj/douyin-pc-web/douyin-pc-client/7044145585217083655/releases/357144074/7.8.0/win32-ia32/douyin-v7.8.0-win32-ia32-douyin.exe#/dl.7z",
+    "url": "https://www.douyin.com/download/pc/obj/douyin-pc-web/douyin-pc-client/7044145585217083655/releases/357144074/7.8.0/win32-ia32/douyin-v7.8.0-win32-ia32-douyin.exe#/dl.7z",
     "hash": "dfd4afe2b1fad07cbf90d4fb41bd9f57dd3743832336e8cb83db64d47c329a24",
-    "pre_install": "Expand-7zipArchive \"$dir\\app.7z\" \"$dir\"",
-    "post_install": "Remove-Item \"$dir\\app.7z\", \"$dir\\`$*\", \"$dir\\uninst*\", \"$dir\\resources\\app-update.yml\", \"$dir\\installer_downloader*\", \"$dir\\app_shell_updater*\" -Force -Recurse",
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "Write-Host (\"`nPersisting $env:APPDATA\\douyin ... \") -NoNewline",
+            "New-PersistDirectory \"$env:APPDATA\\douyin\" \"$persist_dir\\AppData\" -Migrate",
+            "Expand-7zipArchive \"$dir\\app.7z\" \"$dir\\$version\" -Removal",
+            "Remove-Item \"$dir\\$version\\app.7z\", \"$dir\\$version\\`$*\", \"$dir\\$version\\uninst*\", \"$dir\\$version\\resources\\app-update.yml\", \"$dir\\$version\\installer_downloader*\", \"$dir\\$version\\app_shell_updater*\", \"$dir\\$version\\tray\" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null",
+            "Copy-Item \"$dir\\$version\\douyin.backup\" \"$dir\\douyin.exe\" -Force"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Require-Admin",
+        "Stop-App"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$localPaths = @(",
+        "    \"$env:APPDATA\\douyin\"",
+        "    \"$env:LOCALAPPDATA\\app_shell_cache_6383\"",
+        ")",
+        "$userSID = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value",
+        "$registryPaths = @(",
+        "    'Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\ByteDance'",
+        "    'Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\douyin'",
+        "    'Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\RADAR\\HeapLeakDetection\\DiagnosedApplications\\douyin.exe'",
+        "    'Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{93A114D2-6260-4F6B-90D6-E342D323685C}'",
+        "    \"Registry::HKEY_USERS\\$userSID\\SOFTWARE\\Classes\\douyin-pc\"",
+        "    \"Registry::HKEY_USERS\\$userSID\\SOFTWARE\\Classes\\SystemFileAssociations\\.jpeg\"",
+        "    \"Registry::HKEY_USERS\\$userSID\\SOFTWARE\\Classes\\SystemFileAssociations\\.jpg\"",
+        "    \"Registry::HKEY_USERS\\$userSID\\SOFTWARE\\Classes\\SystemFileAssociations\\.mp4\"",
+        "    \"Registry::HKEY_USERS\\$userSID\\SOFTWARE\\Classes\\SystemFileAssociations\\.png\"",
+        "    \"Registry::HKEY_USERS\\$userSID\\SOFTWARE\\ByteDance\"",
+        "    \"Registry::HKEY_USERS\\$userSID\\SOFTWARE\\douyin\"",
+        ")",
+        "$registryValues = @(",
+        "    \"Registry::HKEY_USERS\\$userSID\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{CEBFF5CD-ACE2-4F4F-9178-9926F41749EA}\\Count|Q:\\\\Nccf\\\\Fpbbc\\\\FpbbcNccf\\\\nccf\\\\qbhlva\\\\pheerag\\\\qbhlva.rkr\"",
+        "    \"Registry::HKEY_USERS\\$userSID\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{F4E57C4B-2036-45F0-A9AB-443BCFE33D9F}\\Count|{N77S5Q77-2R2O-44P3-N6N2-NON601054N51}\\\\Fpbbc Nccf\\\\抖音.yax\"",
+        ")",
+        "Remove-AppData -LocalPaths $localPaths -RegistryPaths $registryPaths -RegistryValues $registryValues"
+    ],
+    "bin": [
+        [
+            "douyin.exe",
+            "抖音"
+        ]
+    ],
     "shortcuts": [
         [
             "douyin.exe",
-            "抖音",
-            "--user-data-dir=\"$dir\\User Data\""
+            "抖音"
         ]
     ],
     "persist": "User Data",
     "checkver": {
-        "url": "https://douyin.com/downloadpage/pc",
+        "url": "https://www.douyin.com/downloadpage/pc",
         "regex": "/douyin-pc-client/(?<id>\\d+)/releases/(?<build>\\d+)/([\\d.]+)/win32-ia32/"
     },
     "autoupdate": {
-        "url": "https://douyin.com/download/pc/obj/douyin-pc-web/douyin-pc-client/$matchId/releases/$matchBuild/$version/win32-ia32/douyin-v$version-win32-ia32-douyin.exe#/dl.7z"
+        "url": "https://www.douyin.com/download/pc/obj/douyin-pc-web/douyin-pc-client/$matchId/releases/$matchBuild/$version/win32-ia32/douyin-v$version-win32-ia32-douyin.exe#/dl.7z"
     }
 }
