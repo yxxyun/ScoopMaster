@@ -9,26 +9,19 @@
     "notes": "",
     "url": "https://international.download.nvidia.com/Windows/broadcast/sdk/AFX/2025-01-21_NVIDIA_AFX_SDK_Win_v1.6.1.2-GA_Ampere.exe#/nvidia_afx_sdk_ampere.7z",
     "hash": "731ec874965a5ffe8e1dd1336ffbee98f2d191f241ff63e219041ed9e4d76d7a",
-    "installer": {
-        "script": [
-            "if (-not (is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
-            "if ([environment]::OSVersion.Version.Major -lt 10) { error 'This package requires Windows 10/11 to install'; break }",
-            "",
-            "$success = Invoke-ExternalCommand -Path \"$dir\\setup.exe\" @Args('-s', '-noreboot', '-noeula', '-nofinish', '-clean', \"-log:$dir\\logs\", '-loglevel:4')",
-            "if (!$success) { error \"setup.exe failed, check logs at '$dir\\logs'\" ; break }",
-            "Remove-Item \"$dir\\logs\" -Force -Recurse"
-        ]
-    },
-    "uninstaller": {
-        "script": [
-            "if ($cmd -ne 'uninstall') { return }",
-            "if (-not (is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
-            "$dll = Join-Path $env:ProgramFiles 'NVIDIA Corporation\\Installer2\\InstallerCore\\NVI2.DLL'",
-            "$args = @( \"`\"$dll`\",UninstallPackage AudioEffects\", '-silent', '-n', '-deviceinitiated')",
-            "$exe = \"$env:SystemRoot\\SysWOW64\\RunDll32.EXE\"",
-            "$success = Start-Process -FilePath $exe -ArgumentList $args -Wait -PassThru",
-            "if ($success.ExitCode -gt 1) { abort \"$cmd failed with Exit Code: $($process.ExitCode)\" }"
-        ]
+    "extract_dir": "nv",
+    "pre_install": [
+        "# Move all files to the root",
+        "Get-ChildItem -Path \"$dir\\bin\" -Recurse -File |",
+        "   Where-Object { $_.DirectoryName -notmatch \"models\" } |",
+        "   Move-Item -Destination $dir -Force",
+        "# Move the models folder",
+        "Move-Item \"$dir\\bin\\models\" \"$dir\" -Force",
+        "# Clean up",
+        "Remove-Item \"$dir\\bin\" -Recurse -Force -ErrorAction SilentlyContinue"
+    ],
+    "env_set": {
+        "NVAFX_SDK_DIR": "$dir"
     },
     "checkver": {
         "regex": "(?<date>\\d{4}-\\d{2}-\\d{2}).*?v([\\d.]+)-GA_Ampere\\.exe"

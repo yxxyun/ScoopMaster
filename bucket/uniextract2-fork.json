@@ -7,21 +7,10 @@
     "hash": "0a52d70dd78ff7f44b985ff6f1513da0cc1f946a6511de321376324f77013873",
     "extract_dir": "UniExtract2",
     "post_install": [
-        "$cont = Get-Content \"$dir\\UniExtract.ini\"",
-        "# Set 'ID' as a random 25-digit hex if 'ID' is empty",
-        "# This will prevent setup window from popping up upon first run. Useful when we are using UniExtract to extract files for other packages.",
-        "if (!($cont -match 'ID=[0-9A-F]+')) {",
-        "    $new_id = ''",
-        "    1..25 | ForEach-Object { $new_id += '{0:X}' -f (Get-Random -Max 15) }",
-        "    $cont = $cont.Replace('ID=', \"ID=$new_id\")",
-        "    $cont | Set-Content \"$dir\\UniExtract.ini\" -Encoding Ascii",
-        "}",
-        "# Set 'updateinterval' to 999999 if not already present",
-        "# This will prevent the update prompt to automatically pop up.",
-        "if (!($cont -match 'updateinterval=999999')) {",
-        "    $cont = $cont.Replace('updateinterval=', \"updateinterval=999999\")",
-        "    $cont | Set-Content \"$dir\\UniExtract.ini\" -Encoding Ascii",
-        "}"
+    "$ini = Get-Content \"$dir\\UniExtract.ini\" -Raw",
+    "# Set 'updateinterval' to 999999 and 'nightlyupdates' to 0 if not already present",
+    "$new = $ini -replace '(?m)^updateinterval=\\d+', 'updateinterval=999999' -replace '(?m)^nightlyupdates=1', 'nightlyupdates=0'",
+    "if ($new -ne $ini) { $new | Set-Content \"$dir\\UniExtract.ini\" -Encoding Ascii }"
     ],
     "bin": "UniExtract.exe",
     "persist": [
