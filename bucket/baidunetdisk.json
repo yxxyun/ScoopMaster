@@ -1,14 +1,52 @@
 {
-    "homepage": "https://pan.baidu.com/download",
-    "description": "百度网盘PC版 ",
     "version": "8.4.0.103",
+    "description": "百度网盘，百度公司推出的云存储服务",
+    "homepage": "https://pan.baidu.com/download",
+    "license": "Proprietary",
     "url": "http://issuecdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduNetdisk_8.4.0.103.exe#dl.7z",
     "hash": "5e0f9039ca2abfcddc68f5aef4862f983b64ba77efa7cb603ac32572fcf43266",
     "bin": "BaiduNetdisk.exe",
+    "shortcuts": [
+        [
+            "BaiduNetdisk.exe",
+            "百度网盘"
+        ]
+    ],
     "persist": "users",
-    "post_install": [
-        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse",
-        "Remove-Item \"$dir\\`$TEMP\" -Recurse"
+    "pre_install": [
+        "Remove-Item \"$dir\\`$TEMP\" -Force -Recurse",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
+        "Remove-Item \"$dir\\AutoUpdate\\Autoupdate.exe\" -Force -Recurse"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Require-Admin",
+        "Stop-App"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "$localPaths = @(",
+        "    \"$env:APPDATA\\PLogs\"",
+        "    \"$env:APPDATA\\BaiduYunKernel\"",
+        "    \"$env:APPDATA\\BaiduYunGuanjia\"",
+        "    \"$env:APPDATA\\BaiduNetdisk\"",
+        "    \"$env:APPDATA\\Baidu\\BaiduNetdisk\"",
+        "    \"$env:APPDATA\\Baidu\\BaiduYunKernel\"",
+        ")",
+        "$sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value",
+        "$regPaths = @(",
+        "    \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{2015CFAB-8C4A-4331-A38A-46DD54245FA7}\"",
+        "    \"HKU\\$sid\\SOFTWARE\\Classes\\CLSID\\{679F137C-3162-45da-BE3C-2F9C3D093F64}\\DefaultIcon\"",
+        "    \"HKU\\$sid\\SOFTWARE\\Classes\\CLSID\\{679F137C-3162-45da-BE3C-2F9C3D093F64}\\Shell\"",
+        ")",
+        "$regValues = @(",
+        "    \"HKU\\$sid\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{CEBFF5CD-ACE2-4F4F-9178-9926F41749EA}\\Count|Q:\\\\Nccf\\\\Fpbbc\\\\FpbbcNccf\\\\nccf\\\\onvqhargqvfx\\\\pheerag\\\\OnvqhArgqvfx.rkr\"",
+        "    \"HKU\\$sid\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{F4E57C4B-2036-45F0-A9AB-443BCFE33D9F}\\Count|{N77S5Q77-2R2O-44P3-N6N2-NON601054N51}\\\\Fpbbc Nccf\\\\百度网盘.yax\"",
+        "    \"HKU\\$sid\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run|BaiduYunGuanjia\"",
+        ")",
+        "Remove-AppData -LocalPaths $localPaths -RegistryPaths $regPaths -RegistryValues $regValues"
     ],
     "checkver": {
         "url": "https://pan.baidu.com/disk/cmsdata?do=client",
@@ -17,10 +55,5 @@
     "autoupdate": {
         "url": "http://issuecdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduNetdisk_$version.exe#dl.7z"
     },
-    "shortcuts": [
-        [
-            "BaiduNetdisk.exe",
-            "百度网盘"
-        ]
-    ]
+    "notes": "User data is persisted in \"$persist_dir\"."
 }
