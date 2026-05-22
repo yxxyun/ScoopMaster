@@ -5,28 +5,41 @@
     "license": "AGPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": "https://download.zotero.org/client/release/9.0.4/Zotero-9.0.4_win-x64.zip",
-            "hash": "83950a8499fdbd1987bedfa722de9b1006baef1396eed8c250856effca61190e"
+            "url": "https://download.zotero.org/client/release/9.0.4/Zotero-9.0.4_x64_setup.exe#/dl.7z",
+            "hash": "73babeb15196017bafaab7c0eff2e719a8ccbb651417d5e797250e554c7e43ea"
         },
         "32bit": {
-            "url": "https://download.zotero.org/client/release/9.0.4/Zotero-9.0.4_win32.zip",
-            "hash": "2348f52ad9ff71652caeaf74d22bbee6b7904978ded218808282fdf6746b2ca0"
+            "url": "https://download.zotero.org/client/release/9.0.4/Zotero-9.0.4_win32_setup.exe#/dl.7z",
+            "hash": "23c5a2a5dc8e3e881722f59304111bbd50274e8d3327641a4e9b706aafbdb2a8"
         },
         "arm64": {
-            "url": "https://download.zotero.org/client/release/9.0.4/Zotero-9.0.4_win-arm64.zip",
-            "hash": "4bfc7fa57285fa8a291af0636c56e8c44718c494475af98dbdfcb4597e3c2c75"
+            "url": "https://download.zotero.org/client/release/9.0.4/Zotero-9.0.4_arm64_setup.exe#/dl.7z",
+            "hash": "24e2c441cdd9d7820020f1a1a22c28373f5a83aa9ae031e9cd947705190e2ab0"
         }
     },
-    "pre_install": [
-        "$subdir = Get-ChildItem -Path $dir -Directory | Select-Object -First 1",
-        "if ($subdir) { Move-Item -Path \"$($subdir.FullName)\\*\" -Destination $dir -Force }"
-    ],
+    "extract_dir": "core",
     "bin": "zotero.exe",
     "shortcuts": [
         [
             "zotero.exe",
             "Zotero"
         ]
+    ],
+    "post_install": [
+        "$scriptsDir = \"$bucketsdir\\extras\\scripts\"",
+        "Get-ChildItem \"$scriptsDir\\zotero\\*.ps1\" | ForEach-Object {",
+        "    $content = Get-Content $_",
+        "    $content = $content.Replace('REPLACE_HERE', $dir)",
+        "    if ($global) { $content = $content.Replace('HKCU', 'HKLM') }",
+        "    Set-Content \"$dir\\$($_.Name)\" $content -Encoding 'utf8' -Force",
+        "}"
+    ],
+    "pre_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    Write-Host 'Unregistering the ''zotero://'' URL protocol...'",
+        "    Remove-Item 'HKCU:\\SOFTWARE\\Classes\\zotero', 'HKLM:\\SOFTWARE\\Classes\\zotero' -ErrorAction 'SilentlyContinue' -Recurse -Force",
+        "    Write-Host 'Done!'",
+        "}"
     ],
     "checkver": {
         "script": [
@@ -38,13 +51,13 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://download.zotero.org/client/release/$version/Zotero-$version_win-x64.zip"
+                "url": "https://download.zotero.org/client/release/$version/Zotero-$version_x64_setup.exe#/dl.7z"
             },
             "32bit": {
-                "url": "https://download.zotero.org/client/release/$version/Zotero-$version_win32.zip"
+                "url": "https://download.zotero.org/client/release/$version/Zotero-$version_win32_setup.exe#/dl.7z"
             },
             "arm64": {
-                "url": "https://download.zotero.org/client/release/$version/Zotero-$version_win-arm64.zip"
+                "url": "https://download.zotero.org/client/release/$version/Zotero-$version_arm64_setup.exe#/dl.7z"
             }
         }
     }
