@@ -1,53 +1,42 @@
 {
-    "homepage": "https://azahar-emu.org/",
     "version": "2125.1.2",
-    "description": "Nintendo 3DS Emulator",
+    "description": "Open source 3DS emulator project based on Citra",
+    "homepage": "https://azahar-emu.org/",
     "license": {
-        "identifier": "GPL-2.0-only",
+        "identifier": "GPL-2.0-or-later",
         "url": "https://github.com/azahar-emu/azahar/blob/master/license.txt"
     },
-    "pre_install": [
-        "function create($path, $type, $content) {",
-        "   if (-not (Test-Path \"$path\")) {",
-        "       New-Item \"$path\" -ItemType $type -Value $content | Out-Null",
-        "       Write-Output \"Creating $path...\"",
-        "   }",
-        "}",
-        "create $dir/user Directory"
-    ],
-    "persist": "user",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/azahar-emu/azahar/releases/download/2125.1.2/azahar-windows-msvc-2125.1.2.zip",
-            "hash": "474a0036098992841ccd276a2c981fa7b3afb14e9951f9fc62c4a26063bbfee5",
-            "extract_dir": "azahar-windows-msvc-2125.1.2",
-            "bin": [
-                "azahar.exe",
-                "azahar-room.exe"
-            ],
-            "shortcuts": [
-                [
-                    "azahar.exe",
-                    "3DS"
-                ]
-            ]
+            "url": "https://gh.jjj.gv.uy/https://github.com/azahar-emu/azahar/releases/download/2125.1.2/azahar-windows-msys2-2125.1.2.zip",
+            "hash": "e06a6a9f3c33b794bff250f1da36d7fb5c988076a6d294c4826e25082c1b3d25"
         }
     },
+    "extract_dir": "azahar-windows-msys2-2125.1.2",
+    "pre_install": [
+        "if (!(Test-Path \"$persist_dir\\user\")) {",
+        "   New-Item -Path \"$persist_dir\" -Name \"user\" -ItemType \"directory\" | Out-Null",
+        "   if (Test-Path \"$env:APPDATA\\Citra\") {",
+        "       Write-host \"Migrating AppData...\" -ForegroundColor yellow",
+        "       Copy-Item -Path \"$env:APPDATA\\Citra\\*\" -Destination \"$persist_dir\\user\" -Recurse",
+        "       Remove-Item -Path \"$env:APPDATA\\Citra\" -Recurse",
+        "   }",
+        "}"
+    ],
+    "bin": "azahar.exe",
+    "shortcuts": [
+        [
+            "azahar.exe",
+            "Azahar"
+        ]
+    ],
+    "persist": "user",
     "checkver": {
-        "url": "https://api.github.com/repos/azahar-emu/azahar/releases/latest",
-        "jsonpath": {
-            "version": "$.tag_name",
-            "download": "$.assets[?(@.name =~ /azahar-windows-msvc/i)].browser_download_url",
-            "hash": "$.assets[?(@.name =~ /azahar-windows-msvc/i)].digest"
-        }
+        "github": "https://github.com/azahar-emu/azahar"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "$matchDownload",
-                "hash": "$matchHash",
-                "extract_dir": "azahar-windows-msvc-$version"
-            }
-        }
+        "url": "https://gh.jjj.gv.uy/https://github.com/azahar-emu/azahar/releases/download/$version/azahar-windows-msys2-$version.zip",
+        "extract_dir": "azahar-windows-msys2-$version"
     }
 }
+
