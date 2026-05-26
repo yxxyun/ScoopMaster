@@ -1,0 +1,93 @@
+{
+    "version": "25.6.0.0-smtube21.10.0",
+    "description": "SMPlayer bundled with SMTube, a YouTube browser extension for SMPlayer.",
+    "homepage": "https://www.smtube.org/",
+    "license": "GPL-2.0-or-later",
+    "architecture": {
+        "64bit": {
+            "url": [
+                "https://gh.jjj.gv.uy/https://github.com/smplayer-dev/smplayer/releases/download/v25.6.0/smplayer-portable-25.6.0.0-x64.7z",
+                "https://sourceforge.net/projects/smtube/files/SMTube/21.10.0/smtube-21.10.0-x64.exe#/smtube.7z"
+            ],
+            "hash": [
+                "cff6152744a90080c0ccba29fe54239a7a77037c308bb3866f6451d882787e6d",
+                "sha1:776c7fc98370c22c1bbd640cb93e2a7d28950958"
+            ]
+        },
+        "32bit": {
+            "url": [
+                "https://gh.jjj.gv.uy/https://github.com/smplayer-dev/smplayer/releases/download/v25.6.0/smplayer-portable-25.6.0.0-win32-qt5.6.7z",
+                "https://sourceforge.net/projects/smtube/files/SMTube/21.10.0/smtube-21.10.0-win32-qt5.6.exe#/smtube.7z"
+            ],
+            "hash": [
+                "56ea0cd6de27988dbf98d17b4db5837d207f03455894118179dcd4ecd77e7bb8",
+                "sha1:b854f382c3440a1631dcfe9b3caa82cef688e123"
+            ]
+        }
+    },
+    "extract_dir": "smplayer-portable",
+    "pre_install": [
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
+        "# Disable automatic update checking and set the correct path for the screenshots directory",
+        "$cfg_dir = Join-Path -Path $persist_dir -ChildPath 'config\\smplayer.ini'",
+        "if (-not (Test-Path -Path $cfg_dir)) {",
+        "    info \"File $cfg_dir does not exist. Creating...\"",
+        "    New-Item -Path $cfg_dir -ItemType File -Force | Out-Null",
+        "    $cfg = @(",
+        "        '[update_checker]', 'enabled=false',",
+        "        '[%General]', 'screenshot_folder={screenshots_dir}'",
+        "    )",
+        "    $screenshots_dir = (Join-Path -Path $persist_dir -ChildPath 'screenshots') -replace '\\\\', '\\\\'",
+        "    $cfg | ForEach-Object { $_ -replace '{.+}', $screenshots_dir } | Set-Content -Path $cfg_dir -Encoding Ascii",
+        "}"
+    ],
+    "shortcuts": [
+        [
+            "smplayer.exe",
+            "SMPlayer"
+        ],
+        [
+            "smtube.exe",
+            "SMTube"
+        ]
+    ],
+    "persist": [
+        "config",
+        "screenshots"
+    ],
+    "checkver": {
+        "github": "https://api.github.com/repos/smplayer-dev/smtube/releases/latest",
+        "script": [
+            "# matching from Extras bucket to avoid mangling FossHub mode in the script",
+            "$url = 'https://gh.jjj.gv.uy/https://raw.githubusercontent.com/ScoopInstaller/Extras/master/bucket/smplayer.json'",
+            "$regex1 = 'smplayer-portable-([\\d.]+)-win32-qt([\\d.]+)\\.7z'",
+            "if ((Invoke-RestMethod $url).architecture.'32bit'.url -notmatch $regex1) { error \"Could not match '$regex1' on '$url'\"; continue }",
+            "$smplayer_ver = $matches[1]; $smplayer_qtver = $matches[2]",
+            "",
+            "$latest_release = $page | ConvertFrom-Json",
+            "$regex2 = '\\bsmtube-([\\d.]+)-win32-qt([\\d.]+)\\.exe\\b'",
+            "if ($latest_release.assets.name -join \"`n\" -notmatch $regex2) { error \"Could not match '$regex2'\"; continue }",
+            "$smtube_ver = $matches[1]; $smtube_qtver = $matches[2]",
+            "Write-Output $smplayer_ver $smplayer_qtver $smtube_ver  $smtube_qtver"
+        ],
+        "regex": "\\A(?<smplayerver>[\\d.]+) (?<smplayerqtver>[\\d.]+) (?<smtubever>[\\d.]+) (?<smtubeqtver>[\\d.]+)\\Z",
+        "replace": "${smplayerver}-smtube${smtubever}"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": [
+                    "https://gh.jjj.gv.uy/https://github.com/smplayer-dev/smplayer/releases/download/v$matchHead/smplayer-portable-$matchSmplayerver-x64.7z",
+                    "https://sourceforge.net/projects/smtube/files/SMTube/$matchSmtubever/smtube-$matchSmtubever-x64.exe#/smtube.7z"
+                ]
+            },
+            "32bit": {
+                "url": [
+                    "https://gh.jjj.gv.uy/https://github.com/smplayer-dev/smplayer/releases/download/v$matchHead/smplayer-portable-$matchSmplayerver-win32-qt$matchSmplayerqtver.7z",
+                    "https://sourceforge.net/projects/smtube/files/SMTube/$matchSmtubever/smtube-$matchSmtubever-win32-qt$matchSmtubeqtver.exe#/smtube.7z"
+                ]
+            }
+        }
+    }
+}
+
