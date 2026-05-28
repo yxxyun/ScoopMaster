@@ -1,31 +1,56 @@
 {
     "version": "7.1.25",
-    "description": "CLIProxyAPI - A proxy server that provides OpenAI/Gemini/Claude/Codex/Grok compatible API interfaces for CLI.",
+    "description": "OpenAI/Gemini/Claude/Codex compatible API proxy for CLI models.",
     "homepage": "https://github.com/router-for-me/CLIProxyAPI",
     "license": "MIT",
     "architecture": {
         "64bit": {
             "url": "https://github.com/router-for-me/CLIProxyAPI/releases/download/v7.1.25/CLIProxyAPI_7.1.25_windows_amd64.zip",
             "hash": "4e03829defb6a6cde7daebf21f3eb812ea46580037b7c6957b0aa693debe203b"
+        },
+        "arm64": {
+            "url": "https://github.com/router-for-me/CLIProxyAPI/releases/download/v7.1.25/CLIProxyAPI_7.1.25_windows_aarch64.zip",
+            "hash": "a834f5988f5542c88124de52935faa0243e78bf7a6be0ef0492a000e44a11d1b"
         }
     },
+    "pre_install": "if (!(Test-Path \"$persist_dir\\config.yaml\")) { Copy-Item \"$dir\\config.example.yaml\" \"$dir\\config.yaml\" }",
     "bin": [
         [
             "cli-proxy-api.exe",
             "cli-proxy-api",
-            "--config \"$persist_dir\\config.yaml\""
+            "-config \"$persist_dir\\config.yaml\""
+        ],
+        [
+            "cli-proxy-api.exe",
+            "cliproxyapi",
+            "-config \"$persist_dir\\config.yaml\""
         ]
     ],
-    "persist": "config.yaml",
-    "post_install": "if (Test-Path \"$dir\\config.example.yaml\") { if (-not (Test-Path \"$persist_dir\\config.yaml\")) { Copy-Item \"$dir\\config.example.yaml\" \"$persist_dir\\config.yaml\" } }",
+    "persist": [
+        "config.yaml",
+        "logs"
+    ],
     "checkver": {
-        "github": "https://github.com/router-for-me/CLIProxyAPI"
+        "url": "https://api.github.com/repos/router-for-me/CLIProxyAPI/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "v([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
                 "url": "https://github.com/router-for-me/CLIProxyAPI/releases/download/v$version/CLIProxyAPI_$version_windows_amd64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/router-for-me/CLIProxyAPI/releases/download/v$version/CLIProxyAPI_$version_windows_aarch64.zip"
             }
+        },
+        "hash": {
+            "url": "https://api.github.com/repos/router-for-me/CLIProxyAPI/releases/latest",
+            "jsonpath": "$.assets[?(@.name == '$basename')].digest"
         }
-    }
+    },
+    "notes": [
+        "The default Scoop shims use persisted config: $persist_dir\\config.yaml",
+        "OAuth tokens use the app default auth-dir from config.yaml: ~/.cli-proxy-api"
+    ]
 }
