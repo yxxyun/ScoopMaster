@@ -1,5 +1,5 @@
 {
-    "version": "0.11.1",
+    "version": "0.11.2",
     "description": "An open-source ebook reader designed for immersive and deep reading experiences",
     "homepage": "https://readest.com/",
     "license": {
@@ -8,28 +8,51 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/readest/readest/releases/download/v0.11.1/Readest_0.11.1_x64-portable.exe#/Readest.exe",
-            "hash": "e6ceaa542902bec483136a998fc98e1b100d46c7b17633dc0122ac8a23aa70d4"
+            "url": "https://github.com/readest/readest/releases/download/v0.11.2/Readest_0.11.2_x64-setup.exe#/dl.7z",
+            "hash": "deeb6fcc7ae21faa67486a59b72554fa47dc6619cc2b33b1f033fa9b5987218d"
         },
         "arm64": {
-            "url": "https://github.com/readest/readest/releases/download/v0.11.1/Readest_0.11.1_arm64-portable.exe#/Readest.exe",
-            "hash": "727b0b7badaa7bbf15f8708be1370a306d1710626f6b1c3d7a97384558119d86"
+            "url": "https://github.com/readest/readest/releases/download/v0.11.2/Readest_0.11.2_arm64-setup.exe#/dl.7z",
+            "hash": "2db7081d16ee0c4b216284d15ba82b601669488aa6dad0a6a900760ac40da168"
         }
     },
-    "pre_install": [
-        "if (-not (Test-Path \"$persist_dir\\settings.json\")) {",
-        "    Set-Content -Path \"$dir\\settings.json\" -Value '{\"autoCheckUpdates\":false}' -Encoding ASCII",
-        "}"
-    ],
     "shortcuts": [
         [
-            "Readest.exe",
+            "readest.exe",
             "Readest"
         ]
     ],
-    "persist": [
-        "Readest",
-        "settings.json"
+    "post_install": [
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
+        "Rename-Item -Path \"$dir\\`$TEMP\" -NewName \"redist\"",
+        "$appDataPath = \"$env:APPDATA\\com.bilingify.readest\"",
+        "$appLocalDataPath = \"$env:LOCALAPPDATA\\com.bilingify.readest\"",
+        "$persistLocal = \"$persist_dir\\Local\"",
+        "$persistRoaming = \"$persist_dir\\Roaming\"",
+        "if (Test-Path $appDataPath) {",
+        "    Remove-Item $appDataPath -Recurse -Force",
+        "}",
+        "if (Test-Path $appLocalDataPath) {",
+        "    Remove-Item $appLocalDataPath -Recurse -Force",
+        "}",
+        "if (-Not (Test-Path $persistRoaming)) {",
+        "    New-Item -Path $persistRoaming -ItemType Directory | Out-Null",
+        "}",
+        "if (-Not (Test-Path $persistLocal)) {",
+        "    New-Item -Path $persistLocal -ItemType Directory | Out-Null",
+        "}",
+        "New-Item -ItemType Junction -Path \"$appDataPath\" -Target $persistRoaming | Out-Null",
+        "New-Item -ItemType Junction -Path \"$appLocalDataPath\" -Target $persistLocal | Out-Null"
+    ],
+    "post_uninstall": [
+        "$appDataPath = \"$env:APPDATA\\com.bilingify.readest\"",
+        "$appLocalDataPath = \"$env:LOCALAPPDATA\\com.bilingify.readest\"",
+        "if (Test-Path $appDataPath) {",
+        "    Remove-Item $appDataPath -Recurse -Force",
+        "}",
+        "if (Test-Path $appLocalDataPath) {",
+        "    Remove-Item $appLocalDataPath -Recurse -Force",
+        "}"
     ],
     "checkver": {
         "github": "https://github.com/readest/readest"
@@ -37,11 +60,15 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/readest/readest/releases/download/v$version/Readest_$version_x64-portable.exe#/Readest.exe"
+                "url": "https://github.com/readest/readest/releases/download/v$version/Readest_$version_x64-setup.exe#/dl.7z"
             },
             "arm64": {
-                "url": "https://github.com/readest/readest/releases/download/v$version/Readest_$version_arm64-portable.exe#/Readest.exe"
+                "url": "https://github.com/readest/readest/releases/download/v$version/Readest_$version_arm64-setup.exe#/dl.7z"
             }
         }
-    }
+    },
+    "notes": [
+        "You may need to install Edge WebView2 Runtime to use Readest.",
+        "A installer of Edge WebView2 Runtime is available under the 'redist' folder of the Pot installation directory."
+    ]
 }
