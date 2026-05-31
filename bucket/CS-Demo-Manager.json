@@ -11,24 +11,30 @@
     },
     "extract_dir": "$PLUGINSDIR",
     "pre_install": [
-        "Remove-Item *.dll",
+        "Remove-Item $dir\\*.dll",
         "Expand-7zipArchive -Path $dir\\app-64.7z -DestinationPath $dir -Removal"
     ],
     "installer": {
         "script": [
-            "$targetPath = \"$persist_dir\\.csdm\"",
-            "ensure $targetPath | Out-Null",
-            "$configPath = \"$HOME\\.csdm\"",
-            "$linkType = (Get-Item -Path $configPath -ErrorAction SilentlyContinue).LinkType",
-            "if (Test-Path $configPath) {",
-            "    if ($linkType -eq 'Junction') {",
-            "        Remove-Item -Path $configPath -Force",
-            "    } else {",
-            "        Get-ChildItem -Path $configPath -Force | Move-Item -Destination $targetPath -Force",
-            "        Remove-Item -Path $configPath -Force -Recurse",
+            "$mappings = @(",
+            "    @{ Config = \"$HOME\\.csdm\"; Target = \"$persist_dir\\.csdm\" },",
+            "    @{ Config = \"$env:APPDATA\\cs-demo-manager\"; Target = \"$persist_dir\\cs-demo-manager\" }",
+            ")",
+            "foreach ($map in $mappings) {",
+            "    $targetPath = $map.Target",
+            "    $configPath = $map.Config",
+            "    ensure $targetPath | Out-Null",
+            "    $linkType = (Get-Item -Path $configPath -ErrorAction SilentlyContinue).LinkType",
+            "    if (Test-Path $configPath) {",
+            "        if ($linkType -eq 'Junction') {",
+            "            Remove-Item -Path $configPath -Force",
+            "        } else {",
+            "            Get-ChildItem -Path $configPath -Force | Move-Item -Destination $targetPath -Force",
+            "            Remove-Item -Path $configPath -Force -Recurse",
+            "        }",
             "    }",
-            "}",
-            "New-Item $configPath -ItemType Junction -Target $targetPath | Out-Null"
+            "    New-Item $configPath -ItemType Junction -Target $targetPath | Out-Null",
+            "}"
         ]
     },
     "bin": "csdm.cmd",
