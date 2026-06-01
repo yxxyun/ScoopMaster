@@ -3,18 +3,25 @@
     "description": "A unlimited speed multifunctional remote control software",
     "homepage": "https://www.todesk.com/",
     "license": "Proprietary",
-    "architecture": {
-        "64bit": {
-            "url": "https://dl.todesk.com/irrigation/ToDesk_4.8.9.0.exe#/dl.7z",
-            "hash": "9761431c7abbc635466b65ceec64af2d40e00dc20981969a3c94feebe6ecf96f"
-        }
-    },
+    "url": "https://dl.todesk.com/irrigation/ToDesk_4.8.9.0.exe#/dl.7z",
+    "hash": "4ba443d68b59ddb8584d3151a94fcf33784420847459efd0bcdacaadde0bf162",
     "pre_install": [
         "if (!(Test-Path \"$persist_dir\\config.ini\")) {",
         "    New-Item -Force -Path \"$persist_dir\\config.ini\" -ItemType File -Value \"[ConfigInfo]`nautoStart=0\" | Out-Null",
+        "}",
+        "# 解压对应架构的7z文件",
+        "if ($architecture -eq '64bit') {",
+        "    Get-ChildItem \"$dir\\app64.7z\" | Expand-7zipArchive -DestinationPath \"$dir\"",
+        "} else {",
+        "    Get-ChildItem \"$dir\\app32.7z\" | Expand-7zipArchive -DestinationPath \"$dir\"",
         "}"
     ],
-    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\uninst.exe\" -Force -Recurse",
+    "post_install": [
+        "# 清理不必要的文件",
+        "Remove-Item \"$dir\\app32.7z\", \"$dir\\app64.7z\" -Force -ErrorAction SilentlyContinue",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse -ErrorAction SilentlyContinue",
+        "Remove-Item \"$dir\\uninst.exe\" -Force -ErrorAction SilentlyContinue"
+    ],
     "shortcuts": [
         [
             "ToDesk.exe",
@@ -30,10 +37,12 @@
         "regex": "ToDesk_([\\d.]+).exe"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://dl.todesk.com/irrigation/ToDesk_$version.exe#/dl.7z"
-            }
-        }
-    }
+        "url": "https://dl.todesk.com/irrigation/ToDesk_$version.exe#/dl.7z"
+    },
+    "notes": [
+        "【工具类型】: 远程控制工具",
+        "【主要功能】: 不限速多功能远程控制软件，支持远程桌面连接",
+        "【适用场景】: 远程办公、技术支持、团队协作",
+        "【技术特点】: Windows可执行文件，图形化界面，支持文件传输"
+    ]
 }
