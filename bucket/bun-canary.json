@@ -1,104 +1,104 @@
 {
-  "version": "1.4.0-canary.1+64ae83c2f",
-  "description": "Incredibly fast JavaScript runtime, bundler, transpiler and package manager - all in one.",
-  "homepage": "https://bun.sh/",
-  "license": "MIT",
-  "suggest": {
-    "vcredist": "extras/vcredist2022"
-  },
-  "architecture": {
-    "64bit": {
-      "url": [
-        "https://github.com/oven-sh/bun/releases/download/canary/bun-windows-x64.zip",
-        "https://github.com/oven-sh/bun/releases/download/canary/bun-windows-x64-baseline.zip"
-      ],
-      "hash": [
-        "1d3c8c0721dcf2c744936edef01f4866a1729842197d53aea3e212f478f44f93",
-        "644010ec86a1e2342217d1745a8b336ff2bf92e78abbd38e03cd0555aabef51e"
-      ]
+    "version": "1.4.0-canary.1+d2a6506df",
+    "description": "Incredibly fast JavaScript runtime, bundler, transpiler and package manager - all in one.",
+    "homepage": "https://bun.sh/",
+    "license": "MIT",
+    "suggest": {
+        "vcredist": "extras/vcredist2022"
     },
-    "arm64": {
-      "url": "https://github.com/oven-sh/bun/releases/download/canary/bun-windows-aarch64.zip",
-      "hash": "9a39ecc2ea952df9b2ff72c47803b4d70d95ab08fe41f04d95a11c96cbf16a3d"
-    }
-  },
-  "pre_install": [
-    "# Migrate legacy Bun data if it exists and the new persist directory doesn't exist",
-    "$legacy_bun = Join-Path -Path $env:USERPROFILE -ChildPath '.bun'",
-    "if ((Test-Path $legacy_bun) -and -not (Test-Path $persist_dir)) {",
-    "    Write-Host \"Migrating legacy Bun data from '$legacy_bun' to '$persist_dir'.\" -ForegroundColor Yellow",
-    "    Move-Item $legacy_bun $persist_dir -Force",
-    "} elseif ((Test-Path $legacy_bun) -and (Test-Path $persist_dir)) {",
-    "    Write-Host \"Found both '$legacy_bun' and '$persist_dir'. Skipping auto-migration; please migrate manually if needed.\" -ForegroundColor Yellow",
-    "}",
-    "",
-    "# Extract the appropriate binary based on architecture and CPU features",
-    "if ($architecture -eq 'arm64') {",
-    "    $target = 'bun-windows-aarch64'",
-    "} else {",
-    "    $avx2 = Start-Job -ScriptBlock {",
-    "        Add-Type -MemberDefinition '[DllImport(\"kernel32.dll\")] public static extern bool IsProcessorFeaturePresent(int ProcessorFeature);' -Name Kernel32 -Namespace Win32",
-    "        return [Win32.Kernel32]::IsProcessorFeaturePresent(40)",
-    "    } | Receive-Job -Wait -AutoRemoveJob",
-    "    $target = 'bun-windows-x64'",
-    "    if (-not $avx2) {",
-    "        $target += '-baseline'",
-    "    }",
-    "}",
-    "Move-Item \"$dir\\$target\\bun.exe\" \"$dir\\bun.exe\"",
-    "Remove-Item \"$dir\\bun-windows-*\" -Recurse"
-  ],
-  "installer": {
-    "script": "Add-Path -Path \"$persist_dir\\bin\" -Global:$global -Force"
-  },
-  "env_set": {
-    "BUN_INSTALL": "$persist_dir",
-    "BUN_INSTALL_BIN": "$persist_dir\\bin",
-    "BUN_INSTALL_GLOBAL_DIR": "$persist_dir\\install\\global"
-  },
-  "bin": [
-    "bun.exe",
-    [
-      "bun.exe",
-      "bunx",
-      "x"
-    ]
-  ],
-  "persist": [
-    "bin",
-    "install"
-  ],
-  "uninstaller": {
-    "script": "Remove-Path -Path \"$persist_dir\\bin\" -Global:$global"
-  },
-  "checkver": {
-    "script": [
-      "$dl_url = 'https://github.com/oven-sh/bun/releases/download/canary/bun-windows-x64.zip'",
-      "$dl_path = cache_path 'bun-canary' 'unknown' $dl_url",
-      "$dl_dir = Split-Path -Path $dl_path -Parent",
-      "Invoke-WebRequest -Uri $dl_url -OutFile $dl_path",
-      "Expand-Archive -Path $dl_path -DestinationPath $dl_dir | Out-Null",
-      "$ver = & \"$dl_dir\\bun-windows-x64\\bun.exe\" --revision",
-      "Remove-Item -Path $dl_path, $dl_dir\\bun-windows-x64 -Recurse -Force",
-      "Write-Output $ver"
-    ],
-    "regex": "(?<version>\\S+)"
-  },
-  "autoupdate": {
     "architecture": {
-      "64bit": {
-        "url": [
-          "https://github.com/oven-sh/bun/releases/download/canary/bun-windows-x64.zip",
-          "https://github.com/oven-sh/bun/releases/download/canary/bun-windows-x64-baseline.zip"
-        ]
-      },
-      "arm64": {
-        "url": "https://github.com/oven-sh/bun/releases/download/canary/bun-windows-aarch64.zip"
-      }
+        "64bit": {
+            "url": [
+                "https://github.com/oven-sh/bun/releases/download/canary/bun-windows-x64.zip",
+                "https://github.com/oven-sh/bun/releases/download/canary/bun-windows-x64-baseline.zip"
+            ],
+            "hash": [
+                "e073176bd85476374669cfdc3562415f3b0e0fc9bcee6991524fd70e705c8788",
+                "3ca6a0f5e3b4d2c1e1982a1e2ed43cd0f90a3ba7103cf24ea92e854dc8833e18"
+            ]
+        },
+        "arm64": {
+            "url": "https://github.com/oven-sh/bun/releases/download/canary/bun-windows-aarch64.zip",
+            "hash": "ddc5b3e9f42c43a8ce3ec0c9606bd4f0e32657382e36a9d6f783016a4d521982"
+        }
     },
-    "hash": {
-      "url": "https://api.github.com/repos/oven-sh/bun/releases/tags/canary",
-      "jsonpath": "$..assets[?(@.name == '$basename')].digest"
+    "pre_install": [
+        "# Migrate legacy Bun data if it exists and the new persist directory doesn't exist",
+        "$legacy_bun = Join-Path -Path $env:USERPROFILE -ChildPath '.bun'",
+        "if ((Test-Path $legacy_bun) -and -not (Test-Path $persist_dir)) {",
+        "    Write-Host \"Migrating legacy Bun data from '$legacy_bun' to '$persist_dir'.\" -ForegroundColor Yellow",
+        "    Move-Item $legacy_bun $persist_dir -Force",
+        "} elseif ((Test-Path $legacy_bun) -and (Test-Path $persist_dir)) {",
+        "    Write-Host \"Found both '$legacy_bun' and '$persist_dir'. Skipping auto-migration; please migrate manually if needed.\" -ForegroundColor Yellow",
+        "}",
+        "",
+        "# Extract the appropriate binary based on architecture and CPU features",
+        "if ($architecture -eq 'arm64') {",
+        "    $target = 'bun-windows-aarch64'",
+        "} else {",
+        "    $avx2 = Start-Job -ScriptBlock {",
+        "        Add-Type -MemberDefinition '[DllImport(\"kernel32.dll\")] public static extern bool IsProcessorFeaturePresent(int ProcessorFeature);' -Name Kernel32 -Namespace Win32",
+        "        return [Win32.Kernel32]::IsProcessorFeaturePresent(40)",
+        "    } | Receive-Job -Wait -AutoRemoveJob",
+        "    $target = 'bun-windows-x64'",
+        "    if (-not $avx2) {",
+        "        $target += '-baseline'",
+        "    }",
+        "}",
+        "Move-Item \"$dir\\$target\\bun.exe\" \"$dir\\bun.exe\"",
+        "Remove-Item \"$dir\\bun-windows-*\" -Recurse"
+    ],
+    "installer": {
+        "script": "Add-Path -Path \"$persist_dir\\bin\" -Global:$global -Force"
+    },
+    "env_set": {
+        "BUN_INSTALL": "$persist_dir",
+        "BUN_INSTALL_BIN": "$persist_dir\\bin",
+        "BUN_INSTALL_GLOBAL_DIR": "$persist_dir\\install\\global"
+    },
+    "bin": [
+        "bun.exe",
+        [
+            "bun.exe",
+            "bunx",
+            "x"
+        ]
+    ],
+    "persist": [
+        "bin",
+        "install"
+    ],
+    "uninstaller": {
+        "script": "Remove-Path -Path \"$persist_dir\\bin\" -Global:$global"
+    },
+    "checkver": {
+        "script": [
+            "$dl_url = 'https://github.com/oven-sh/bun/releases/download/canary/bun-windows-x64.zip'",
+            "$dl_path = cache_path 'bun-canary' 'unknown' $dl_url",
+            "$dl_dir = Split-Path -Path $dl_path -Parent",
+            "Invoke-WebRequest -Uri $dl_url -OutFile $dl_path",
+            "Expand-Archive -Path $dl_path -DestinationPath $dl_dir | Out-Null",
+            "$ver = & \"$dl_dir\\bun-windows-x64\\bun.exe\" --revision",
+            "Remove-Item -Path $dl_path, $dl_dir\\bun-windows-x64 -Recurse -Force",
+            "Write-Output $ver"
+        ],
+        "regex": "(?<version>\\S+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": [
+                    "https://github.com/oven-sh/bun/releases/download/canary/bun-windows-x64.zip",
+                    "https://github.com/oven-sh/bun/releases/download/canary/bun-windows-x64-baseline.zip"
+                ]
+            },
+            "arm64": {
+                "url": "https://github.com/oven-sh/bun/releases/download/canary/bun-windows-aarch64.zip"
+            }
+        },
+        "hash": {
+            "url": "https://api.github.com/repos/oven-sh/bun/releases/tags/canary",
+            "jsonpath": "$..assets[?(@.name == '$basename')].digest"
+        }
     }
-  }
 }
