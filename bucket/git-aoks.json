@@ -1,79 +1,118 @@
 {
     "version": "2.54.0",
-    "description": "Distributed version control system",
+    "description": "A free and open source distributed version control system.",
     "homepage": "https://gitforwindows.org",
-    "license": "GPL-2.0-only",
+    "license": {
+        "identifier": "GPL-2.0-only",
+        "url": "https://github.com/git-for-windows/git/blob/HEAD/COPYING"
+    },
     "notes": [
-        "Set Git Credential Manager Core by running: \"git config --global credential.helper manager\"",
+        "To register file associations, please execute the following command:",
+        "reg import \"$dir\\install-associations.reg\"",
         "",
-        "To add context menu entries, run '$dir\\install-context.reg'",
+        "To register the context menu entry, please execute the following command:",
+        "reg import \"$dir\\install-context.reg\"",
         "",
-        "To create file-associations for .git* and .sh files, run '$dir\\install-file-associations.reg'"
+        "To set Git Credential Manager Core for portable Git, please execute the following command:",
+        "git config --system credential.helper manager"
     ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/git-for-windows/git/releases/download/v2.54.0.windows.1/MinGit-2.54.0-64-bit.zip#/gitforwindows.zip",
-            "hash": "04f937e1f0918b17b9be6f2294cb2bb66e96e1d9832d1c298e2de088a1d0e668"
-        },
-        "32bit": {
-            "url": "https://github.com/git-for-windows/git/releases/download/v2.54.0.windows.1/MinGit-2.54.0-32-bit.zip#/gitforwindows.zip",
-            "hash": "52fc36c9b22611f0a6a7fabdc68c763b914400e3af0e35ad822468dc64cb7981"
+            "url": "https://github.com/git-for-windows/git/releases/download/v2.54.0.windows.1/PortableGit-2.54.0-64-bit.7z.exe#/dl.7z",
+            "hash": "bea006a6cc69673f27b1647e84ab3a68e912fbc175ab6320c5987e012897f311"
         },
         "arm64": {
-            "url": "https://github.com/git-for-windows/git/releases/download/v2.54.0.windows.1/MinGit-2.54.0-arm64.zip#/gitforwindows.zip",
-            "hash": "68f6bdda5b58f4e40f431c0da48b05ba5596445314d5e491e7b4aebb1ec2e985"
+            "url": "https://github.com/git-for-windows/git/releases/download/v2.54.0.windows.1/PortableGit-2.54.0-arm64.7z.exe#/dl.7z",
+            "hash": "f8e92cd3359fcbb96998cfd606a536ccc6dbfb23c04e12b29042f9ba45b6b0c7"
         }
     },
-    "installer": {
-        "script": [
-            "$Array = @(\"dev\\fd\", \"dev\\stderr\", \"dev\\stdin\", \"dev\\stdout\", \"etc\\mtab\")",
-            "$Array | Out-File \"$dir\\excludefile\"",
-            "7z x -y -bd -so -w\"$dir\" -o\"$dir\" \"$dir\\$fname\" | 7z x -y -bd -si -ttar -w\"$dir\" -o\"$dir\" -x@\"$dir\\excludefile\" | Out-Null -ErrorAction SilentlyContinue"
-        ]
-    },
-    "post_install": [
-        "'install-context', 'uninstall-context', 'install-file-associations', 'uninstall-file-associations' | ForEach-Object {",
-        "    $reg_file_in  = \"$bucketsdir\\main\\scripts\\git\\$_.reg\"",
-        "    $reg_file_out = \"$dir\\$_.reg\"",
-        "    $git_root     = \"$dir\".Replace('\\', '\\\\')",
-        "    if (Test-Path $reg_file_in) {",
-        "        $content = Get-Content $reg_file_in",
-        "        $content = $content.Replace('$git_root', $git_root)",
-        "        if ($global) {",
-        "            $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
-        "        }",
-        "        Set-Content -Path $reg_file_out -Value $content -Encoding Ascii",
-        "    }",
+    "pre_install": [
+        "# Hardlinks cannot work properly here, as this app would create a new file instead of writing the existing config file.",
+        "$config_path = Join-Path -Path $dir -ChildPath 'etc\\gitconfig'",
+        "$config_path_persisted = Join-Path -Path $persist_dir -ChildPath 'etc\\gitconfig'",
+        "if (Test-Path -LiteralPath $config_path_persisted -PathType Leaf) {",
+        "    info \"Restoring system-level config from $config_path_persisted...\"",
+        "    Copy-Item -Path $config_path_persisted -Destination $config_path -Force",
+        "    info \"Adjusting paths in $config_path...\"",
+        "    (Get-Content -Path $config_path -Encoding UTF8) -replace '(?<=git/)[\\d.]+(?=/)', $version | Set-Content -Path $config_path -Encoding UTF8",
         "}"
     ],
-    "bin": [
-        "usr\\bin\\sh.exe",
-        "cmd\\git.exe",
-        "cmd\\scalar.exe",
-        "cmd\\tig.exe"
+    "post_install": [
+        "$git_path = $dir -replace '\\\\', '\\\\'",
+        "Get-ChildItem -Path \"$bucketsdir\\$bucket\\scripts\\$app\" -Filter '*.reg' -File | ForEach-Object {",
+        "    $content = Get-Content -Path $_.FullName -Encoding utf8",
+        "    if ($global) { $content = $content -replace 'HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE' }",
+        "    $content -replace '{{git_dir}}', $git_path | Set-Content -Path \"$dir\\$($_.Name)\" -Encoding unicode",
+        "}"
     ],
+    "env_add_path": "cmd",
     "env_set": {
         "GIT_INSTALL_ROOT": "$dir"
     },
+    "bin": [
+        "bin\\sh.exe",
+        "bin\\git.exe",
+        "git-bash.exe",
+        [
+           "git-bash.exe",
+           "bash.exe"
+        ],
+        "usr\\bin\\gpg.exe",
+        "usr\\bin\\gpg-agent.exe",
+        "usr\\bin\\gpgconf.exe",
+        "usr\\bin\\gpg-connect-agent.exe",
+        "usr\\bin\\pinentry.exe"
+    ],
+    "shortcuts": [
+        [
+            "git-bash.exe",
+            "Git\\Git Bash",
+            "--cd-to-home"
+        ],
+        [
+            "git-cmd.exe",
+            "Git\\Git CMD",
+            "--cd-to-home"
+        ],
+        [
+            "cmd\\git-gui.exe",
+            "Git\\Git GUI"
+        ]
+    ],
+    "pre_uninstall": [
+        "# Hardlinks cannot work properly here, as this app would create a new file instead of writing the existing config file.",
+        "$config_path = Join-Path -Path $dir -ChildPath 'etc\\gitconfig'",
+        "$config_path_persisted = Join-Path -Path $persist_dir -ChildPath 'etc\\gitconfig'",
+        "if (Test-Path -LiteralPath $config_path -PathType Leaf) {",
+        "    ensure (Split-Path -Path $config_path_persisted -Parent) | Out-Null",
+        "    info \"Saving system-level config to $config_path_persisted...\"",
+        "    Copy-Item -Path $config_path -Destination $config_path_persisted -Force",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    reg import \"$dir\\uninstall-context.reg\" *> $null",
+            "    reg import \"$dir\\uninstall-associations.reg\" *> $null",
+            "}"
+        ]
+    },
     "checkver": {
-        "url": "https://api.github.com/repositories/23216272/releases/latest",
-        "jsonpath": "$..browser_download_url",
-        "regex": "download/v(?<tag>[\\d.]+windows\\.\\d)/PortableGit-([\\d.]+)-64"
+        "github": "https://api.github.com/repos/git-for-windows/git/releases/latest",
+        "jsonpath": "$.assets[?(@.name =~ /Portable/i)].browser_download_url",
+        "regex": "(?i)download/(?<tag>v?[\\d.]+windows[\\d.]+)/PortableGit-([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/git-for-windows/git/releases/download/v$version.windows.1/MinGit-$version-64-bit.zip#/gitforwindows.zip"
-            },
-            "32bit": {
-                "url": "https://github.com/git-for-windows/git/releases/download/v$version.windows.1/MinGit-$version-32-bit.zip#/gitforwindows.zip"
+                "url": "https://github.com/git-for-windows/git/releases/download/$matchTag/PortableGit-$version-64-bit.7z.exe#/dl.7z"
             },
             "arm64": {
-                "url": "https://github.com/git-for-windows/git/releases/download/v$version.windows.1/MinGit-$version-arm64.zip#/gitforwindows.zip"
+                "url": "https://github.com/git-for-windows/git/releases/download/$matchTag/PortableGit-$version-arm64.7z.exe#/dl.7z"
             }
         },
         "hash": {
-            "url": "https://github.com/git-for-windows/git/releases/tag/v$matchTag",
+            "url": "https://github.com/git-for-windows/git/releases/tag/$matchTag",
             "regex": "(?s)$basename.*?$sha256"
         }
     }
