@@ -9,29 +9,26 @@
             "hash": "229752f7e95af5b8f0d07b5e30f3b43b592abfa72cd9a9ad7cd8d823c34752a4"
         }
     },
-    "pre_install": [
-        "if (!(is_admin)) { throw 'Admin privileges are required.' }",
-        "cmd /c 'schtasks /delete /tn \"THRM\" /f 2>nul'",
-        "cmd /c 'schtasks /delete /tn \"BS2PRO-Controller\" /f 2>nul'",
-        "cmd /c 'schtasks /delete /tn \"BS2PRO-Core\" /f 2>nul'"
-    ],
+    "pre_install": "if (!(is_admin)) { throw 'Admin privileges are required.' }",
     "post_install": [
         "if (Test-Path $env:USERPROFILE\\.thrm) {",
         "    Copy-Item -Path $env:USERPROFILE\\.thrm\\* -Destination \"$persist_dir\\data\" -Force -Recurse",
         "    Remove-Item $env:USERPROFILE\\.thrm -Force -Recurse",
         "}",
         "New-Item -ItemType Junction -Path $env:USERPROFILE\\.thrm -Target $persist_dir\\data | Out-Null",
-        "# 安装PawnIO",
         "& \"$dir\\PawnIO_setup.exe\" -uninstall -silent",
         "& \"$dir\\PawnIO_setup.exe\" -install -silent",
+        "cmd /c 'schtasks /delete /tn \"THRM\" /f 2>nul'",
+        "cmd /c 'schtasks /delete /tn \"BS2PRO-Controller\" /f 2>nul'",
+        "cmd /c 'schtasks /delete /tn \"BS2PRO-Core\" /f 2>nul'",
         "schtasks.exe /create /tn \"THRM\" /tr \"`\"$dir\\THRM Core.exe`\" --autostart\" /sc onlogon /delay 0000:15 /rl highest /f"
     ],
     "pre_uninstall": "if (!(is_admin)) { throw 'Admin privileges are required.' }",
+    "uninstaller": {
+        "script": "& \"$dir\\PawnIO_setup.exe\" -uninstall -silent"
+    },
     "post_uninstall": [
         "Remove-Item $env:USERPROFILE\\.thrm -Force -Recurse",
-        "# 获取PawnIO的位置并且卸载",
-        "$cmd = (Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\PawnIO' -Name QuietUninstallString -EA 0).QuietUninstallString",
-        "if ($cmd) { cmd /c \"$cmd\" }",
         "cmd /c 'schtasks /delete /tn \"THRM\" /f 2>nul'"
     ],
     "bin": "THRM.exe",
