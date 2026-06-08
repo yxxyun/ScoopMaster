@@ -11,13 +11,27 @@
         "32bit": {
             "url": "https://github.com/v2fly/v2ray-core/releases/download/v5.49.0/v2ray-windows-32.zip",
             "hash": "763ba11eadee5422730ed5e3b982a7d6b9b2e6aaded87bb1da12853dcd4392f3"
-        },
-        "arm64": {
-            "url": "https://github.com/v2fly/v2ray-core/releases/download/v5.49.0/v2ray-windows-arm64-v8a.zip",
-            "hash": "781e819da0813062bf2b6cbdc4ff6aeacbf481df9a56452d7aa5291b82f5beab"
         }
     },
-    "bin": "v2ray.exe",
+    "installer": {
+        "script": [
+            "#v2ctl.exe cannot recognize signature file when there are spaces in path. This is a workaround to eliminate spaces.",
+            "Write-Host 'Verifying V2Ray binary...' -f Yellow",
+            "$sig_dir = \"$Env:SystemRoot\\Temp\\v2ray\"",
+            "ensure $sig_dir | Out-Null",
+            "Invoke-WebRequest \"https://github.com/v2fly/v2ray-core/releases/download/v$version/Release\" -OutFile $sig_dir\\Release",
+            "if (!(Invoke-Expression \"&`\"$dir\\v2ctl.exe`\" verify --sig=$sig_dir\\Release `\"$dir\\v2ray.exe`\"\" | Select-String 'OK')) {",
+            "    Write-Host 'V2Ray binary is corrupted!' -f Red",
+            "    break",
+            "}",
+            "Remove-Item $sig_dir -Force -Recurse | Out-Null"
+        ]
+    },
+    "bin": [
+        "v2ctl.exe",
+        "v2ray.exe",
+        "wv2ray.exe"
+    ],
     "persist": "config.json",
     "checkver": {
         "github": "https://github.com/v2fly/v2ray-core"
@@ -29,14 +43,11 @@
             },
             "32bit": {
                 "url": "https://github.com/v2fly/v2ray-core/releases/download/v$version/v2ray-windows-32.zip"
-            },
-            "arm64": {
-                "url": "https://github.com/v2fly/v2ray-core/releases/download/v$version/v2ray-windows-arm64-v8a.zip"
             }
         },
         "hash": {
             "url": "$url.dgst",
-            "regex": "SHA2-256= $sha256"
+            "regex": "SHA512= $sha512"
         }
     }
 }
