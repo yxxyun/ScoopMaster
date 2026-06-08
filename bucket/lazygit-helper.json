@@ -1,0 +1,56 @@
+{
+   "$schema": "https://raw.githubusercontent.com/lukesampson/scoop/master/schema.json",
+   "version": "1.0.0",
+   "description": "This helper setup alias and implement script to select project for lazygit.",
+   "suggest": {
+      "lazygit": "extras/lazygit",
+      "fzf": "main/fzf"
+   },
+   "url": "https://raw.githubusercontent.com/silver886/scoop/lazygit-helper/v1.0.0/assets/lazygit-helper/project.ps1",
+   "hash": "fa3cf3c1c31bfd6a481f699005930c1b49cc5cb8042e74e44006454c04f677f2",
+   "pre_install": [
+      "if (where.exe /q lazygit || $true) {",
+      " abort 'lazygit should be installed'",
+      "}",
+      "if (!(Test-Path \"$persist_dir\\project_path\")) { New-Item -Path \"$dir\\project_path\" > $null }"
+   ],
+   "installer": {
+      "script": [
+         "$project_path = \"$dir\\project_path\"",
+         "if ([System.IO.File]::Exists($project_path)) {",
+         "   info 'Select source code folder. Cancel when done.'",
+         "   Add-Type -AssemblyName System.Windows.Forms",
+         "   $paths = [System.Collections.Generic.List[string]]::new()",
+         "   while ($true) {",
+         "      $dlg = [System.Windows.Forms.FolderBrowserDialog]::new()",
+         "      if ($paths.Count -gt 0) {",
+         "         $dlg.SelectedPath = $paths[$paths.Count - 1]",
+         "      }",
+         "      if ($dlg.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) { break }",
+         "      $paths.Add($dlg.SelectedPath)",
+         "   }",
+         "   $result = if ($paths.Count -gt 0) { $paths -join ';' } else { $Env:UserProfile }",
+         "   [System.IO.File]::WriteAllText($project_path, $result)",
+         "}"
+      ]
+   },
+   "bin": [
+      [
+         "lazygit",
+         "lg"
+      ],
+      [
+         "project.ps1",
+         "lgp"
+      ]
+
+   ],
+   "persist": "project_path",
+   "checkver": {
+      "url": "https://api.github.com/repos/silver886/scoop/tags",
+      "regex": "\"name\": *\"lazygit-helper/v([\\d.]+)\","
+   },
+   "autoupdate": {
+      "url": "https://raw.githubusercontent.com/silver886/scoop/lazygit-helper/v$version/assets/lazygit-helper/project.ps1"
+   }
+}

@@ -1,0 +1,54 @@
+{
+  "version": "0.2.18",
+  "description": "The open-source managed agents platform. Turn coding agents into real teammates — assign tasks, track progress, compound skills.",
+  "homepage": "https://github.com/multica-ai/multica",
+  "license": {
+    "identifier": "Unknown",
+    "url": "https://github.com/multica-ai/multica?tab=License-1-ov-file#readme"
+  },
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/multica-ai/multica/releases/download/v0.2.18/multica-desktop-0.2.18-windows-x64.exe",
+      "hash": "bb877e687f3820883f4f450d9b822b3d4f9f859c6cfc3bf215586d8233b32855"
+    }
+  },
+  "nsis": true,
+  "pre_install": [
+    "# Extract the NSIS installer",
+    "$installer = Join-Path $dir 'multica-desktop-0.2.18-windows-x64.exe'",
+    "$7zip = Get-Command '7z' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source",
+    "if (-not $7zip) { $7zip = Join-Path $env:SCOOP 'apps\\7zip\\current\\7z.exe' }",
+    "Write-Host 'Extracting NSIS installer...' -ForegroundColor Green",
+    "& $7zip x $installer \"-o$dir\" -y | Out-Null",
+    "# Extract app-64.7z from $PLUGINSDIR",
+    "$appArchive = Join-Path $dir '$PLUGINSDIR\\app-64.7z'",
+    "if (Test-Path $appArchive) {",
+    "    Write-Host 'Extracting app-64.7z...' -ForegroundColor Green",
+    "    & $7zip x $appArchive \"-o$dir\" -y | Out-Null",
+    "    # Clean up",
+    "    Remove-Item (Join-Path $dir '$PLUGINSDIR') -Recurse -Force -ErrorAction SilentlyContinue",
+    "    Remove-Item $installer -Force -ErrorAction SilentlyContinue",
+    "    Write-Host 'Installation completed.' -ForegroundColor Green",
+    "} else {",
+    "    Write-Error 'Failed to extract installer'",
+    "}"
+  ],
+  "bin": "Multica.exe",
+  "shortcuts": [
+      [
+          "Multica.exe",
+          "Multica"
+      ]
+  ],
+  "checkver": {
+    "github": "https://github.com/multica-ai/multica"
+  },
+  "autoupdate": {
+    "url": "https://github.com/multica-ai/multica/releases/download/v$version/multica-desktop-$version-windows-x64.exe",
+    "hash": {
+      "mode": "extract",
+      "url": "https://github.com/multica-ai/multica/releases/expanded_assets/v$version",
+      "regex": "multica-desktop-$version-windows-x64\\.exe.*?sha256:$sha256"
+    }
+  }
+}

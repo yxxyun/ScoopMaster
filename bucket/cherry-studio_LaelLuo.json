@@ -1,0 +1,119 @@
+{
+    "version": "1.9.2",
+    "description": "A desktop client that supports for multiple LLM providers.",
+    "homepage": "https://cherry-ai.com",
+    "license": "Apache-2.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.9.2/Cherry-Studio-1.9.2-x64-setup.exe#/dl.7z",
+            "hash": "sha512:443056151c8362ec0ab2650c63a4cc67cbb6703b5c6900140e5829eaea5153488cef61ae4503db842ceecce413c2e010fc1796b281baab1605b581333abcf886",
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
+        },
+        "arm64": {
+            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v1.9.2/Cherry-Studio-1.9.2-arm64-setup.exe#/dl.7z",
+            "hash": "bdc4982df983ce6db5d77d1f4e59bc122fbbcc4bdabb08bdf63b946107214c22",
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\""
+        }
+    },
+    "shortcuts": [
+        [
+            "Cherry Studio.exe",
+            "Cherry Studio"
+        ]
+    ],
+    "portableProfile": {
+        "mappings": [
+            {
+                "label": "roaming",
+                "source": "AppData/CherryStudio",
+                "target": "$persist_dir/roaming",
+                "strategy": "symlink",
+                "ensureTarget": true
+            },
+            {
+                "label": "home-config",
+                "source": "UserProfile/.cherrystudio",
+                "target": "$persist_dir/home/config",
+                "strategy": "symlink",
+                "ensureTarget": true
+            }
+        ],
+        "options": {
+            "log": true
+        }
+    },
+    "post_install": [
+        "# Clean installer leftovers (from 7zip extraction)",
+        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse -ErrorAction SilentlyContinue",
+        "$homeConfig = Join-Path $persist_dir 'home\\config'",
+        "$roamingDir = Join-Path $persist_dir 'roaming'",
+        "$csBin = Join-Path $homeConfig 'bin'",
+        "foreach ($path in @($homeConfig, $roamingDir, $csBin)) { if (-not (Test-Path $path)) { New-Item -ItemType Directory -Path $path -Force | Out-Null } }",
+        "# Link system bun/uv into Cherry Studio local bin if available",
+        "# bun (do not overwrite existing)",
+        "$bunCmd = Get-Command bun -ErrorAction SilentlyContinue",
+        "if ($bunCmd) {",
+        "  $bunTarget = $bunCmd.Source",
+        "  $bunExe = Join-Path $csBin 'bun.exe'",
+        "  $bunShim = Join-Path $csBin 'bun.cmd'",
+        "  if ((Test-Path $bunExe) -or (Test-Path $bunShim)) {",
+        "    info '[Cherry Studio] bun already present in ~/.cherrystudio/bin; skipping'",
+        "  } else {",
+        "    try {",
+        "      New-Item -ItemType SymbolicLink -Path $bunExe -Target $bunTarget -Force | Out-Null",
+        "      info \"[Cherry Studio] Linked bun -> $bunTarget\"",
+        "    } catch {",
+        "      warn \"[Cherry Studio] Symlink bun failed, creating shim: $_\"",
+        "      $shimContent = '@echo off' + \"`n\" + '\"' + $bunTarget + '\" %*'",
+        "      Set-Content -Path $bunShim -Value $shimContent -Encoding Ascii",
+        "    }",
+        "  }",
+        "} else {",
+        "  info '[Cherry Studio] bun not found in PATH; skipping link'",
+        "}",
+        "# uv + uvx + uvw (do not overwrite existing)",
+        "$uvNames = @('uv', 'uvx', 'uvw')",
+        "foreach ($name in $uvNames) {",
+        "  $cmdInfo = Get-Command $name -ErrorAction SilentlyContinue",
+        "  if ($cmdInfo) {",
+        "    $target = $cmdInfo.Source",
+        "    $exePath = Join-Path $csBin (\"$name.exe\")",
+        "    $cmdPath = Join-Path $csBin (\"$name.cmd\")",
+        "    if ((Test-Path $exePath) -or (Test-Path $cmdPath)) {",
+        "      info \"[Cherry Studio] $name already present in ~/.cherrystudio/bin; skipping\"",
+        "      continue",
+        "    }",
+        "    try {",
+        "      New-Item -ItemType SymbolicLink -Path $exePath -Target $target -Force | Out-Null",
+        "      info \"[Cherry Studio] Linked $name -> $target\"",
+        "    } catch {",
+        "      warn \"[Cherry Studio] Symlink $name failed, creating shim: $_\"",
+        "      $shimContent = '@echo off' + \"`n\" + '\"' + $target + '\" %*'",
+        "      Set-Content -Path $cmdPath -Value $shimContent -Encoding Ascii",
+        "    }",
+        "  } else {",
+        "    info \"[Cherry Studio] $name not found in PATH; skipping link\"",
+        "  }",
+        "}"
+    ],
+    "notes": [
+        "Cherry Studio 将 bun/uv 等命令映射到 ~/.cherrystudio/bin 目录中，首次运行时会自动创建软链接，可在应用内直接使用。"
+    ],
+    "checkver": {
+        "github": "https://github.com/CherryHQ/cherry-studio"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-x64-setup.exe#/dl.7z",
+                "hash": {
+                    "url": "$baseurl/latest.yml",
+                    "regex": "sha512: $base64"
+                }
+            },
+            "arm64": {
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-arm64-setup.exe#/dl.7z"
+            }
+        }
+    }
+}

@@ -1,22 +1,47 @@
 {
-    "version": "3.1.7",
-    "description": "WinSetView is a tool that will let you easily set File Explorer default folder views.",
+    "version": "20260202010244+a007e00725",
+    "description": "Globally set File Explorer folder views (*nightly* build)",
     "homepage": "https://github.com/LesFerch/WinSetView",
-    "url": "https://github.com/LesFerch/WinSetView/archive/refs/tags/3.1.7.zip",
-    "hash": "fbe5a446ee298122bd552021ba3504a4b4fc3a5a8df12bb67b7a8e17be5469be",
-    "extract_dir": "WinSetView-3.1.7",
-    "bin": "WinSetView.ps1",
-    "shortcuts": [
-        [
-            "WinSetView.exe",
-            "WinSetView"
-        ]
+    "license": "MIT",
+    "url": "https://github.com/LesFerch/WinSetView/archive/a007e00725f8a8ffae9f3d3081fe91831df9c632.zip",
+    "hash": "73646acb8e2a83d1cd19e7589f5325365a4e28e2ba5a37d8f37d22f7ba31f362",
+    "extract_dir": "WinSetView-a007e00725f8a8ffae9f3d3081fe91831df9c632",
+    "pre_install": "$manifest.persist | ForEach-Object { if (-not (Test-Path \"$persist_dir\\$_\")) { New-Item \"$dir\\$_\" -Force -ItemType \"Directory\" | Out-Null } }",
+    "post_install": [
+        "$mshta = \"C:\\Windows\\System32\\mshta.exe\"",
+        "$winsetviewhta = \"\"\"$dir\\WinSetView.hta\"\"\"",
+        "# Shim creation",
+        "shim $mshta $global \"WinSetView\" $winsetviewhta",
+        "# Shortcut creation",
+        "$scoop_startmenu_folder = shortcut_folder $global",
+        "$wsShell = (New-Object -ComObject WScript.Shell).CreateShortcut(\"$scoop_startmenu_folder\\WinSetView.lnk\")",
+        "$wsShell.TargetPath = \"$mshta\"",
+        "$wsShell.WorkingDirectory = \"\"\"$dir\"\"\"",
+        "$wsShell.Arguments = $winsetviewhta",
+        "$wsShell.IconLocation = \"$dir\\AppParts\\WinSetView.ico\"",
+        "$wsShell.Save()"
+    ],
+    "post_uninstall": [
+        "rm_shim WinSetView (shimdir $global) $app",
+        "$scoop_startmenu_folder = shortcut_folder $global",
+        "Remove-Item \"$scoop_startmenu_folder\\WinSetView.lnk\" -Force"
+    ],
+    "persist": [
+        "AppData\\Backup",
+        "Tools\\WinViewBak"
     ],
     "checkver": {
-        "github": "https://github.com/LesFerch/WinSetView"
+        "script": [
+            "$cont = (Invoke-RestMethod -UseBasicParsing -Method Get -Headers @{'Accept-Encoding'='gzip'} -MaximumRedirection 0 -Uri 'https://github.com/LesFerch/WinSetView/commits/main.atom')[0]",
+            "$id = $cont.id",
+            "$commit_timestamp = ([DateTime]$cont.updated).ToUniversalTime().ToString('yyyyMMddHHmmss')",
+            "Write-Output ('id:\"' + $id + '\"') ('commit_timestamp:\"' + $commit_timestamp + '\"')"
+        ],
+        "regex": "id:\"(\\s*\\S+/(?<sha>(?<shortSha>[0-9a-f]{10})[0-9a-f]*)\\s*)\"\\scommit_timestamp:\"(?<commit_timestamp>\\d+)\"",
+        "replace": "${commit_timestamp}+${shortSha}"
     },
     "autoupdate": {
-        "url": "https://github.com/LesFerch/WinSetView/archive/refs/tags/$version.zip",
-        "extract_dir": "WinSetView-$version"
+        "url": "https://github.com/LesFerch/WinSetView/archive/$matchSha.zip",
+        "extract_dir": "WinSetView-$matchSha"
     }
 }
