@@ -1,12 +1,13 @@
 {
-    "version": "9.0.0",
-    "description": "Professional Photo Management",
+    "##": "ltguillaume/schep",
+    "version": "9.1.0",
+    "description": "Professional Photo Management. Portable.",
     "homepage": "https://www.digikam.org",
     "license": "GPL-3.0-or-later",
     "architecture": {
         "64bit": {
-            "url": "https://download.kde.org/stable/digikam/9.0.0/digiKam-9.0.0-Qt6-Win64.exe#/dl.7z",
-            "hash": "74bbaacfa23fb98faae2669c9bd385046f20217414d3677f385a5de25bc72cf1"
+            "url": "https://download.kde.org/stable/digikam/9.1.0/digiKam-9.1.0-Qt6-Win64.exe#/dl.7z",
+            "hash": "28ef373ab45ecc7eb1fd105b57828a29588504eb5a286c9e89c987c056bce8be"
         }
     },
     "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse",
@@ -23,6 +24,41 @@
             "showfoto.exe",
             "Showfoto"
         ]
+    ],
+    "post_install": [
+        "'AppData', 'LocalAppData' | ForEach-Object {",
+        "    $data = [Environment]::GetEnvironmentVariable($_) +\"\\digikam\"",
+        "    if (-not (Test-Path \"$data\\*\")) {",
+        "        Remove-Item \"$data\" 2>$null",
+        "        if (-not (Test-Path \"$persist_dir\\$_\")) {",
+        "            New-Item -ItemType Directory -Path \"$persist_dir\\$_\" >$null",
+        "        }",
+        "        New-DirectoryJunction \"$data\" \"$persist_dir\\$_\" >$null",
+        "    }",
+        "}",
+        "'digikamrc', 'digikam_systemrc' | ForEach-Object {",
+        "    if (-not (Test-Path \"$Env:LocalAppData\\$_\")) {",
+        "        Move-Item \"$persist_dir\\$_\" \"$Env:LocalAppData\\$_\" 2>$null",
+        "    }",
+        "}"
+    ],
+    "post_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    Remove-Item 'HKCU:Software\\cathaysia.digikam.flowview' -Force -Recurse 2>$null",
+        "    Remove-Item 'HKCU:Software\\kde.org\\digikam' -Force -Recurse 2>$null",
+        "    'HKCU:Software\\KDE\\Sonnet', 'HKCU:Software\\KDE', 'HKCU:Software\\kde.org' | ForEach-Object {",
+        "        $key = Get-Item \"$_\" 2>$null",
+        "        if ($key -and -not $key.SubKeyCount -and -not $key.Property) {",
+        "            Remove-Item \"$_\"",
+        "        }",
+        "    }",
+        "    Move-Item \"$Env:LocalAppData\\digikamrc\" \"$persist_dir\" -Force 2>$null",
+        "    Move-Item \"$Env:LocalAppData\\digikam_systemrc\" \"$persist_dir\" -Force 2>$null",
+        "}",
+        "'AppData', 'LocalAppData' | ForEach-Object {",
+        "    $data = Get-Item ([Environment]::GetEnvironmentVariable($_) +\"\\digikam\")",
+        "    if (\"$($data.Target)\" -eq \"$persist_dir\\$_\") { $data.Delete() }",
+        "}"
     ],
     "checkver": {
         "url": "https://www.digikam.org/download/",
