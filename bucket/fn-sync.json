@@ -1,0 +1,63 @@
+{
+    "version": "0.1.9",
+    "description": "飞牛同步客户端，文件自动同步工具",
+    "homepage": "https://fnnas.com/download?key=fn-sync-client",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://fnnas.com/pc-sync-client-privacy.html"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://iso.liveupdate.fnnas.com/pc/fn-sync_0.1.9_x64-setup.exe?sign=b1c8338f6fc4bfb74bda3c7e0e6d1229&t=1781016917#/dl.7z",
+            "hash": "6bc6d9098fefaee095c39db7ffe34622b6193de22b8a8479e4e7ac8d3f54f315"
+        }
+    },
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse -ErrorAction SilentlyContinue",
+        "Remove-Item \"$dir\\uninstall.exe\" -Force -ErrorAction SilentlyContinue",
+        "Write-Host (\"Persisting $env:APPDATA\\com.fn-sync-client.app ... \") -NoNewline",
+        "New-PersistDirectory \"$env:APPDATA\\com.fn-sync-client.app\" \"$persist_dir\\AppData\" -Migrate"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Require-Admin",
+        "Stop-App"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        ". \"$bucketsdir\\$bucket\\scripts\\fn-sync\\uninstall.ps1\""
+    ],
+    "bin": "fn-sync-client.exe",
+    "shortcuts": [
+        [
+            "fn-sync-client.exe",
+            "飞牛同步"
+        ]
+    ],
+    "checkver": {
+        "script": [
+            "$page = Invoke-WebRequest -Uri 'https://fnnas.com/download?key=fn-sync-client' -UseBasicParsing",
+            "if ($page.Content -match 'fn-sync_([\\d.]+)_x64-setup\\.exe') {",
+            "  $ver = $Matches[1]",
+            "  $rawUrl = \"https://iso.liveupdate.fnnas.com/pc/fn-sync_${ver}_x64-setup.exe\"",
+            "  $body = @{url=$rawUrl} | ConvertTo-Json",
+            "  $signed = (Invoke-RestMethod -Uri 'https://fnnas.com/api/download-sign' -Method POST -Body $body -ContentType 'application/json').url",
+            "  Write-Output $signed",
+            "}"
+        ],
+        "regex": "fn-sync_(?<version>[\\d.]+)_x64-setup\\.exe\\?(?<query>sign=[^#]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://iso.liveupdate.fnnas.com/pc/fn-sync_$version_x64-setup.exe?$matchQuery#/dl.7z"
+            }
+        },
+        "hash": {
+            "mode": "download"
+        }
+    }
+}
