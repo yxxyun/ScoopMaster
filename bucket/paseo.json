@@ -1,33 +1,84 @@
 {
-    "version": "0.1.92",
-    "description": "Orchestrate multiple coding agents from desktop and mobile",
-    "homepage": "https://paseo.sh",
-    "license": "AGPL-3.0-only",
+    "version": "0.1.93",
+    "description": "One interface for Claude Code, Codex, Copilot, OpenCode, and Pi agents.",
+    "homepage": "https://github.com/getpaseo/paseo",
+    "license": "AGPL-3.0-or-later",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/getpaseo/paseo/releases/download/v0.1.92/Paseo-Setup-0.1.92-x64.zip",
-            "hash": "56e87002694a1e368aa972c1f94850e7760ee70dbad6a717820a95df15ade15b"
+            "url": "https://github.com/getpaseo/paseo/releases/download/v0.1.93/Paseo-Setup-0.1.93-x64.zip",
+            "hash": "467f34b71c29123556b56a939e06b3071e5f91fd63f66dfe5b85ffc44a868fa0"
         },
         "arm64": {
-            "url": "https://github.com/getpaseo/paseo/releases/download/v0.1.92/Paseo-Setup-0.1.92-arm64.zip",
-            "hash": "b278012b51a6c9fed9a490fcbe58ede44472897b3f25008bd913d9f9ce93df54"
+            "url": "https://github.com/getpaseo/paseo/releases/download/v0.1.93/Paseo-Setup-0.1.93-arm64.zip",
+            "hash": "50e3b9fee94765db31d6e7d24656f572846d5bf74ad9acbaa95ba70edc4f846f"
         }
     },
-    "bin": [
-        [
-            "resources\\bin\\paseo.cmd",
-            "paseo"
+    "installer": {
+        "script": [
+            "Get-Process -Name 'Paseo' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue",
+            "if (!(Test-Path $persist_dir)) {",
+            "    New-Item $persist_dir -Type Directory -Force | Out-Null",
+            "}",
+            "$runtimeCaches = @(",
+            "    @{ Source = \"$env:APPDATA\\Paseo\"; Target = \"$persist_dir\\appdata\" },",
+            "    @{ Source = \"$env:USERPROFILE\\.paseo\"; Target = \"$persist_dir\\.paseo\" }",
+            ")",
+            "foreach ($cache in $runtimeCaches) {",
+            "    if (Test-Path $cache.Source) {",
+            "        $sourceItem = Get-Item $cache.Source -Force",
+            "        if (!(($sourceItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0)) {",
+            "            if (Test-Path $cache.Target) {",
+            "                Copy-Item \"$($cache.Source)\\*\" $cache.Target -Recurse -Force -ErrorAction SilentlyContinue",
+            "                try {",
+            "                    Remove-Item $cache.Source -Force -Recurse -ErrorAction Stop",
+            "                } catch {",
+            "                    throw \"Failed to prepare persisted path '$($cache.Source)'. Close Paseo and retry. $($_.Exception.Message)\"",
+            "                }",
+            "            } else {",
+            "                try {",
+            "                    Move-Item $cache.Source $cache.Target -Force -ErrorAction Stop",
+            "                } catch {",
+            "                    throw \"Failed to migrate '$($cache.Source)' to '$($cache.Target)'. Close Paseo and retry. $($_.Exception.Message)\"",
+            "                }",
+            "            }",
+            "        }",
+            "    } elseif (!(Test-Path $cache.Target)) {",
+            "        New-Item $cache.Target -Type Directory -Force | Out-Null",
+            "    }",
+            "    if (!(Test-Path $cache.Source)) {",
+            "        New-Item -Type Junction -Path $cache.Source -Target $cache.Target | Out-Null",
+            "    }",
+            "}"
         ]
-    ],
+    },
+    "uninstaller": {
+        "script": [
+            "Get-Process -Name 'Paseo' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue",
+            "$runtimeCaches = @(",
+            "    @{ Source = \"$env:APPDATA\\Paseo\"; Target = \"$persist_dir\\appdata\" },",
+            "    @{ Source = \"$env:USERPROFILE\\.paseo\"; Target = \"$persist_dir\\.paseo\" }",
+            ")",
+            "foreach ($cache in $runtimeCaches) {",
+            "    if (Test-Path $cache.Source) {",
+            "        $sourceItem = Get-Item $cache.Source -Force",
+            "        if (($sourceItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {",
+            "            Remove-Item $cache.Source -Force -Recurse -ErrorAction SilentlyContinue",
+            "        } elseif (!(Test-Path $cache.Target)) {",
+            "            Move-Item $cache.Source $cache.Target -Force",
+            "        } else {",
+            "            Remove-Item $cache.Source -Force -Recurse -ErrorAction SilentlyContinue",
+            "        }",
+            "    }",
+            "}"
+        ]
+    },
     "shortcuts": [
         [
             "Paseo.exe",
             "Paseo"
         ]
     ],
-    "checkver": {
-        "github": "https://github.com/getpaseo/paseo"
-    },
+    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
