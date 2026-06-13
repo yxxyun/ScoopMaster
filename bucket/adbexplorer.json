@@ -19,6 +19,7 @@
     },
     "pre_install": [
         "$subdir = Get-ChildItem \"$dir\\net*\" -Directory | Select-Object -First 1",
+        "if (-not $subdir) { throw 'Expected extracted net* directory was not found.' }",
         "Move-Item \"$($subdir.FullName)\\*\" $dir -Force",
         "Remove-Item $subdir.FullName -Recurse -Force",
         "if (!(Test-Path \"$dir\\settings.json\") -and !(Test-Path \"$persist_dir\\settings.json\")) { '{}' | Set-Content \"$dir\\settings.json\" }"
@@ -28,7 +29,11 @@
         "$adbPath = \"$scoopdir\\apps\\adb\\current\\platform-tools\\adb.exe\"",
         "",
         "if (Test-Path $configPath) {",
-        "    $json = Get-Content $configPath -Raw | ConvertFrom-Json",
+        "    try {",
+        "        $json = Get-Content $configPath -Raw | ConvertFrom-Json",
+        "    } catch {",
+        "        $json = New-Object PSObject",
+        "    }",
         "} else {",
         "    $json = New-Object PSObject",
         "}",
@@ -63,7 +68,20 @@
         ]
     ],
     "persist": "settings.json",
-    "pre_uninstall": "Get-Process adb -ErrorAction SilentlyContinue | Stop-Process -Force",
+    "pre_uninstall": [
+        "Write-Host '  '",
+        "Write-Host '========================================'",
+        "Write-Host '    ADB Explorer uninstall warning'",
+        "Write-Host '========================================'",
+        "Write-Host '  If uninstall fails due to directory locking:'",
+        "Write-Host \"  Error message: Couldn't remove '~\\scoop\\apps\\adbexplorer\\...' it may be in use\"",
+        "Write-Host '  '",
+        "Write-Host '  Fix:'",
+        "Write-Host '  1. Close all adb.exe processes (Task Manager)'",
+        "Write-Host '  2. Retry uninstall:'",
+        "Write-Host '   scoop uninstall adbexplorer'",
+        "Write-Host '  '"
+    ],
     "checkver": "github",
     "autoupdate": {
         "architecture": {
