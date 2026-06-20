@@ -1,6 +1,6 @@
 {
     "version": "3.1.7.0",
-    "description": "The official client for 123 cloud dirve service",
+    "description": "123云盘是一款空间大、不限速、专注大文件传输分发的云存储服务产品。",
     "homepage": "https://www.123pan.com/",
     "license": "Proprietary",
     "url": "https://app.123957.com/pc-pro/windows/317/123pan_3.1.7.exe#/dl.7z",
@@ -11,31 +11,74 @@
             "123云盘"
         ]
     ],
-    "pre_install": [
-        "Expand-7zipArchive \"$dir\\app.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\app.7z\" -Force -Recurse"
-    ],
-    "uninstaller": {
+    "installer": {
         "script": [
-            "$runtimeCache = \"$env:APPDATA\\123pan\"",
-            "Write-Host \"`nRemoving RuntimeCacheCache:$runtimeCache\"",
-            "Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue"
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "Require-Admin",
+            "Write-Host \"`nPersisting $env:APPDATA\\123pan ... \" -NoNewline",
+            "New-PersistDirectory \"$env:APPDATA\\123pan\" \"$persist_dir\\AppData\" -Migrate",
+            "Expand-7zipArchive \"$dir\\app.7z\" \"$dir\" -Removal",
+            "Remove-Item \"$dir\\`$*\" -Recurse -Force",
+            "Write-Host \"`nRegistering 123pan installation ... \" -NoNewline",
+            "Set-RegValue -Path \"HKLM:\\SOFTWARE\\Wow6432Node\\123pan\" -Name \"InstallPath\" -Value \"$dir\" -Type REG_SZ",
+            "",
+            "Write-Host \"`nConfiguring 123SyncCloud Service ... \" -ForegroundColor Yellow",
+            "$svcDir = \"$env:ProgramData\\123SyncCloud\\service\"",
+            "$svcPath = \"$svcDir\\MaintenanceService.exe\"",
+            "# 如果系统目录中没有服务文件，则尝试从 Scoop 解压目录中寻找并复制",
+            "if (-not (Test-Path $svcPath)) {",
+            "    $found = Get-ChildItem \"$dir\" -Filter \"MaintenanceService.exe\" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1",
+            "    if ($found) {",
+            "        New-Item -ItemType Directory -Force $svcDir | Out-Null",
+            "        Copy-Item $found.FullName $svcPath -Force",
+            "        Write-Host \"Copied MaintenanceService.exe to ProgramData.\" -ForegroundColor DarkGray",
+            "    }",
+            "}",
+            "# 如果文件就绪，则使用原生命令注册服务，即时生效",
+            "if (Test-Path $svcPath) {",
+            "    $svcName = \"123SyncCloud Maintenance Service\"",
+            "    if (-not (Get-Service $svcName -ErrorAction SilentlyContinue)) {",
+            "        # 使用 New-Service 正式向系统注册服务，无需重启即可被系统识别",
+            "        New-Service -Name $svcName -BinaryPathName \"`\"$svcPath`\"\" -DisplayName \"123SyncCloud Maintenance Service\" -StartupType Automatic | Out-Null",
+            "    }",
+            "    # 补充写入描述注册表（New-Service 在部分旧版 PS 中不支持直接写 Description）",
+            "    $regPath = \"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\$svcName\"",
+            "    Set-ItemProperty -Path $regPath -Name \"Description\" -Value \"123云盘用于核心业务所需的服务。为保证123云盘正常运行，请勿停止本服务\" -Type String -ErrorAction SilentlyContinue",
+            "    ",
+            "    # 立即启动服务",
+            "    Start-Service $svcName -ErrorAction SilentlyContinue",
+            "    Write-Host \"Service registered and started successfully.\" -ForegroundColor Green",
+            "} else {",
+            "    Write-Host \"Warning: MaintenanceService.exe not found! Service cannot be registered.\" -ForegroundColor Red",
+            "}"
         ]
     },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Require-Admin",
+        "Stop-App",
+        "Stop-Service \"123SyncCloud Maintenance Service\" -ErrorAction SilentlyContinue",
+        "# 使用 sc 命令正式卸载服务，而不仅是删注册表",
+        "& sc.exe delete \"123SyncCloud Maintenance Service\" | Out-Null"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        ". \"$bucketsdir\\$bucket\\scripts\\123pan\\uninstall.ps1\""
+    ],
     "checkver": {
         "script": [
-            ". \"$pwd\\bin\\utils.ps1\"",
-            "$dl_info = get_installer_info '123/123pan'",
-            "\"ver:$($dl_info.PackageVersion);\"",
-            "\"x64:$($dl_info.x64_exe.InstallerUrl);\""
+            "Import-Module \"$pwd\\bin\\WinGet.psm1\"",
+            "$Manifest = Get-WinGetManifest -Id '123.123pan'",
+            "$version  = $Manifest.PackageVersion",
+            "$url      = $Manifest.Installers.InstallerUrl",
+            "return \"$version=====$url\""
         ],
-        "regex": "ver:(?<version>.+?); x64:(?<x64>.+?);"
+        "regex": "(.*)=====(?<url>.*)"
     },
     "autoupdate": {
-        "url": "$matchX64#/dl.7z",
-        "hash": {
-            "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/1/123/123pan/$version/123.123pan.installer.yaml",
-            "regex": "Architecture: x64[\\s\\S]+?InstallerSha256:\\s?(.+)"
-        }
-    }
+        "url": "$matchUrl#/dl.7z"
+    },
+    "notes": "User data is persisted in \"$persist_dir\"."
 }
