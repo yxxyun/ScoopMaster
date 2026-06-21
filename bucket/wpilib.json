@@ -1,1 +1,156 @@
-{"version":"2026.2.1","description":"Official Software Development Kit (SDK) and desktop tools for the FIRST Robotics Competition (FRC)","homepage":"https://github.com/wpilibsuite/allwpilib","license":"BSD-3-Clause","architecture":{"64bit":{"url":"https://packages.wpilib.workers.dev/installer/v2026.2.1/Win64/WPILib_Windows-2026.2.1.iso#/wpilib.iso","hash":"6dd86b714c41127c9ef7683b398dc21423cba7146e6868a97fefbd65a14429cb"}},"installer":{"script":["$art = Get-ChildItem -Path \"$dir\" -Filter \"*-artifacts.zip\" | Select-Object -First 1","if ($art) { Expand-Archive -Path $art.FullName -DestinationPath \"$dir\" -Force }","$res = Get-ChildItem -Path \"$dir\" -Filter \"*-resources.zip\" | Select-Object -First 1","if ($res) { Expand-Archive -Path $res.FullName -DestinationPath \"$dir\" -Force }","& \"$dir\\tools\\ToolsUpdater.bat\"","if (Test-Path \"$dir\\vscodeConfig.json\") {","    $config = Get-Content -Raw -Path \"$dir\\vscodeConfig.json\" | ConvertFrom-Json","    $url = $config.VsCodeWindowsUrl","    $zipName = $config.VsCodeWindowsName","    $hash = $config.VsCodeWindowsHash","    Write-Host \"Downloading VS Code from $url...\"","    Invoke-WebRequest -Uri $url -OutFile \"$dir\\$zipName\" -UseBasicParsing","    $fileHash = (Get-FileHash \"$dir\\$zipName\" -Algorithm SHA256).Hash","    if ($fileHash.ToLower() -eq $hash.ToLower()) {","        Write-Host \"VS Code hash verified.\"","    } else {","        Write-Warning \"VS Code hash mismatch! Expected: $hash, Got: $fileHash\"","    }","    Write-Host \"Extracting VS Code...\"","    Expand-Archive -Path \"$dir\\$zipName\" -DestinationPath \"$dir\\vscode\" -Force","    Remove-Item \"$dir\\$zipName\" -Force","    Write-Host \"Installing VS Code extensions...\"","    $extensionsDir = \"$persist_dir\\vscode\\data\\extensions\"","    $userDataDir = \"$persist_dir\\vscode\\data\\user-data\"","    if (!(Test-Path $extensionsDir)) { New-Item -ItemType Directory -Path $extensionsDir -Force | Out-Null }","    if (!(Test-Path $userDataDir)) { New-Item -ItemType Directory -Path $userDataDir -Force | Out-Null }","    if ($config.wpilibExtension) {","        $vsixPath = \"$dir\\vsCodeExtensions\\\" + $config.wpilibExtension.vsix","        if (Test-Path $vsixPath) {","            Start-Process -FilePath \"$dir\\vscode\\bin\\code.cmd\" -ArgumentList \"--extensions-dir\", $extensionsDir, \"--user-data-dir\", $userDataDir, \"--install-extension\", $vsixPath -Wait -NoNewWindow","        }","    }","    if ($config.thirdPartyExtensions) {","        foreach ($ext in $config.thirdPartyExtensions) {","            $vsixPath = \"$dir\\vsCodeExtensions\\\" + $ext.vsix","            if (Test-Path $vsixPath) {","                Start-Process -FilePath \"$dir\\vscode\\bin\\code.cmd\" -ArgumentList \"--extensions-dir\", $extensionsDir, \"--user-data-dir\", $userDataDir, \"--install-extension\", $vsixPath -Wait -NoNewWindow","            }","        }","    }","    Write-Host \"Configuring VS Code settings...\"","    $settingsDir = \"$userDataDir\\User\"","    if (!(Test-Path $settingsDir)) { New-Item -ItemType Directory -Path $settingsDir -Force | Out-Null }","    $settingsFile = \"$settingsDir\\settings.json\"","    $settings = @{}","    if (Test-Path $settingsFile) {","        $settings = Get-Content -Raw -Path $settingsFile | ConvertFrom-Json -AsHashtable","    }","    $jdkPath = \"$dir\\jdk\"","    $settings[\"java.jdt.ls.java.home\"] = $jdkPath","    $settings[\"extensions.autoUpdate\"] = $false","    $settings[\"extensions.autoCheckUpdates\"] = $false","    $settings[\"extensions.ignoreRecommendations\"] = $true","    $settings[\"extensions.showRecommendationsOnlyOnDemand\"] = $true","    $settings[\"update.mode\"] = \"none\"","    $settings[\"update.showReleaseNotes\"] = $false","    $settings[\"java.completion.matchCase\"] = \"off\"","    $settings[\"workbench.secondarySideBar.defaultVisibility\"] = \"hidden\"","    $settings[\"update.enableWindowsBackgroundUpdates\"] = $false","    $settings[\"workbench.welcomePage.experimentalOnboarding\"] = $false","    $settings[\"terminal.integrated.env.windows\"] = @{","        \"JAVA_HOME\" = $jdkPath","        \"PATH\" = \"$jdkPath\\bin;`${env:PATH}\"","    }","    $settings[\"java.configuration.runtimes\"] = @(","        @{","            \"name\" = \"JavaSE-25\"","            \"path\" = $jdkPath","            \"default\" = $true","        }","    )","    $settings[\"settingsSync.ignoredExtensions\"] = @(\"wpilibsuite.vscode-wpilib\")","    $settings | ConvertTo-Json -Depth 10 | Set-Content -Path $settingsFile -Force","}","Get-ChildItem -Path \"$dir\" -File | Remove-Item -Force","Get-ChildItem -Path \"$dir\" -Directory | Where-Object { $_.Name -notin 'tools', 'advantagescope', 'elastic', 'jdk', 'vscode', 'maven', 'vendordeps' } | Remove-Item -Recurse -Force","$year = $version.Split('.')[0]","$public_wpilib = \"C:\\Users\\Public\\wpilib\\$year\"","if (Test-Path $public_wpilib) {","    $item = Get-Item $public_wpilib","    if ($item.Attributes -match \"ReparsePoint\") {","        $item.Delete()","    } else {","        Remove-Item $public_wpilib -Recurse -Force","    }","}","$parent = \"C:\\Users\\Public\\wpilib\"","if (!(Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }","New-Item -ItemType Junction -Path $public_wpilib -Value \"$dir\" -Force | Out-Null"]},"shortcuts":[["tools/glass.exe","FRC\\WPILib Tools\\Glass"],["tools/outlineviewer.exe","FRC\\WPILib Tools\\OutlineViewer"],["tools/sysid.exe","FRC\\WPILib Tools\\SysId"],["tools/datalogtool.exe","FRC\\WPILib Tools\\Data Log Tool"],["tools/wpical.exe","FRC\\WPILib Tools\\WPIcal"],["tools/roborioteamnumbersetter.exe","FRC\\WPILib Tools\\RoboRIO Team Number Setter"],["advantagescope/AdvantageScope (WPILib).exe","FRC\\WPILib Tools\\AdvantageScope (WPILib)"],["elastic/elastic_dashboard.exe","FRC\\WPILib Tools\\Elastic (WPILib)"],["vscode/Code.exe","FRC\\WPILib VS Code"]],"persist":["vscode/data"],"uninstaller":{"script":["$year = $version.Split('.')[0]","$public_wpilib = \"C:\\Users\\Public\\wpilib\\$year\"","if (Test-Path $public_wpilib) {","    $item = Get-Item $public_wpilib","    if ($item.Attributes -match \"ReparsePoint\") {","        $item.Delete()","    } else {","        Remove-Item $public_wpilib -Recurse -Force","    }","}","$parent = \"C:\\Users\\Public\\wpilib\"","if (Test-Path $parent) {","    if ((Get-ChildItem $parent).Count -eq 0) { Remove-Item $parent -Force }","}"]},"checkver":"github","autoupdate":{"architecture":{"64bit":{"url":"https://packages.wpilib.workers.dev/installer/v$version/Win64/WPILib_Windows-$version.iso#/wpilib.iso"}},"hash":{"url":"https://api.github.com/repos/wpilibsuite/allwpilib/releases/latest","regex":"([a-fA-F0-9]{64})\\s+Win64/\\$basename"}},"from":"https://github.com/Arama0517/scoop-bucket"}
+{
+    "version": "2026.2.1",
+    "description": "Official Software Development Kit (SDK) and desktop tools for the FIRST Robotics Competition (FRC)",
+    "homepage": "https://github.com/wpilibsuite/allwpilib",
+    "license": "BSD-3-Clause",
+    "architecture": {
+        "64bit": {
+            "url": "https://packages.wpilib.workers.dev/installer/v2026.2.1/Win64/WPILib_Windows-2026.2.1.iso#/wpilib.iso",
+            "hash": "6dd86b714c41127c9ef7683b398dc21423cba7146e6868a97fefbd65a14429cb"
+        }
+    },
+    "installer": {
+        "script": [
+            "$art = Get-ChildItem -Path \"$dir\" -Filter \"*-artifacts.zip\" | Select-Object -First 1",
+            "if ($art) { Expand-Archive -Path $art.FullName -DestinationPath \"$dir\" -Force }",
+            "$res = Get-ChildItem -Path \"$dir\" -Filter \"*-resources.zip\" | Select-Object -First 1",
+            "if ($res) { Expand-Archive -Path $res.FullName -DestinationPath \"$dir\" -Force }",
+            "& \"$dir\\tools\\ToolsUpdater.bat\"",
+            "if (Test-Path \"$dir\\vscodeConfig.json\") {",
+            "    $config = Get-Content -Raw -Path \"$dir\\vscodeConfig.json\" | ConvertFrom-Json",
+            "    $url = $config.VsCodeWindowsUrl",
+            "    $zipName = $config.VsCodeWindowsName",
+            "    $hash = $config.VsCodeWindowsHash",
+            "    Write-Host \"Downloading VS Code from $url...\"",
+            "    Invoke-WebRequest -Uri $url -OutFile \"$dir\\$zipName\" -UseBasicParsing",
+            "    $fileHash = (Get-FileHash \"$dir\\$zipName\" -Algorithm SHA256).Hash",
+            "    if ($fileHash.ToLower() -eq $hash.ToLower()) {",
+            "        Write-Host \"VS Code hash verified.\"",
+            "    } else {",
+            "        Write-Warning \"VS Code hash mismatch! Expected: $hash, Got: $fileHash\"",
+            "    }",
+            "    Write-Host \"Extracting VS Code...\"",
+            "    Expand-Archive -Path \"$dir\\$zipName\" -DestinationPath \"$dir\\vscode\" -Force",
+            "    Remove-Item \"$dir\\$zipName\" -Force",
+            "    Write-Host \"Installing VS Code extensions...\"",
+            "    $extensionsDir = \"$persist_dir\\vscode\\data\\extensions\"",
+            "    $userDataDir = \"$persist_dir\\vscode\\data\\user-data\"",
+            "    if (!(Test-Path $extensionsDir)) { New-Item -ItemType Directory -Path $extensionsDir -Force | Out-Null }",
+            "    if (!(Test-Path $userDataDir)) { New-Item -ItemType Directory -Path $userDataDir -Force | Out-Null }",
+            "    if ($config.wpilibExtension) {",
+            "        $vsixPath = \"$dir\\vsCodeExtensions\\\" + $config.wpilibExtension.vsix",
+            "        if (Test-Path $vsixPath) {",
+            "            Start-Process -FilePath \"$dir\\vscode\\bin\\code.cmd\" -ArgumentList \"--extensions-dir\", $extensionsDir, \"--user-data-dir\", $userDataDir, \"--install-extension\", $vsixPath -Wait -NoNewWindow",
+            "        }",
+            "    }",
+            "    if ($config.thirdPartyExtensions) {",
+            "        foreach ($ext in $config.thirdPartyExtensions) {",
+            "            $vsixPath = \"$dir\\vsCodeExtensions\\\" + $ext.vsix",
+            "            if (Test-Path $vsixPath) {",
+            "                Start-Process -FilePath \"$dir\\vscode\\bin\\code.cmd\" -ArgumentList \"--extensions-dir\", $extensionsDir, \"--user-data-dir\", $userDataDir, \"--install-extension\", $vsixPath -Wait -NoNewWindow",
+            "            }",
+            "        }",
+            "    }",
+            "    Write-Host \"Configuring VS Code settings...\"",
+            "    $settingsDir = \"$userDataDir\\User\"",
+            "    if (!(Test-Path $settingsDir)) { New-Item -ItemType Directory -Path $settingsDir -Force | Out-Null }",
+            "    $settingsFile = \"$settingsDir\\settings.json\"",
+            "    $settings = @{}",
+            "    if (Test-Path $settingsFile) {",
+            "        $settings = Get-Content -Raw -Path $settingsFile | ConvertFrom-Json -AsHashtable",
+            "    }",
+            "    $jdkPath = \"$dir\\jdk\"",
+            "    $settings[\"java.jdt.ls.java.home\"] = $jdkPath",
+            "    $settings[\"extensions.autoUpdate\"] = $false",
+            "    $settings[\"extensions.autoCheckUpdates\"] = $false",
+            "    $settings[\"extensions.ignoreRecommendations\"] = $true",
+            "    $settings[\"extensions.showRecommendationsOnlyOnDemand\"] = $true",
+            "    $settings[\"update.mode\"] = \"none\"",
+            "    $settings[\"update.showReleaseNotes\"] = $false",
+            "    $settings[\"java.completion.matchCase\"] = \"off\"",
+            "    $settings[\"workbench.secondarySideBar.defaultVisibility\"] = \"hidden\"",
+            "    $settings[\"update.enableWindowsBackgroundUpdates\"] = $false",
+            "    $settings[\"workbench.welcomePage.experimentalOnboarding\"] = $false",
+            "    $settings[\"terminal.integrated.env.windows\"] = @{",
+            "        \"JAVA_HOME\" = $jdkPath",
+            "        \"PATH\" = \"$jdkPath\\bin;`${env:PATH}\"",
+            "    }",
+            "    $settings[\"java.configuration.runtimes\"] = @(",
+            "        @{",
+            "            \"name\" = \"JavaSE-25\"",
+            "            \"path\" = $jdkPath",
+            "            \"default\" = $true",
+            "        }",
+            "    )",
+            "    $settings[\"settingsSync.ignoredExtensions\"] = @(\"wpilibsuite.vscode-wpilib\")",
+            "    $settings | ConvertTo-Json -Depth 10 | Set-Content -Path $settingsFile -Force",
+            "}",
+            "Get-ChildItem -Path \"$dir\" -File | Remove-Item -Force",
+            "Get-ChildItem -Path \"$dir\" -Directory | Where-Object { $_.Name -notin 'tools', 'advantagescope', 'elastic', 'jdk', 'vscode', 'maven', 'vendordeps' } | Remove-Item -Recurse -Force",
+            "$year = $version.Split('.')[0]",
+            "$public_wpilib = \"C:\\Users\\Public\\wpilib\\$year\"",
+            "if (Test-Path $public_wpilib) {",
+            "    $item = Get-Item $public_wpilib",
+            "    if ($item.Attributes -match \"ReparsePoint\") {",
+            "        $item.Delete()",
+            "    } else {",
+            "        Remove-Item $public_wpilib -Recurse -Force",
+            "    }",
+            "}",
+            "$parent = \"C:\\Users\\Public\\wpilib\"",
+            "if (!(Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }",
+            "New-Item -ItemType Junction -Path $public_wpilib -Value \"$dir\" -Force | Out-Null"
+        ]
+    },
+    "shortcuts": [
+        ["tools/glass.exe", "FRC\\WPILib Tools\\Glass"],
+        ["tools/outlineviewer.exe", "FRC\\WPILib Tools\\OutlineViewer"],
+        ["tools/sysid.exe", "FRC\\WPILib Tools\\SysId"],
+        ["tools/datalogtool.exe", "FRC\\WPILib Tools\\Data Log Tool"],
+        ["tools/wpical.exe", "FRC\\WPILib Tools\\WPIcal"],
+        [
+            "tools/roborioteamnumbersetter.exe",
+            "FRC\\WPILib Tools\\RoboRIO Team Number Setter"
+        ],
+        [
+            "advantagescope/AdvantageScope (WPILib).exe",
+            "FRC\\WPILib Tools\\AdvantageScope (WPILib)"
+        ],
+        [
+            "elastic/elastic_dashboard.exe",
+            "FRC\\WPILib Tools\\Elastic (WPILib)"
+        ],
+        ["vscode/Code.exe", "FRC\\WPILib VS Code"]
+    ],
+    "persist": ["vscode/data"],
+    "uninstaller": {
+        "script": [
+            "$year = $version.Split('.')[0]",
+            "$public_wpilib = \"C:\\Users\\Public\\wpilib\\$year\"",
+            "if (Test-Path $public_wpilib) {",
+            "    $item = Get-Item $public_wpilib",
+            "    if ($item.Attributes -match \"ReparsePoint\") {",
+            "        $item.Delete()",
+            "    } else {",
+            "        Remove-Item $public_wpilib -Recurse -Force",
+            "    }",
+            "}",
+            "$parent = \"C:\\Users\\Public\\wpilib\"",
+            "if (Test-Path $parent) {",
+            "    if ((Get-ChildItem $parent).Count -eq 0) { Remove-Item $parent -Force }",
+            "}"
+        ]
+    },
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://packages.wpilib.workers.dev/installer/v$version/Win64/WPILib_Windows-$version.iso#/wpilib.iso"
+            }
+        },
+        "hash": {
+            "url": "https://api.github.com/repos/wpilibsuite/allwpilib/releases/latest",
+            "regex": "([a-fA-F0-9]{64})\\s+Win64/\\$basename"
+        }
+    }
+}
