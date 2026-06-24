@@ -1,18 +1,23 @@
 {
-    "version": "2.1.22",
-    "description": "AionUi - AI-powered desktop application",
+    "version": "2.1.23",
+    "description": "AionUi - Free, local, open-source Cowork for Gemini CLI, Claude Code, Codex, and more",
     "homepage": "https://github.com/iOfficeAI/AionUi",
-    "license": "MIT",
+    "license": "Apache-2.0",
+    "notes": [
+        "AionUi 是一个免费、本地、开源的 AI 协作工具",
+        "用户数据目录：%APPDATA%\\AionUi\\",
+        "本包会将该目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist"
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/iOfficeAI/AionUi/releases/download/v2.1.22/AionUi-2.1.22-win-x64.exe",
-            "hash": "e7bd955ba6ec6eefbc2e01b1523f7bb6f7a258833f46625fb5ef7aaebeaaa73f"
-        },
-        "arm64": {
-            "url": "https://github.com/iOfficeAI/AionUi/releases/download/v2.1.22/AionUi-2.1.22-win-arm64.exe",
-            "hash": "659e9f0e3d14a6bb8677345c9665211eae16f84435b5d16544df9872b4ac9780"
+            "url": "https://github.com/iOfficeAI/AionUi/releases/download/v2.1.23/AionUi-2.1.23-win-x64.exe#/dl.7z",
+            "hash": "712e05a33e8e1809d91355538f01ed4335e4398e6c0b39bf384b216b71224c2e"
         }
     },
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
+        "Remove-Item \"$dir\\`$*\" -Force -Recurse -ErrorAction SilentlyContinue"
+    ],
     "bin": "AionUi.exe",
     "shortcuts": [
         [
@@ -20,16 +25,47 @@
             "AionUi"
         ]
     ],
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'AionUi'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"配置路径已存在且不是目录：$source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"迁移失败，保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原配置目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原目录：$source\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "persist": "data",
     "checkver": {
         "github": "https://github.com/iOfficeAI/AionUi"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/iOfficeAI/AionUi/releases/download/v$version/AionUi-$version-win-x64.exe"
-            },
-            "arm64": {
-                "url": "https://github.com/iOfficeAI/AionUi/releases/download/v$version/AionUi-$version-win-arm64.exe"
+                "url": "https://github.com/iOfficeAI/AionUi/releases/download/v$version/AionUi-$version-win-x64.exe#/dl.7z"
             }
         }
     }
