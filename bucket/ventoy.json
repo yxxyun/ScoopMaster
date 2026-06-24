@@ -1,81 +1,37 @@
 {
-    "version": "1.1.12",
+    "version": "1.1.13",
     "description": "Bootable USB drive creator",
     "homepage": "https://www.ventoy.net/en/index.html",
     "license": "GPL-3.0-or-later",
-    "url": "https://github.com/ventoy/Ventoy/releases/download/v1.1.12/ventoy-1.1.12-windows.zip",
-    "hash": "e70c505be08d99c55e506832f596c430a9c36f8d087f25542d3f6d332d9b6473",
-    "extract_dir": "ventoy-1.1.12",
-    "architecture": {
-        "64bit": {
-            "bin": [
-                [
-                    "altexe\\Ventoy2Disk_x64.exe",
-                    "Ventoy2Disk"
-                ]
-            ],
-            "shortcuts": [
-                [
-                    "altexe\\Ventoy2Disk_X64.exe",
-                    "Ventoy2Disk"
-                ],
-                [
-                    "altexe\\VentoyPlugson_x64.exe",
-                    "VentoyPlugson"
-                ],
-                [
-                    "VentoyVlnk.exe",
-                    "VentoyVlnk",
-                    "-s"
-                ]
-            ]
-        },
-        "32bit": {
-            "bin": "Ventoy2Disk.exe",
-            "shortcuts": [
-                [
-                    "Ventoy2Disk.exe",
-                    "Ventoy2Disk"
-                ],
-                [
-                    "VentoyPlugson.exe",
-                    "VentoyPlugson"
-                ],
-                [
-                    "VentoyVlnk.exe",
-                    "VentoyVlnk",
-                    "-s"
-                ]
-            ]
-        },
-        "arm64": {
-            "bin": [
-                [
-                    "altexe\\Ventoy2Disk_ARM64.exe",
-                    "Ventoy2Disk"
-                ]
-            ],
-            "shortcuts": [
-                [
-                    "altexe\\Ventoy2Disk_ARM64.exe",
-                    "Ventoy2Disk"
-                ],
-                [
-                    "altexe\\VentoyPlugson_x64.exe",
-                    "VentoyPlugson"
-                ],
-                [
-                    "VentoyVlnk.exe",
-                    "VentoyVlnk",
-                    "-s"
-                ]
-            ]
-        }
-    },
+    "url": "https://github.com/ventoy/Ventoy/releases/download/v1.1.13/ventoy-1.1.13-windows.zip",
+    "hash": "6a0a70bfe89455ede7c31985a538d28b2dff085650e98bdaa3dc678cb5764ffa",
+    "extract_dir": "ventoy-1.1.13",
     "pre_install": [
         "'log.txt', 'Ventoy2Disk.ini' | ForEach-Object {",
-        "    if (-not (Test-Path \"$persist_dir\\$_\")) { New-Item -Path \"$dir\\$_\" -ItemType File -Force | Out-Null }",
+        "    if (!(Test-Path \"$persist_dir\\$_\")) { New-Item \"$dir\\$_\" -ItemType File | Out-Null }",
+        "}",
+        "$arch = $env:PROCESSOR_ARCHITECTURE",
+        "if ($arch -like \"ARM64\") {",
+        "   Copy-Item -Path \"$dir\\altexe\\Ventoy2Disk_ARM64.exe\" -Destination \"$dir\" -Force",
+        "   Remove-Item \"$dir\\Ventoy2Disk.exe\" -Force",
+        "   Remove-Item \"$dir\\altexe\" -Recurse -Force",
+        "   Rename-Item -Path \"$dir\\Ventoy2Disk_ARM64.exe\" -NewName \"Ventoy2Disk.exe\"",
+        "}",
+        "elseif ($arch -like \"AMD64\") {",
+        "   Copy-Item -Path \"$dir\\altexe\\Ventoy2Disk_X64.exe\" -Destination \"$dir\" -Force",
+        "   Remove-Item \"$dir\\Ventoy2Disk.exe\" -Force",
+        "   Remove-Item \"$dir\\altexe\" -Recurse -Force",
+        "   Rename-Item -Path \"$dir\\Ventoy2Disk_X64.exe\" -NewName \"Ventoy2Disk.exe\"",
+        "}",
+        "else {",
+        "   Remove-Item \"$dir\\altexe\" -Recurse -Force",
         "}"
+    ],
+    "shortcuts": [
+        [
+            "Ventoy2Disk.exe",
+            "Ventoy2Disk"
+        ]
     ],
     "persist": [
         "log.txt",
@@ -87,7 +43,7 @@
     "autoupdate": {
         "url": "https://github.com/ventoy/Ventoy/releases/download/v$version/ventoy-$version-windows.zip",
         "hash": {
-            "url": "https://github.com/ventoy/Ventoy/releases/tag/v$version"
+            "url": "$baseurl/sha256.txt"
         },
         "extract_dir": "ventoy-$version"
     }
