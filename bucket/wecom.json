@@ -8,37 +8,24 @@
     },
     "url": "https://dldir1.qq.com/wework/work_weixin/WeCom_5.0.9.6019.exe#/dl.7z",
     "hash": "157dfd5c3509257fe0d12109c3e979735573cec8dd437b2fc77eb0c6c37466dc",
-    "bin": "WXWork.exe",
+    "installer": {
+        "script": [
+            "Remove-Item \"$dir\\`$*\" -Recurse -Force -ErrorAction SilentlyContinue",
+            "Remove-Item \"$dir\\Uninstall*\" -Force -ErrorAction SilentlyContinue"
+        ]
+    },
     "shortcuts": [
         [
             "WXWork.exe",
             "WeCom"
         ]
     ],
-    "pre_install": [
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
-        "Remove-Item \"$dir\\Uninstall.exe\" -Force -Recurse",
-        "Write-Host (\"`nPersisting $env:APPDATA\\Tencent\\WXWork ... \") -NoNewline",
-        "New-PersistDirectory \"$env:APPDATA\\Tencent\\WXWork\" \"$persist_dir\\AppData\" -Migrate"
-    ],
-    "post_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Write-Host (\"`nDeleting $env:APPDATA\\VoipNNModel ... \") -f DarkGray -NoNewline",
-        "Remove-Item -Path \"$env:AppData\\VoipNNModel\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
-        "Write-Host (\"`nDeleting $env:APPDATA\\Tencent\\WXWork ... \") -f DarkGray -NoNewline",
-        "Remove-Junction \"$env:APPDATA\\Tencent\\WXWork\" -ErrorAction SilentlyContinue | Out-Null"
-    ],
     "checkver": {
         "script": [
             "$url = 'https://work.weixin.qq.com/wework_admin/commdownload?platform=win&from=wwindex'",
-            "if ($PSVersionTable.PSVersion.Major -lt 7.0) {",
-            "    $req = Invoke-WebRequest -Uri $url -MaximumRedirection 0 -ErrorAction SilentlyContinue",
-            "} else {",
-            "    $req = Invoke-WebRequest -Uri $url -MaximumRedirection 0 -ErrorAction SilentlyContinue -SkipHttpErrorCheck",
-            "}",
-            "Write-Output $req.Headers.Location"
+            "$request = [System.Net.HttpWebRequest]::Create($url)",
+            "$response = $request.GetResponse()",
+            "Write-Output $response.ResponseUri.AbsoluteUri"
         ],
         "regex": "WeCom_([\\d.]+).exe"
     },
