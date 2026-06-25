@@ -1,25 +1,56 @@
 {
-  "version": "6.2.2",
-  "description": "WinSnap is a fast and user-friendly utility for taking and editing screenshots.",
-  "homepage": "https://www.ntwind.com/software/winsnap.html",
-  "url": "https://www.ntwind.com/files/WinSnap_6.2.2-setup.exe#/dl.7z",
-  "hash": "fca917621dc3363f9729554ba814ba19cfa1f5eb1de90ff2797d8d0b5f4ef107",
-  "checkver": {
-    "url": "https://www.ntwind.com/software/winsnap.html",
-    "regex": "WinSnap_(\\d+.\\d+.\\d+)-setup.exe"
-  },
-  "autoupdate": {
-    "url": "https://www.ntwind.com/files/WinSnap_$version-setup.exe#/dl.7z"
-  },
-  "post_install": [
-    "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse",
-    "Remove-Item \"$dir\\`$TEMP\" -Recurse",
-    "Remove-Item \"$dir\\`$2.nsis\" -Recurse"
-  ],
-  "shortcuts": [
-    [
-      "WinSnap64.exe",
-      "WinSnap"
-    ]
-  ]
+    "version": "6.2.2",
+    "description": "Screen capture utility for everyday tasks",
+    "homepage": "https://www.ntwind.com/software/winsnap.html",
+    "license": "Proprietary",
+    "url": "https://www.ntwind.com/download/WinSnap_6.2.2-setup.exe",
+    "hash": "FCA917621DC3363F9729554BA814BA19CFA1F5EB1DE90FF2797D8D0B5F4EF107",
+    "installer": {
+        "script": [
+            "Start-Process \"$dir\\$fname\" -ArgumentList @('/S', \"/D=$dir\") -Wait",
+            "Remove-Item \"$dir\\$fname\""
+        ]
+    },
+    "bin": [
+        [
+            "WinSnap.exe",
+            "winsnap"
+        ],
+        "WinSnap.exe"
+    ],
+    "shortcuts": [
+        [
+            "WinSnap.exe",
+            "WinSnap"
+        ]
+    ],
+    "post_install": [
+        "$uninstallRoots = @(",
+        "    'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',",
+        "    'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'",
+        ")",
+        "$uninstall = Get-ItemProperty -Path $uninstallRoots -ErrorAction SilentlyContinue | Where-Object {",
+        "    $_.DisplayName -match '^(Winsnap|WinSnap)$' -or",
+        "    ($_.InstallLocation -and $_.InstallLocation.TrimEnd('\\') -eq $dir.TrimEnd('\\'))",
+        "} | Select-Object -First 1",
+        "if ($uninstall -and $uninstall.PSPath) {",
+        "    Set-ItemProperty -Path $uninstall.PSPath -Name DisplayName -Value 'WinSnap' -ErrorAction SilentlyContinue",
+        "    Set-ItemProperty -Path $uninstall.PSPath -Name DisplayVersion -Value $version -ErrorAction SilentlyContinue",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "$uninstall = Get-ItemProperty HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*,HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* -ErrorAction SilentlyContinue | Where-Object {$_.DisplayName -match '^(Winsnap|WinSnap)$'} | Select-Object -First 1",
+            "if ($uninstall) {",
+            "    Start-Process $uninstall.UninstallString -ArgumentList '/S' -Wait",
+            "}"
+        ]
+    },
+    "checkver": {
+        "url": "https://www.ntwind.com/download-all.html",
+        "regex": "WinSnap_([\\d.]+)-setup\\.exe"
+    },
+    "autoupdate": {
+        "url": "https://www.ntwind.com/download/WinSnap_$version-setup.exe"
+    }
 }
