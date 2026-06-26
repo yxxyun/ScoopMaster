@@ -1,1 +1,83 @@
-{"version":"20260611","description":"A software distro and building platform for Windows","homepage":"https://www.msys2.org","license":"GPL-2.0-only|BSD-3-Clause","architecture":{"64bit":{"url":"https://mirrors.tuna.tsinghua.edu.cn/msys2/distrib/x86_64/msys2-base-x86_64-20260611.tar.xz","hash":"a2d047e8ee213c3c6a49a8de427eb1069df12207c0422ff1b3cbb5c905c34221","extract_dir":"msys64"}},"env_add_path":"mingw64\\bin","installer":{"script":["# Force home dir to windows USERPROFILE","$homeDirControl = \"$dir\\etc\\nsswitch.conf\"","(Get-Content $homeDirControl) -replace 'db_home: cygwin desc', 'db_home: windows' | Set-Content $homeDirControl","# 0x00: Disable pacman Key Refreshing to speed up the setup","$postScript = \"$dir\\etc\\post-install\\07-pacman-key.post\"","if (Test-Path $postScript) { (Get-Content $postScript) -replace ' --refresh-keys', ' --version' | Set-Content $postScript }","# 0x01: Edit pacman.conf (Using Never for GPG and TUNA mirrors)","$pacmanConf = \"$dir\\etc\\pacman.conf\"","$confContent = Get-Content $pacmanConf -Raw","$confContent = $confContent -replace '(?m)^\\[clangarm64\\]\\s+Include = /etc/pacman.d/mirrorlist.mingw', \"[git-for-windows-x86_64]`r`nServer = https://raw.githubusercontent.com/git-for-windows/pacman-repo/refs/heads/x86_64`r`nSigLevel = Never\"","$confContent = $confContent -replace 'Include = /etc/pacman.d/mirrorlist.mingw', 'Server = https://mirrors.tuna.tsinghua.edu.cn/msys2/mingw/$repo/'","$confContent = $confContent -replace 'Include = /etc/pacman.d/mirrorlist.msys', 'Server = https://mirrors.tuna.tsinghua.edu.cn/msys2/msys/$arch/'","$confContent | Set-Content $pacmanConf -Encoding ASCII","$env:PS_KILL_CMD = \"ps -ef | grep '[?]' | awk '{print `$2}' | xargs -r kill\"","Invoke-ExternalCommand -LogPath \"$dir\\update.log\" -Path \"$dir\\msys2_shell.cmd\" -ArgumentList @('-msys2', '-defterm', '-here', '-no-start', '-c', 'eval \"$PS_KILL_CMD\"') | Out-Null","# 0x02: MSYS2 update and package installation","function Update-MSys2 {","    $logPath = \"$dir\\update.log\"","    $stopSentence = 'there is nothing to do'","    # Using env var to isolate complex bash commands from PowerShell shell-escaping","    $env:MSYS2_UP_CMD = \"pacman --ask 20 --noconfirm -Syuu --disable-download-timeout; $PS_KILL_CMD\"","    $env:MSYS2_INS_CMD = \"pacman --ask 20 --noconfirm -Syy --disable-download-timeout mingw-w64-x86_64-git mingw-w64-x86_64-git-credential-manager mingw-w64-x86_64-git-lfs zsh curl nano\"","    $i = 0; $max = 5; $done = $false","    Write-Host 'Updating MSYS2 packages...' -ForegroundColor Yellow","    while (!$done) {","        $i++","        Invoke-ExternalCommand -LogPath $logPath -Path \"$dir\\msys2_shell.cmd\" -ArgumentList @('-msys2', '-defterm', '-here', '-no-start', '-c', 'eval \"$MSYS2_UP_CMD\"') | Out-Null","        $done = (Get-Content $logPath -ErrorAction SilentlyContinue) -match $stopSentence | Measure-Object | ForEach-Object { $_.Count -ge 2 }","        if ($i -ge $max) { $done = $true }","    }","    Write-Host 'Installing Git and Zsh packages...' -ForegroundColor Yellow","    Invoke-ExternalCommand -LogPath $logPath -Path \"$dir\\msys2_shell.cmd\" -ArgumentList @('-msys2', '-defterm', '-here', '-no-start', '-c', 'eval \"$MSYS2_INS_CMD\"') | Out-Null","    $env:MSYS2_UP_CMD = $null; $env:MSYS2_INS_CMD = $null","}","Update-MSys2","$env:PS_KILL_CMD = $null"]},"env_set":{"MSYS":"winsymlinks:nativestrict","MSYS2_PATH":"$dir"},"bin":[["msys2_shell.cmd","mingw64","-defterm -here -no-start -mingw64"]],"shortcuts":[["mingw64.exe","MinGW64"]],"checkver":{"url":"https://mirrors.tuna.tsinghua.edu.cn/msys2/distrib/x86_64/","re":"msys2-base-x86_64-(\\d+).tar.xz","reverse":true},"autoupdate":{"architecture":{"64bit":{"url":"https://mirrors.tuna.tsinghua.edu.cn/msys2/distrib/x86_64/msys2-base-x86_64-$version.tar.xz"}}},"from":"https://github.com/vickunwu/scoop-bucket"}
+{
+    "version": "20260611",
+    "description": "A software distro and building platform for Windows",
+    "homepage": "https://www.msys2.org",
+    "license": "GPL-2.0-only|BSD-3-Clause",
+    "architecture": {
+        "64bit": {
+            "url": "https://mirrors.tuna.tsinghua.edu.cn/msys2/distrib/x86_64/msys2-base-x86_64-20260611.tar.xz",
+            "hash": "a2d047e8ee213c3c6a49a8de427eb1069df12207c0422ff1b3cbb5c905c34221",
+            "extract_dir": "msys64"
+        }
+    },
+    "env_add_path": "mingw64\\bin",
+    "installer": {
+        "script": [
+            "# Force home dir to windows USERPROFILE",
+            "$homeDirControl = \"$dir\\etc\\nsswitch.conf\"",
+            "(Get-Content $homeDirControl) -replace 'db_home: cygwin desc', 'db_home: windows' | Set-Content $homeDirControl",
+            "# 0x00: Disable pacman Key Refreshing to speed up the setup",
+            "$postScript = \"$dir\\etc\\post-install\\07-pacman-key.post\"",
+            "if (Test-Path $postScript) { (Get-Content $postScript) -replace ' --refresh-keys', ' --version' | Set-Content $postScript }",
+            "# 0x01: Edit pacman.conf (Using Never for GPG and TUNA mirrors)",
+            "$pacmanConf = \"$dir\\etc\\pacman.conf\"",
+            "$confContent = Get-Content $pacmanConf -Raw",
+            "$confContent = $confContent -replace '(?m)^\\[clangarm64\\]\\s+Include = /etc/pacman.d/mirrorlist.mingw', \"[git-for-windows-x86_64]`r`nServer = https://raw.githubusercontent.com/git-for-windows/pacman-repo/refs/heads/x86_64`r`nSigLevel = Never\"",
+            "$confContent = $confContent -replace 'Include = /etc/pacman.d/mirrorlist.mingw', 'Server = https://mirrors.tuna.tsinghua.edu.cn/msys2/mingw/$repo/'",
+            "$confContent = $confContent -replace 'Include = /etc/pacman.d/mirrorlist.msys', 'Server = https://mirrors.tuna.tsinghua.edu.cn/msys2/msys/$arch/'",
+            "$confContent | Set-Content $pacmanConf -Encoding ASCII",
+            "$env:PS_KILL_CMD = \"ps -ef | grep '[?]' | awk '{print `$2}' | xargs -r kill\"",
+            "Invoke-ExternalCommand -LogPath \"$dir\\update.log\" -Path \"$dir\\msys2_shell.cmd\" -ArgumentList @('-msys2', '-defterm', '-here', '-no-start', '-c', 'eval \"$PS_KILL_CMD\"') | Out-Null",
+            "# 0x02: MSYS2 update and package installation",
+            "function Update-MSys2 {",
+            "    $logPath = \"$dir\\update.log\"",
+            "    $stopSentence = 'there is nothing to do'",
+            "    # Using env var to isolate complex bash commands from PowerShell shell-escaping",
+            "    $env:MSYS2_UP_CMD = \"pacman --ask 20 --noconfirm -Syuu --disable-download-timeout; $PS_KILL_CMD\"",
+            "    $env:MSYS2_INS_CMD = \"pacman --ask 20 --noconfirm -Syy --disable-download-timeout mingw-w64-x86_64-git mingw-w64-x86_64-git-credential-manager mingw-w64-x86_64-git-lfs zsh curl nano\"",
+            "    $i = 0; $max = 5; $done = $false",
+            "    Write-Host 'Updating MSYS2 packages...' -ForegroundColor Yellow",
+            "    while (!$done) {",
+            "        $i++",
+            "        Invoke-ExternalCommand -LogPath $logPath -Path \"$dir\\msys2_shell.cmd\" -ArgumentList @('-msys2', '-defterm', '-here', '-no-start', '-c', 'eval \"$MSYS2_UP_CMD\"') | Out-Null",
+            "        $done = (Get-Content $logPath -ErrorAction SilentlyContinue) -match $stopSentence | Measure-Object | ForEach-Object { $_.Count -ge 2 }",
+            "        if ($i -ge $max) { $done = $true }",
+            "    }",
+            "    Write-Host 'Installing Git and Zsh packages...' -ForegroundColor Yellow",
+            "    Invoke-ExternalCommand -LogPath $logPath -Path \"$dir\\msys2_shell.cmd\" -ArgumentList @('-msys2', '-defterm', '-here', '-no-start', '-c', 'eval \"$MSYS2_INS_CMD\"') | Out-Null",
+            "    $env:MSYS2_UP_CMD = $null; $env:MSYS2_INS_CMD = $null",
+            "}",
+            "Update-MSys2",
+            "$env:PS_KILL_CMD = $null"
+        ]
+    },
+    "env_set": {
+        "MSYS": "winsymlinks:nativestrict",
+        "MSYS2_PATH": "$dir"
+    },
+    "bin": [
+        [
+            "msys2_shell.cmd",
+            "mingw64",
+            "-defterm -here -no-start -mingw64"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "mingw64.exe",
+            "MinGW64"
+        ]
+    ],
+    "checkver": {
+        "url": "https://mirrors.tuna.tsinghua.edu.cn/msys2/distrib/x86_64/",
+        "re": "msys2-base-x86_64-(\\d+).tar.xz",
+        "reverse": true
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://mirrors.tuna.tsinghua.edu.cn/msys2/distrib/x86_64/msys2-base-x86_64-$version.tar.xz"
+            }
+        }
+    }
+}
