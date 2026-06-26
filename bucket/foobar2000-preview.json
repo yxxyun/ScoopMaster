@@ -10,18 +10,18 @@
         "Encoders": "extras/foobar2000-encoders"
     },
     "architecture": {
-        "64bit": {
-            "url": "https://www.foobar2000.org/files/foobar2000-x64_v2.26_preview_2026-06-23.exe#/dl.7z",
-            "hash": "ba25989f4606a62e2daf9e44506fba6306f41a18c1919900cb70832e468e758a"
-        },
         "32bit": {
             "url": "https://www.foobar2000.org/files/foobar2000_v2.26_preview_2026-06-23.exe",
             "hash": "292ae03cfb07603e810a62c28816d48158c645cde66f548d9fa9567fe8b55008"
+        },
+        "64bit": {
+            "url": "https://www.foobar2000.org/files/foobar2000-x64_v2.26_preview_2026-06-23.exe#/dl.7z",
+            "hash": "ba25989f4606a62e2daf9e44506fba6306f41a18c1919900cb70832e468e758a"
         }
     },
     "installer": {
         "script": [
-            "Remove-Item \"$dir\\`$*\" -Force -Recurse",
+            "Remove-Item \"$dir\\`$*\", \"$dir\\uninstall.exe\" -Force -Recurse",
             "New-Item \"$dir\\portable_mode_enabled\" -Force | Out-Null",
             "$EncodersDir = $(appdir foobar2000-encoders $global)",
             "if (Test-Path \"$EncodersDir\") {",
@@ -33,10 +33,14 @@
         "if (!(Test-Path \"$persist_dir\\profile\\*\")) {",
         "    Get-ChildItem -Path \"$persist_dir\" -Exclude \"profile\" | Move-Item -Destination \"$persist_dir\\profile\" -Force",
         "}",
-        "if (!(Test-Path \"$persist_dir\\profile\\*\") -and (Test-Path \"$env:AppData\\foobar2000-v2\")) {",
+        "if (!(Test-Path \"$persist_dir\\profile\\*\") -and (Test-Path \"$env:AppData\\foobar2000\")) {",
         "    info '[Portable Mode]: Copying user data...'",
-        "    Copy-Item \"$env:AppData\\foobar2000-v2\\*\" -Destination \"$persist_dir\\profile\" -Force -Recurse",
-        "}"
+        "    Copy-Item \"$env:AppData\\foobar2000\\*\" -Destination \"$persist_dir\\profile\" -Force -Recurse",
+        "}",
+        "if (!(Test-Path \"$persist_dir\\profile\\playlists-v1.4\")) {",
+        "    Get-ChildItem -Path \"$persist_dir\\profile\" -Filter \"playlists\" -Directory | Rename-Item -NewName \"playlists-v1.4\" -Force",
+        "}",
+        "Get-ChildItem -Path \"$persist_dir\\profile\" -Filter \"playlists\" | Remove-Item -Force -Recurse"
     ],
     "bin": "foobar2000.exe",
     "shortcuts": [
@@ -48,16 +52,16 @@
     "persist": "profile",
     "checkver": {
         "url": "https://www.foobar2000.org/download",
-        "regex": "foobar2000_v([\\d.]+)_preview_(\\d+)-(\\d+)-(\\d+)\\.",
+        "regex": "([\\d.]+) preview (\\d{4})-(\\d{2})-(\\d{2})",
         "replace": "${1}-${2}${3}${4}"
     },
     "autoupdate": {
         "architecture": {
-            "64bit": {
-                "url": "https://www.foobar2000.org/files/foobar2000-x64_v$match1_preview_$match2-$match3-$match4.exe#/dl.7z"
-            },
             "32bit": {
                 "url": "https://www.foobar2000.org/files/foobar2000_v$match1_preview_$match2-$match3-$match4.exe"
+            },
+            "64bit": {
+                "url": "https://www.foobar2000.org/files/foobar2000-x64_v$match1_preview_$match2-$match3-$match4.exe#/dl.7z"
             }
         }
     }
