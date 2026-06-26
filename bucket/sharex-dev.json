@@ -1,1 +1,40 @@
-{"version":"20.2.0.1153","description":"Screen capture, file sharing and productivity tool. Development build using the native installer.","homepage":"https://getsharex.com/","license":"GPL-3.0-only","notes":"Tracks installer builds published to ShareX/DevBuilds.","architecture":{"64bit":{"url":"https://github.com/ShareX/DevBuilds/releases/download/v20.2.0.1153/ShareX-20.2.0.1153-setup-x64.exe","hash":"4a5ca5383905a22229edbbe4b640b9564e9504ab2ddddf3390052b963d9d8080"}},"installer":{"args":["/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/SP-","/NORUN","/NOICONS","/TASKS=","/DIR=\"$dir\""]},"post_install":["$programs = [Environment]::GetFolderPath('Programs')","$nativeGroup = Join-Path $programs 'ShareX'","$appRoot = Split-Path $dir","if (Test-Path -LiteralPath $nativeGroup) {","    $shell = New-Object -ComObject WScript.Shell","    Get-ChildItem -LiteralPath $nativeGroup -Filter '*.lnk' -File -ErrorAction SilentlyContinue | ForEach-Object {","        try {","            $target = $shell.CreateShortcut($_.FullName).TargetPath","            if ($target -and $target.StartsWith($appRoot, [StringComparison]::OrdinalIgnoreCase)) {","                Remove-Item -LiteralPath $_.FullName -Force","            }","        } catch {}","    }","    if (!(Get-ChildItem -LiteralPath $nativeGroup -Force -ErrorAction SilentlyContinue)) {","        Remove-Item -LiteralPath $nativeGroup -Force","    }","}"],"uninstaller":{"file":"unins000.exe","args":["/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART"]},"bin":[["ShareX.exe","sharex-dev"]],"shortcuts":[["ShareX.exe","ShareX Dev"]],"checkver":{"url":"https://api.github.com/repos/ShareX/DevBuilds/releases?per_page=100","script":["$release = @($page | ConvertFrom-Json) | Where-Object {","    if ($_.draft -or $_.tag_name -notmatch '^v\\d+(?:\\.\\d+){3}$') { return $false }","    $version = $_.tag_name.TrimStart('v')","    $_.assets.name -contains \"ShareX-$version-setup-x64.exe\"","} | Sort-Object { [version]($_.tag_name.TrimStart('v')) } -Descending | Select-Object -First 1","if (-not $release) { throw 'No complete ShareX dev installer release found' }","$release.tag_name.TrimStart('v')"],"regex":"^(?<version>\\d+(?:\\.\\d+){3})$"},"autoupdate":{"architecture":{"64bit":{"url":"https://github.com/ShareX/DevBuilds/releases/download/v$version/ShareX-$version-setup-x64.exe"}}},"from":"https://github.com/marcmy/scoop-bucket"}
+{
+    "version": "20.2.0.1152",
+    "description": "Screen capture, file sharing and productivity tool. (Dev. Version)",
+    "homepage": "https://getsharex.com",
+    "license": "GPL-3.0-only",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/ShareX/DevBuilds/releases/download/v20.2.0.1152/ShareX-20.2.0.1152-portable-x64.zip",
+            "hash": "fe913e02de9eea8c00ae7fc804879aabc098b8efd84d57c5ef717173af6cf8f2"
+        }
+    },
+    "pre_install": "if (!(Test-Path \"$persist_dir\\PersonalPath.cfg\")) { New-Item \"$dir\\PersonalPath.cfg\" | Out-Null }",
+    "bin": "ShareX.exe",
+    "shortcuts": [
+        [
+            "ShareX.exe",
+            "ShareX Dev"
+        ]
+    ],
+    "persist": [
+        "PersonalPath.cfg",
+        "ShareX"
+    ],
+    "checkver": {
+        "github": "https://github.com/ShareX/DevBuilds",
+        "jsonpath": "$.tag_name",
+        "regex": "v([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/ShareX/DevBuilds/releases/download/v$version/ShareX-$version-portable-x64.zip"
+            }
+        },
+        "hash": {
+            "url": "https://github.com/ShareX/DevBuilds/releases/tag/v$version",
+            "regex": "$basename</td>\\s*<td><code>$sha256</code>"
+        }
+    }
+}
