@@ -1,1 +1,99 @@
-{"version":"1.2.0","description":"Detect the technology stack, code signature, and notarization status of desktop applications","homepage":"https://github.com/wavever/buildby","license":"MIT","notes":["BuildBy is a Node.js CLI for detecting what desktop apps are built with","This package installs production npm dependencies during installation","User config: %APPDATA%\\buildby\\config.json","User cache: %LOCALAPPDATA%\\buildby\\Cache\\analysis-cache-v1.json","This package persists both buildby directories via Junction links"],"url":"https://github.com/wavever/buildby/releases/download/v1.2.0/wavever-buildby-1.2.0.tgz#/dl.tgz","hash":"21d6aa771ed71285c96a49e5c8dcfeb7570c365af1ad7e1c2c9c2b85ef9a989c","extract_dir":"package","installer":{"script":["Write-Host 'Installing npm production dependencies...'","Push-Location $dir","& npm.cmd install --omit=dev --no-audit --no-fund --ignore-scripts --package-lock=false","Pop-Location","if ($LASTEXITCODE -ne 0) { throw 'npm install failed' }","","$launcher = @('@echo off', 'node \"%~dp0bin\\buildby.js\" %*')","[IO.File]::WriteAllLines((Join-Path $dir 'buildby.cmd'), $launcher, [Text.UTF8Encoding]::new($false))","","# Persist %APPDATA%\\buildby","$source1 = Join-Path $persist_dir 'config'","$target1 = Join-Path $env:APPDATA 'buildby'","ensure $source1","if (Test-Path $target1) {","    $item = Get-Item -LiteralPath $target1 -Force","    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {","        Write-Host 'Junction already exists: $target1'","    } elseif (-not $item.PSIsContainer) {","        throw \"Path exists and is not a directory: $target1\"","    } else {","        & robocopy $target1 $source1 /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null","        if ($LASTEXITCODE -gt 7) { throw \"Migration failed: $target1\" }","        $backup = \"$target1.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"","        Move-Item -LiteralPath $target1 -Destination $backup -Force","        Write-Host \"Backed up original: $backup\"","        New-Item -Path $target1 -ItemType Junction -Value $source1 -Force | Out-Null","    }","} else {","    New-Item -Path $target1 -ItemType Junction -Value $source1 -Force | Out-Null","}","","# Persist %LOCALAPPDATA%\\buildby","$source2 = Join-Path $persist_dir 'localappdata'","$target2 = Join-Path $env:LOCALAPPDATA 'buildby'","ensure $source2","if (Test-Path $target2) {","    $item = Get-Item -LiteralPath $target2 -Force","    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {","        Write-Host 'Junction already exists: $target2'","    } elseif (-not $item.PSIsContainer) {","        throw \"Path exists and is not a directory: $target2\"","    } else {","        & robocopy $target2 $source2 /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null","        if ($LASTEXITCODE -gt 7) { throw \"Migration failed: $target2\" }","        $backup = \"$target2.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"","        Move-Item -LiteralPath $target2 -Destination $backup -Force","        Write-Host \"Backed up original: $backup\"","        New-Item -Path $target2 -ItemType Junction -Value $source2 -Force | Out-Null","    }","} else {","    New-Item -Path $target2 -ItemType Junction -Value $source2 -Force | Out-Null","}"]},"uninstaller":{"script":["$paths = @(","    (Join-Path $env:APPDATA 'buildby'),","    (Join-Path $env:LOCALAPPDATA 'buildby')",")","foreach ($path in $paths) {","    if (Test-Path $path) {","        $item = Get-Item -LiteralPath $path -Force","        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {","            Remove-Item -LiteralPath $path -Force","        }","    }","}"]},"bin":"buildby.cmd","persist":["config","localappdata"],"checkver":{"github":"https://github.com/wavever/buildby"},"autoupdate":{"url":"https://github.com/wavever/buildby/releases/download/v$version/wavever-buildby-$version.tgz#/dl.tgz"},"from":"https://github.com/maqibg/MQBucket"}
+{
+    "version": "1.2.0",
+    "description": "Detect the technology stack, code signature, and notarization status of desktop applications",
+    "homepage": "https://github.com/wavever/buildby",
+    "license": "MIT",
+    "notes": [
+        "BuildBy is a Node.js CLI for detecting what desktop apps are built with",
+        "This package installs production npm dependencies during installation",
+        "User config: %APPDATA%\\buildby\\config.json",
+        "User cache: %LOCALAPPDATA%\\buildby\\Cache\\analysis-cache-v1.json",
+        "This package persists both buildby directories via Junction links"
+    ],
+    "url": "https://github.com/wavever/buildby/releases/download/v1.2.0/wavever-buildby-1.2.0.tgz#/dl.tgz",
+    "hash": "21d6aa771ed71285c96a49e5c8dcfeb7570c365af1ad7e1c2c9c2b85ef9a989c",
+    "extract_dir": "package",
+    "installer": {
+        "script": [
+            "Write-Host 'Installing npm production dependencies...'",
+            "Push-Location $dir",
+            "& npm.cmd install --omit=dev --no-audit --no-fund --ignore-scripts --package-lock=false",
+            "Pop-Location",
+            "if ($LASTEXITCODE -ne 0) { throw 'npm install failed' }",
+            "",
+            "$launcher = @('@echo off', 'node \"%~dp0bin\\buildby.js\" %*')",
+            "[IO.File]::WriteAllLines((Join-Path $dir 'buildby.cmd'), $launcher, [Text.UTF8Encoding]::new($false))",
+            "",
+            "# Persist %APPDATA%\\buildby",
+            "$source1 = Join-Path $persist_dir 'config'",
+            "$target1 = Join-Path $env:APPDATA 'buildby'",
+            "ensure $source1",
+            "if (Test-Path $target1) {",
+            "    $item = Get-Item -LiteralPath $target1 -Force",
+            "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+            "        Write-Host 'Junction already exists: $target1'",
+            "    } elseif (-not $item.PSIsContainer) {",
+            "        throw \"Path exists and is not a directory: $target1\"",
+            "    } else {",
+            "        & robocopy $target1 $source1 /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+            "        if ($LASTEXITCODE -gt 7) { throw \"Migration failed: $target1\" }",
+            "        $backup = \"$target1.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+            "        Move-Item -LiteralPath $target1 -Destination $backup -Force",
+            "        Write-Host \"Backed up original: $backup\"",
+            "        New-Item -Path $target1 -ItemType Junction -Value $source1 -Force | Out-Null",
+            "    }",
+            "} else {",
+            "    New-Item -Path $target1 -ItemType Junction -Value $source1 -Force | Out-Null",
+            "}",
+            "",
+            "# Persist %LOCALAPPDATA%\\buildby",
+            "$source2 = Join-Path $persist_dir 'localappdata'",
+            "$target2 = Join-Path $env:LOCALAPPDATA 'buildby'",
+            "ensure $source2",
+            "if (Test-Path $target2) {",
+            "    $item = Get-Item -LiteralPath $target2 -Force",
+            "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+            "        Write-Host 'Junction already exists: $target2'",
+            "    } elseif (-not $item.PSIsContainer) {",
+            "        throw \"Path exists and is not a directory: $target2\"",
+            "    } else {",
+            "        & robocopy $target2 $source2 /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+            "        if ($LASTEXITCODE -gt 7) { throw \"Migration failed: $target2\" }",
+            "        $backup = \"$target2.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+            "        Move-Item -LiteralPath $target2 -Destination $backup -Force",
+            "        Write-Host \"Backed up original: $backup\"",
+            "        New-Item -Path $target2 -ItemType Junction -Value $source2 -Force | Out-Null",
+            "    }",
+            "} else {",
+            "    New-Item -Path $target2 -ItemType Junction -Value $source2 -Force | Out-Null",
+            "}"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$paths = @(",
+            "    (Join-Path $env:APPDATA 'buildby'),",
+            "    (Join-Path $env:LOCALAPPDATA 'buildby')",
+            ")",
+            "foreach ($path in $paths) {",
+            "    if (Test-Path $path) {",
+            "        $item = Get-Item -LiteralPath $path -Force",
+            "        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+            "            Remove-Item -LiteralPath $path -Force",
+            "        }",
+            "    }",
+            "}"
+        ]
+    },
+    "bin": "buildby.cmd",
+    "persist": [
+        "config",
+        "localappdata"
+    ],
+    "checkver": {
+        "github": "https://github.com/wavever/buildby"
+    },
+    "autoupdate": {
+        "url": "https://github.com/wavever/buildby/releases/download/v$version/wavever-buildby-$version.tgz#/dl.tgz"
+    }
+}
