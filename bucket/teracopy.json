@@ -1,66 +1,47 @@
 {
-    "version": "4rc3",
     "homepage": "http://www.codesector.com/teracopy",
+    "version": "4",
     "license": "free for home users",
-    "url": "https://www.codesector.com/files/teracopy4rc3.exe#/setup.exe",
-    "hash": "02cf2b49fdca573fe0f5ffc85db7a56ba7da433d3f56abb8d08911ad3ec34c86",
-    "pre_install": [
-        "# Create a temporary extraction folder",
-        "$tmp = Join-Path $dir 'tmp_extract'",
-        "New-Item -ItemType Directory -Force -Path $tmp | Out-Null",
-        "# Run setup.exe /extract into temp folder and wait for it to finish",
-        "$proc = Start-Process -FilePath \"$dir\\setup.exe\" -ArgumentList \"/extract `\"$tmp`\" /silent\" -Wait -PassThru",
-        "# Detect the random subdirectory inside the temp folder",
-        "$subdir = Get-ChildItem -Directory -Path $tmp | Select-Object -First 1",
-        "if ($subdir) {",
-        "    Write-Host \"Flattening files from $($subdir.FullName) into $dir\"",
-        "    Get-ChildItem -Path $subdir.FullName -Recurse -Force | ForEach-Object {",
-        "        $target = Join-Path $dir ($_.FullName.Substring($subdir.FullName.Length + 1))",
-        "        if ($_.PSIsContainer) { New-Item -ItemType Directory -Force -Path $target | Out-Null }",
-        "        else { Move-Item -Path $_.FullName -Destination $target -Force }",
-        "    }",
-        "    Remove-Item -Recurse -Force $subdir.FullName",
-        "}",
-        "# Short pause to release file locks, then remove the temporary extraction folder",
-        "Start-Sleep -Milliseconds 500",
-        "Remove-Item -Recurse -Force $tmp",
-        "# Remove the original setup.exe in $dir",
-        "$setupExe = Join-Path $dir \"setup.exe\"",
-        "if (Test-Path $setupExe) { Remove-Item -Force $setupExe }",
-        "# Remove all MSI files in $dir",
-        "Get-ChildItem -Path $dir -Filter *.msi -Force | Remove-Item -Force",
-        "# Create Options.ini if it doesn't exist",
-        "if(!(Test-Path \"$dir/Options.ini\")) { Add-Content \"$dir/Options.ini\" $null }"
-    ],
+    "url": "http://www.codesector.com/files/teracopy.exe#tera.exe",
+    "hash": "ac03db52bb68a013d3a8bf4db703ec11976fa1d0aa557eb988e3f926a26656cf",
+    "innosetup": true,
+    "bin": "TeraCopy.exe",
     "architecture": {
         "64bit": {
-            "bin": "TeraCopy.exe",
-            "shortcuts": [
-                [
-                    "TeraCopy.exe",
-                    "TeraCopy"
+            "installer": {
+                "script": [
+                    "Rename-Item \"$dir\\TeraCopy,1.exe\" \"TeraCopy.exe\"",
+                    "Rename-Item \"$dir\\TeraCopyService,1.exe\" \"TeraCopyService.exe\"",
+                    "Rename-Item \"$dir\\TeraCopy,1.dll\" \"TeraCopyExt.dll\"",
+                    "Rename-Item \"$dir\\Context,1.dll\" \"Context.dll\"",
+                    "Remove-Item \"$dir\\TeraCopy,2.exe\",\"$dir\\TeraCopy,2.dll\",\"$dir\\TeraCopyService,2.exe\",\"$dir\\Context,2.dll\" -Force"
                 ]
-            ]
+            }
         },
         "32bit": {
-            "bin": "Win32\\TeraCopy.exe",
-            "shortcuts": [
-                [
-                    "Win32\\TeraCopy.exe",
-                    "TeraCopy"
+            "installer": {
+                "script": [
+                    "Rename-Item \"$dir\\TeraCopy,2.exe\" \"TeraCopy.exe\"",
+                    "Rename-Item \"$dir\\TeraCopyService,2.exe\" \"TeraCopyService.exe\"",
+                    "Rename-Item \"$dir\\TeraCopy,2.dll\" \"TeraCopyExt.dll\"",
+                    "Rename-Item \"$dir\\Context,2.dll\" \"Context.dll\"",
+                    "Remove-Item \"$dir\\TeraCopy,1.exe\",\"$dir\\TeraCopy,1.dll\",\"$dir\\TeraCopyService,1.exe\",\"$dir\\Context,1.dll\""
                 ]
-            ]
+            }
         }
     },
     "persist": [
         "Options.ini",
-        "History"
+        "main.db"
     ],
-    "checkver": {
-        "url": "https://www.codesector.com/downloads",
-        "regex": "/files/teracopy(4.+?)\\.exe"
-    },
+    "shortcuts": [
+        [
+            "TeraCopy.exe",
+            "TeraCopy"
+        ]
+    ],
+    "checkver": "TeraCopy ([\\d.]+)",
     "autoupdate": {
-        "url": "https://www.codesector.com/files/teracopy$version.exe#/setup.exe"
+        "url": "http://www.codesector.com/files/teracopy.exe#tera.exe"
     }
 }
