@@ -1,35 +1,52 @@
 {
-    "version": "0.18.0",
-    "description": "zvm is a blazingly fast and intuitive command-line version manager for the Zig programming language.",
-    "homepage": "https://github.com/hendriknielaender/zvm",
+    "homepage": "https://github.com/tristanisham/zvm",
+    "version": "0.8.27",
+    "description": "Zig Version Manager (zvm) is a tool for managing your Zig installs",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/hendriknielaender/zvm/releases/download/v0.18.0/x86-windows-zvm.zip",
-            "hash": "sha256:19e1b5bff1c1c6b27e421717e9db661ba56e325dace938b0566a69bfe2500d05"
+            "url": "https://github.com/tristanisham/zvm/releases/download/v0.8.27/zvm-windows-amd64.zip",
+            "hash": "bc82e7aace1ad9574bf53486ef54a6558ad5e0f35161aa90fda424b94cba7b4d"
+        },
+        "arm64": {
+            "url": "https://github.com/tristanisham/zvm/releases/download/v0.8.27/zvm-windows-arm64.zip",
+            "hash": "f41fe165e13cb5366ee654469a5af3c63529fadce59c96e90263d51dfe735c74"
         }
     },
-    "bin": [
-        [
-            "x86-windows-zvm.exe",
-            "zvm"
-        ]
-    ],
-    "env_set": {
-        "XDG_DATA_HOME": "$persist_dir"
+    "bin": "zvm.exe",
+    "checkver": {
+        "github": "https://github.com/tristanisham/zvm"
     },
-    "env_add_path": [
-        ".zm/bin"
-    ],
-    "persist": [
-        ".zm"
-    ],
-    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/hendriknielaender/zvm/releases/download/$version/x86-windows-zvm.zip"
+                "url": "https://github.com/tristanisham/zvm/releases/download/v$version/zvm-windows-amd64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/tristanisham/zvm/releases/download/v$version/zvm-windows-arm64.zip"
             }
         }
-    }
+    },
+    "post_install": [
+        "if (Test-Path ~\\.zvm) {",
+        "   if ($null -eq (Get-Item ~\\.zvm).LinkType) {",
+        "       Rename-Item -Path ~\\.zvm -NewName ~\\.zvm.old -Force",
+        "   } else {",
+        "       Remove-Item -Path ~\\.zvm -Force",
+        "   }",
+        "}",
+        "New-Item -Path ~/.zvm -Target \"$dir\\data\" -ItemType Junction | Out-Null"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ((Test-Path ~\\.zvm) -and ($null -ne (Get-Item ~\\.zvm).LinkType)) {",
+            "   Remove-Item -Path ~\\.zvm -Force",
+            "}",
+            "if (Test-Path ~\\.zvm.old) {",
+            "   Rename-Item -Path ~\\.zvm.old -NewName .zvm -Force",
+            "}"
+        ]
+    },
+    "persist": "data",
+    "env_add_path": "data\\bin"
 }
