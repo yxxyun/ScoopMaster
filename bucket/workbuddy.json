@@ -1,6 +1,6 @@
 {
     "version": "5.1.7.31711488-dc01bf2f",
-    "description": "WorkBuddy Desktop - AI Agent Desktop Application",
+    "description": "An AI-native desktop Agent WorkBench",
     "homepage": "https://www.codebuddy.cn/work/",
     "license": "Proprietary",
     "architecture": {
@@ -11,14 +11,21 @@
     },
     "extract_dir": "{code_GetDestDir}",
     "innosetup": true,
-    "installer": {
-        "script": [
-            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-            "New-PersistDirectory \"$env:USERPROFILE\\.workbuddy\" \"$persist_dir\\.workbuddy\" -Migrate",
-            "New-PersistDirectory \"$env:AppData\\WorkBuddy\" \"$persist_dir\\AppData\" -Migrate"
-        ]
-    },
-    "post_install": "Remove-Item \"$dir\\uninstall*\", \"$dir\\`$*\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "post_install": [
+        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.workbuddy\\extensions\")) {",
+        "    info '[Portable Mode] Copying extensions...'",
+        "    Copy-Item \"$env:USERPROFILE\\.workbuddy\\extensions\" \"$dir\\data\" -Recurse",
+        "}",
+        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\WorkBuddy\")) {",
+        "    info '[Portable Mode] Copying user data...'",
+        "    Copy-Item \"$env:AppData\\WorkBuddy\" \"$dir\\data\\user-data\" -Recurse",
+        "}",
+        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
+        "if ((Test-Path \"$extensions_file\")) {",
+        "    info 'Adjusting path in extensions file...'",
+        "    (Get-Content \"$extensions_file\") -replace '(?<=workbuddy(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
+        "}"
+    ],
     "bin": [
         [
             "bin/workbuddy.cmd",
@@ -31,13 +38,7 @@
             "WorkBuddy"
         ]
     ],
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App",
-        "Remove-Junction \"$env:USERPROFILE\\.workbuddy\"",
-        "Remove-Junction \"$env:AppData\\WorkBuddy\""
-    ],
+    "persist": "data",
     "checkver": {
         "url": "https://www.codebuddy.cn/v2/update?platform=workbuddy-win32-x64-user",
         "jsonpath": "$.url",
