@@ -2,44 +2,48 @@
     "version": "1.1.5",
     "description": "A git client based on the IntelliJ platform.",
     "homepage": "https://github.com/DetachHead/rebased",
-    "license": "Apache-2.0",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/DetachHead/rebased/releases/download/1.1.5/rebased.exe",
-            "hash": "cf63d94418e4e7cc287d1d549b0dec9604ffc851d7ecce6a6d783d0e748925ac"
-        }
+    "license": {
+        "identifier": "Apache-2.0",
+        "url": "https://github.com/DetachHead/rebased/blob/master/LICENSE.txt"
     },
+    "url": "https://github.com/DetachHead/rebased/releases/download/1.1.5/rebased.exe#/dl.7z",
+    "hash": "cf63d94418e4e7cc287d1d549b0dec9604ffc851d7ecce6a6d783d0e748925ac",
+    "pre_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse -Force",
     "installer": {
         "script": [
-            "$installer = Get-ChildItem \"$dir\\rebased.exe\" -ErrorAction SilentlyContinue | Select-Object -First 1",
-            "if ($installer) {",
-            "    $extract = Join-Path $dir '_extract'",
-            "    if (Test-Path $extract) { Remove-Item $extract -Recurse -Force -ErrorAction SilentlyContinue }",
-            "    New-Item -ItemType Directory -Path $extract | Out-Null",
-            "    Start-Process -FilePath $installer.FullName -ArgumentList '/S', \"/D=$extract\" -Wait -NoNewWindow",
-            "    if (Test-Path \"$extract\\*\") {",
-            "        Move-Item \"$extract\\*\" \"$dir\\\" -Force",
-            "    }",
-            "    Remove-Item $extract -Recurse -Force -ErrorAction SilentlyContinue",
+            "if (!(Test-Path \"$persist_dir\\bin\\idea.properties\")) {",
+            "    $current = (Split-Path $dir | Join-Path -ChildPath 'current') -replace '\\\\', '/'",
+            "    $content = Get-Content \"$dir\\bin\\idea.properties\"",
+            "    $content = $content -replace '^#\\s*(idea.config.path=).*$', \"`$1$current/profile/config\"",
+            "    $content = $content -replace '^#\\s*(idea.system.path=).*$', \"`$1$current/profile/system\"",
+            "    $content = $content -replace '^#\\s*(idea.plugins.path=).*$', '$1${idea.config.path}/plugins'",
+            "    $content = $content -replace '^#\\s*(idea.log.path=).*$', '$1${idea.system.path}/log'",
+            "    Set-Content -LiteralPath \"$dir\\bin\\idea.properties\" -Value $content -Encoding Ascii -Force",
             "}"
         ]
     },
-    "post_install": "if (Test-Path \"$dir\\rebased.exe\") { Remove-Item \"$dir\\rebased.exe\" -Force -ErrorAction SilentlyContinue }",
-    "bin": "bin\\idea64.exe",
+    "bin": [
+        [
+            "bin\\idea64.exe",
+            "rebased"
+        ]
+    ],
     "shortcuts": [
         [
             "bin\\idea64.exe",
             "Rebased"
         ]
     ],
+    "persist": [
+        "bin\\idea.properties",
+        "bin\\idea64.exe.vmoptions",
+        "profile"
+    ],
     "checkver": {
-        "github": "https://github.com/DetachHead/rebased"
+        "github": "https://github.com/DetachHead/rebased",
+        "regex": "releases/tag/([\\d.]+)"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/DetachHead/rebased/releases/download/$version/rebased.exe"
-            }
-        }
+        "url": "https://github.com/DetachHead/rebased/releases/download/$version/rebased.exe#/dl.7z"
     }
 }
