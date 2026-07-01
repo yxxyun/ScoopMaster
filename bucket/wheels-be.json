@@ -1,1 +1,160 @@
-{"##":"Bleeding-edge channel - tracks every merge to develop. Self-contained:","##2":"OpenJDK 21 inlined as a 5th url/hash so `scoop install wheels-be` works","##3":"from a fresh shell with no prerequisite buckets. Hashes for wheels-module","##4":"and wheels-core are kept current by .github/workflows/autoupdate.yml.","version":"4.0.6-snapshot.2233","description":"Wheels CFML MVC framework - bleeding-edge channel (develop snapshots).","homepage":"https://wheels.dev","license":"Apache-2.0","notes":["Bleeding-edge channel: tracks every merge to develop on wheels-dev/wheels.","Conflicts with the stable 'wheels' package - install only one channel at a time.","Switch channels with: scoop uninstall wheels-be ; scoop install wheels","First run will sync the module and framework into ~/.wheels."],"architecture":{"64bit":{"url":["https://github.com/wheels-dev/wheels-snapshots/releases/download/v4.0.6-snapshot.2233/wheels-module-4.0.6-snapshot.2233.zip","https://github.com/wheels-dev/wheels-snapshots/releases/download/v4.0.6-snapshot.2233/wheels-core-4.0.6-snapshot.2233.zip","https://github.com/cybersonic/LuCLI/releases/download/v0.3.7/lucli-0.3.7.bat","https://repo1.maven.org/maven2/org/xerial/sqlite-jdbc/3.49.1.0/sqlite-jdbc-3.49.1.0.jar","https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_windows-x64_bin.zip"],"hash":["sha512:eee4eec020e388b89d6a5e92e04f4dce2a2192c495ddc710a4ab6217010ba930b490737f7269d4123ee4763813fd29510b7839731eff6e5e0270328f2d71e4de","sha512:588445748b5a67adf15539212ce9b4e90752ae3f99d005ec82cc3a078e5e20e68b87b37b6929a8eb6ddf8a021acdcd965345b91e2566439874089f31c2e726a4","54305fc79144a4346039d886c5d70660718ef4658dc8533963482e7ec74449a2","5c8609d2ca341deb8c6f71778974b5ba4995c7d32d7c7c89d9392a3e72c39291","b6c17e747ae78cdd6de4d7532b3164b277daee97c007d3eaa2b39cca99882664"],"extract_dir":["","wheels","","","jdk-21.0.2"],"extract_to":["share/module","share/framework/wheels","","","share/jdk"]}},"bin":[["wheels.cmd","wheels"]],"pre_install":["$lines = New-Object System.Collections.Generic.List[string]","$lines.Add('@echo off')","$lines.Add('setlocal enabledelayedexpansion')","$lines.Add('set \"LUCLI_HOME=%USERPROFILE%\\.wheels\"')","$lines.Add('set \"JAVA_HOME=%~dp0share\\jdk\"')","$lines.Add('if not exist \"%JAVA_HOME%\\bin\\java.exe\" set \"JAVA_HOME=%~dp0jdk-21.0.2\"')","$lines.Add('set \"PATH=%JAVA_HOME%\\bin;%PATH%\"')","$lines.Add('set \"MOD_VER_SRC=%~dp0share\\module\\.module-version\"')","$lines.Add('set \"MOD_VER_DST=%LUCLI_HOME%\\modules\\wheels\\.module-version\"')","$lines.Add('set \"SQLITE_SRC=%~dp0sqlite-jdbc-3.49.1.0.jar\"')","$lines.Add('')","$lines.Add('if \"%~1\"==\"--version\" goto :show_version')","$lines.Add('if \"%~1\"==\"-v\" goto :show_version')","$lines.Add('if \"%~1\"==\"--help\" goto :show_help')","$lines.Add('if \"%~1\"==\"-h\" goto :show_help')","$lines.Add('')","$lines.Add(':: First-time module sync -- copies module + framework into ~/.wheels if missing or version-mismatched.')","$lines.Add(':: Mirrors the brew wrapper''s SRC->DST sync; needed because `wheels new` etc. mutate ~/.wheels but')","$lines.Add(':: scoop''s install dir must stay pristine for `scoop uninstall` to work cleanly.')","$lines.Add('set \"WHEELS_MOD_DST=%LUCLI_HOME%\\modules\\wheels\"')","$lines.Add('set \"WHEELS_FRAMEWORK_DST=%WHEELS_MOD_DST%\\vendor\\wheels\"')","$lines.Add('set \"WHEELS_MOD_SRC=%~dp0share\\module\"')","$lines.Add('set \"WHEELS_FRAMEWORK_SRC=%~dp0share\\framework\\wheels\"')","$lines.Add('set \"src_ver=\"')","$lines.Add('set \"dst_ver=\"')","$lines.Add('if exist \"%MOD_VER_SRC%\" for /f \"usebackq delims=\" %%V in (\"%MOD_VER_SRC%\") do set \"src_ver=%%V\"')","$lines.Add('if exist \"%MOD_VER_DST%\" for /f \"usebackq delims=\" %%V in (\"%MOD_VER_DST%\") do set \"dst_ver=%%V\"')","$lines.Add('if not \"!src_ver!\"==\"!dst_ver!\" (')","$lines.Add('  if exist \"%WHEELS_MOD_DST%\" rmdir /S /Q \"%WHEELS_MOD_DST%\" >nul 2>&1')","$lines.Add('  mkdir \"%WHEELS_FRAMEWORK_DST%\" >nul 2>&1')","$lines.Add('  xcopy /E /I /Y /Q \"%WHEELS_MOD_SRC%\" \"%WHEELS_MOD_DST%\" >nul 2>&1')","$lines.Add('  xcopy /E /I /Y /Q \"%WHEELS_FRAMEWORK_SRC%\" \"%WHEELS_FRAMEWORK_DST%\" >nul 2>&1')","$lines.Add(')')","$lines.Add('')","$lines.Add(':: Drop sqlite-jdbc into LuCLI''s extracted express lib/ext on every run (self-heal).')","$lines.Add(':: The express dir only exists after the first LuCLI run, so this is a no-op on the very')","$lines.Add(':: first invocation and self-heals on every run after.')","$lines.Add('if exist \"%SQLITE_SRC%\" (')","$lines.Add('  for /d %%D in (\"%LUCLI_HOME%\\express\\*\") do (')","$lines.Add('    if exist \"%%D\\lib\\ext\" if not exist \"%%D\\lib\\ext\\sqlite-jdbc-3.49.1.0.jar\" copy /Y \"%SQLITE_SRC%\" \"%%D\\lib\\ext\\\" >nul 2>&1')","$lines.Add('  )')","$lines.Add(')')","$lines.Add('')","$lines.Add('\"%JAVA_HOME%\\bin\\java.exe\" -client -Dlucli.binary.name=wheels -jar \"%~dp0lucli-0.3.7.bat\" %*')","$lines.Add('exit /b %ERRORLEVEL%')","$lines.Add('')","$lines.Add(':show_version')","$lines.Add('set \"ver=unknown\"')","$lines.Add('if exist \"%MOD_VER_DST%\" for /f \"usebackq delims=\" %%V in (\"%MOD_VER_DST%\") do set \"ver=%%V\"')","$lines.Add('if \"!ver!\"==\"unknown\" if exist \"%MOD_VER_SRC%\" for /f \"usebackq delims=\" %%V in (\"%MOD_VER_SRC%\") do set \"ver=%%V\"')","$lines.Add('echo Wheels Version: !ver! (bleeding-edge)')","$lines.Add('echo.')","$lines.Add('echo  __        ___               _ ')","$lines.Add('echo  \\ \\      / / ^|__   ___  ___^| ^|___')","$lines.Add('echo   \\ \\ /\\ / /^| ''_ \\ / _ \\/ _ \\ / __^|')","$lines.Add('echo    \\ V  V / ^| ^| ^| ^|  __/  __/ \\__ \\ ')","$lines.Add('echo     \\_/\\_/  ^|_^| ^|_^|\\___\\___^|_^|___/')","$lines.Add('echo.')","$lines.Add('echo https://wheels.dev')","$lines.Add('exit /b 0')","$lines.Add('')","$lines.Add(':show_help')","$lines.Add('set \"ver=unknown\"')","$lines.Add('if exist \"%MOD_VER_DST%\" for /f \"usebackq delims=\" %%V in (\"%MOD_VER_DST%\") do set \"ver=%%V\"')","$lines.Add('if \"!ver!\"==\"unknown\" if exist \"%MOD_VER_SRC%\" for /f \"usebackq delims=\" %%V in (\"%MOD_VER_SRC%\") do set \"ver=%%V\"')","$lines.Add('echo Wheels CLI !ver! (bleeding-edge)')","$lines.Add('echo   CFML MVC framework - code generation, migrations, testing, server management')","$lines.Add('echo.')","$lines.Add('echo Usage:')","$lines.Add('echo   wheels ^<command^> [options]')","$lines.Add('echo.')","$lines.Add('echo For full command reference: wheels ^<command^> --help')","$lines.Add('echo More info: https://guides.wheels.dev')","$lines.Add('exit /b 0')","Set-Content -Path \"$dir\\wheels.cmd\" -Value $lines -Encoding ASCII"],"checkver":{"url":"https://api.github.com/repos/wheels-dev/wheels-snapshots/releases?per_page=1","jsonpath":"$[0].tag_name","regex":"v([\\d.]+-snapshot\\.\\d+)"},"autoupdate":{"architecture":{"64bit":{"url":["https://github.com/wheels-dev/wheels-snapshots/releases/download/v$version/wheels-module-$version.zip","https://github.com/wheels-dev/wheels-snapshots/releases/download/v$version/wheels-core-$version.zip","https://github.com/cybersonic/LuCLI/releases/download/v0.3.7/lucli-0.3.7.bat","https://repo1.maven.org/maven2/org/xerial/sqlite-jdbc/3.49.1.0/sqlite-jdbc-3.49.1.0.jar","https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_windows-x64_bin.zip"],"hash":[{"url":"$url.sha512"},{"url":"$url.sha512"},"sha512:75c948319b333d2e9d653d4986e766463f3f29062f62c364ccde2288e5f295bf65a857d54eda2e888cd5a80c2bd9fb727e016f4fca05fc42e56ee219225dd71b","sha512:90b3f6aed150f611fcb9454dfda5fbb9d7faad369937fa8718ac8813c45eb6f0430e6014b7b4c94b4b63e404ade68e83126571f94216de7bf6d2947f1c642803","sha256:b6c17e747ae78cdd6de4d7532b3164b277daee97c007d3eaa2b39cca99882664"]}}},"from":"https://github.com/wheels-dev/scoop-wheels"}
+{
+    "##": "Bleeding-edge channel - tracks every merge to develop. Self-contained:",
+    "##2": "OpenJDK 21 inlined as a 5th url/hash so `scoop install wheels-be` works",
+    "##3": "from a fresh shell with no prerequisite buckets. Hashes for wheels-module",
+    "##4": "and wheels-core are kept current by .github/workflows/autoupdate.yml.",
+    "version": "4.0.6-snapshot.2233",
+    "description": "Wheels CFML MVC framework - bleeding-edge channel (develop snapshots).",
+    "homepage": "https://wheels.dev",
+    "license": "Apache-2.0",
+    "notes": [
+        "Bleeding-edge channel: tracks every merge to develop on wheels-dev/wheels.",
+        "Conflicts with the stable 'wheels' package - install only one channel at a time.",
+        "Switch channels with: scoop uninstall wheels-be ; scoop install wheels",
+        "First run will sync the module and framework into ~/.wheels."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": [
+                "https://github.com/wheels-dev/wheels-snapshots/releases/download/v4.0.6-snapshot.2233/wheels-module-4.0.6-snapshot.2233.zip",
+                "https://github.com/wheels-dev/wheels-snapshots/releases/download/v4.0.6-snapshot.2233/wheels-core-4.0.6-snapshot.2233.zip",
+                "https://github.com/cybersonic/LuCLI/releases/download/v0.3.7/lucli-0.3.7.bat",
+                "https://repo1.maven.org/maven2/org/xerial/sqlite-jdbc/3.49.1.0/sqlite-jdbc-3.49.1.0.jar",
+                "https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_windows-x64_bin.zip"
+            ],
+            "hash": [
+                "sha512:eee4eec020e388b89d6a5e92e04f4dce2a2192c495ddc710a4ab6217010ba930b490737f7269d4123ee4763813fd29510b7839731eff6e5e0270328f2d71e4de",
+                "sha512:588445748b5a67adf15539212ce9b4e90752ae3f99d005ec82cc3a078e5e20e68b87b37b6929a8eb6ddf8a021acdcd965345b91e2566439874089f31c2e726a4",
+                "54305fc79144a4346039d886c5d70660718ef4658dc8533963482e7ec74449a2",
+                "5c8609d2ca341deb8c6f71778974b5ba4995c7d32d7c7c89d9392a3e72c39291",
+                "b6c17e747ae78cdd6de4d7532b3164b277daee97c007d3eaa2b39cca99882664"
+            ],
+            "extract_dir": [
+                "",
+                "wheels",
+                "",
+                "",
+                "jdk-21.0.2"
+            ],
+            "extract_to": [
+                "share/module",
+                "share/framework/wheels",
+                "",
+                "",
+                "share/jdk"
+            ]
+        }
+    },
+    "bin": [
+        [
+            "wheels.cmd",
+            "wheels"
+        ]
+    ],
+    "pre_install": [
+        "$lines = New-Object System.Collections.Generic.List[string]",
+        "$lines.Add('@echo off')",
+        "$lines.Add('setlocal enabledelayedexpansion')",
+        "$lines.Add('set \"LUCLI_HOME=%USERPROFILE%\\.wheels\"')",
+        "$lines.Add('set \"JAVA_HOME=%~dp0share\\jdk\"')",
+        "$lines.Add('if not exist \"%JAVA_HOME%\\bin\\java.exe\" set \"JAVA_HOME=%~dp0jdk-21.0.2\"')",
+        "$lines.Add('set \"PATH=%JAVA_HOME%\\bin;%PATH%\"')",
+        "$lines.Add('set \"MOD_VER_SRC=%~dp0share\\module\\.module-version\"')",
+        "$lines.Add('set \"MOD_VER_DST=%LUCLI_HOME%\\modules\\wheels\\.module-version\"')",
+        "$lines.Add('set \"SQLITE_SRC=%~dp0sqlite-jdbc-3.49.1.0.jar\"')",
+        "$lines.Add('')",
+        "$lines.Add('if \"%~1\"==\"--version\" goto :show_version')",
+        "$lines.Add('if \"%~1\"==\"-v\" goto :show_version')",
+        "$lines.Add('if \"%~1\"==\"--help\" goto :show_help')",
+        "$lines.Add('if \"%~1\"==\"-h\" goto :show_help')",
+        "$lines.Add('')",
+        "$lines.Add(':: First-time module sync -- copies module + framework into ~/.wheels if missing or version-mismatched.')",
+        "$lines.Add(':: Mirrors the brew wrapper''s SRC->DST sync; needed because `wheels new` etc. mutate ~/.wheels but')",
+        "$lines.Add(':: scoop''s install dir must stay pristine for `scoop uninstall` to work cleanly.')",
+        "$lines.Add('set \"WHEELS_MOD_DST=%LUCLI_HOME%\\modules\\wheels\"')",
+        "$lines.Add('set \"WHEELS_FRAMEWORK_DST=%WHEELS_MOD_DST%\\vendor\\wheels\"')",
+        "$lines.Add('set \"WHEELS_MOD_SRC=%~dp0share\\module\"')",
+        "$lines.Add('set \"WHEELS_FRAMEWORK_SRC=%~dp0share\\framework\\wheels\"')",
+        "$lines.Add('set \"src_ver=\"')",
+        "$lines.Add('set \"dst_ver=\"')",
+        "$lines.Add('if exist \"%MOD_VER_SRC%\" for /f \"usebackq delims=\" %%V in (\"%MOD_VER_SRC%\") do set \"src_ver=%%V\"')",
+        "$lines.Add('if exist \"%MOD_VER_DST%\" for /f \"usebackq delims=\" %%V in (\"%MOD_VER_DST%\") do set \"dst_ver=%%V\"')",
+        "$lines.Add('if not \"!src_ver!\"==\"!dst_ver!\" (')",
+        "$lines.Add('  if exist \"%WHEELS_MOD_DST%\" rmdir /S /Q \"%WHEELS_MOD_DST%\" >nul 2>&1')",
+        "$lines.Add('  mkdir \"%WHEELS_FRAMEWORK_DST%\" >nul 2>&1')",
+        "$lines.Add('  xcopy /E /I /Y /Q \"%WHEELS_MOD_SRC%\" \"%WHEELS_MOD_DST%\" >nul 2>&1')",
+        "$lines.Add('  xcopy /E /I /Y /Q \"%WHEELS_FRAMEWORK_SRC%\" \"%WHEELS_FRAMEWORK_DST%\" >nul 2>&1')",
+        "$lines.Add(')')",
+        "$lines.Add('')",
+        "$lines.Add(':: Drop sqlite-jdbc into LuCLI''s extracted express lib/ext on every run (self-heal).')",
+        "$lines.Add(':: The express dir only exists after the first LuCLI run, so this is a no-op on the very')",
+        "$lines.Add(':: first invocation and self-heals on every run after.')",
+        "$lines.Add('if exist \"%SQLITE_SRC%\" (')",
+        "$lines.Add('  for /d %%D in (\"%LUCLI_HOME%\\express\\*\") do (')",
+        "$lines.Add('    if exist \"%%D\\lib\\ext\" if not exist \"%%D\\lib\\ext\\sqlite-jdbc-3.49.1.0.jar\" copy /Y \"%SQLITE_SRC%\" \"%%D\\lib\\ext\\\" >nul 2>&1')",
+        "$lines.Add('  )')",
+        "$lines.Add(')')",
+        "$lines.Add('')",
+        "$lines.Add('\"%JAVA_HOME%\\bin\\java.exe\" -client -Dlucli.binary.name=wheels -jar \"%~dp0lucli-0.3.7.bat\" %*')",
+        "$lines.Add('exit /b %ERRORLEVEL%')",
+        "$lines.Add('')",
+        "$lines.Add(':show_version')",
+        "$lines.Add('set \"ver=unknown\"')",
+        "$lines.Add('if exist \"%MOD_VER_DST%\" for /f \"usebackq delims=\" %%V in (\"%MOD_VER_DST%\") do set \"ver=%%V\"')",
+        "$lines.Add('if \"!ver!\"==\"unknown\" if exist \"%MOD_VER_SRC%\" for /f \"usebackq delims=\" %%V in (\"%MOD_VER_SRC%\") do set \"ver=%%V\"')",
+        "$lines.Add('echo Wheels Version: !ver! (bleeding-edge)')",
+        "$lines.Add('echo.')",
+        "$lines.Add('echo  __        ___               _ ')",
+        "$lines.Add('echo  \\ \\      / / ^|__   ___  ___^| ^|___')",
+        "$lines.Add('echo   \\ \\ /\\ / /^| ''_ \\ / _ \\/ _ \\ / __^|')",
+        "$lines.Add('echo    \\ V  V / ^| ^| ^| ^|  __/  __/ \\__ \\ ')",
+        "$lines.Add('echo     \\_/\\_/  ^|_^| ^|_^|\\___\\___^|_^|___/')",
+        "$lines.Add('echo.')",
+        "$lines.Add('echo https://wheels.dev')",
+        "$lines.Add('exit /b 0')",
+        "$lines.Add('')",
+        "$lines.Add(':show_help')",
+        "$lines.Add('set \"ver=unknown\"')",
+        "$lines.Add('if exist \"%MOD_VER_DST%\" for /f \"usebackq delims=\" %%V in (\"%MOD_VER_DST%\") do set \"ver=%%V\"')",
+        "$lines.Add('if \"!ver!\"==\"unknown\" if exist \"%MOD_VER_SRC%\" for /f \"usebackq delims=\" %%V in (\"%MOD_VER_SRC%\") do set \"ver=%%V\"')",
+        "$lines.Add('echo Wheels CLI !ver! (bleeding-edge)')",
+        "$lines.Add('echo   CFML MVC framework - code generation, migrations, testing, server management')",
+        "$lines.Add('echo.')",
+        "$lines.Add('echo Usage:')",
+        "$lines.Add('echo   wheels ^<command^> [options]')",
+        "$lines.Add('echo.')",
+        "$lines.Add('echo For full command reference: wheels ^<command^> --help')",
+        "$lines.Add('echo More info: https://guides.wheels.dev')",
+        "$lines.Add('exit /b 0')",
+        "Set-Content -Path \"$dir\\wheels.cmd\" -Value $lines -Encoding ASCII"
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/wheels-dev/wheels-snapshots/releases?per_page=1",
+        "jsonpath": "$[0].tag_name",
+        "regex": "v([\\d.]+-snapshot\\.\\d+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": [
+                    "https://github.com/wheels-dev/wheels-snapshots/releases/download/v$version/wheels-module-$version.zip",
+                    "https://github.com/wheels-dev/wheels-snapshots/releases/download/v$version/wheels-core-$version.zip",
+                    "https://github.com/cybersonic/LuCLI/releases/download/v0.3.7/lucli-0.3.7.bat",
+                    "https://repo1.maven.org/maven2/org/xerial/sqlite-jdbc/3.49.1.0/sqlite-jdbc-3.49.1.0.jar",
+                    "https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_windows-x64_bin.zip"
+                ],
+                "hash": [
+                    {
+                        "url": "$url.sha512"
+                    },
+                    {
+                        "url": "$url.sha512"
+                    },
+                    "sha512:75c948319b333d2e9d653d4986e766463f3f29062f62c364ccde2288e5f295bf65a857d54eda2e888cd5a80c2bd9fb727e016f4fca05fc42e56ee219225dd71b",
+                    "sha512:90b3f6aed150f611fcb9454dfda5fbb9d7faad369937fa8718ac8813c45eb6f0430e6014b7b4c94b4b63e404ade68e83126571f94216de7bf6d2947f1c642803",
+                    "sha256:b6c17e747ae78cdd6de4d7532b3164b277daee97c007d3eaa2b39cca99882664"
+                ]
+            }
+        }
+    }
+}
