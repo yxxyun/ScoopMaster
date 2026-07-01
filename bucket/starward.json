@@ -1,42 +1,43 @@
 {
     "version": "0.17.3",
     "description": "Game Launcher for miHoYo",
+    "notes": "the newest version should always be used, the internal update check cannot be disabled.",
     "homepage": "https://github.com/Scighost/Starward",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://gh-proxy.org/https://github.com/Scighost/Starward/releases/download/0.17.3/Starward_Portable_0.17.3_x64.7z",
+            "url": "https://github.com/Scighost/Starward/releases/download/0.17.3/Starward_Portable_0.17.3_x64.7z",
             "hash": "5c4b56e182028935ecc37e195a3935e2ae05485507ec5526c8e0557ffacb57d2"
         },
         "arm64": {
-            "url": "https://gh-proxy.org/https://github.com/Scighost/Starward/releases/download/0.17.3/Starward_Portable_0.17.3_arm64.7z",
+            "url": "https://github.com/Scighost/Starward/releases/download/0.17.3/Starward_Portable_0.17.3_arm64.7z",
             "hash": "057e3e80f4045bfe5a24904f46661421a171c7941018c4c2b8b8b0b0e25dac29"
         }
     },
     "extract_dir": "Starward",
-    "depends": "main/sqlite",
-    "pre_install": [
-        "if (-not (Test-Path \"$dir\\config.ini\"))",
-        "{",
-        "  New-Item \"$dir\\config.ini\" -ItemType File | Out-Null",
-        "  Add-Content \"$dir\\config.ini\" \"Language=\"",
-        "  Add-Content \"$dir\\config.ini\" \"UserDataFolder=$persist_dir\\data\"",
-        "}"
-    ],
-    "post_install": [
-        "sqlite3 \"$dir\\data\\StarwardDatabase.db\" \"CREATE TABLE IF NOT EXISTS Setting (Key TEXT PRIMARY KEY, Value TEXT);\"",
-        "sqlite3 \"$dir\\data\\StarwardDatabase.db\" \"INSERT OR REPLACE INTO Setting (Key, Value) VALUES ('DefaultGameInstallationPath', '$persist_dir\\games');\""
-    ],
+    "bin": "Starward.exe",
+    "persist": "data",
     "shortcuts": [
         [
             "Starward.exe",
             "Starward"
         ]
     ],
-    "persist": [
-        "data",
-        "games",
-        "config.ini"
+    "post_install": [
+        "if (Test-Path \"$persist_dir\\config.ini\") {",
+        "    Copy-Item \"$persist_dir\\config.ini\" \"$dir\"",
+        "}",
+        "else {",
+        "    New-Item \"$persist_dir\\config.ini\" -ItemType File | Out-Null",
+        "    Set-Content -Path \"$persist_dir\\config.ini\" -Value \"EnableConsole = false
+UserDataFolder=./data\"",
+        "    Copy-Item \"$persist_dir\\config.ini\" \"$dir\"",
+        "}"
+    ],
+    "pre_uninstall": [
+        "if (Test-Path \"$dir\\config.ini\") {",
+        "    Copy-Item \"$dir\\config.ini\" \"$persist_dir\"",
+        "}"
     ],
     "checkver": {
         "github": "https://github.com/Scighost/Starward"
@@ -44,10 +45,10 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://gh-proxy.org/https://github.com/Scighost/Starward/releases/download/$version/Starward_Portable_$version_x64.7z"
+                "url": "https://github.com/Scighost/Starward/releases/download/$version/Starward_Portable_$version_x64.7z"
             },
             "arm64": {
-                "url": "https://gh-proxy.org/https://github.com/Scighost/Starward/releases/download/$version/Starward_Portable_$version_arm64.7z"
+                "url": "https://github.com/Scighost/Starward/releases/download/$version/Starward_Portable_$version_arm64.7z"
             }
         }
     }
