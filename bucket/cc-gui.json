@@ -1,78 +1,27 @@
 {
     "version": "0.6.5",
-    "description": "Next-generation VibeCoding editor powered by Claude Code, Codex, and more, built with Tauri",
+    "description": "CC GUI Desktop - A desktop application for Claude Code",
     "homepage": "https://github.com/zhukunpenglinyutong/desktop-cc-gui",
-    "license": "AGPL-3.0-only",
-    "notes": [
-        "CC GUI (原 CodeMoss) 是一个下一代 AI 编程编辑器，集成 Claude Code、Codex 等工具",
-        "用户数据目录 1：%LOCALAPPDATA%\\com.zhukunpenglinyutong.ccgui\\",
-        "用户数据目录 2：%USERPROFILE%\\.ccgui\\",
-        "本包会将这两个目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist"
-    ],
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/zhukunpenglinyutong/desktop-cc-gui/releases/download/v0.6.5/ccgui_0.6.5_x64-setup.exe#/dl.7z",
-            "hash": "8ca91f922d2b299b77e4456434db01fcd150bdeb3bfac456e6627f5e804fe161"
-        }
+    "license": "MIT",
+    "url": "https://github.com/zhukunpenglinyutong/desktop-cc-gui/releases/download/v0.6.5/ccgui_0.6.5_x64-setup.exe",
+    "hash": "8ca91f922d2b299b77e4456434db01fcd150bdeb3bfac456e6627f5e804fe161",
+    "installer": {
+        "script": [
+            "Expand-7zipArchive -Path \"$dir\\$fname\" -Removal",
+            "Remove-Item \"$dir\\uninstall.exe\" -Force -ErrorAction SilentlyContinue",
+            "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse -ErrorAction SilentlyContinue",
+            "Remove-Item \"$dir\\dist\" -Force -Recurse -ErrorAction SilentlyContinue",
+            "Remove-Item \"$dir\\`$temp\" -Force -Recurse -ErrorAction SilentlyContinue"
+        ]
     },
-    "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\uninstall.exe\" -Force -Recurse -ErrorAction SilentlyContinue",
-    "bin": "cc-gui.exe",
     "shortcuts": [
         [
             "cc-gui.exe",
-            "CC GUI"
+            "CC GUI Desktop"
         ]
     ],
-    "post_install": [
-        "$createJunction = {",
-        "    param($source, $name)",
-        "    $target = Join-Path $persist_dir $name",
-        "    ensure $target",
-        "",
-        "    if (Test-Path $source) {",
-        "        $item = Get-Item -LiteralPath $source -Force",
-        "        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
-        "            Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
-        "            return",
-        "        }",
-        "        if (-not $item.PSIsContainer) {",
-        "            throw \"配置路径已存在且不是目录：$source\"",
-        "        }",
-        "",
-        "        & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
-        "        if ($LASTEXITCODE -gt 7) {",
-        "            Write-Host \"迁移失败，保留原目录：$source\"",
-        "            return",
-        "        }",
-        "",
-        "        $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
-        "        try {",
-        "            Move-Item -LiteralPath $source -Destination $backup -Force",
-        "            Write-Host \"已备份原配置目录：$backup\"",
-        "        } catch {",
-        "            Write-Host \"无法重命名原目录：$source\"",
-        "            return",
-        "        }",
-        "    }",
-        "",
-        "    New-Item -Path $source -ItemType Junction -Value $target | Out-Null",
-        "}",
-        "",
-        "& $createJunction (Join-Path $env:LOCALAPPDATA 'com.zhukunpenglinyutong.ccgui') 'data'",
-        "& $createJunction (Join-Path $env:USERPROFILE '.ccgui') 'dotccgui'"
-    ],
-    "persist": [
-        "data",
-        "dotccgui"
-    ],
-    "checkver": {
-        "github": "https://github.com/zhukunpenglinyutong/desktop-cc-gui"
-    },
+    "checkver": "github",
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/zhukunpenglinyutong/desktop-cc-gui/releases/download/v$version/ccgui_$version_x64-setup.exe#/dl.7z"
-            }
-        }
+        "url": "https://github.com/zhukunpenglinyutong/desktop-cc-gui/releases/download/v$version/ccgui_$version_x64-setup.exe"
     }
 }
