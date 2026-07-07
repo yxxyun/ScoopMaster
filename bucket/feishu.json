@@ -1,10 +1,10 @@
 {
     "version": "7.71.12",
-    "homepage": "https://www.feishu.cn/",
-    "description": "Connect with teammates anytime and anywhere",
+    "homepage": "https://feishu.cn/",
+    "description": "新一代知识管理平台",
     "license": {
         "identifier": "EULA",
-        "url": "https://www.feishu.cn/en/terms"
+        "url": "https://feishu.cn/en/terms"
     },
     "architecture": {
         "32bit": {
@@ -12,52 +12,46 @@
             "hash": "md5:e2c838a60de934d8fe835fcdea2577ce"
         },
         "64bit": {
-            "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/ba9359bd/Feishu-win32_x64-7.71.12-signed.exe#/dl.7z",
-            "hash": "md5:058ea9a0578fe3cccbf781006911e199"
+            "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/d0a154c7/Feishu-win32_ia32-7.71.12-signed.exe#/dl.7z",
+            "hash": "md5:e2c838a60de934d8fe835fcdea2577ce"
         }
     },
     "extract_to": "app",
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Remove-Item \"$dir\\app\\update.exe\" -Force",
+        "Write-Host (\"Persisting $env:APPDATA\\LarkShell ... \") -NoNewline",
+        "New-PersistDirectory \"$env:APPDATA\\LarkShell\" \"$persist_dir\\AppData\" -Migrate"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Require-Admin",
+        "Stop-App"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        ". \"$bucketsdir\\$bucket\\scripts\\feishu\\uninstall.ps1\""
+    ],
+    "bin": "app/Feishu.exe",
     "shortcuts": [
         [
             "app/Feishu.exe",
             "飞书"
         ]
     ],
-    "installer": {
-        "script": [
-            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-            "New-PersistDirectory \"$env:APPDATA\\LarkShell\" \"$persist_dir\\AppData\" -Migrate"
-        ]
-    },
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App",
-        "Remove-Junction \"$env:APPDATA\\LarkShell\""
-    ],
     "checkver": {
-        "script": [
-            "$resp = Invoke-RestMethod 'https://www.feishu.cn/api/downloads'",
-            "return $resp.versions.Windows.version_number + '=====' + $resp.versions.Windows.download_link + '=====' + $resp.versions.Windows_x64.download_link"
-        ],
-        "regex": "Windows@V(.*)=====(?<url32>.*)=====(?<url64>.*)"
+        "url": "https://feishu.cn/api/downloads",
+        "jp": "$.versions.Windows.download_link",
+        "regex": "/(?<id>[\\d\\w]+)/Feishu-(?<arch>[\\d\\w]+)-([\\d\\.]+)\\-signed\\.exe"
     },
     "autoupdate": {
-        "architecture": {
-            "32bit": {
-                "url": "$matchUrl32#/dl.7z",
-                "hash": {
-                    "url": "https://www.feishu.cn/api/downloads",
-                    "jsonpath": "$.versions.Windows.hash"
-                }
-            },
-            "64bit": {
-                "url": "$matchUrl64#/dl.7z",
-                "hash": {
-                    "url": "https://www.feishu.cn/api/downloads",
-                    "jsonpath": "$.versions.Windows_x64.hash"
-                }
-            }
+        "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/$matchId/Feishu-$matchArch-$version-signed.exe#/dl.7z",
+        "hash": {
+            "url": "https://feishu.cn/api/downloads",
+            "jp": "$.versions.Windows.hash"
         }
-    }
+    },
+    "notes": "User data is persisted in \"$persist_dir\"."
 }
