@@ -15,13 +15,21 @@
         }
     },
     "innosetup": true,
-    "post_install": "Copy-Item \"$bucketsdir\\$bucket\\scripts\\$app\\service.ps1\" \"$dir\"",
+    "post_install": [
+        "New-Item \"$dir\\version\" -ItemType Junction -Target \"$dir\\v$version\" | Out-Null",
+        "Copy-Item \"$bucketsdir\\$bucket\\scripts\\$app\\service.ps1\" \"$dir\"",
+        "$shortcut = \"$env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs\\Scoop Apps\\Proton\\Proton VPN.lnk\"",
+        "$bytes = [System.IO.File]::ReadAllBytes($shortcut)",
+        "$bytes[0x15] = $bytes[0x15] -bor 0x20",
+        "[System.IO.File]::WriteAllBytes($shortcut, $bytes)"
+    ],
     "shortcuts": [
         [
             "ProtonVPN.Launcher.exe",
             "Proton\\Proton VPN"
         ]
     ],
+    "persist": "version\\ServiceData",
     "checkver": {
         "url": "https://protonvpn.com/download/windows/x64/v1/version.json",
         "jsonpath": "$..[?(@.CategoryName == 'Stable')].Version"
