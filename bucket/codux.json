@@ -1,21 +1,25 @@
 {
     "version": "2.0.0-rc.5",
-    "description": "Rust + GPUI desktop app for AI coding sessions, projects, Git, files, memory, SSH, and remote control",
+    "description": "The high-performance AI coding terminal — desktop workspace for Codex, Claude Code, and 8+ AI coding CLIs",
     "homepage": "https://github.com/duxweb/codux",
-    "license": "GPL-3.0-only",
+    "license": "GPL-3.0",
     "notes": [
-        "Codux Desktop requires Windows 11",
-        "User data directory: %APPDATA%\\Codux\\",
-        "This package persists the data directory via Junction link",
-        "Codux also creates temporary runtime files under %TEMP%\\codux; those are not persisted"
+        "Codux 是高性能 AI 编程终端，统一 Codex、Claude Code 等 8+ 种 AI CLI 的工作区。",
+        "需要 Windows 11。"
     ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/duxweb/codux/releases/download/v2.0.0-rc.5/codux-2.0.0-rc.5-windows-x86_64-setup.exe#/dl.7z",
+            "url": "https://github.com/duxweb/codux/releases/download/v2.0.0-rc.5/codux-2.0.0-rc.5-windows-x86_64-setup.exe",
             "hash": "a09ccd2bbda2e54fd09fff6505abc4474e15b8c10915f134339774f86416d5aa"
         }
     },
-    "pre_install": "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\Uninstall.exe\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "installer": {
+        "script": [
+            "$exe = Get-ChildItem \"$dir\\codux-*-windows-x86_64-setup.exe\" -ErrorAction SilentlyContinue | Select-Object -First 1",
+            "if ($exe) { Start-Process -FilePath $exe.FullName -ArgumentList '/S', \"/D=$dir\" -Wait -NoNewWindow }"
+        ]
+    },
+    "post_install": "Remove-Item \"$dir\\codux-*-windows-x86_64-setup.exe\", \"$dir\\Uninstall.exe\" -Force -ErrorAction SilentlyContinue",
     "bin": "Codux.exe",
     "shortcuts": [
         [
@@ -23,61 +27,14 @@
             "Codux"
         ]
     ],
-    "post_install": [
-        "$source = Join-Path $env:APPDATA 'Codux'",
-        "$target = Join-Path $persist_dir 'data'",
-        "ensure $target",
-        "",
-        "if (Test-Path $source) {",
-        "    $item = Get-Item -LiteralPath $source -Force",
-        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
-        "        Write-Host \"Junction already exists: $source\"",
-        "        return",
-        "    }",
-        "    if (-not $item.PSIsContainer) {",
-        "        throw \"Path exists and is not a directory: $source\"",
-        "    }",
-        "",
-        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
-        "    if ($LASTEXITCODE -gt 7) {",
-        "        Write-Host \"Migration failed, keeping original: $source\"",
-        "        return",
-        "    }",
-        "",
-        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
-        "    try {",
-        "        Move-Item -LiteralPath $source -Destination $backup -Force",
-        "        Write-Host \"Backed up original: $backup\"",
-        "    } catch {",
-        "        Write-Host \"Cannot rename original: $source\"",
-        "        return",
-        "    }",
-        "}",
-        "",
-        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
-    ],
-    "post_uninstall": [
-        "$source = Join-Path $env:APPDATA 'Codux'",
-        "if (Test-Path $source) {",
-        "    $item = Get-Item -LiteralPath $source -Force",
-        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
-        "        Remove-Item -LiteralPath $source -Force",
-        "    }",
-        "}"
-    ],
-    "persist": "data",
     "checkver": {
-        "url": "https://github.com/duxweb/codux/releases",
-        "regex": "/releases/tag/v(?<version>[\\d.]+(?:-[A-Za-z]+\\.\\d+)?)"
+        "github": "https://github.com/duxweb/codux"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/duxweb/codux/releases/download/v$version/codux-$version-windows-x86_64-setup.exe#/dl.7z"
+                "url": "https://github.com/duxweb/codux/releases/download/v$version/codux-$version-windows-x86_64-setup.exe"
             }
-        },
-        "hash": {
-            "mode": "download"
         }
     }
 }
