@@ -1,47 +1,41 @@
 {
-    "version": "152.0.4-1",
-    "description": "A fork of Firefox, focused on privacy, security and freedom.",
-    "homepage": "https://librewolf.net/",
+    "##": "ltguillaume/schep",
+    "version": "152.0.5-1",
+    "description": "A fork of Firefox, focused on privacy, security and freedom. This variant does not use the portable launcher and makes sure the Scoop profile is used by default.",
+    "homepage": "https://librewolf.net",
     "license": "MPL-2.0",
+    "notes": "After installation, the profile manager will be run to choose the right default profile.",
     "architecture": {
         "64bit": {
-            "url": "https://codeberg.org/api/packages/librewolf/generic/librewolf/152.0.4-1/librewolf-152.0.4-1-windows-x86_64-portable.zip",
-            "hash": "d4c925c2e82de621409d818941907a59f15de3970f1d6443c6a2084bedff2239"
+            "url": "https://dl.librewolf.net/librewolf/152.0.5-1/librewolf-152.0.5-1-windows-x86_64-portable.zip",
+            "hash": "d8c538ece564b5d7267b45d2c854d59511ee1c35e1bb26a7a8b9e351a5412969"
         }
     },
-    "extract_dir": "librewolf-152.0.4-1",
-    "pre_install": [
-        "'LibreWolf-WinUpdater.exe', 'ScheduledTask-Create.ps1', 'ScheduledTask-Remove.ps1' | ForEach-Object { \"$dir/$_\" } | Remove-Item",
-        "",
-        "# Customizing LibreWolf Using AutoConfig",
-        "# https://support.mozilla.org/en-US/kb/customizing-firefox-using-autoconfig",
-        "$null = ensure \"$persist_dir/LibreWolf/defaults/pref\"",
-        "Copy-Item \"$persist_dir/LibreWolf/defaults/pref/*\" \"$dir/LibreWolf/defaults/pref\" -Exclude channel-prefs.js",
-        "Copy-Item \"$persist_dir/LibreWolf/*.js\", \"$persist_dir/LibreWolf/*.cfg\" \"$dir/LibreWolf\"",
-        "",
-        "# Customizing LibreWolf Using policies.json",
-        "# https://support.mozilla.org/en-US/kb/customizing-firefox-using-policiesjson",
-        "# Used to override the default policies.json of LibreWolf, if you want",
-        "$null = ensure \"$persist_dir/LibreWolf/distribution\"",
-        "Copy-Item \"$persist_dir/LibreWolf/distribution/policies.json\" \"$dir/LibreWolf/distribution\" -ErrorAction SilentlyContinue"
+    "extract_dir": "librewolf-152.0.5-1\\LibreWolf",
+    "post_install": [
+        "$Addition = \"$persist_dir\\addition\"",
+        "if (Test-Path $Addition) {",
+        "  info 'Copying additional items...'",
+        "  Copy-Item -Path $Addition\\* -Destination $dir -Force -Recurse -ErrorAction SilentlyContinue",
+        "}",
+        "if (!(Test-Path \"$persist_dir\\profile\\times.json\")) {",
+        "    librewolf.exe -CreateProfile \"Scoop $persist_dir\\profile\"",
+        "}",
+        "Start-Process -WorkingDirectory $dir -FilePath librewolf.exe -ArgumentList '-P'"
     ],
     "bin": [
         [
-            "LibreWolf-Portable.exe",
+            "librewolf.exe",
             "librewolf"
         ]
     ],
     "shortcuts": [
         [
-            "LibreWolf-Portable.exe",
+            "librewolf.exe",
             "LibreWolf"
         ]
     ],
-    "persist": "Profiles",
-    "pre_uninstall": [
-        "Copy-Item \"$dir/LibreWolf/defaults/pref/*\" \"$persist_dir/LibreWolf/defaults/pref\" -Exclude channel-prefs.js",
-        "Copy-Item \"$dir/LibreWolf/*.js\", \"$dir/LibreWolf/*.cfg\" \"$persist_dir/LibreWolf\" -Exclude librewolf.cfg"
-    ],
+    "persist": "profile",
     "checkver": {
         "url": "https://codeberg.org/api/v1/repos/librewolf/bsys6/releases/latest",
         "jsonpath": "$.tag_name"
@@ -49,12 +43,12 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://codeberg.org/api/packages/librewolf/generic/librewolf/$version/librewolf-$version-windows-x86_64-portable.zip"
+                "url": "https://dl.librewolf.net/librewolf/$version/librewolf-$version-windows-x86_64-portable.zip"
             }
         },
         "hash": {
             "url": "$url.sha256sum"
         },
-        "extract_dir": "librewolf-$version"
+        "extract_dir": "librewolf-$version\\LibreWolf"
     }
 }
