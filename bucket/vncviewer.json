@@ -1,40 +1,50 @@
 {
-    "version": "7.15.1",
-    "description": "Control VNC enabled computers.",
-    "homepage": "https://www.realvnc.com/download/viewer",
+    "version": "8.4.2",
+    "description": "VNC Viewer - Control VNC enabled computers remotely",
+    "homepage": "https://www.realvnc.com/en/connect/download/viewer/",
     "license": {
         "identifier": "Freeware",
         "url": "https://www.realvnc.com/en/legal/#eulas"
     },
     "architecture": {
         "64bit": {
-            "url": "https://downloads.realvnc.com/download/file/viewer.files/VNC-Viewer-7.15.1-Windows-64bit.exe#/vncviewer.exe",
-            "hash": "39195c0abe53dc8fc2a57beeb6df9accf72226d46688845bf864c4d639030d84"
-        },
-        "32bit": {
-            "url": "https://downloads.realvnc.com/download/file/viewer.files/VNC-Viewer-7.15.1-Windows-32bit.exe#/vncviewer.exe",
-            "hash": "b4f60bb97bf15dd02262828870d98609eb27d3a99b998a555f67a879324de328"
+            "url": "https://downloads.realvnc.com/download/file/realvnc-connect-viewer/RealVNC-Connect-Viewer-8.4.2-Windows.msi.zip",
+            "hash": "1217d46e1f5d2080d9c7b2ce44a1e7fc342b989f4166195fa822abe794183024"
         }
+    },
+    "pre_install": "if (Test-Path \"$dir\\vncviewer.exe\") { Remove-Item \"$dir\\vncviewer.exe\" -Force }",
+    "installer": {
+        "script": [
+            "$zip = gci \"$dir\\*.zip\" | Select -First 1",
+            "if ($zip) { Expand-Archive $zip.FullName -DestinationPath \"$dir\" -Force }",
+            "$msi = gci \"$dir\\*.msi\" | Select -First 1",
+            "if ($msi) {",
+            "    Push-Location $dir",
+            "    lessmsi x $msi.Name | Out-Null",
+            "    Pop-Location",
+            "    $srcDir = Join-Path $dir \"RealVNC-Connect-Viewer-8.4.2-Windows\\SourceDir\\RealVNC\\RealVNC Connect\"",
+            "    Get-ChildItem $srcDir -File | ForEach-Object {",
+            "        if ($_.Name -eq 'rvncconnect.exe') {",
+            "            Copy-Item $_.FullName -Destination \"$dir\\vncviewer.exe\" -Force",
+            "        } else {",
+            "            Copy-Item $_.FullName -Destination \"$dir\" -Force",
+            "        }",
+            "    }",
+            "    Remove-Item (Join-Path $dir 'RealVNC-Connect-Viewer-8.4.2-Windows') -Recurse -Force -EA SilentlyContinue",
+            "    Remove-Item $msi.FullName -Force",
+            "}",
+            "if ($zip) { Remove-Item $zip.FullName -Force }"
+        ]
     },
     "bin": "vncviewer.exe",
     "shortcuts": [
-        [
-            "vncviewer.exe",
-            "VNC Viewer"
-        ]
+        ["vncviewer.exe", "VNC Viewer"]
     ],
     "checkver": {
         "url": "https://www.realvnc.com/en/connect/download/viewer/",
-        "regex": "VNC-Viewer-([\\d.]+)-Windows"
+        "regex": "RealVNC-Connect-Viewer-([\\d.]+)-Windows\\.msi\\.zip"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://downloads.realvnc.com/download/file/viewer.files/VNC-Viewer-$version-Windows-64bit.exe#/vncviewer.exe"
-            },
-            "32bit": {
-                "url": "https://downloads.realvnc.com/download/file/viewer.files/VNC-Viewer-$version-Windows-32bit.exe#/vncviewer.exe"
-            }
-        }
+        "url": "https://downloads.realvnc.com/download/file/realvnc-connect-viewer/RealVNC-Connect-Viewer-$version-Windows.msi.zip"
     }
 }
