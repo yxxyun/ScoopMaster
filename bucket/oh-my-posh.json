@@ -1,28 +1,33 @@
 {
-    "version": "29.24.0",
+    "version": "29.24.1",
     "description": "A prompt theme engine for any shell",
     "homepage": "https://ohmyposh.dev",
     "license": "MIT",
-    "notes": "Refer to 'https://ohmyposh.dev/docs/installation/prompt' for shell specific configurations.",
+    "notes": [
+        "Refer to 'https://ohmyposh.dev/docs/installation/prompt' for shell specific configurations.",
+        "Run `$dir\\set-defender-exclusions.ps1` to add oh-my-posh.exe and your running shell to Windows Defender exclueded processes to avoid performance issues reported [here](https://github.com/JanDeDobbeleer/oh-my-posh/discussions/5417#discussioncomment-12077029).",
+        "By default, the added exclusions use the full path of the processes which means you will need to run the script again with future scoop updates.",
+        "You can exclude additional processes by running `$dir\\set-defender-exclusions.ps1 -Processes <process1>,<process2>,...` if you are using additional shells or want to use a process pattern instead."
+    ],
     "architecture": {
         "64bit": {
             "url": [
-                "https://github.com/JanDeDobbeleer/oh-my-posh/releases/download/v29.24.0/themes.zip",
-                "https://github.com/JanDeDobbeleer/oh-my-posh/releases/download/v29.24.0/posh-windows-amd64.exe#/oh-my-posh.exe"
+                "https://github.com/JanDeDobbeleer/oh-my-posh/releases/download/v29.24.1/themes.zip",
+                "https://github.com/JanDeDobbeleer/oh-my-posh/releases/download/v29.24.1/posh-windows-amd64.exe#/oh-my-posh.exe"
             ],
             "hash": [
-                "5d46ba31dfb3cdd76151152de32ab6553d5529af5a027483b9fd70fb1b206105",
-                "7873c0e371c0d3f9182745d34f4e1c1ac7b771be8300d99c87156f747fb3c6d3"
+                "2b2f1173f88298f79de30dbaeb15a04e6c23dbb0d382e40b1e98ff7ff0461c25",
+                "a58355a80afe6ec764ddf23340a8f234ab716e7ad10d465a250ef9ae04b7a6aa"
             ]
         },
         "arm64": {
             "url": [
-                "https://github.com/JanDeDobbeleer/oh-my-posh/releases/download/v29.24.0/themes.zip",
-                "https://github.com/JanDeDobbeleer/oh-my-posh/releases/download/v29.24.0/posh-windows-arm64.exe#/oh-my-posh.exe"
+                "https://github.com/JanDeDobbeleer/oh-my-posh/releases/download/v29.24.1/themes.zip",
+                "https://github.com/JanDeDobbeleer/oh-my-posh/releases/download/v29.24.1/posh-windows-arm64.exe#/oh-my-posh.exe"
             ],
             "hash": [
-                "5d46ba31dfb3cdd76151152de32ab6553d5529af5a027483b9fd70fb1b206105",
-                "1a6c4f0e433d78578cf45c1e955193c09c5fb830a8f4575bccfa6ed48f1d1688"
+                "2b2f1173f88298f79de30dbaeb15a04e6c23dbb0d382e40b1e98ff7ff0461c25",
+                "fdec55e1d88b0ffc6fe8d8549cdbecd4d3c6b2d6a72fa0c79a129fbced03c831"
             ]
         }
     },
@@ -34,6 +39,42 @@
     "checkver": {
         "github": "https://github.com/JanDeDobbeleer/oh-my-posh"
     },
+    "post_install": [
+        "$sq = \"'\"",
+        "$at = \"@\"",
+        "$script_chunks = @()",
+        "$script_chunks += @'",
+        "param (",
+        "    [string[]]$Processes",
+        ")",
+        "",
+        "$CurrentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent()",
+        "$CurrentShell = (Get-Process -Id $PID).Path",
+        "$Principal = New-Object System.Security.Principal.WindowsPrincipal($CurrentUser)",
+        "$IsAdmin = $Principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)",
+        "",
+        "if (-not $IsAdmin) {",
+        "    $Arguments = \"-NoProfile -ExecutionPolicy Bypass -File `\"$PSCommandPath`\"\"",
+        "    Start-Process $CurrentShell -Verb RunAs -ArgumentList $Arguments",
+        "    exit",
+        "}",
+        "",
+        "if (-not $Processes) {",
+        "    $Processes = @($CurrentShell)",
+        "    $Processes += Join-Path -Path (Get-Item -Path (scoop prefix oh-my-posh)).ResolvedTarget -ChildPath \"oh-my-posh.exe\"",
+        "}",
+        "",
+        "$CurrentExclusions = (Get-MpPreference).ExclusionProcess",
+        "",
+        "foreach ($Process in $Processes) {",
+        "    if ($CurrentExclusions -notcontains $Process) {",
+        "        Add-MpPreference -ExclusionProcess $Process",
+        "    }",
+        "}",
+        "'@",
+        "$script = [string]::Join('', $script_chunks)",
+        "Set-Content -Path \"$dir\\set-defender-exclusions.ps1\" -Value $script"
+    ],
     "autoupdate": {
         "architecture": {
             "64bit": {
@@ -48,6 +89,9 @@
                     "https://github.com/JanDeDobbeleer/oh-my-posh/releases/download/v$version/posh-windows-arm64.exe#/oh-my-posh.exe"
                 ]
             }
+        },
+        "hash": {
+            "url": "$url.sha256"
         }
     }
 }
