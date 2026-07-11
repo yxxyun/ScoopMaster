@@ -17,72 +17,25 @@
     "shortcuts": [
         [
             "Trae CN.exe",
-            "Trae CN"
+            "Trae CN",
+            "--user-data-dir=\"%SCOOP%\\apps\\trae-cn\\current\\data\\user-data\" --extensions-dir=\"%SCOOP%\\apps\\trae-cn\\current\\data\\extensions\""
         ]
     ],
-    "portableProfile": {
-        "mappings": [
-            {
-                "label": "home-config",
-                "source": "UserProfile/.trae-cn",
-                "target": "$persist_dir/home/config",
-                "strategy": "symlink",
-                "ensureTarget": true
-            },
-            {
-                "label": "roaming",
-                "source": "AppData/Trae CN",
-                "target": "$persist_dir/roaming",
-                "strategy": "symlink",
-                "ensureTarget": true
-            },
-            {
-                "label": "programs",
-                "source": "LocalAppData/Programs/trae-cn",
-                "target": "$persist_dir/programs",
-                "strategy": "symlink",
-                "ensureTarget": true
-            }
-        ],
-        "options": {
-            "log": true
-        }
-    },
     "post_install": [
-        "$homeConfig = Join-Path $persist_dir 'home\\config'",
-        "$extensionsDir = Join-Path $homeConfig 'extensions'",
-        "$roamingDir = Join-Path $persist_dir 'roaming'",
-        "$programsDir = Join-Path $persist_dir 'programs'",
-        "foreach ($path in @($homeConfig, $extensionsDir, $roamingDir, $programsDir)) { if (-not (Test-Path $path)) { New-Item -ItemType Directory -Path $path -Force | Out-Null } }",
-        "$appDataPath = Join-Path $env:AppData 'Trae CN'",
-        "if (Test-Path $appDataPath) {",
-        "  $item = Get-Item $appDataPath -ErrorAction SilentlyContinue",
-        "  if ($item -and -not $item.LinkType) {",
-        "    Copy-Item \"$appDataPath\\*\" $roamingDir -Force -Recurse -ErrorAction SilentlyContinue",
-        "    Remove-Item $appDataPath -Recurse -Force -ErrorAction SilentlyContinue",
-        "  }",
+        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.trae-cn\\extensions\")) {",
+        "  info '[Portable Mode] Copying extensions...'",
+        "  Copy-Item \"$env:USERPROFILE\\.trae-cn\\extensions\" \"$dir\\data\" -Recurse",
         "}",
-        "$localProgramsPath = Join-Path $env:LocalAppData 'Programs\\trae-cn'",
-        "if (Test-Path $localProgramsPath) {",
-        "  $item = Get-Item $localProgramsPath -ErrorAction SilentlyContinue",
-        "  if ($item -and -not $item.LinkType) {",
-        "    Copy-Item \"$localProgramsPath\\*\" $programsDir -Force -Recurse -ErrorAction SilentlyContinue",
-        "    Remove-Item $localProgramsPath -Recurse -Force -ErrorAction SilentlyContinue",
-        "  }",
+        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\Trae CN\")) {",
+        "  info '[Portable Mode] Copying user data...'",
+        "  Copy-Item \"$env:AppData\\Trae CN\" \"$dir\\data\\user-data\" -Recurse",
         "}",
-        "$userProfilePath = Join-Path $env:USERPROFILE '.trae-cn'",
-        "if (Test-Path $userProfilePath) {",
-        "  $item = Get-Item $userProfilePath -ErrorAction SilentlyContinue",
-        "  if ($item -and -not $item.LinkType) {",
-        "    Copy-Item \"$userProfilePath\\*\" $homeConfig -Force -Recurse -ErrorAction SilentlyContinue",
-        "    Remove-Item $userProfilePath -Recurse -Force -ErrorAction SilentlyContinue",
-        "  }",
-        "}",
-        "$extensionsFile = Join-Path $extensionsDir 'extensions.json'",
-        "if (Test-Path $extensionsFile) {",
+        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
+        "if ((Test-Path \"$extensions_file\")) {",
         "  info 'Adjusting path in extensions file...'",
-        "  (Get-Content $extensionsFile) -replace '(?<=trae-cn(/|\\\\)).*?(?=(/|\\\\)home(/|\\\\)config(/|\\\\)extensions)', $version | Set-Content $extensionsFile",
-        "}"
+        "    (Get-Content \"$extensions_file\") -replace '(?<=trae-cn(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
+        "}",
+        ""
     ],
     "persist": "data",
     "checkver": {
