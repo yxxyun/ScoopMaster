@@ -1,21 +1,19 @@
 {
-    "version": "5.2.5.32793105",
+    "version": "5.2.6.33159827-8ee6bc11",
     "description": "An AI-native desktop Agent WorkBench",
     "homepage": "https://www.codebuddy.cn/work/",
     "license": "Proprietary",
     "architecture": {
         "64bit": {
-            "url": "https://download.codebuddy.cn/workbuddy/saas/win32-x64-user/WorkBuddy-win32-x64-user-5.2.5.32793105-1067a2de.exe",
-            "hash": "19adadcc730df23741e27ff4a161f2e29fdf71903b905f71cca46470d8156d73"
+            "url": "https://download.codebuddy.cn/workbuddy/saas/win32-x64-user/WorkBuddy-win32-x64-user-5.2.6.33159827-8ee6bc11.exe#dl.7z",
+            "hash": "9b933abdcfeca4323d9aa1061cfd885d449e950a754c3b05c229bd5a04099436",
+            "installer": {
+                "script": [
+                    "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+                    "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\" -Force -Recurse"
+                ]
+            }
         }
-    },
-    "installer": {
-        "script": [
-            "7z e \"$dir\\$fname\" -o\"$dir\\_nsis_temp\" -tnsis -y | Out-Null",
-            "7z x \"$dir\\_nsis_temp\\app-64.7z\" -o\"$dir\" -y | Out-Null",
-            "Remove-Item \"$dir\\_nsis_temp\" -Recurse -Force",
-            "Remove-Item \"$dir\\$fname\" -Force"
-        ]
     },
     "post_install": [
         "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.workbuddy\\extensions\")) {",
@@ -25,30 +23,31 @@
         "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\WorkBuddy\")) {",
         "    info '[Portable Mode] Copying user data...'",
         "    Copy-Item \"$env:AppData\\WorkBuddy\" \"$dir\\data\\user-data\" -Recurse",
+        "}",
+        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
+        "if ((Test-Path \"$extensions_file\")) {",
+        "    info 'Adjusting path in extensions file...'",
+        "    (Get-Content \"$extensions_file\") -replace '(?<=workbuddy(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
         "}"
     ],
-    "bin": [
-        [
-            "WorkBuddy.exe",
-            "workbuddy"
-        ]
-    ],
+    "bin": "WorkBuddy.exe",
     "shortcuts": [
         [
             "WorkBuddy.exe",
-            "WorkBuddy"
+            "WorkBuddy",
+            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
         ]
     ],
     "persist": "data",
     "checkver": {
         "url": "https://www.codebuddy.cn/v2/update?platform=workbuddy-win32-x64-user",
         "jsonpath": "$.url",
-        "regex": "(?<url>.*WorkBuddy-win32-x64-user-(?<version>[\\d.]+-\\d+-[\\w.]+)\\.exe)"
+        "regex": "(?<url>.*WorkBuddy-win32-x64-user-(?<version>[\\d.]+-[\\w.]+)\\.exe)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://download.codebuddy.cn/workbuddy/saas/win32-x64-user/WorkBuddy-win32-x64-user-$version.exe"
+                "url": "https://download.codebuddy.cn/workbuddy/saas/win32-x64-user/WorkBuddy-win32-x64-user-$version.exe#dl.7z"
             }
         }
     }
