@@ -1,46 +1,57 @@
 {
     "version": "0.1.59",
-    "description": "Rust 驱动的多协议下载管理器，支持 HTTP/FTP/BitTorrent 磁力链接及 HLS/DASH 流媒体，智能多线程加速与浏览器无缝集成。精美界面，极致性能，永久免费，零广告。",
+    "description": "Cross-platform download manager with multi-protocol (HTTP/2/HTTPS/FTP/BitTorrent) support, resumable & segmented downloading, zero ads, zero tracking, local-first privacy design. [Portable Edition]",
     "homepage": "https://fluxdown.zerx.dev/",
     "license": {
-        "identifier": "AGPL-3.0 license",
-        "url": "https://github.com/zerx-lab/FluxDown#AGPL-3.0-1-ov-file"
+        "identifier": "Freeware",
+        "url": "https://fluxdown.zerx.dev/terms"
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/zerx-lab/FluxDown/releases/download/v0.1.59/FluxDown-0.1.59-windows-x64-portable.zip",
+            "url": "https://fluxdown.zerx.dev/api/download/FluxDown-0.1.59-windows-x64-portable.zip",
             "hash": "1203cf8e7e8f35a38bbef1b414426c97ec370256ebea00ed016dacab79d86415"
+        },
+        "arm64": {
+            "url": "https://fluxdown.zerx.dev/api/download/FluxDown-0.1.59-windows-arm64-portable.zip",
+            "hash": "263f65e7507809cda4ed009dfe102e0a2456d2aac84d7c82562bc41911be5f0b"
         }
     },
-    "bin": [
-        [
-            "flux_down.exe",
-            "FluxDown"
-        ]
-    ],
+    "bin": "flux_down.exe",
     "shortcuts": [
         [
             "flux_down.exe",
             "FluxDown"
         ]
     ],
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:APPDATA\\FluxDown\" \"$persist_dir\\AppData\" -Migrate",
+            "# The portable FluxDown saves SQLite database in program directory.",
+            "# To avoid data loss, we turn it into non-portable.",
+            "Remove-Item \"$dir\\portable\" -Force",
+            "New-PersistDirectory \"$env:LOCALAPPDATA\\FluxDown\" \"$persist_dir\\LocalAppData\" -Migrate"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\FluxDown\"",
+        "Remove-Junction \"$env:LOCALAPPDATA\\FluxDown\""
+    ],
     "checkver": {
-        "github": "https://api.github.com/repos/zerx-lab/FluxDown/releases",
-        "jp": "$[0].tag_name",
-        "regex": "v([\\d.]+)"
+        "url": "https://fluxdown.zerx.dev/api/release",
+        "jsonpath": "$.version"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/zerx-lab/FluxDown/releases/download/v$version/FluxDown-$version-windows-x64-portable.zip"
+                "url": "https://fluxdown.zerx.dev/api/download/FluxDown-$version-windows-x64-portable.zip"
             },
             "arm64": {
-                "url": "https://github.com/zerx-lab/FluxDown/releases/download/v$version/FluxDown-$version-windows-arm64-portable.zip"
+                "url": "https://fluxdown.zerx.dev/api/download/FluxDown-$version-windows-arm64-portable.zip"
             }
-        },
-        "hash": {
-            "url": "$baseurl/SHA256SUMS.txt",
-            "regex": "$sha256.*?$basename"
         }
     }
 }
