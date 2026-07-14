@@ -1,46 +1,66 @@
 {
-  "version": "4.2.0-1",
-  "description": "QGIS is a user friendly Open Source Geographic Information System",
-  "homepage": "https://qgis.org/",
-  "license": "GPL-2.0-or-later",
-  "notes": "For file associations, run 'reg import \"$dir\\apps\\qgis\\bin\\qgis.reg\"'",
-  "url": "https://download.qgis.org/downloads/QGIS-OSGeo4W-4.2.0-1.msi",
-  "hash": "",
-  "extract_dir": "QGIS 4.2.0",
-  "bin": "bin\\qgis-bin.exe",
-  "shortcuts": [
-    [
-      "bin\\qgis-bin.exe",
-      "QGIS Desktop"
-    ]
-  ],
-  "installer": {
-    "script": [
-      "$ApplicationProgramMenuFolder = \"$dir\\menu\"",
-      "$ApplicationDesktopFolder = \"$dir\\desktop\"",
-      "$INSTALLDESKTOPSHORTCUTS = 1",
-      "$INSTALLMENUSHORTCUTS = 1",
-      "$postinstlog = \"$dir\\postinstall.log\"",
-      "New-Item \"$dir\\apps\\qgis-ltr\\bin\\\" -ItemType Directory",
-      "New-Item \"$dir\\apps\\qgis-ltr\\bin\\qgis.reg\"",
-      "& $dir\\etc\\postinstall.bat \"$ApplicationProgramMenuFolder\" \"$ApplicationDesktopFolder\" \"$INSTALLDESKTOPSHORTCUTS\" \"$INSTALLMENUSHORTCUTS\" >\"$postinstlog\" 2>&1"
-    ]
-  },
-  "uninstaller": {
-    "script": [
-      "$prermlog = \"$env:TEMP\\preremove.log\"",
-      "if (Test-Path $dir\\etc\\preremove.bat) { & $dir\\etc\\preremove.bat >\"$prermlog\" 2>&1 }"
-    ]
-  },
-  "checkver": {
-    "url": "https://qgis.org/resources/installation-guide/",
-    "regex": "<td>Latest Release</td><td>[^<>]*</td><td><a href=https://download.qgis.org/downloads/QGIS-OSGeo4W-([\\d.-]+)\\.msi>Installer</a>"
-  },
-  "autoupdate": {
-    "url": "https://download.qgis.org/downloads/QGIS-OSGeo4W-$version.msi",
-    "hash": {
-      "url": "$baseurl/QGIS-OSGeo4W-$version.sha256sum"
+    "version": "4.2.0-1",
+    "description": "QGIS is a user friendly Open Source Geographic Information System",
+    "homepage": "https://qgis.org/",
+    "license": "GPL-2.0-or-later",
+    "notes": [
+        "For file associations, run 'reg import \"$dir\\apps\\qgis\\bin\\qgis.reg\"'.",
+        "OSGeo4W dllupdate is disabled because it requires UAC elevation for system-wide DLL updates."
+    ],
+    "url": "https://download.qgis.org/downloads/QGIS-OSGeo4W-4.2.0-1.msi",
+    "hash": "f55cc74296008386b7b1405d4b165bca1ffa4a8d80ba3b140c6404116af41eb1",
+    "extract_dir": "QGIS 4.2.0",
+    "bin": "bin\\qgis-bin.exe",
+    "shortcuts": [
+        [
+            "bin\\qgis-bin.exe",
+            "QGIS Desktop"
+        ]
+    ],
+    "installer": {
+        "script": [
+            "$dllupdate = \"$dir\\bin\\dllupdate.exe\"",
+            "if (Test-Path $dllupdate) {",
+            "  info \"Disabling $dllupdate\"",
+            "  Rename-Item $dllupdate 'dllupdate.exe.ORIG'",
+            "  @(\"@echo off\", \"echo Scoop: dllupdate disabled: %*\") | Set-Content \"$dir\\bin\\dllupdate.cmd\" -Encoding Ascii",
+            "}",
+            "Get-ChildItem \"$dir\\etc\" -Recurse -Filter \"*.bat\" | Select-String -Pattern \"^dllupdate\" -List | % {",
+            "  info \"Updating $($_.Path)\"",
+            "  Copy-Item $_.Path \"$($_.Path).ORIG\"",
+            "  (Get-Content $_.Path -Encoding Ascii) -replace '^dllupdate', 'call dllupdate' | Set-Content $_.Path -Encoding Ascii",
+            "}",
+            "$unconverted = Get-ChildItem \"$dir\\etc\" -Recurse -Filter \"*.bat\" | Select-String -Pattern \"^\\s*(?!call\\s+)dllupdate\" -List",
+            "if ($unconverted) {",
+            "  $unconverted | % { error \"Unconverted dllupdate call found: $($_.Path)\" }",
+            "  exit 1",
+            "}",
+            "$ApplicationProgramMenuFolder = \"$dir\\menu\"",
+            "$ApplicationDesktopFolder = \"$dir\\desktop\"",
+            "$INSTALLDESKTOPSHORTCUTS = 1",
+            "$INSTALLMENUSHORTCUTS = 1",
+            "$postinstlog = \"$dir\\postinstall.log\"",
+            "New-Item \"$dir\\apps\\qgis-ltr\\bin\" -ItemType Directory",
+            "New-Item \"$dir\\apps\\qgis-ltr\\bin\\qgis.reg\"",
+            "& \"$dir\\etc\\postinstall.bat\" \"$ApplicationProgramMenuFolder\" \"$ApplicationDesktopFolder\" \"$INSTALLDESKTOPSHORTCUTS\" \"$INSTALLMENUSHORTCUTS\" >\"$postinstlog\" 2>&1",
+            "if ($LASTEXITCODE -ne 0) { error 'postinstall.bat failed'; exit $LASTEXITCODE }"
+        ]
     },
-    "extract_dir": "QGIS $matchHead"
-  }
+    "uninstaller": {
+        "script": [
+            "$prermlog = \"$env:TEMP\\preremove.log\"",
+            "if (Test-Path $dir\\etc\\preremove.bat) { & $dir\\etc\\preremove.bat >\"$prermlog\" 2>&1 }"
+        ]
+    },
+    "checkver": {
+        "url": "https://qgis.org/resources/installation-guide/",
+        "regex": "<td>Latest Release</td><td>[^<>]*</td><td><a href=https://download.qgis.org/downloads/QGIS-OSGeo4W-([\\d.-]+)\\.msi>Installer</a>"
+    },
+    "autoupdate": {
+        "url": "https://download.qgis.org/downloads/QGIS-OSGeo4W-$version.msi",
+        "hash": {
+            "url": "$baseurl/QGIS-OSGeo4W-$version.sha256sum"
+        },
+        "extract_dir": "QGIS $matchHead"
+    }
 }

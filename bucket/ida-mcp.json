@@ -1,35 +1,61 @@
 {
-  "version": "9.3.26",
+  "version": "9.4.0",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/blacktop/ida-mcp-rs/releases/download/v9.3.26/ida-mcp_9.3.26_Windows_x86_64.zip",
+      "url": "https://github.com/blacktop/ida-mcp-rs/releases/download/v9.4.0/ida-mcp_9.4.0_Windows_x86_64.zip",
       "bin": [
         "ida-mcp.exe"
       ],
-      "hash": "84a1aa1231a0ebdf3c198a5ecff9ccada4539afb9180d3ee885f4fdbf1b199c2"
+      "hash": "4c0033a79a1c5fa170bbc05da5bd9d3e8d44ffe1e2d7552546019668d1dac4b2"
+    },
+    "arm64": {
+      "url": "https://github.com/blacktop/ida-mcp-rs/releases/download/v9.4.0/ida-mcp_9.4.0_Windows_arm64.zip",
+      "bin": [
+        "ida-mcp.exe"
+      ],
+      "hash": "058fb2e286a415d40e401cae2ce9fbcf22151e3c3ba8cac2e9b0b4439a19148d"
     }
   },
   "homepage": "https://github.com/blacktop/ida-mcp-rs",
   "license": "MIT",
   "description": "Headless IDA Pro MCP Server for AI-powered binary analysis",
   "post_install": [
-    "$idaPaths = @('C:\\Program Files\\IDA Professional 9.3','C:\\Program Files\\IDA Pro 9.3','C:\\Program Files\\IDA Home 9.3','C:\\Program Files\\IDA Essential 9.3','C:\\Program Files\\IDA Professional 9.2','C:\\Program Files\\IDA Pro 9.2')",
+    "$idaPaths = @('C:\\Program Files\\IDA Professional 9.4','C:\\Program Files\\IDA Pro 9.4','C:\\Program Files\\IDA Home 9.4','C:\\Program Files\\IDA Essential 9.4')",
     "$found = $idaPaths | Where-Object { Test-Path \"$_\\idalib.dll\" } | Select-Object -First 1",
-    "if ($found -and -not $env:IDADIR) {",
-    "  [Environment]::SetEnvironmentVariable('IDADIR', $found, 'User')",
-    "  $env:IDADIR = $found",
-    "  Write-Host \"IDADIR set to $found\"",
-    "} elseif (-not $found) {",
-    "  Write-Host 'IDA Pro not found in standard locations. Set IDADIR manually or add IDA to PATH.'",
+    "$selected = if ($env:IDADIR -and (Test-Path \"$env:IDADIR\\idalib.dll\")) { $env:IDADIR } else { $found }",
+    "if ($selected) {",
+    "  if (-not $env:IDADIR) {",
+    "    [Environment]::SetEnvironmentVariable('IDADIR', $selected, 'User')",
+    "    [Environment]::SetEnvironmentVariable('IDA_MCP_MANAGED_IDADIR', $selected, 'User')",
+    "    $env:IDADIR = $selected",
+    "  }",
+    "  $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')",
+    "  $pathEntries = @($userPath -split ';' | Where-Object { $_ })",
+    "  if (-not ($pathEntries -contains $selected)) {",
+    "    $newPath = @($pathEntries + $selected) -join ';'",
+    "    [Environment]::SetEnvironmentVariable('Path', $newPath, 'User')",
+    "    [Environment]::SetEnvironmentVariable('IDA_MCP_MANAGED_IDA_PATH', $selected, 'User')",
+    "  }",
+    "  $env:Path = \"$selected;$env:Path\"",
+    "  Write-Host \"IDA runtime configured from $selected\"",
+    "} else {",
+    "  Write-Host 'IDA Pro not found in standard locations. Set IDADIR and add the same directory to PATH.'",
     "}"
   ],
   "post_uninstall": [
-    "$idaPaths = @('C:\\Program Files\\IDA Professional 9.3','C:\\Program Files\\IDA Pro 9.3','C:\\Program Files\\IDA Home 9.3','C:\\Program Files\\IDA Essential 9.3','C:\\Program Files\\IDA Professional 9.2','C:\\Program Files\\IDA Pro 9.2')",
+    "$managedIdaDir = [Environment]::GetEnvironmentVariable('IDA_MCP_MANAGED_IDADIR', 'User')",
     "$current = [Environment]::GetEnvironmentVariable('IDADIR', 'User')",
-    "if ($current -and ($idaPaths -contains $current)) {",
+    "if ($managedIdaDir -and ($current -eq $managedIdaDir)) {",
     "  [Environment]::SetEnvironmentVariable('IDADIR', $null, 'User')",
-    "  Write-Host 'Removed IDADIR environment variable'",
-    "}"
+    "}",
+    "[Environment]::SetEnvironmentVariable('IDA_MCP_MANAGED_IDADIR', $null, 'User')",
+    "$managedPath = [Environment]::GetEnvironmentVariable('IDA_MCP_MANAGED_IDA_PATH', 'User')",
+    "if ($managedPath) {",
+    "  $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')",
+    "  $pathEntries = @($userPath -split ';' | Where-Object { $_ -and ($_ -ne $managedPath) })",
+    "  [Environment]::SetEnvironmentVariable('Path', ($pathEntries -join ';'), 'User')",
+    "}",
+    "[Environment]::SetEnvironmentVariable('IDA_MCP_MANAGED_IDA_PATH', $null, 'User')"
   ],
-  "notes": "Requires IDA Pro 9.x with a valid license. IDADIR is auto-detected from standard install paths."
+  "notes": "Requires IDA Pro 9.4 with a valid license. IDADIR is auto-detected from standard install paths."
 }
