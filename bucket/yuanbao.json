@@ -1,45 +1,43 @@
 {
-  "version": "2.75.0",
-  "description": "腾讯元宝，腾讯的一款 AI 智能助手。An AI assistant by Tencent.",
-  "homepage": "https://yuanbao.tencent.com/",
-  "license": "Unknown",
-  "architecture": {
-    "64bit": {
-      "url": "https://cdn-hybrid-prod.hunyuan.tencent.com/Desktop/official/1896cdd8e9b7685cb7fa79ed79e6c881/yuanbao_2.75.0.610_x64.exe#/dl.7z",
-      "hash": "4d044578dbfef93cc65b94908eb94f082afe7c8dc344a3fd709c30f26cdf55e9"
-    }
-  },
-  "pre_install": [
-    "(Get-ChildItem $dir '*.7z').Fullname | Rename-Item -NewName 'app.7z'",
-    "Expand-7zipArchive \"$dir\\app.7z\" \"$dir\"",
-    "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\app.7z\",\"$dir\\plugin_compress.ini\" -Force -Recurse",
-    "$contentDir=Get-ChildItem -Name -Path \"$dir\" -Directory | Where-Object { $_ -match \"^\\d+(\\.\\d+)+$\" }",
-    "7z.exe a -tzip -mx=6 \"$dir\\$contentDir\\content.pkg\" \"$dir\\$contentDir\\content.pkg.nsisbin\\*\" | Out-Null"
-  ],
-  "shortcuts": [
-    [
-      "yuanbao.exe",
-      "yuanbao"
-    ]
-  ],
-  "checkver": {
-    "script": [
-      ". \"$pwd\\bin\\utils.ps1\"",
-      "$InstallerInfo = get_installer_info 'Tencent/Yuanbao'",
-      "\"ver:$($InstallerInfo.PackageVersion);\"",
-      "\"x64:$($InstallerInfo.x64_exe.InstallerUrl);\""
+    "version": "2.76.0.22",
+    "description": "腾讯元宝 - AI智能助手，支持深度推理、联网搜索、划词搜索及多模态交互",
+    "homepage": "https://yuanbao.tencent.com",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://yuanbao.tencent.com"
+    },
+    "url": "https://cdn-hybrid-prod.hunyuan.tencent.com/Desktop/business/channels/yuanbao_10046_x64.exe",
+    "hash": "f55f1a77e29400a144a4b65b888dc4053a4776eb8f004759845c564575fa64b0",
+    "installer": {
+        "script": [
+            "7z e \"$dir\\$fname\" -o\"$dir\\_nsis_temp\" -tnsis -y | Out-Null",
+            "Copy-Item \"$dir\\_nsis_temp\\yuanbao.exe\" \"$dir\\yuanbao.exe\" -Force",
+            "$inner7z = Get-ChildItem \"$dir\\_nsis_temp\" -Filter 'install*.7z' | Select-Object -First 1",
+            "if ($inner7z) { 7z x $inner7z.FullName -o\"$dir\" -y | Out-Null }",
+            "$verDir = Get-ChildItem \"$dir\" -Directory | Where-Object { $_.Name -match '^\\d+\\.\\d+\\.\\d+\\.\\d+$' } | Select-Object -First 1",
+            "if ($verDir -and (Test-Path \"$($verDir.FullName)\\content.pkg.nsisbin\")) {",
+            "    Push-Location \"$($verDir.FullName)\\content.pkg.nsisbin\"",
+            "    7z a -tzip \"$($verDir.FullName)\\content.pkg\" \"*\" -r | Out-Null",
+            "    Pop-Location",
+            "    Remove-Item \"$($verDir.FullName)\\content.pkg.nsisbin\" -Recurse -Force",
+            "}",
+            "Remove-Item \"$dir\\_nsis_temp\" -Recurse -Force",
+            "Remove-Item \"$dir\\$fname\" -Force"
+        ]
+    },
+    "bin": "yuanbao.exe",
+    "shortcuts": [
+        [
+            "yuanbao.exe",
+            "元宝"
+        ]
     ],
-    "regex": "ver:(?<version>[^;]+)(?:; x64:(?<x64>[^;]*))?(?:; x86:(?<x86>[^;]*))?(?:; arm64:(?<arm64>[^;]*))?"
-  },
-  "autoupdate": {
-    "architecture": {
-      "64bit": {
-        "url": "$matchX64#/dl.7z",
-        "hash": {
-          "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/t/Tencent/Yuanbao/$version/Tencent.Yuanbao.installer.yaml",
-          "regex": "Architecture: x64[\\s\\S]+?InstallerSha256:\\s?(.+)"
-        }
-      }
+    "checkver": {
+        "url": "https://pc.qq.com/detail/10/detail_45590.html",
+        "regex": "([\\d.]+)"
+    },
+    "autoupdate": {
+        "note": "元宝 CDN URL 不含版本号，始终指向最新版本。新版本发布后需手动更新 hash 和 version。",
+        "url": "https://cdn-hybrid-prod.hunyuan.tencent.com/Desktop/business/channels/yuanbao_10046_x64.exe"
     }
-  }
 }
