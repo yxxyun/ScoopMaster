@@ -1,0 +1,85 @@
+{
+    "version": "1.0.1",
+    "description": "A Windows memory cleaner with real-time monitoring, configurable cleanup areas, tray support, and global hotkeys",
+    "homepage": "https://github.com/Y-ASLant/MemoryCleanr",
+    "license": "MIT",
+    "notes": [
+        "MemoryCleanr 启动时会请求管理员权限，大部分内存清理操作需要管理员权限",
+        "设置目录：%APPDATA%\\MemoryCleaner\\",
+        "本包会将完整设置目录持久化到 Scoop 的 persist，并将可选调试日志 App.log 作为文件持久化"
+    ],
+    "url": "https://github.com/Y-ASLant/MemoryCleanr/releases/download/v1.0.1/MemoryCleanr.exe",
+    "hash": "82dfb54000028a0a120a0a672ca0652435346fa9c95590b4ae121e75ab9a50be",
+    "pre_install": "if (-not (Test-Path -LiteralPath \"$dir\\App.log\")) { New-Item -Path \"$dir\\App.log\" -ItemType File | Out-Null }",
+    "bin": "MemoryCleanr.exe",
+    "shortcuts": [
+        [
+            "MemoryCleanr.exe",
+            "Memory Cleanr"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'MemoryCleaner'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        $expected = [IO.Path]::GetFullPath($target).TrimEnd('\\')",
+        "        $actual = @($item.Target) | Select-Object -First 1",
+        "        if ($actual -and [IO.Path]::GetFullPath($actual).TrimEnd('\\') -ieq $expected) {",
+        "            Write-Host \"Junction already managed by Scoop: $source\"",
+        "            return",
+        "        }",
+        "        throw \"Path is an existing reparse point not managed by this package: $source\"",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"Path exists and is not a directory: $source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    $copyExitCode = $LASTEXITCODE",
+        "    if ($copyExitCode -gt 7) {",
+        "        throw \"Migration failed with robocopy exit code ${copyExitCode}: $source\"",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    Move-Item -LiteralPath $source -Destination $backup -Force",
+        "    Write-Host \"Backed up original settings directory: $backup\"",
+        "}",
+        "",
+        "try {",
+        "    New-Item -Path $source -ItemType Junction -Value $target -Force | Out-Null",
+        "} catch {",
+        "    if ($backup -and (Test-Path $backup) -and -not (Test-Path $source)) {",
+        "        Move-Item -LiteralPath $backup -Destination $source -Force",
+        "    }",
+        "    throw",
+        "}"
+    ],
+    "post_uninstall": [
+        "$source = Join-Path $env:APPDATA 'MemoryCleaner'",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        $target = Join-Path $persist_dir 'data'",
+        "        $expected = [IO.Path]::GetFullPath($target).TrimEnd('\\')",
+        "        $actual = @($item.Target) | Select-Object -First 1",
+        "        if ($actual -and [IO.Path]::GetFullPath($actual).TrimEnd('\\') -ieq $expected) {",
+        "            Remove-Item -LiteralPath $source -Force",
+        "        }",
+        "    }",
+        "}"
+    ],
+    "persist": [
+        "data",
+        "App.log"
+    ],
+    "checkver": {
+        "github": "https://github.com/Y-ASLant/MemoryCleanr"
+    },
+    "autoupdate": {
+        "url": "https://github.com/Y-ASLant/MemoryCleanr/releases/download/v$version/MemoryCleanr.exe"
+    }
+}
