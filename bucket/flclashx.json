@@ -1,12 +1,16 @@
 {
     "version": "0.4.0",
-    "description": "A fork of the multi-platform proxy client FlClash based on ClashMeta, simple and easy to use, open-source and ad-free.",
+    "description": "A Flutter-based cross-platform Clash GUI client",
     "homepage": "https://github.com/pluralplay/FlClashX",
-    "license": "GPL-3.0",
+    "license": "GPL-3.0-or-later",
     "architecture": {
         "64bit": {
             "url": "https://github.com/pluralplay/FlClashX/releases/download/v0.4.0/FlClashX-windows-amd64.zip",
             "hash": "47f6be14f1ed198e5b1afba0ed05bd045da461c0b10a0bafc596970d56b0d8af"
+        },
+        "arm64": {
+            "url": "https://github.com/pluralplay/FlClashX/releases/download/v0.4.0/FlClashX-windows-arm64.zip",
+            "hash": "0c16f8407a6b194c5adaee8518ed6d011f2d3680a140a783dd930d78d205b13a"
         }
     },
     "shortcuts": [
@@ -15,6 +19,23 @@
             "FlClashX"
         ]
     ],
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:APPDATA\\com.follow\\clashx\" \"$persist_dir\\AppData\" -Migrate"
+        ]
+    },
+    "pre_uninstall": [
+        "while (Get-Service -Name 'FlClashHelperService' -ErrorAction SilentlyContinue) {",
+        "    Invoke-ExternalCommand 'sc.exe' -ArgumentList @('stop', 'FlClashHelperService') -RunAs -Quiet",
+        "    Invoke-ExternalCommand 'sc.exe' -ArgumentList @('delete', 'FlClashHelperService') -RunAs -Quiet",
+        "}",
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\com.follow\\clashx\"",
+        "Remove-EmptyDirectory \"$env:APPDATA\\com.follow\""
+    ],
     "checkver": {
         "github": "https://github.com/pluralplay/FlClashX"
     },
@@ -22,10 +43,10 @@
         "architecture": {
             "64bit": {
                 "url": "https://github.com/pluralplay/FlClashX/releases/download/v$version/FlClashX-windows-amd64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/pluralplay/FlClashX/releases/download/v$version/FlClashX-windows-arm64.zip"
             }
-        },
-        "hash": {
-            "url": "$url.sha256"
         }
     }
 }

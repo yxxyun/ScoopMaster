@@ -34,16 +34,37 @@
         ]
     ],
     "depends": "chrome-plus",
-    "persist": "chrome++.ini",
+    "persist": [
+        "config"
+    ],
     "post_install": [
-        "$src = Join-Path $env:SCOOP 'apps\\chrome-plus\\current\\x64\\App\\version.dll'",
-        "$dst = Join-Path $dir 'version.dll'",
-        "if (!(Test-Path $src)) {",
+        "$chromePath = scoop prefix chrome-plus",
+        "$srcDll = Join-Path $chromePath 'x64\\App\\version.dll'",
+        "$dstDll = Join-Path $dir 'version.dll'",
+        "$srcIni = Join-Path $chromePath 'x64\\App\\chrome++.ini'",
+        "$persistIni = Join-Path $persist_dir 'chrome++.ini'",
+        "$dstIni = Join-Path $dir 'chrome++.ini'",
+
+        "if (!(Test-Path $persistIni)) {",
+        "    if (Test-Path $srcIni) {",
+        "        Copy-Item $srcIni $persistIni -Force",
+        "    }",
+        "}",
+
+        "if (Test-Path $dstIni) {",
+        "    Remove-Item $dstIni -Force",
+        "}",
+        "New-Item -ItemType HardLink -Path $dstIni -Target $persistIni | Out-Null",
+
+        "if (!(Test-Path $srcDll)) {",
         "    Write-Host 'version.dll not found in chrome-plus, skip.'",
         "    return",
         "}",
-        "if (Test-Path $dst) { Remove-Item $dst -Force }",
-        "New-Item -ItemType SymbolicLink -Path $dst -Target $src | Out-Null"
+
+        "if (Test-Path $dstDll) {",
+        "    Remove-Item $dstDll -Force",
+        "}",
+        "New-Item -ItemType HardLink -Path $dstDll -Target $srcDll | Out-Null"
     ],
     "env_set": {
         "CHROME_EXECUTABLE": "$dir\\chrome.exe"
