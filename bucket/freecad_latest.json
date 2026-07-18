@@ -1,0 +1,42 @@
+{
+    "version": "weekly-2026.07.15",
+    "description": "A free and open-source multi-platform parametric 3D modeler.",
+    "homepage": "https://www.freecad.org",
+    "license": {
+        "identifier": "LGPL-2.1-or-later",
+        "url": "https://github.com/FreeCAD/FreeCAD/blob/HEAD/LICENSE"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/FreeCAD/FreeCAD/releases/download/weekly-2026.07.15/FreeCAD_weekly-2026.07.15-Windows-x86_64.7z",
+            "hash": "7b1f79aa402b975af826986c7c7725d9d15ce0e6b80e6d6836477c599acb84b0"
+        }
+    },
+    "pre_install": "pushd $dir ; mv */* . ; rm FreeCAD_* ; popd",
+    "post_install": [
+        "# FreeCAD may behave unexpectedly when launched from a symlinked directory. See: https://github.com/ScoopInstaller/Extras/issues/17759",
+        "startmenu_shortcut \"$original_dir\\bin\\FreeCAD.exe\" 'FreeCAD' $null $null $global",
+        "shim \"$original_dir\\bin\\FreeCADCmd.exe\" $global 'FreeCADCmd'"
+    ],
+    "post_uninstall": [
+        "# Remove shortcut and shim",
+        "rm_shim 'FreeCADCmd' \"$(shimdir $global)\"",
+        "Write-Host \"Removing shortcut $(friendly_path \"$(shortcut_folder $global)\\FreeCAD.lnk\")\"",
+        "Remove-Item \"$(shortcut_folder $global)\\FreeCAD.lnk\" -Force -ErrorAction SilentlyContinue"
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/FreeCAD/FreeCAD/tags",
+        "jsonpath": "$.[0].name"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/FreeCAD/FreeCAD/releases/download/$version/FreeCAD_$version-Windows-x86_64.7z"
+            }
+        },
+        "hash": {
+            "url": "$url-SHA256.txt",
+            "regex": "(?s)$basename.*?$sha256"
+        }
+    }
+}
