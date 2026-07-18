@@ -1,5 +1,5 @@
 {
-    "version": "2.1.212",
+    "version": "2.1.214",
     "description": "An agentic coding tool built by Anthropic that lives in your terminal, understands your codebase, and helps you code faster by executing routine tasks, explaining complex code, and handling git workflows.",
     "homepage": "https://claude.com/product/claude-code",
     "license": {
@@ -7,43 +7,49 @@
         "url": "https://www.anthropic.com/legal/consumer-terms"
     },
     "notes": [
-        "Claude Code relies on Git (https://git-scm.com/downloads/win) to function correctly.",
-        "If Claude Code fails to detect Git Bash, manually specify the path using the `CLAUDE_CODE_GIT_BASH_PATH` environment variable.",
-        "For more information: https://code.claude.com/docs/en/setup#set-up-on-windows"
+        "Claude Code nonessential network traffic is disabled by default.",
+        "It's recommended to use `extras/cc-switch` to configure third-party API subscriptions."
     ],
     "suggest": {
-        "git": "main/git"
+        "cc-switch": "extras/cc-switch"
     },
     "architecture": {
         "64bit": {
-            "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/2.1.212/win32-x64/claude.exe",
-            "hash": "fe639693fd7e9a881c799867711abb7666dec2a5fefbaba41af6a09e71bcbefa"
+            "url": "https://github.com/anthropics/claude-code/releases/download/v2.1.214/claude-win32-x64.zip",
+            "hash": "4aad81a9d1fbc23e21bfb28ba0c2468d2aa0398ff6071c5a6c7cca7c0025110c"
         },
         "arm64": {
-            "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/2.1.212/win32-arm64/claude.exe",
-            "hash": "adaa6e3dadb8016755ccd1907a5f249c1bc9bdb6c71d3f7dcea7d5db8f72d0a5"
+            "url": "https://github.com/anthropics/claude-code/releases/download/v2.1.214/claude-win32-arm64.zip",
+            "hash": "41c41b43ab568067e3d83d2b129f5d2a74aaecd9c9e4fe192b5f8167712c27c5"
         }
     },
     "bin": "claude.exe",
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:USERPROFILE\\.claude\" \"$persist_dir\\.claude\" -Migrate",
+            "if (!(Test-Path \"$persist_dir\\.claude\\settings.json\") -or !(Get-Item \"$persist_dir\\.claude\\settings.json\").Length) {",
+            "    New-Item \"$persist_dir\\.claude\\settings.json\" -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null",
+            "    Set-Content -Path \"$persist_dir\\.claude\\settings.json\" -Value '{\"env\":{\"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC\":\"1\",\"CLAUDE_CODE_USE_POWERSHELL_TOOL\":\"1\"},\"skipWebFetchPreflight\":true}' -Encoding Ascii",
+            "}"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:USERPROFILE\\.claude\""
+    ],
     "checkver": {
-        "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/latest",
-        "regex": "([\\d.]+)"
+        "github": "https://github.com/anthropics/claude-code"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/$version/win32-x64/claude.exe",
-                "hash": {
-                    "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/$version/manifest.json",
-                    "jsonpath": "$.platforms.win32-x64.checksum"
-                }
+                "url": "https://github.com/anthropics/claude-code/releases/download/v$version/claude-win32-x64.zip"
             },
             "arm64": {
-                "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/$version/win32-arm64/claude.exe",
-                "hash": {
-                    "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/$version/manifest.json",
-                    "jsonpath": "$.platforms.win32-arm64.checksum"
-                }
+                "url": "https://github.com/anthropics/claude-code/releases/download/v$version/claude-win32-arm64.zip"
             }
         }
     }
