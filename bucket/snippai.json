@@ -1,0 +1,89 @@
+{
+    "version": "0.3.3",
+    "description": "AI-powered Windows snipping tool for OCR, formulas, translation, image analysis, and code understanding",
+    "homepage": "https://github.com/xyTom/snippai",
+    "license": "AGPL-3.0",
+    "notes": [
+        "Snippai 是 Electron 应用，启动后可使用 Ctrl+Shift+A 截图",
+        "Electron userData 目录：%APPDATA%\\Snippai\\",
+        "本包会将该目录持久化到 Scoop 的 persist；其中包括 localStorage 保存的 API Key、模型选择和 Base URL"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/xyTom/snippai/releases/download/v0.3.3/Snippai-win.zip",
+            "hash": "6de2fb6fcda9139e465924ea67da2e7410ab9b45a3fa002d07965625b95bc445"
+        }
+    },
+    "bin": "Snippai.exe",
+    "shortcuts": [
+        [
+            "Snippai.exe",
+            "Snippai"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'Snippai'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        $expected = [IO.Path]::GetFullPath($target).TrimEnd('\\')",
+        "        $actual = @($item.Target) | Select-Object -First 1",
+        "        if ($actual -and [IO.Path]::GetFullPath($actual).TrimEnd('\\') -ieq $expected) {",
+        "            Write-Host \"Junction already managed by Scoop: $source\"",
+        "            return",
+        "        }",
+        "        throw \"Path is an existing reparse point not managed by this package: $source\"",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"Path exists and is not a directory: $source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    $copyExitCode = $LASTEXITCODE",
+        "    if ($copyExitCode -gt 7) {",
+        "        throw \"Migration failed with robocopy exit code ${copyExitCode}: $source\"",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    Move-Item -LiteralPath $source -Destination $backup -Force",
+        "    Write-Host \"Backed up original Electron data directory: $backup\"",
+        "}",
+        "",
+        "try {",
+        "    New-Item -Path $source -ItemType Junction -Value $target -Force | Out-Null",
+        "} catch {",
+        "    if ($backup -and (Test-Path $backup) -and -not (Test-Path $source)) {",
+        "        Move-Item -LiteralPath $backup -Destination $source -Force",
+        "    }",
+        "    throw",
+        "}"
+    ],
+    "post_uninstall": [
+        "$source = Join-Path $env:APPDATA 'Snippai'",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        $target = Join-Path $persist_dir 'data'",
+        "        $expected = [IO.Path]::GetFullPath($target).TrimEnd('\\')",
+        "        $actual = @($item.Target) | Select-Object -First 1",
+        "        if ($actual -and [IO.Path]::GetFullPath($actual).TrimEnd('\\') -ieq $expected) {",
+        "            Remove-Item -LiteralPath $source -Force",
+        "        }",
+        "    }",
+        "}"
+    ],
+    "persist": "data",
+    "checkver": {
+        "github": "https://github.com/xyTom/snippai"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/xyTom/snippai/releases/download/v$version/Snippai-win.zip"
+            }
+        }
+    }
+}
