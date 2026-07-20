@@ -1,19 +1,39 @@
 {
     "version": "7.1.5.43453",
-    "description": "Modernize workflows with Zoom's trusted collaboration tools",
+    "description": "Video and audio conferencing, chat, and webinars",
     "homepage": "https://zoom.us",
-    "license": "Proprietary",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://zoom.us/terms"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://zoom.us/client/7.1.5.43453/ZoomInstallerFull.msi?archType=x64#/setup.msi",
-            "hash": "5c45549aa924ee807215465aec6ca8f743520e2cd0b6ff8698b4a023e5b22204"
+            "url": "https://cdn.zoom.us/prod/7.1.5.43453/x64/ZoomInstallerFull.exe#/dl.7z",
+            "hash": "77c161702500cde913c5b5281e9c8e790c27c80d87423b20807db9e14dc4b67a",
+            "pre_install": "Expand-7zipArchive \"$dir\\ZoomFull.cab\" -Removal"
         },
         "arm64": {
-            "url": "https://zoom.us/client/7.1.5.43453/ZoomInstallerFull.msi?archType=winarm64#/setup.msi",
-            "hash": "b01a501625746b969ae05720463598eb12a5f7340f26363551d80f36a58f5ae9"
+            "url": "https://cdn.zoom.us/prod/7.1.5.43453/arm64/ZoomInstallerFull.exe#/dl.7z",
+            "hash": "28f75658e0b2d157aeb4aab325410efd2e6c2f9c69961601a9ccc6b14c2f058d",
+            "pre_install": "Expand-7zipArchive \"$dir\\ZoomFull.cab\" -Removal"
         }
     },
-    "extract_dir": "Program Files (64-bit) Folder\\Zoom\\bin",
+    "post_install": [
+        "Expand-7zipArchive \"$dir\\win10rt.7z\" -Removal",
+        "Remove-Item \"$dir\\Install*\"",
+        "Write-Host \"Registering zoommtg:// protocol handler\"",
+        "$regpath = \"HKCU:\\SOFTWARE\\Classes\\zoommtg\"",
+        "New-Item -Path $regpath -Value \"Zoom (Application Name)\" -Force | Out-Null",
+        "New-ItemProperty -Path $regpath -Name \"URL Protocol\" -PropertyType String -Force | Out-Null",
+        "New-Item -Path \"$regpath\\shell\\open\\command\" -Value \"`\"$dir\\Zoom.exe`\" --url=`\"%1`\"\" -Force| Out-Null"
+    ],
+    "uninstaller": {
+        "script": [
+            "Write-Host \"Unregistering zoommtg:// protocol handler\"",
+            "Remove-Item \"HKCU:\\SOFTWARE\\Classes\\zoommtg\" -Recurse -Force"
+        ]
+    },
+    "bin": "Zoom.exe",
     "shortcuts": [
         [
             "Zoom.exe",
@@ -21,16 +41,16 @@
         ]
     ],
     "checkver": {
-        "url": "https://zoom.us/rest/download?os=win",
+        "url": "https://www.zoom.us/rest/download?os=win",
         "jsonpath": "$.result.downloadVO.zoomX64.version"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://zoom.us/client/$version/ZoomInstallerFull.msi?archType=x64#/setup.msi"
+                "url": "https://cdn.zoom.us/prod/$version/x64/ZoomInstallerFull.exe#/dl.7z"
             },
             "arm64": {
-                "url": "https://zoom.us/client/$version/ZoomInstallerFull.msi?archType=winarm64#/setup.msi"
+                "url": "https://cdn.zoom.us/prod/$version/arm64/ZoomInstallerFull.exe#/dl.7z"
             }
         }
     }
