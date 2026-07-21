@@ -1,37 +1,60 @@
 {
     "version": "1.1.15",
-    "description": "A desktop terminal client for SSH, serial connections, and local command-line work.",
+    "description": "A modern remote terminal workspace",
     "homepage": "https://nyaterm.app/",
-    "license": "MIT",
+    "license": {
+        "identifier": "MIT license",
+        "url": "https://github.com/nyakang/nyaterm#MIT-1-ov-file"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/nyakang/nyaterm/releases/download/v1.1.15/NyaTerm_1.1.15_windows_x64_portable.zip",
-            "hash": "3446d433c40e772d2b2cdd3d7773a192173d3c3d66f9fa47b2ba9675b570397b"
+            "url": "https://github.com/nyakang/nyaterm/releases/download/v1.1.15/NyaTerm_1.1.15_windows_x64-setup.exe#/dl.7z",
+            "hash": "0921df63601cb76aba35024e9d6aa61526ff87c4741036902e6f98bc4a47bb98"
         },
         "arm64": {
-            "url": "https://github.com/nyakang/nyaterm/releases/download/v1.1.15/NyaTerm_1.1.15_windows_arm64_portable.zip",
-            "hash": "8d576d445e242ebb548a855c02c6a999522d7f99f643118864424a005a6f2757"
+            "url": "https://github.com/nyakang/nyaterm/releases/download/v1.1.15/NyaTerm_1.1.15_windows_arm64-setup.exe#/dl.7z",
+            "hash": "20505abe0f9198bdec6157e007b28e465564cfe56a92a37ad1933378ba7c0b8f"
         }
     },
-    "extract_dir": "NyaTerm-portable",
+    "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\uninst*\" -Force -Recurse",
+    "installer": {
+        "script": [
+            "# handle runtime cache",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:USERPROFILE\\.nyaterm\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:USERPROFILE\\.nyaterm\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "bin": "nyaterm.exe",
     "shortcuts": [
         [
-            "NyaTerm.exe",
+            "nyaterm.exe",
             "NyaTerm"
         ]
     ],
-    "persist": "data",
     "checkver": {
-        "github": "https://github.com/nyakang/nyaterm"
+        "github": "https://api.github.com/repos/nyakang/nyaterm/releases/latest",
+        "jp": "$.tag_name",
+        "regex": "v([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/nyakang/nyaterm/releases/download/v$version/NyaTerm_$version_windows_x64_portable.zip"
+                "url": "https://github.com/nyakang/nyaterm/releases/download/v$version/NyaTerm_$version_windows_x64-setup.exe#/dl.7z"
             },
             "arm64": {
-                "url": "https://github.com/nyakang/nyaterm/releases/download/v$version/NyaTerm_$version_windows_arm64_portable.zip"
+                "url": "https://github.com/nyakang/nyaterm/releases/download/v$version/NyaTerm_$version_windows_arm64-setup.exe#/dl.7z"
             }
+        },
+        "hash": {
+            "url": "$baseurl/latest.json"
         }
     }
 }
