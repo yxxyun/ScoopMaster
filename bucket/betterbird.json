@@ -1,42 +1,50 @@
 {
-    "version": "140.12.0esr-bb24",
-    "description": "A fine-tuned version of Mozilla Thunderbird with new features, bug fixes and telemetry turned off",
+    "##": "ltguillaume/schep",
+    "version": "140.13.0esr-bb25",
+    "description": "A a fine-tuned version of Mozilla Thunderbird with new features, bug fixes and telemetry turned off. This variant makes sure the Scoop profile is used by default.",
     "homepage": "https://www.betterbird.eu",
     "license": "MPL-2.0",
+    "notes": "After installation, the profile manager will be run to choose the right default profile.",
     "architecture": {
         "64bit": {
-            "url": "https://www.betterbird.eu/downloads/WindowsPortable/BetterbirdPortable-140.12.0esr-bb24.en-US.win64.zip",
-            "hash": "b11c19ec5b85def5b89adde2a30509ba390d55b8e222f2d557e462d7950cfd1b"
+            "url": "https://www.betterbird.eu/downloads/WindowsInstaller/betterbird-140.13.0esr-bb25.en-US.win64.installer.exe#/dl.7z",
+            "hash": "a4ca8357cd461af56800da33710261126fe5ad73989f701193589c1d51c0a712"
         }
     },
-    "bin": [
-        [
-            "BetterbirdLauncher.exe",
-            "Betterbird"
-        ]
+    "extract_dir": "core",
+    "post_install": [
+        "$Addition = \"$persist_dir\\addition\"",
+        "if (Test-Path $Addition) {",
+        "  info 'Copying additional items...'",
+        "  Copy-Item -Path $Addition\\* -Destination $dir -Force -Recurse -ErrorAction SilentlyContinue",
+        "}",
+        "if (!(Test-Path \"$persist_dir\\profile\\times.json\")) {",
+        "    betterbird.exe -CreateProfile \"Scoop $persist_dir\\profile\"",
+        "}",
+        "Start-Process -WorkingDirectory $dir -FilePath betterbird.exe -ArgumentList '-P'"
     ],
+    "bin": "betterbird.exe",
     "shortcuts": [
         [
-            "BetterbirdLauncher.exe",
+            "betterbird.exe",
             "Betterbird"
         ]
     ],
-    "persist": "profile",
+    "persist": [
+        "distribution",
+        "profile"
+    ],
     "checkver": {
-        "script": [
-            "$url = 'https://www.betterbird.eu/downloads/get.php?os=win&lang=en-US&version=release&portable=true'",
-            "$location = (Invoke-WebRequest -Uri $url -MaximumRedirection 0 -SkipHttpErrorCheck -ErrorAction SilentlyContinue).Headers.Location",
-            "Write-Output $location"
-        ],
-        "regex": "BetterbirdPortable-([\\d.]+.+).en-US.win64.zip"
+        "url": "https://betterbird.eu/downloads/sha256-140.txt",
+        "regex": "betterbird-(.{1,32}).en-US.win64.installer.exe"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://www.betterbird.eu/downloads/WindowsPortable/BetterbirdPortable-$version.en-US.win64.zip",
+                "url": "https://www.betterbird.eu/downloads/WindowsInstaller/betterbird-$version.en-US.win64.installer.exe#/dl.7z",
                 "hash": {
-                    "url": "https://www.betterbird.eu/downloads/sha256-$majorVersion.txt",
-                    "regex": "^$sha256\\s+\\*$basename$"
+                    "url": "https://www.betterbird.eu/downloads/sha256-140.txt",
+                    "regex": "$sha256 betterbird-$version.en-US.win64.installer.exe"
                 }
             }
         }
