@@ -1,42 +1,43 @@
 {
     "version": "1.1.2",
-    "description": "A free and open-source general-purpose parametric 3D CAD modeler and a building information modeling software with finite-element-method support",
-    "homepage": "https://www.freecad.org/",
-    "license": "LGPL-2.1-only",
+    "description": "A free and open-source multi-platform parametric 3D modeler.",
+    "homepage": "https://www.freecad.org",
+    "license": {
+        "identifier": "LGPL-2.1-or-later",
+        "url": "https://github.com/FreeCAD/FreeCAD/blob/HEAD/LICENSE"
+    },
     "architecture": {
         "64bit": {
             "url": "https://github.com/FreeCAD/FreeCAD/releases/download/1.1.2/FreeCAD_1.1.2-Windows-x86_64-py311.7z",
-            "hash": "76d848d5a8baad129e2700ef53bd08525c3063ea14036edffef6b41b9eaab5ef",
-            "extract_dir": "FreeCAD_1.1.2-Windows-x86_64-py311"
-        },
-        "32bit": {
-            "url": "https://github.com/FreeCAD/FreeCAD/releases/download/0.18.4/FreeCAD-0.18.4.980bf90-WIN-x32-portable.7z",
-            "hash": ""
+            "hash": "76d848d5a8baad129e2700ef53bd08525c3063ea14036edffef6b41b9eaab5ef"
         }
     },
-    "bin": [
-        "bin\\FreeCAD.exe",
-        "bin\\FreeCADCmd.exe"
+    "pre_install": "pushd $dir ; mv */* . ; rm FreeCAD_* ; popd",
+    "post_install": [
+        "# FreeCAD may behave unexpectedly when launched from a symlinked directory. See: https://github.com/ScoopInstaller/Extras/issues/17759",
+        "startmenu_shortcut \"$original_dir\\bin\\FreeCAD.exe\" 'FreeCAD' $null $null $global",
+        "shim \"$original_dir\\bin\\FreeCADCmd.exe\" $global 'FreeCADCmd'"
     ],
-    "shortcuts": [
-        [
-            "bin\\FreeCAD.exe",
-            "FreeCAD"
-        ]
+    "post_uninstall": [
+        "# Remove shortcut and shim",
+        "rm_shim 'FreeCADCmd' \"$(shimdir $global)\"",
+        "Write-Host \"Removing shortcut $(friendly_path \"$(shortcut_folder $global)\\FreeCAD.lnk\")\"",
+        "Remove-Item \"$(shortcut_folder $global)\\FreeCAD.lnk\" -Force -ErrorAction SilentlyContinue"
     ],
     "checkver": {
-        "github": "https://github.com/FreeCAD/FreeCAD"
+        "github": "https://api.github.com/repos/FreeCAD/FreeCAD/releases/latest",
+        "jsonpath": "$.assets[?(@.name =~ /Win.+\\.7z$/i)].browser_download_url",
+        "regex": "(?i)download/(?<tag>[^/]+)/(?<name>FreeCAD[^\\d]([0-9a-f.-]+)(?:-conda)?-Win.+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/FreeCAD/FreeCAD/releases/download/$version/FreeCAD_$version-Windows-x86_64-py311.7z",
-                "extract_dir": "FreeCAD_$version-Windows-x86_64-py311"
-            },
-            "hash": {
-                "url": "$url-SHA256.txt",
-                "regex": "(?sm)$basename.*?$sha256"
+                "url": "https://github.com/FreeCAD/FreeCAD/releases/download/$matchTag/$matchName"
             }
+        },
+        "hash": {
+            "url": "$url-SHA256.txt",
+            "regex": "(?s)$basename.*?$sha256"
         }
     }
 }
