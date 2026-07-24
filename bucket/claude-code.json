@@ -1,49 +1,48 @@
 {
-    "version": "2.1.218",
-    "description": "An agentic coding tool built by Anthropic that lives in your terminal, understands your codebase, and helps you code faster by executing routine tasks, explaining complex code, and handling git workflows.",
-    "homepage": "https://claude.com/product/claude-code",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://www.anthropic.com/legal/consumer-terms"
-    },
-    "notes": [
-        "Claude Code relies on Git (https://git-scm.com/downloads/win) to function correctly.",
-        "If Claude Code fails to detect Git Bash, manually specify the path using the `CLAUDE_CODE_GIT_BASH_PATH` environment variable.",
-        "For more information: https://code.claude.com/docs/en/setup#set-up-on-windows"
-    ],
-    "suggest": {
-        "git": "main/git"
-    },
+    "version": "2.1.219",
+    "description": "Agentic coding assistant by Anthropic — write, edit, debug, and explore your codebase in your terminal",
+    "homepage": "https://code.claude.com",
+    "license": "Proprietary",
     "architecture": {
         "64bit": {
-            "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/2.1.218/win32-x64/claude.exe",
-            "hash": "81fcf59bb7abb558aedc6f2361f4723b3d757d28e799962d88b18b4520df66ca"
-        },
-        "arm64": {
-            "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/2.1.218/win32-arm64/claude.exe",
-            "hash": "a7959fd87feb9557d56f4e5752f7ed1ddf405f3bea91b2571bf93af636efd193"
+            "url": "https://downloads.claude.ai/claude-code-releases/2.1.219/win32-x64/claude.exe#/claude.exe",
+            "hash": "10f4c1f85b07f3cf6b8fff930fd26ecd475bd146a378acfafa559a6db9d89637"
         }
     },
     "bin": "claude.exe",
+    "pre_install": [
+        "# 将 ~/.claude 软链接到 persist/data，升级时数据不丢失",
+        "$claude_dir = Join-Path $env:USERPROFILE \".claude\"",
+        "$persist_data = Join-Path $persist_dir \"data\"",
+        "& \"$bucketsdir\\\\code\\\\scripts\\\\link.ps1\" $claude_dir $persist_data",
+        "# 确保 .local/bin 存在（Claude Code 自检依赖此路径）",
+        "$localBin = Join-Path $env:USERPROFILE \".local\\bin\"",
+        "if (-not (Test-Path $localBin)) { New-Item -ItemType Directory -Path $localBin -Force | Out-Null }"
+    ],
+    "post_install": [
+        "# 复制 scoop shim + .shim 配置到 ~/.local/bin（Claude Code 自检需要）",
+        "$localBin = Join-Path $env:USERPROFILE \".local\\bin\"",
+        "# 直接从 E:\\scoop\\shims\\ 复制（已包含正确的 .shim 配置）",
+        "Copy-Item \"$env:SCOOP\\shims\\claude.exe\" \"$localBin\\claude.exe\" -Force",
+        "Copy-Item \"$env:SCOOP\\shims\\claude.shim\" \"$localBin\\claude.shim\" -Force"
+    ],
+    "post_uninstall": [
+        "## 卸载时清理",
+        "$claude_dir = Join-Path $env:USERPROFILE \".claude\"",
+        "& \"$bucketsdir\\\\code\\\\scripts\\\\unlink.ps1\" $claude_dir",
+        "# 清理 .local/bin 中的 shim 副本",
+        "$localBin = Join-Path $env:USERPROFILE \".local\\bin\"",
+        "@(\"$localBin\\claude.exe\", \"$localBin\\claude.shim\") | ForEach-Object { if (Test-Path $_) { Remove-Item -Force $_ -ErrorAction SilentlyContinue } }"
+    ],
+    "persist": "data",
     "checkver": {
-        "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/latest",
-        "regex": "([\\d.]+)"
+        "url": "https://downloads.claude.ai/claude-code-releases/latest",
+        "regex": "^([\\d.]+)$"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/$version/win32-x64/claude.exe",
-                "hash": {
-                    "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/$version/manifest.json",
-                    "jsonpath": "$.platforms.win32-x64.checksum"
-                }
-            },
-            "arm64": {
-                "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/$version/win32-arm64/claude.exe",
-                "hash": {
-                    "url": "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/$version/manifest.json",
-                    "jsonpath": "$.platforms.win32-arm64.checksum"
-                }
+                "url": "https://downloads.claude.ai/claude-code-releases/$version/win32-x64/claude.exe#/claude.exe"
             }
         }
     }
