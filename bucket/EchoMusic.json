@@ -1,38 +1,42 @@
 {
-    "version": "2.2.7",
+    "version": "2.2.8",
     "description": "一个简约的第三方酷狗音乐概念版",
     "homepage": "https://github.com/hoowhoami/EchoMusic",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/hoowhoami/EchoMusic/releases/download/v2.2.7/EchoMusic-2.2.7-Windows-Setup-x64.exe",
-            "hash": "98f1f1aa8e25321014df74a432ed7916016fe05f2e85394dcf26b305c97052cc"
-        },
-        "arm64": {
-            "url": "https://github.com/hoowhoami/EchoMusic/releases/download/v2.2.7/EchoMusic-2.2.7-Windows-Setup-arm64.exe",
-            "hash": "b4802f92610f68cca44bc9d5f1e2e7e31b36764bade904188d493aeddcbefad1"
+            "url": "https://github.com/hoowhoami/EchoMusic/releases/download/v2.2.8/EchoMusic-2.2.8-Windows-Setup-x64.exe",
+            "hash": "7a182e007f7d24bce1eb18297d2104bbd720cf386cb8d87f0bf67a16606138cb"
         }
     },
-    "pre_install": [
-        "Remove-Item \"$dir\\`$*\", \"$dir\\uninst*\" -Force -Recurse -ErrorAction SilentlyContinue",
-        "if (Test-Path \"$env:APPDATA\\echo-music\") {",
-        "    if ((Get-Item \"$env:APPDATA\\echo-music\" -ErrorAction SilentlyContinue).LinkType -ne 'Junction') {",
-        "        Remove-Item \"$env:APPDATA\\echo-music\" -Recurse -Force -ErrorAction SilentlyContinue",
-        "    }",
-        "}"
-    ],
+    "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\uninst*\" -Force -Recurse -ErrorAction SilentlyContinue",
     "installer": {
         "script": [
+            "# 【修复】确保 persist_dir 存在",
             "ensure \"$persist_dir\" | Out-Null",
+            "",
+            "# 【修复】在 NSIS 安装前，强制将 %APPDATA% 路径替换为 Junction",
             "$appDataLink = \"$env:APPDATA\\echo-music\"",
+            "if (Test-Path $appDataLink) {",
+            "    $item = Get-Item $appDataLink -Force -ErrorAction SilentlyContinue",
+            "    if ($item.LinkType -ne 'Junction') {",
+            "        # 如果是真实目录，先迁移已有数据到 persist_dir，再删除",
+            "        if ((Get-ChildItem $appDataLink -Force -ErrorAction SilentlyContinue).Count -gt 0) {",
+            "            Copy-Item \"$appDataLink\\*\" \"$persist_dir\\\" -Recurse -Force -ErrorAction SilentlyContinue",
+            "        }",
+            "        Remove-Item $appDataLink -Recurse -Force -ErrorAction SilentlyContinue",
+            "    }",
+            "}",
             "if (-not (Test-Path $appDataLink)) {",
             "    New-Item $appDataLink -ItemType Junction -Target \"$persist_dir\" | Out-Null",
             "}",
+            "",
+            "# 执行 NSIS 静默安装（此时写入 AppData 的操作会直接落入 persist_dir）",
             "$installer = Get-ChildItem \"$dir\\*.exe\" | Where-Object { $_.Name -match 'Setup' } | Select-Object -First 1",
             "Start-Process -FilePath $installer.FullName -ArgumentList \"/S /D=$dir\" -Wait -NoNewWindow",
             "Remove-Item $installer.FullName -Force -ErrorAction SilentlyContinue",
             "",
-            "# 【关键】移除内置更新器，防止与 Scoop 管理冲突",
+            "# 移除内置更新器，防止与 Scoop 管理冲突",
             "$updaterDir = \"$env:LOCALAPPDATA\\echo-music-updater\"",
             "if (Test-Path $updaterDir) {",
             "    Remove-Item $updaterDir -Recurse -Force -ErrorAction SilentlyContinue",
@@ -45,8 +49,13 @@
             "if (Test-Path $uninstallExe) {",
             "    Start-Process -FilePath $uninstallExe -ArgumentList \"/S\" -Wait -NoNewWindow",
             "}",
-            "Remove-Item \"$env:APPDATA\\echo-music\" -Recurse -Force -ErrorAction SilentlyContinue",
-            "# 清理残留的更新器目录",
+            "# 仅删除 Junction 链接本身，不删除 persist_dir 中的数据",
+            "$appDataLink = \"$env:APPDATA\\echo-music\"",
+            "if ((Get-Item $appDataLink -Force -ErrorAction SilentlyContinue).LinkType -eq 'Junction') {",
+            "    Remove-Item $appDataLink -Force -ErrorAction SilentlyContinue",
+            "} else {",
+            "    Remove-Item $appDataLink -Recurse -Force -ErrorAction SilentlyContinue",
+            "}",
             "Remove-Item \"$env:LOCALAPPDATA\\echo-music-updater\" -Recurse -Force -ErrorAction SilentlyContinue"
         ]
     },
@@ -61,9 +70,6 @@
         "architecture": {
             "64bit": {
                 "url": "https://github.com/hoowhoami/EchoMusic/releases/download/v$version/EchoMusic-$version-Windows-Setup-x64.exe"
-            },
-            "arm64": {
-                "url": "https://github.com/hoowhoami/EchoMusic/releases/download/v$version/EchoMusic-$version-Windows-Setup-arm64.exe"
             }
         }
     }
