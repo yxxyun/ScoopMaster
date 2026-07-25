@@ -1,20 +1,15 @@
 {
     "version": "1.0.7",
-    "description": "A desktop toolbox for managing AI coding assistants, providers, MCP servers, skills, sessions, and proxy gateways",
+    "description": "个人 AI 工具箱 - 一站式管理 AI 编程助手配置。AI Toolbox 是一个跨平台桌面应用，旨在帮助开发者高效管理各类 AI 编程助手的配置。",
     "homepage": "https://github.com/coulsontl/ai-toolbox",
     "license": "MIT",
-    "notes": [
-        "应用数据目录：%APPDATA%\\com.ai-toolbox\\",
-        "本包会将该完整目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist",
-        "Claude Code、Codex、Gemini CLI、OpenCode 等外部工具自身的配置和数据仍保留在各工具原生路径"
-    ],
     "architecture": {
         "64bit": {
             "url": "https://github.com/coulsontl/ai-toolbox/releases/download/v1.0.7/AI.Toolbox_1.0.7_x64-setup.exe#/dl.7z",
-            "hash": "3734bb98d31917bd950dab34d44b9c29c18814030e1bea9932a3797d792410d4"
+            "hash": "3734bb98d31917bd950dab34d44b9c29c18814030e1bea9932a3797d792410d4",
+            "pre_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse"
         }
     },
-    "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\uninstall.exe\" -Force -Recurse -ErrorAction SilentlyContinue",
     "bin": "ai-toolbox.exe",
     "shortcuts": [
         [
@@ -22,64 +17,7 @@
             "AI Toolbox"
         ]
     ],
-    "post_install": [
-        "$source = Join-Path $env:APPDATA 'com.ai-toolbox'",
-        "$target = Join-Path $persist_dir 'data'",
-        "ensure $target",
-        "",
-        "if (Test-Path $source) {",
-        "    $item = Get-Item -LiteralPath $source -Force",
-        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
-        "        $expected = [IO.Path]::GetFullPath($target).TrimEnd('\\')",
-        "        $actual = @($item.Target) | Select-Object -First 1",
-        "        if ($actual -and [IO.Path]::GetFullPath($actual).TrimEnd('\\') -ieq $expected) {",
-        "            Write-Host \"Junction already managed by Scoop: $source\"",
-        "            return",
-        "        }",
-        "        throw \"Path is an existing reparse point not managed by this package: $source\"",
-        "    }",
-        "    if (-not $item.PSIsContainer) {",
-        "        throw \"Path exists and is not a directory: $source\"",
-        "    }",
-        "",
-        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
-        "    $copyExitCode = $LASTEXITCODE",
-        "    if ($copyExitCode -gt 7) {",
-        "        throw \"Migration failed with robocopy exit code ${copyExitCode}: $source\"",
-        "    }",
-        "",
-        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
-        "    Move-Item -LiteralPath $source -Destination $backup -Force",
-        "    Write-Host \"Backed up original directory: $backup\"",
-        "}",
-        "",
-        "try {",
-        "    New-Item -Path $source -ItemType Junction -Value $target -Force | Out-Null",
-        "} catch {",
-        "    if ($backup -and (Test-Path $backup) -and -not (Test-Path $source)) {",
-        "        Move-Item -LiteralPath $backup -Destination $source -Force",
-        "    }",
-        "    throw",
-        "}"
-    ],
-    "post_uninstall": [
-        "$source = Join-Path $env:APPDATA 'com.ai-toolbox'",
-        "if (Test-Path $source) {",
-        "    $item = Get-Item -LiteralPath $source -Force",
-        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
-        "        $target = Join-Path $persist_dir 'data'",
-        "        $expected = [IO.Path]::GetFullPath($target).TrimEnd('\\')",
-        "        $actual = @($item.Target) | Select-Object -First 1",
-        "        if ($actual -and [IO.Path]::GetFullPath($actual).TrimEnd('\\') -ieq $expected) {",
-        "            Remove-Item -LiteralPath $source -Force",
-        "        }",
-        "    }",
-        "}"
-    ],
-    "persist": "data",
-    "checkver": {
-        "github": "https://github.com/coulsontl/ai-toolbox"
-    },
+    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
