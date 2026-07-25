@@ -1,17 +1,21 @@
 {
     "version": "1.2.42",
-    "description": "External enhancement launcher and manager for the Codex App.",
+    "description": "Codex App 的外部增强启动器和管理工具，通过 CDP 注入增强功能，不修改 Codex 原始安装文件",
     "homepage": "https://github.com/BigPizzaV3/CodexPlusPlus",
-    "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/BigPizzaV3/CodexPlusPlus/releases/download/v1.2.42/CodexPlusPlus-1.2.42-windows-x64-setup.exe#/dl.7z",
+            "url": "https://github.com/BigPizzaV3/CodexPlusPlus/releases/download/v1.2.42/CodexPlusPlus-1.2.42-windows-x64-setup.exe",
             "hash": "2b36a07cb219686a0336bf7bf5169ce0c1e60044bf64d4c8046307ae862451fe"
         }
     },
     "installer": {
-        "script": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse -ErrorAction SilentlyContinue"
+        "script": [
+            "$exe = Get-ChildItem \"$dir\\CodexPlusPlus-*-windows-x64-setup.exe\" -ErrorAction SilentlyContinue | Select-Object -First 1",
+            "if ($exe) { Start-Process -FilePath $exe.FullName -ArgumentList '/S', \"/D=$dir\" -Wait -NoNewWindow }"
+        ]
     },
+    "post_install": "Remove-Item \"$dir\\CodexPlusPlus-*-windows-x64-setup.exe\", \"$dir\\uninstall.exe\" -Force -ErrorAction SilentlyContinue",
+    "bin": "codex-plus-plus.exe",
     "shortcuts": [
         [
             "codex-plus-plus.exe",
@@ -23,19 +27,13 @@
         ]
     ],
     "checkver": {
-        "url": "https://api.github.com/repos/BigPizzaV3/CodexPlusPlus/releases/latest",
-        "jsonpath": "$.tag_name",
-        "regex": "v([\\d.]+)"
+        "github": "https://github.com/BigPizzaV3/CodexPlusPlus"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/BigPizzaV3/CodexPlusPlus/releases/download/v$version/CodexPlusPlus-$version-windows-x64-setup.exe#/dl.7z"
+                "url": "https://github.com/BigPizzaV3/CodexPlusPlus/releases/download/v$version/CodexPlusPlus-$version-windows-x64-setup.exe"
             }
-        },
-        "hash": {
-            "url": "https://api.github.com/repos/BigPizzaV3/CodexPlusPlus/releases/latest",
-            "jsonpath": "$.assets[?(@.name == 'CodexPlusPlus-$version-windows-x64-setup.exe')].digest"
         }
     }
 }
