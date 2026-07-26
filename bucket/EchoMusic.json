@@ -1,57 +1,62 @@
 {
-    "version": "2.2.8",
-    "description": "一个简约的第三方酷狗音乐概念版",
-    "homepage": "https://github.com/hoowhoami/EchoMusic",
-    "license": "MIT",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/hoowhoami/EchoMusic/releases/download/v2.2.8/EchoMusic-2.2.8-Windows-Setup-x64.exe",
-            "hash": "7a182e007f7d24bce1eb18297d2104bbd720cf386cb8d87f0bf67a16606138cb"
-        }
-    },
-    "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\uninst*\" -Force -Recurse -ErrorAction SilentlyContinue",
-    "installer": {
-        "script": [
-            "# 使用 Utils 管理 AppData Junction，使数据持久化",
-            "Import-Module \"$dir\\..\\..\\scripts\\Utils.psm1\"",
-            "Mount-ExternalRuntimeData -Source \"$persist_dir\" -Target \"$env:APPDATA\\echo-music\"",
-            "",
-            "# 执行 NSIS 静默安装（此时写入 AppData 的操作会直接落入 persist_dir）",
-            "$installer = Get-ChildItem \"$dir\\*.exe\" | Where-Object { $_.Name -match 'Setup' } | Select-Object -First 1",
-            "Start-Process -FilePath $installer.FullName -ArgumentList \"/S /D=$dir\" -Wait -NoNewWindow",
-            "Remove-Item $installer.FullName -Force -ErrorAction SilentlyContinue",
-            "",
-            "# 移除内置更新器，防止与 Scoop 管理冲突",
-            "$updaterDir = \"$env:LOCALAPPDATA\\echo-music-updater\"",
-            "if (Test-Path $updaterDir) {",
-            "    Remove-Item $updaterDir -Recurse -Force -ErrorAction SilentlyContinue",
-            "}"
-        ]
-    },
-    "uninstaller": {
-        "script": [
-            "$uninstallExe = \"$dir\\Uninstall EchoMusic.exe\"",
-            "if (Test-Path $uninstallExe) {",
-            "    Start-Process -FilePath $uninstallExe -ArgumentList \"/S\" -Wait -NoNewWindow",
-            "}",
-            "# 移除 Junction 链接，保留 persist_dir 中的数据",
-            "Import-Module \"$dir\\..\\..\\scripts\\Utils.psm1\"",
-            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\echo-music\"",
-            "Remove-Item \"$env:LOCALAPPDATA\\echo-music-updater\" -Recurse -Force -ErrorAction SilentlyContinue"
-        ]
-    },
-    "shortcuts": [
-        [
-            "EchoMusic.exe",
-            "EchoMusic"
-        ]
-    ],
-    "checkver": "github",
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/hoowhoami/EchoMusic/releases/download/v$version/EchoMusic-$version-Windows-Setup-x64.exe"
-            }
-        }
+  "version": "2.2.8",
+  "description": "一个简约的第三方酷狗音乐概念版",
+  "homepage": "https://github.com/hoowhoami/EchoMusic",
+  "license": "MIT",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/hoowhoami/EchoMusic/releases/download/v2.2.8/EchoMusic-2.2.8-Windows-Setup-x64.exe",
+      "hash": "7a182e007f7d24bce1eb18297d2104bbd720cf386cb8d87f0bf67a16606138cb"
     }
+  },
+  "installer": {
+    "script": [
+      "7z x \"$dir\\$fname\" '$PLUGINSDIR\\app-64.7z' -o\"$dir\" -aoa",
+      "if (!(Test-Path \"$dir\\`$PLUGINSDIR\\app-64.7z\")) { throw \"提取 app-64.7z 失败\" }",
+      "Remove-Item \"$dir\\$fname\" -Force -ErrorAction Ignore",
+      "7z x \"$dir\\`$PLUGINSDIR\\app-64.7z\" -o\"$dir\\app\" -aoa",
+      "if (!(Test-Path \"$dir\\app\\EchoMusic.exe\")) { throw \"未找到 EchoMusic.exe\" }",
+      "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\`$R0\" -Recurse -Force -ErrorAction Ignore"
+    ]
+  },
+  "post_install": [
+    "foreach ($pair in @(@('echo-music', \"$env:APPDATA\\echo-music\"), @('echo-music-nodejs', \"$env:APPDATA\\echo-music-nodejs\"))) {",
+    "    $src = \"$persist_dir\\$($pair[0])\"",
+    "    $tgt = $pair[1]",
+    "    if (!(Test-Path $src)) { New-Item -ItemType Directory $src -Force | Out-Null }",
+    "    if (Test-Path $tgt) {",
+    "        if ((Get-Item $tgt).LinkType -ne 'Junction') { Get-ChildItem $tgt | Move-Item -Destination $src -Force; Remove-Item $tgt -Force } else { Remove-Item $tgt -Force -Recurse }",
+    "    }",
+    "    New-Item -ItemType Junction -Path $tgt -Target $src -Force | Out-Null",
+    "    if ((Get-Item $tgt).LinkType -ne 'Junction') { throw \"创建 junction 失败\" }",
+    "}"
+  ],
+  "pre_uninstall": [
+    "Stop-Process -Name 'EchoMusic' -Force -ErrorAction Ignore",
+    "foreach ($tgt in @(\"$env:APPDATA\\echo-music\", \"$env:APPDATA\\echo-music-nodejs\")) {",
+    "    if ((Test-Path $tgt) -and ((Get-Item $tgt).LinkType -eq 'Junction')) { Remove-Item $tgt -Force -Recurse }",
+    "}",
+    "Remove-Item \"$env:LOCALAPPDATA\\echo-music-updater\" -Recurse -Force -ErrorAction Ignore"
+  ],
+  "shortcuts": [
+    [
+      "app\\EchoMusic.exe",
+      "EchoMusic"
+    ]
+  ],
+  "persist": [
+    "echo-music",
+    "echo-music-nodejs"
+  ],
+  "checkver": "github",
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://github.com/hoowhoami/EchoMusic/releases/download/v$version/EchoMusic-$version-Windows-Setup-x64.exe"
+      }
+    },
+    "hash": {
+      "mode": "github"
+    }
+  }
 }

@@ -1,17 +1,41 @@
 {
     "version": "8.2.0",
-    "description": "抖音是一款可在智能手机上浏览的短视频社交应用程序",
-    "homepage": "https://www.douyin.com/",
+    "description": "短视频社交应用程序，记录美好生活",
+    "homepage": "https://douyin.com/",
     "license": "Proprietary",
     "url": "https://www.douyin.com/download/pc/obj/douyin-pc-web/douyin-pc-client/7044145585217083655/releases/420287573/8.2.0/win32-ia32/douyin-v8.2.0-win32-ia32-douyin.exe#/dl.7z",
     "hash": "95f217bae2cf3cfd91c154333ea748cd64f97446a11e76a63637e0387d82be4b",
-    "pre_install": "Expand-7zipArchive \"$dir\\app.7z\" \"$dir\"",
-    "post_install": "Remove-Item \"$dir\\app.7z\", \"$dir\\`$*\", \"$dir\\uninst*\", \"$dir\\resources\\app-update.yml\", \"$dir\\installer_downloader*\", \"$dir\\app_shell_updater*\" -Force -Recurse",
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "Write-Host (\"`nPersisting $env:APPDATA\\douyin ... \") -NoNewline",
+            "New-PersistDirectory \"$env:APPDATA\\douyin\" \"$persist_dir\\AppData\" -Migrate",
+            "Expand-7zipArchive \"$dir\\app.7z\" \"$dir\\$version\" -Removal",
+            "Remove-Item \"$dir\\$version\\app.7z\", \"$dir\\$version\\`$*\", \"$dir\\$version\\uninst*\", \"$dir\\$version\\resources\\app-update.yml\", \"$dir\\$version\\installer_downloader*\", \"$dir\\$version\\app_shell_updater*\", \"$dir\\$version\\tray\" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null",
+            "Copy-Item \"$dir\\$version\\douyin.backup\" \"$dir\\douyin.exe\" -Force"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Require-Admin",
+        "Stop-App"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        ". \"$bucketsdir\\$bucket\\scripts\\douyin\\uninstall.ps1\""
+    ],
+    "bin": [
+        [
+            "douyin.exe",
+            "抖音"
+        ]
+    ],
     "shortcuts": [
         [
             "douyin.exe",
-            "抖音",
-            "--user-data-dir=\"$dir\\User Data\""
+            "抖音"
         ]
     ],
     "persist": "User Data",
@@ -21,5 +45,6 @@
     },
     "autoupdate": {
         "url": "https://www.douyin.com/download/pc/obj/douyin-pc-web/douyin-pc-client/$matchId/releases/$matchBuild/$version/win32-ia32/douyin-v$version-win32-ia32-douyin.exe#/dl.7z"
-    }
+    },
+    "notes": "User data is persisted in \"$persist_dir\"."
 }
