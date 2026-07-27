@@ -5,19 +5,51 @@
     "license": "Proprietary",
     "url": "https://www.ntwind.com/download/AltTabTer_6.7-setup.exe",
     "hash": "6df5cb9656dca246187884dd061137b30c25fb6076353323efcca3614c027aa7",
+    "depends": "main/7zip",
     "installer": {
         "script": [
-            "Start-Process \"$dir\\$fname\" -ArgumentList '/S' -Wait",
-            "Remove-Item \"$dir\\$fname\""
+            "7z x \"$dir\\$fname\" -o\"$dir\" -aou -y | Out-Null",
+            "Remove-Item \"$dir\\$fname\"",
+            "Remove-Item \"$dir\\*PLUGINSDIR\" -Recurse -Force -ErrorAction SilentlyContinue",
+            "Remove-Item \"$dir\\*.nsis\" -ErrorAction SilentlyContinue",
+            "Remove-Item \"$dir\\uninst.exe\" -ErrorAction SilentlyContinue",
+            "$machine = @{}",
+            "@(\"AltTabTer.exe\", \"AltTabTer_1.exe\") | Where-Object { Test-Path \"$dir\\$_\" } | ForEach-Object { $fs = [IO.File]::OpenRead(\"$dir\\$_\"); $br = New-Object IO.BinaryReader($fs); $fs.Position = 0x3C; $peOffset = $br.ReadInt32(); $fs.Position = $peOffset + 4; $machine[$_] = $br.ReadUInt16(); $br.Close(); $fs.Close() }",
+            "$x64exe = ($machine.GetEnumerator() | Where-Object { $_.Value -eq 0x8664 }).Name",
+            "$x86exe = ($machine.GetEnumerator() | Where-Object { $_.Value -eq 0x014c }).Name",
+            "Rename-Item \"$dir\\$x64exe\" \"AltTabTer64.exe\"",
+            "Rename-Item \"$dir\\$x86exe\" \"AltTabTer32.exe\""
         ]
     },
-    "uninstaller": {
-        "script": [
-            "$uninstall = Get-ItemProperty HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Where-Object {$_.DisplayName -like '*Alt-Tab Terminator*'}",
-            "if ($uninstall) {",
-            "    Start-Process $uninstall.UninstallString -ArgumentList '/S' -Wait",
-            "}"
-        ]
+    "architecture": {
+        "64bit": {
+            "bin": [
+                [
+                    "AltTabTer64.exe",
+                    "alttabterminator"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "AltTabTer64.exe",
+                    "Alt-Tab Terminator"
+                ]
+            ]
+        },
+        "32bit": {
+            "bin": [
+                [
+                    "AltTabTer32.exe",
+                    "alttabterminator"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "AltTabTer32.exe",
+                    "Alt-Tab Terminator"
+                ]
+            ]
+        }
     },
     "checkver": {
         "url": "https://www.ntwind.com/download-all.html",

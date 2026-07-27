@@ -5,19 +5,51 @@
     "license": "Proprietary",
     "url": "https://www.ntwind.com/download/StickyPreviews_2.9-setup.exe",
     "hash": "7742247955E09D80A402E10C8E9185DDE692F47584B9B0CE2C5161CCA6E06E63",
+    "depends": "main/7zip",
     "installer": {
         "script": [
-            "Start-Process \"$dir\\$fname\" -ArgumentList '/S' -Wait",
-            "Remove-Item \"$dir\\$fname\""
+            "7z x \"$dir\\$fname\" -o\"$dir\" -aou -y | Out-Null",
+            "Remove-Item \"$dir\\$fname\"",
+            "Remove-Item \"$dir\\*PLUGINSDIR\" -Recurse -Force -ErrorAction SilentlyContinue",
+            "Remove-Item \"$dir\\*.nsis\" -ErrorAction SilentlyContinue",
+            "Remove-Item \"$dir\\uninst.exe\" -ErrorAction SilentlyContinue",
+            "$machine = @{}",
+            "@(\"spv.exe\", \"spv_1.exe\") | Where-Object { Test-Path \"$dir\\$_\" } | ForEach-Object { $fs = [IO.File]::OpenRead(\"$dir\\$_\"); $br = New-Object IO.BinaryReader($fs); $fs.Position = 0x3C; $peOffset = $br.ReadInt32(); $fs.Position = $peOffset + 4; $machine[$_] = $br.ReadUInt16(); $br.Close(); $fs.Close() }",
+            "$x64exe = ($machine.GetEnumerator() | Where-Object { $_.Value -eq 0x8664 }).Name",
+            "$x86exe = ($machine.GetEnumerator() | Where-Object { $_.Value -eq 0x014c }).Name",
+            "Rename-Item \"$dir\\$x64exe\" \"spv64.exe\"",
+            "Rename-Item \"$dir\\$x86exe\" \"spv32.exe\""
         ]
     },
-    "uninstaller": {
-        "script": [
-            "$uninstall = Get-ItemProperty HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Where-Object {$_.DisplayName -like '*Sticky Previews*'}",
-            "if ($uninstall) {",
-            "    Start-Process $uninstall.UninstallString -ArgumentList '/S' -Wait",
-            "}"
-        ]
+    "architecture": {
+        "64bit": {
+            "bin": [
+                [
+                    "spv64.exe",
+                    "stickypreviews"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "spv64.exe",
+                    "Sticky Previews"
+                ]
+            ]
+        },
+        "32bit": {
+            "bin": [
+                [
+                    "spv32.exe",
+                    "stickypreviews"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "spv32.exe",
+                    "Sticky Previews"
+                ]
+            ]
+        }
     },
     "checkver": {
         "url": "https://www.ntwind.com/download-all.html",

@@ -5,19 +5,51 @@
     "license": "Proprietary",
     "url": "https://www.ntwind.com/download/VSubst_6.0-setup.exe",
     "hash": "67206f2b53f59765e92e266e4717cd3dd7aad5023dc05cb5f608770b3b481bd5",
+    "depends": "main/7zip",
     "installer": {
         "script": [
-            "Start-Process \"$dir\\$fname\" -ArgumentList '/S' -Wait",
-            "Remove-Item \"$dir\\$fname\""
+            "7z x \"$dir\\$fname\" -o\"$dir\" -aou -y | Out-Null",
+            "Remove-Item \"$dir\\$fname\"",
+            "Remove-Item \"$dir\\*PLUGINSDIR\" -Recurse -Force -ErrorAction SilentlyContinue",
+            "Remove-Item \"$dir\\*.nsis\" -ErrorAction SilentlyContinue",
+            "Remove-Item \"$dir\\uninst.exe\" -ErrorAction SilentlyContinue",
+            "$machine = @{}",
+            "@(\"VSubst.exe\", \"VSubst_1.exe\") | Where-Object { Test-Path \"$dir\\$_\" } | ForEach-Object { $fs = [IO.File]::OpenRead(\"$dir\\$_\"); $br = New-Object IO.BinaryReader($fs); $fs.Position = 0x3C; $peOffset = $br.ReadInt32(); $fs.Position = $peOffset + 4; $machine[$_] = $br.ReadUInt16(); $br.Close(); $fs.Close() }",
+            "$x64exe = ($machine.GetEnumerator() | Where-Object { $_.Value -eq 0x8664 }).Name",
+            "$x86exe = ($machine.GetEnumerator() | Where-Object { $_.Value -eq 0x014c }).Name",
+            "Rename-Item \"$dir\\$x64exe\" \"VSubst64.exe\"",
+            "Rename-Item \"$dir\\$x86exe\" \"VSubst32.exe\""
         ]
     },
-    "uninstaller": {
-        "script": [
-            "$uninstall = Get-ItemProperty HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Where-Object {$_.DisplayName -like '*Visual Subst*'}",
-            "if ($uninstall) {",
-            "    Start-Process $uninstall.UninstallString -ArgumentList '/S' -Wait",
-            "}"
-        ]
+    "architecture": {
+        "64bit": {
+            "bin": [
+                [
+                    "VSubst64.exe",
+                    "vsubst"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "VSubst64.exe",
+                    "Visual Subst"
+                ]
+            ]
+        },
+        "32bit": {
+            "bin": [
+                [
+                    "VSubst32.exe",
+                    "vsubst"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "VSubst32.exe",
+                    "Visual Subst"
+                ]
+            ]
+        }
     },
     "checkver": {
         "url": "https://www.ntwind.com/download-all.html",

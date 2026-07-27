@@ -8,26 +8,49 @@
     "depends": "main/7zip",
     "installer": {
         "script": [
-            "7z e \"$dir\\$fname\" -o\"$dir\" -y | Out-Null",
+            "7z x \"$dir\\$fname\" -o\"$dir\" -aou -y | Out-Null",
             "Remove-Item \"$dir\\$fname\"",
+            "Remove-Item \"$dir\\*PLUGINSDIR\" -Recurse -Force -ErrorAction SilentlyContinue",
+            "Remove-Item \"$dir\\*.nsis\" -ErrorAction SilentlyContinue",
             "Remove-Item \"$dir\\uninst.exe\" -ErrorAction SilentlyContinue",
-            "Remove-Item \"$dir\\*.dll\" -ErrorAction SilentlyContinue",
-            "Remove-Item \"$dir\\*.bmp\" -ErrorAction SilentlyContinue",
-            "Remove-Item \"$dir\\*.ini\" -ErrorAction SilentlyContinue"
+            "$machine = @{}",
+            "@(\"CloseAll.exe\", \"CloseAll_1.exe\") | Where-Object { Test-Path \"$dir\\$_\" } | ForEach-Object { $fs = [IO.File]::OpenRead(\"$dir\\$_\"); $br = New-Object IO.BinaryReader($fs); $fs.Position = 0x3C; $peOffset = $br.ReadInt32(); $fs.Position = $peOffset + 4; $machine[$_] = $br.ReadUInt16(); $br.Close(); $fs.Close() }",
+            "$x64exe = ($machine.GetEnumerator() | Where-Object { $_.Value -eq 0x8664 }).Name",
+            "$x86exe = ($machine.GetEnumerator() | Where-Object { $_.Value -eq 0x014c }).Name",
+            "Rename-Item \"$dir\\$x64exe\" \"CloseAll64.exe\"",
+            "Rename-Item \"$dir\\$x86exe\" \"CloseAll32.exe\""
         ]
     },
-    "bin": [
-        [
-            "CloseAll.exe",
-            "closeall"
-        ]
-    ],
-    "shortcuts": [
-        [
-            "CloseAll.exe",
-            "CloseAll"
-        ]
-    ],
+    "architecture": {
+        "64bit": {
+            "bin": [
+                [
+                    "CloseAll64.exe",
+                    "closeall"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "CloseAll64.exe",
+                    "CloseAll"
+                ]
+            ]
+        },
+        "32bit": {
+            "bin": [
+                [
+                    "CloseAll32.exe",
+                    "closeall"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "CloseAll32.exe",
+                    "CloseAll"
+                ]
+            ]
+        }
+    },
     "checkver": {
         "url": "https://www.ntwind.com/download-all.html",
         "regex": "CloseAll_([\\d.]+)-setup\\.exe"

@@ -1,23 +1,59 @@
 {
-    "version": "3.9",
+    "version": "4.0",
     "description": "Record screen and create video tutorials in minutes",
     "homepage": "https://www.ntwind.com/software/wincam.html",
     "license": "Proprietary",
-    "url": "https://www.ntwind.com/download/WinCam_3.9-setup.exe",
-    "hash": "6F0C27FB767329260DD0F4320852617744BE489E081EEEF31B55EF783E4FDCCF",
+    "url": "https://www.ntwind.com/download/WinCam_4.0-setup.exe",
+    "hash": "945F1EBC31068A46457F74B474C5ECD81232C2AC0103A5AFEB1143D4FD7C42FF",
+    "notes": "If the download is blocked by Cloudflare, download the installer manually from the homepage, then run: scoop cache-import wincam <path-to-file>",
+    "depends": [
+        "main/7zip",
+        "ntwind/cache-import"
+    ],
     "installer": {
         "script": [
-            "Start-Process \"$dir\\$fname\" -ArgumentList '/S' -Wait",
-            "Remove-Item \"$dir\\$fname\""
+            "7z x \"$dir\\$fname\" -o\"$dir\" -aou -y | Out-Null",
+            "Remove-Item \"$dir\\$fname\"",
+            "Remove-Item \"$dir\\*PLUGINSDIR\" -Recurse -Force -ErrorAction SilentlyContinue",
+            "Remove-Item \"$dir\\*.nsis\" -ErrorAction SilentlyContinue",
+            "Remove-Item \"$dir\\uninst.exe\" -ErrorAction SilentlyContinue",
+            "$machine = @{}",
+            "@(\"WinCam.exe\", \"WinCam_1.exe\") | Where-Object { Test-Path \"$dir\\$_\" } | ForEach-Object { $fs = [IO.File]::OpenRead(\"$dir\\$_\"); $br = New-Object IO.BinaryReader($fs); $fs.Position = 0x3C; $peOffset = $br.ReadInt32(); $fs.Position = $peOffset + 4; $machine[$_] = $br.ReadUInt16(); $br.Close(); $fs.Close() }",
+            "$x64exe = ($machine.GetEnumerator() | Where-Object { $_.Value -eq 0x8664 }).Name",
+            "$x86exe = ($machine.GetEnumerator() | Where-Object { $_.Value -eq 0x014c }).Name",
+            "if ($x64exe) { Rename-Item \"$dir\\$x64exe\" \"WinCam64.exe\" }",
+            "if ($x86exe) { Rename-Item \"$dir\\$x86exe\" \"WinCam32.exe\" }"
         ]
     },
-    "uninstaller": {
-        "script": [
-            "$uninstall = Get-ItemProperty HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Where-Object {$_.DisplayName -like '*WinCam*'}",
-            "if ($uninstall) {",
-            "    Start-Process $uninstall.UninstallString -ArgumentList '/S' -Wait",
-            "}"
-        ]
+    "architecture": {
+        "64bit": {
+            "bin": [
+                [
+                    "WinCam64.exe",
+                    "wincam"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "WinCam64.exe",
+                    "WinCam"
+                ]
+            ]
+        },
+        "32bit": {
+            "bin": [
+                [
+                    "WinCam32.exe",
+                    "wincam"
+                ]
+            ],
+            "shortcuts": [
+                [
+                    "WinCam32.exe",
+                    "WinCam"
+                ]
+            ]
+        }
     },
     "checkver": {
         "url": "https://www.ntwind.com/download-all.html",
