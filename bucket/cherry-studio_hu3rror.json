@@ -9,7 +9,7 @@
             "hash": "sha512:67460a434a7180e30254522a51d04868e36118765d31998980f96f433324988a17173092be973bcb6042c4d3e2b8abb5763d33858c215c46766aeccfd5b3a48b",
             "pre_install": [
                 "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\", \"$dir\\Unintall*\" -Recurse"
+                "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse -ErrorAction SilentlyContinue"
             ]
         },
         "arm64": {
@@ -17,7 +17,7 @@
             "hash": "sha512:211ea93325f83443abe35f00c1d37d1665ef041f3c82a5f404d2c09f2239fc68afbc56374bbb10375efb95f9d064dfc6eb5f9971347bfb1a4a91d6e4e031fed6",
             "pre_install": [
                 "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\", \"$dir\\Unintall*\" -Recurse"
+                "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse -ErrorAction SilentlyContinue"
             ]
         }
     },
@@ -27,20 +27,22 @@
             "Cherry Studio"
         ]
     ],
-    "installer": {
-        "script": [
-            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name muggle) scripts/DoradoUtils.psm1)",
-            "Mount-ExternalRuntimeData -Source \"$persist_dir\\data\" -Target \"$env:APPDATA\\CherryStudio\"",
-            "Remove-Module -Name DoradoUtils"
+    "persist_external": [
+        "$env:APPDATA\\CherryStudio",
+        [
+            "$home\\.cherrystudio",
+            ".cherrystudio",
+            "directory"
         ]
-    },
-    "uninstaller": {
-        "script": [
-            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name muggle) scripts/DoradoUtils.psm1)",
-            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\CherryStudio\"",
-            "Remove-Module -Name DoradoUtils"
-        ]
-    },
+    ],
+    "post_install": [
+        ". \"$(Find-BucketDirectory -Root -Name (coalesce $bucket 'muggle'))/scripts/persist-external.ps1\"",
+        "Invoke-PersistExternalInstall -Manifest $manifest -PersistDir $persist_dir -Dir $dir"
+    ],
+    "pre_uninstall": [
+        ". \"$(Find-BucketDirectory -Root -Name (coalesce $bucket 'muggle'))/scripts/persist-external.ps1\"",
+        "Invoke-PersistExternalUninstall -Manifest $manifest -Dir $dir"
+    ],
     "checkver": {
         "github": "https://github.com/CherryHQ/cherry-studio"
     },
