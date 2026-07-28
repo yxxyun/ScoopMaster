@@ -3,36 +3,50 @@
     "description": "An extremely fast Python package installer and resolver, written in Rust.",
     "homepage": "https://docs.astral.sh/uv/",
     "license": "Apache-2.0|MIT",
+    "notes": [
+        "Scoop persists data since version 0.11.16. You may need to move data by yourself.",
+        "Before: '$env:APPDATA\\uv', '$env:LOCALAPPDATA\\uv'",
+        "After : '$persist_dir'"
+    ],
     "architecture": {
         "64bit": {
             "url": "https://github.com/astral-sh/uv/releases/download/0.11.33/uv-x86_64-pc-windows-msvc.zip",
             "hash": "c253ce868ad48d29327b661452ce184c9e333e6d6f5bc8d6fcfbf4dd52b83442"
+        },
+        "32bit": {
+            "url": "https://github.com/astral-sh/uv/releases/download/0.11.33/uv-i686-pc-windows-msvc.zip",
+            "hash": "10b09a49823dd561bb4ececee1eea2c29cb58982f7253865ec27d23fd131daa7"
+        },
+        "arm64": {
+            "url": "https://github.com/astral-sh/uv/releases/download/0.11.33/uv-aarch64-pc-windows-msvc.zip",
+            "hash": "6eb261d3ad61b35e2a6cfd997b296b908ff74d6199717eca81c3c73e1df7fbc7"
         }
     },
-    "notes": [
-        "可运行以下命令创建“模拟全局 Python 环境”:",
-        "   \"$dir\\Setup-UVEnv.ps1 $persist_dir\""
-    ],
+    "installer": {
+        "script": [
+            "Add-Path -Path \"$persist_dir\\python\\shims\" -Global:$global -Force",
+            "Add-Path -Path \"$persist_dir\\tools\\shims\" -Global:$global -Force"
+        ]
+    },
+    "env_set": {
+        "UV_CACHE_DIR": "$persist_dir\\cache",
+        "UV_PYTHON_BIN_DIR": "$persist_dir\\python\\shims",
+        "UV_PYTHON_INSTALL_DIR": "$persist_dir\\python\\versions",
+        "UV_TOOL_BIN_DIR": "$persist_dir\\tools\\shims",
+        "UV_TOOL_DIR": "$persist_dir\\tools\\versions"
+    },
     "bin": [
         "uv.exe",
         "uvx.exe",
         "uvw.exe"
     ],
-    "persist": [
-        "cache",
-        "tool",
-        "python"
-    ],
-    "env_set": {
-        "UV_CACHE_DIR": "$persist_dir\\cache",
-        "UV_TOOL_DIR": "$persist_dir\\tool",
-        "UV_TOOL_BIN_DIR": "$scoopdir\\shims",
-        "UV_DEFAULT_INDEX": "https://mirrors.aliyun.com/pypi/simple/",
-        "UV_PYTHON_INSTALL_DIR": "$persist_dir\\python",
-        "UV_PYTHON_INSTALL_MIRROR": "https://mirror.nju.edu.cn/github-release/astral-sh/python-build-standalone/"
+    "uninstaller": {
+        "script": [
+            "$global = installed $app $true",
+            "Remove-Path -Path \"$persist_dir\\tools\\shims\" -Global:$global -Force",
+            "Remove-Path -Path \"$persist_dir\\python\\shims\" -Global:$global -Force"
+        ]
     },
-    "##": "更多环境变量设置 详见：https://docs.astral.sh/uv/reference/environment/",
-    "post_install": "Copy-Item \"$bucketsdir\\$bucket\\scripts\\$app\\Setup-UVEnv.ps1\" \"$dir\"",
     "checkver": {
         "github": "https://github.com/astral-sh/uv"
     },
@@ -40,6 +54,12 @@
         "architecture": {
             "64bit": {
                 "url": "https://github.com/astral-sh/uv/releases/download/$version/uv-x86_64-pc-windows-msvc.zip"
+            },
+            "32bit": {
+                "url": "https://github.com/astral-sh/uv/releases/download/$version/uv-i686-pc-windows-msvc.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/astral-sh/uv/releases/download/$version/uv-aarch64-pc-windows-msvc.zip"
             }
         },
         "hash": {
