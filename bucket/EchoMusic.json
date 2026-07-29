@@ -20,22 +20,16 @@
         ]
     },
     "post_install": [
-        "foreach ($pair in @(@('echo-music', \"$env:APPDATA\\echo-music\"), @('echo-music-nodejs', \"$env:APPDATA\\echo-music-nodejs\"))) {",
-        "    $src = \"$persist_dir\\$($pair[0])\"",
-        "    $tgt = $pair[1]",
-        "    if (!(Test-Path $src)) { New-Item -ItemType Directory $src -Force | Out-Null }",
-        "    if (Test-Path $tgt) {",
-        "        if ((Get-Item $tgt).LinkType -ne 'Junction') { Get-ChildItem $tgt | Move-Item -Destination $src -Force; Remove-Item $tgt -Force } else { Remove-Item $tgt -Force -Recurse }",
-        "    }",
-        "    New-Item -ItemType Junction -Path $tgt -Target $src -Force | Out-Null",
-        "    if ((Get-Item $tgt).LinkType -ne 'Junction') { throw \"创建 junction 失败\" }",
-        "}"
+        "if (!(Test-Path \"$persist_dir\\echo-music\")) { New-Item -ItemType Directory \"$persist_dir\\echo-music\" -Force | Out-Null }",
+        "if (Test-Path \"$env:APPDATA\\echo-music\") {",
+        "    if ((Get-Item \"$env:APPDATA\\echo-music\").LinkType -ne 'Junction') { Get-ChildItem \"$env:APPDATA\\echo-music\" | Move-Item -Destination \"$persist_dir\\echo-music\" -Force; Remove-Item \"$env:APPDATA\\echo-music\" -Force } else { Remove-Item \"$env:APPDATA\\echo-music\" -Force -Recurse }",
+        "}",
+        "New-Item -ItemType Junction -Path \"$env:APPDATA\\echo-music\" -Target \"$persist_dir\\echo-music\" -Force | Out-Null",
+        "if ((Get-Item \"$env:APPDATA\\echo-music\").LinkType -ne 'Junction') { throw \"创建 junction 失败\" }"
     ],
     "pre_uninstall": [
         "Stop-Process -Name 'EchoMusic' -Force -ErrorAction Ignore",
-        "foreach ($tgt in @(\"$env:APPDATA\\echo-music\", \"$env:APPDATA\\echo-music-nodejs\")) {",
-        "    if ((Test-Path $tgt) -and ((Get-Item $tgt).LinkType -eq 'Junction')) { Remove-Item $tgt -Force -Recurse }",
-        "}",
+        "if ((Test-Path \"$env:APPDATA\\echo-music\") -and ((Get-Item \"$env:APPDATA\\echo-music\").LinkType -eq 'Junction')) { Remove-Item \"$env:APPDATA\\echo-music\" -Force -Recurse }",
         "Remove-Item \"$env:LOCALAPPDATA\\echo-music-updater\" -Recurse -Force -ErrorAction Ignore"
     ],
     "shortcuts": [
@@ -45,8 +39,7 @@
         ]
     ],
     "persist": [
-        "echo-music",
-        "echo-music-nodejs"
+        "echo-music"
     ],
     "checkver": {
         "github": "https://github.com/hoowhoami/EchoMusic"
