@@ -1,26 +1,45 @@
 {
     "version": "2.36.11",
-    "description": "Portable build of AWS CLI v2 extracted from the official MSI package.",
-    "homepage": "https://github.com/sunfkny/aws-cli-v2-windows-portable",
+    "description": "Unified tool to manage AWS services",
+    "homepage": "https://aws.amazon.com/cli/",
     "license": "Apache-2.0",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/sunfkny/aws-cli-v2-windows-portable/releases/download/v2.36.11/aws-cli-v2-windows-portable-2.36.11.7z",
-            "hash": "6acc96d2e4bf716e8991d350a3797558f5494b3aacb9b0c1917544fd0068a674"
+            "url": "https://awscli.amazonaws.com/AWSCLIV2-2.36.11.msi",
+            "hash": "c6e04d7564ad6a0ce9e03a135e2d9ce854f74192051c0c6d65ec516e0531c100"
         }
     },
+    "extract_dir": "Amazon\\AWSCLIV2",
+    "post_install": [
+        "function Create-Junction { param ([string]$runtimeCache, [string]$runtimeCachePersist)",
+        "  if (-not (Test-Path $runtimeCache)) { return }",
+        "  if (Test-Path $runtimeCachePersist) {",
+        "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+        "    New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
+        "  } else {",
+        "    mkdir $runtimeCache -ErrorAction SilentlyContinue",
+        "    Move-Item $runtimeCache $runtimeCachePersist -Force",
+        "    New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
+        "  }",
+        "}",
+        "foreach ($folder in @('encore')) {",
+        "  Create-Junction -runtimeCache \"$env:USERPROFILE\\$folder\" -runtimeCachePersist \"$persist_dir\\USERPROFILE\\$folder\"",
+        "  Create-Junction -runtimeCache \"$env:LOCALAPPDATA\\$folder\" -runtimeCachePersist \"$persist_dir\\LOCALAPPDATA\\$folder\"",
+        "  Create-Junction -runtimeCache \"$env:APPDATA\\$folder\" -runtimeCachePersist \"$persist_dir\\APPDATA\\$folder\"",
+        "}"
+    ],
     "bin": [
         "aws.exe",
         "aws_completer.exe"
     ],
     "checkver": {
-        "github": "https://github.com/sunfkny/aws-cli-v2-windows-portable"
+        "url": "https://api.github.com/repos/aws/aws-cli/tags",
+        "jsonpath": "$[0].name"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/sunfkny/aws-cli-v2-windows-portable/releases/download/v$version/aws-cli-v2-windows-portable-$version.7z"
-            }
+        "url": "https://awscli.amazonaws.com/AWSCLIV2-$version.msi",
+        "hash": {
+            "mode": "download"
         }
     }
 }
