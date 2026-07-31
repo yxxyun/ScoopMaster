@@ -1,0 +1,94 @@
+{
+    "version": "0.1.1841.0",
+    "description": "A fork of Windows Terminal with native agent integration, right in your command line.",
+    "homepage": "https://github.com/microsoft/intelligent-terminal",
+    "license": "MIT",
+    "notes": [
+        "Requires Windows 10 2004 (build 19041) or later.",
+        "Needs an ACP-compatible agent CLI (GitHub Copilot CLI is the default).",
+        "Installed as an MSIX package (not portable). Launch from Start Menu: Intelligent Terminal.",
+        "CLI aliases after install: wtcli (in %LOCALAPPDATA%\\Microsoft\\WindowsApps)."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": [
+                "https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.x64.appx#/xaml.appx",
+                "https://github.com/microsoft/intelligent-terminal/releases/download/v0.1.18/Microsoft.IntelligentTerminal_0.1.1841.0_8wekyb3d8bbwe.msixbundle#/intelligent-terminal.msixbundle"
+            ],
+            "hash": [
+                "249d2afb41cc009494841372bd6dd2df46f87386d535ddf8d9f32c97226d2e46",
+                "2d7cf00660da89b381d5189772616d4e8a7a6e581abc3f105007216b0733198c"
+            ]
+        },
+        "32bit": {
+            "url": [
+                "https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.x86.appx#/xaml.appx",
+                "https://github.com/microsoft/intelligent-terminal/releases/download/v0.1.18/Microsoft.IntelligentTerminal_0.1.1841.0_8wekyb3d8bbwe.msixbundle#/intelligent-terminal.msixbundle"
+            ],
+            "hash": [
+                "22749bca3306ec74dad37f549c777179f90bde7840fa88f060b8a8b455120897",
+                "2d7cf00660da89b381d5189772616d4e8a7a6e581abc3f105007216b0733198c"
+            ]
+        },
+        "arm64": {
+            "url": [
+                "https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.arm64.appx#/xaml.appx",
+                "https://github.com/microsoft/intelligent-terminal/releases/download/v0.1.18/Microsoft.IntelligentTerminal_0.1.1841.0_8wekyb3d8bbwe.msixbundle#/intelligent-terminal.msixbundle"
+            ],
+            "hash": [
+                "1b94923ef3b9d85ce6ba3619457e150d2416254edab6c1bcf6a0c07572857081",
+                "2d7cf00660da89b381d5189772616d4e8a7a6e581abc3f105007216b0733198c"
+            ]
+        }
+    },
+    "installer": {
+        "script": [
+            "if ($global) { error \"Global installation is not supported for $app\"; break }",
+            "$winVer = [Environment]::OSVersion.Version",
+            "if (($winVer.Major -lt 10) -or ($winVer.Build -lt 19041)) { error 'At least Windows 10 2004 (build 19041) is required.'; break }",
+            "if ($PSVersionTable.PSVersion.Major -ge 6) { Import-Module Appx -UseWindowsPowershell 3>$null }",
+            "$ProgressPreference = 'SilentlyContinue'",
+            "$xaml = Get-AppxPackage 'Microsoft.UI.Xaml.2.8' | Sort-Object { [version]$_.Version } -Descending | Select-Object -First 1",
+            "if (-not $xaml -or ([version]$xaml.Version -lt [version]'8.2305.5001.0')) {",
+            "    Add-AppxPackage -Path \"$dir\\xaml.appx\"",
+            "}",
+            "Add-AppxPackage -Path \"$dir\\intelligent-terminal.msixbundle\" -ForceApplicationShutdown -ForceUpdateFromAnyVersion",
+            "Remove-Item \"$dir\\xaml.appx\", \"$dir\\intelligent-terminal.msixbundle\" -Force -ErrorAction SilentlyContinue"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if ($PSVersionTable.PSVersion.Major -ge 6) { Import-Module Appx -UseWindowsPowershell 3>$null }",
+            "$ProgressPreference = 'SilentlyContinue'",
+            "Get-Process -Name 'WindowsTerminal' -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '*IntelligentTerminal*' } | Stop-Process -Force -ErrorAction SilentlyContinue",
+            "Get-AppxPackage 'Microsoft.IntelligentTerminal' | Remove-AppxPackage"
+        ]
+    },
+    "checkver": {
+        "url": "https://api.github.com/repos/microsoft/intelligent-terminal/releases/latest",
+        "jsonpath": "$.assets[?(@.name =~ /^Microsoft\\.IntelligentTerminal_.*\\.msixbundle$/)].browser_download_url",
+        "regex": "/download/v(?<tag>[\\d.]+)/Microsoft\\.IntelligentTerminal_(?<version>[\\d.]+)_8wekyb3d8bbwe\\.msixbundle"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": [
+                    "https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.x64.appx#/xaml.appx",
+                    "https://github.com/microsoft/intelligent-terminal/releases/download/v$matchTag/Microsoft.IntelligentTerminal_$version_8wekyb3d8bbwe.msixbundle#/intelligent-terminal.msixbundle"
+                ]
+            },
+            "32bit": {
+                "url": [
+                    "https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.x86.appx#/xaml.appx",
+                    "https://github.com/microsoft/intelligent-terminal/releases/download/v$matchTag/Microsoft.IntelligentTerminal_$version_8wekyb3d8bbwe.msixbundle#/intelligent-terminal.msixbundle"
+                ]
+            },
+            "arm64": {
+                "url": [
+                    "https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.arm64.appx#/xaml.appx",
+                    "https://github.com/microsoft/intelligent-terminal/releases/download/v$matchTag/Microsoft.IntelligentTerminal_$version_8wekyb3d8bbwe.msixbundle#/intelligent-terminal.msixbundle"
+                ]
+            }
+        }
+    }
+}
