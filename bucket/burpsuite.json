@@ -1,31 +1,58 @@
 {
-  "description": "The leading toolkit for web security testing.",
-  "homepage": "https://portswigger.net/",
-  "license": "Proprietary",
-  "version": "2026.7.2",
-  "suggest": {
-    "JDK": "sec/openjdk",
-    "crack": "sec/burpsuite_crack"
-  },
-  "url": "https://portswigger-cdn.net/burp/releases/download?product=desktop&version=2026.7.2&type=Jar",
-  "hash": "58b9aebf4f512aae01e3f2f58961443dc938e458b1ff90d316cfcc3d82660bc3",
-  "pre_install": "Rename-Item \"$dir\\download\" 'burpsuite_pro.jar'",
-  "checkver": {
-    "url": "https://portswigger.net/burp/releases/data?pageSize=4",
-    "jp": "$.ResultSet.Results.[?(@.buildCategory == 'desktop')].version"
-  },
-  "autoupdate": {
-    "url": "https://portswigger-cdn.net/burp/releases/download?product=desktop&version=$version&type=Jar",
-    "hash": {
-      "mode": "json",
-      "url": "https://portswigger.net/burp/releases/data?pageSize=4",
-      "jp": "$.ResultSet.Results.[?(@.buildCategory == 'desktop')].builds.[?(@.BuildCategoryPlatform == 'Jar')].Sha256Checksum"
+    "version": "2026.7.2",
+    "description": "Web security testing toolkit",
+    "homepage": "https://portswigger.net/burp/communitydownload",
+    "license": "Freeware",
+    "architecture": {
+        "64bit": {
+            "url": "https://portswigger-cdn.net/burp/releases/download?product=desktop&version=2026.7.2&type=WindowsX64#/dl.exe",
+            "hash": "0ab3476dfd4b2fb186c12345e3bd5ed13c66eadb6b7de148e8975f5a97cb08f3"
+        }
+    },
+    "suggest": "openjdk",
+    "installer": {
+        "script": [
+            "$varfile = \"$dir\\installer.varfile\"",
+            "@'",
+            "sys.fileAssociation.extensions$StringArray=",
+            "sys.fileAssociation.launchers$StringArray=",
+            "sys.programGroupDisabled$Boolean=true",
+            "'@ | Set-Content $varfile",
+            "$escaped_dir = $dir.Replace('\\', '\\\\')",
+            "Add-Content $varfile \"sys.installationDir=$escaped_dir\"",
+            "Invoke-ExternalCommand \"$dir\\$fname\" -ArgumentList @('-q', '-console', '-overwrite', '-varfile', \"$varfile\")",
+            "Remove-Item \"$varfile\"",
+            "if (Get-Command java -ErrorAction SilentlyContinue) {",
+            "    & java -version *> $null",
+            "    if ($LASTEXITCODE -eq 0) {",
+            "        Remove-Item \"$dir\\jre\" -Recurse -Force -ErrorAction SilentlyContinue",
+            "    }",
+            "}",
+            "for ($i=1; $i -le 5; $i++) { Remove-Item \"$dir\\$fname\" -ErrorAction SilentlyContinue; if ($?) { break } else { Start-Sleep -Seconds 1 } }"
+        ]
+    },
+    "uninstaller": {
+        "file": "uninstall.exe",
+        "args": [
+            "-q",
+            "-console"
+        ]
+    },
+    "shortcuts": [
+        [
+            "burpsuite.exe",
+            "Burp Suite"
+        ]
+    ],
+    "checkver": {
+        "url": "https://portswigger.net/burp/releases/data",
+        "jsonpath": "$.ResultSet.Results.[?(@.buildCategory == 'desktop' && @.releaseChannels[0] == 'Stable' && @.builds[?(@.BuildCategoryPlatform == 'WindowsX64')])].version"
+    },
+    "autoupdate": {
+        "url": "https://portswigger-cdn.net/burp/releases/download?product=desktop&version=$version&type=WindowsX64#/dl.exe",
+        "hash": {
+            "url": "https://portswigger.net/burp/releases/data",
+            "jsonpath": "$.ResultSet.Results.[?(@.version == '$version' && @.buildCategory == 'desktop' && @.releaseChannels[0] == 'Stable' && @.builds[?(@.BuildCategoryPlatform == 'WindowsX64')])].builds.[?(@.BuildCategoryPlatform == 'WindowsX64')].Sha256Checksum"
+        }
     }
-  },
-  "notes": [
-    "【工具类型】: 安全测试工具",
-    "【主要功能】: Burp Suite，领先的Web安全测试工具包",
-    "【适用场景】: Web安全测试、渗透测试、安全评估",
-    "【技术特点】: 基于Java开发，提供图形化界面，功能强大"
-  ]
 }
