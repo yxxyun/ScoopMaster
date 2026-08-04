@@ -9,7 +9,7 @@
             "hash": "sha512:4095b7ff4caa0adce02d0040530c1cfcfc4a38864873a3dabb17277c3062981a1bbb646ef2e7623a77601bb658de00fe524df200c682fc9e86049f33ce984034",
             "pre_install": [
                 "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse -ErrorAction SilentlyContinue"
+                "Remove-Item \"$dir\\`$*\", \"$dir\\Unintall*\" -Recurse"
             ]
         },
         "arm64": {
@@ -17,7 +17,7 @@
             "hash": "sha512:9473e791c926ff90fb7dc8c1422f585ed66c77b1b9c3ea32416524ba6cb61ddf183ad9c8a20dd0cdfd3028b2e7376af4b4d281291fd709f0d2fcd2b6342b891b",
             "pre_install": [
                 "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse -ErrorAction SilentlyContinue"
+                "Remove-Item \"$dir\\`$*\", \"$dir\\Unintall*\" -Recurse"
             ]
         }
     },
@@ -27,22 +27,20 @@
             "Cherry Studio"
         ]
     ],
-    "persist_external": [
-        "$env:APPDATA\\CherryStudio",
-        [
-            "$home\\.cherrystudio",
-            ".cherrystudio",
-            "directory"
+    "installer": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name muggle) scripts/DoradoUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\data\" -Target \"$env:APPDATA\\CherryStudio\"",
+            "Remove-Module -Name DoradoUtils"
         ]
-    ],
-    "post_install": [
-        ". \"$(Find-BucketDirectory -Root -Name (coalesce $bucket 'muggle'))/scripts/persist-external.ps1\"",
-        "Invoke-PersistExternalInstall -Manifest $manifest -PersistDir $persist_dir -Dir $dir"
-    ],
-    "pre_uninstall": [
-        ". \"$(Find-BucketDirectory -Root -Name (coalesce $bucket 'muggle'))/scripts/persist-external.ps1\"",
-        "Invoke-PersistExternalUninstall -Manifest $manifest -Dir $dir"
-    ],
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name muggle) scripts/DoradoUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\CherryStudio\"",
+            "Remove-Module -Name DoradoUtils"
+        ]
+    },
     "checkver": {
         "github": "https://github.com/CherryHQ/cherry-studio"
     },
