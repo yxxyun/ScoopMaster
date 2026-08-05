@@ -1,76 +1,62 @@
 {
-  "version": "134.0.5954.26",
-  "description": "A fast, secure, easy-to-use browser.",
-  "homepage": "https://www.opera.com",
-  "license": {
-    "identifier": "Freeware",
-    "url": "https://www.opera.com/eula/computers"
-  },
-  "architecture": {
-    "64bit": {
-      "url": "https://get.geo.opera.com/pub/opera/desktop/134.0.5954.26/win/Opera_134.0.5954.26_Setup_x64.exe",
-      "hash": "9cdaf7a8c0ef45c14acd2872eee4af62a2c4b8562888158837ec66e910a4bb9d"
+    "version": "134.0.5954.26",
+    "description": "Fast, secure, easy-to-use browser.",
+    "homepage": "https://www.opera.com/",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://www.opera.com/eula/computers"
     },
-    "32bit": {
-      "url": "https://get.geo.opera.com/pub/opera/desktop/134.0.5954.26/win/Opera_134.0.5954.26_Setup.exe",
-      "hash": "3a55a1c1c1185190a3fa374f13cad851f751a73506dcdae6a19cf3d968d49e4b"
-    },
-    "arm64": {
-      "url": "https://get.geo.opera.com/pub/opera/desktop/134.0.5954.26/win/Opera_134.0.5954.26_Setup_arm64.exe",
-      "hash": "ab3422e336f637e0e3d781e4ee22f7b2ad2559287cf8635a0c41199caccb5b72"
-    }
-  },
-  "installer": {
-    "script": [
-      "$version, 'autoupdate' | ForEach-Object { ensure \"$dir\\$_\" | Out-Null }",
-      "Expand-7zipArchive -Path \"$dir\\$fname\" -Switches '-x!*_list -xr!unins*' -Removal",
-      "Move-Item -Path \"$dir\\opera_autoupdate*\" -Destination \"$dir\\autoupdate\" -Force",
-      "$exclude_list = @('Assets', $version, 'autoupdate', 'Resources.pri', 'opera.visualelementsmanifest.xml')",
-      "Move-Item -Path \"$dir\\*\" -Destination \"$dir\\$version\" -Exclude $exclude_list -Force -ErrorAction SilentlyContinue",
-      "Copy-Item -Path \"$dir\\$version\\opera.exe\" -Destination $dir -Force",
-      "$cfg = @{ 'autoupdate' = $false; 'enable_stats' = $false; 'single_profile' = $true } | ConvertTo-Json -Depth 5 -Compress",
-      "Set-Content -Path \"$dir\\installer_prefs.json\" -Value $cfg -NoNewline -Encoding utf8"
-    ]
-  },
-  "shortcuts": [
-    [
-      "opera.exe",
-      "Opera"
-    ]
-  ],
-  "persist": "profile",
-  "checkver": {
-    "script": [
-      "$path_regex = '^(?!\\.)[\\d.]+/$'",
-      "$version_sort = { [version]$_.href.TrimEnd('/') }",
-      "$releases_url = 'https://get.geo.opera.com/pub/opera/desktop/'",
-      "$releases_page = Invoke-WebRequest -Uri $releases_url -UseBasicParsing -ErrorAction Stop",
-      "$path_segments = $releases_page.links | Where-Object { $_.href -match $path_regex } |",
-      "        Sort-Object -Property $version_sort -Descending | ForEach-Object -MemberName href",
-      "foreach ($path_segment in $path_segments.TrimEnd('/')) {",
-      "    $release_url = 'https://get.geo.opera.com/pub/opera/desktop/{0}/win/' -f $path_segment",
-      "    $download_page = Invoke-WebRequest -Uri $release_url -UseBasicParsing -ErrorAction Stop",
-      "    $installer_name = $download_page.Links | Where-Object { $_.href -match '(?<=Setup\\w+)\\.exe$' } |",
-      "            Select-Object -ExpandProperty href -First 1",
-      "    if ($null -ne $installer_name) { Write-Output $installer_name; break }",
-      "}"
-    ],
-    "regex": "Opera_([\\d.]+)_Setup"
-  },
-  "autoupdate": {
     "architecture": {
-      "64bit": {
-        "url": "https://get.geo.opera.com/pub/opera/desktop/$version/win/Opera_$version_Setup_x64.exe"
-      },
-      "32bit": {
-        "url": "https://get.geo.opera.com/pub/opera/desktop/$version/win/Opera_$version_Setup.exe"
-      },
-      "arm64": {
-        "url": "https://get.geo.opera.com/pub/opera/desktop/$version/win/Opera_$version_Setup_arm64.exe"
-      }
+        "64bit": {
+            "url": "https://get.geo.opera.com/pub/opera/desktop/134.0.5954.26/win/Opera_134.0.5954.26_Setup_x64.exe#/dl.7z",
+            "hash": "9cdaf7a8c0ef45c14acd2872eee4af62a2c4b8562888158837ec66e910a4bb9d"
+        },
+        "32bit": {
+            "url": "https://get.geo.opera.com/pub/opera/desktop/134.0.5954.26/win/Opera_134.0.5954.26_Setup.exe#/dl.7z",
+            "hash": "3a55a1c1c1185190a3fa374f13cad851f751a73506dcdae6a19cf3d968d49e4b"
+        }
     },
-    "hash": {
-      "url": "$url.sha256sum"
+    "installer": {
+        "script": [
+            "Remove-Item -Path \"$dir\\*_list\" -Force",
+            "Move-Item -Path \"$dir\\*\" -Destination \"$dir\\$version\" -Exclude 'Assets', 'launcher*', 'Resources.pri' -ErrorAction Ignore",
+            "if (!(Test-Path \"$dir\\$version\\localization\")) {",
+            "   New-Item -Path \"$dir\\$version\\localization\" -ItemType Directory | Out-Null",
+            "   Move-Item -Path \"$dir\\$version\\*.pak\" -Destination \"$dir\\$version\\localization\" -Exclude 'opera*' -ErrorAction Ignore",
+            "}",
+            "Set-Content -Path \"$dir\\installer_prefs.json\" -Value (@{ 'autoupdate'= $false; 'enable_stats' = $false; 'single_profile' = $true } | ConvertTo-Json) -Encoding ASCII",
+            "Copy-Item \"$dir\\$version\\opera.exe\" \"$dir\""
+        ]
+    },
+    "shortcuts": [
+        [
+            "opera.exe",
+            "Opera"
+        ]
+    ],
+    "persist": "profile",
+    "checkver": {
+        "script": [
+            "$releases = 'https://get.geo.opera.com/pub/opera/desktop/'",
+            "$download_page = Invoke-WebRequest -Uri $releases -UseBasicParsing",
+            "$versionSort   = { [version]$_.href.TrimEnd('/') }",
+            "$last_ver = $download_page.links | Where-Object href -match '^[\\d]+[\\d\\.]+/$' | Sort-Object $versionSort -Descending | Select-Object -first 1 -expand href",
+            "$version = $last_ver -replace '/', ''",
+            "Write-Output $version"
+        ],
+        "regex": "(\\S+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://get.geo.opera.com/pub/opera/desktop/$version/win/Opera_$version_Setup_x64.exe#/dl.7z"
+            },
+            "32bit": {
+                "url": "https://get.geo.opera.com/pub/opera/desktop/$version/win/Opera_$version_Setup.exe#/dl.7z"
+            }
+        },
+        "hash": {
+            "url": "$url.sha256sum"
+        }
     }
-  }
 }
