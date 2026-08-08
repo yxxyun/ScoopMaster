@@ -1,30 +1,43 @@
 {
-  "version": "1.8.0",
-  "description": "Advanced task manager with deep process, thread, memory, handle, and system inspection panels",
-  "homepage": "https://github.com/DavidXanatos/TaskExplorer",
-  "license": "Freeware",
-  "changelog": "https://github.com/DavidXanatos/TaskExplorer/releases",
-  "url": "https://github.com/DavidXanatos/TaskExplorer/releases/download/v1.8.0/TaskExplorer-v1.8.0.exe#/setup.exe",
-  "hash": "sha256:e40af0d5cfd43091e626eda631cbc53d4804db129b602180d05d47be137cf744",
-  "installer": {
-    "script": [
-      "$args = @('/VERYSILENT', '/SP-', '/NORESTART', \"/DIR=$dir\")",
-      "Start-Process -Wait \"$dir\\setup.exe\" -ArgumentList $args -Verb RunAs"
-    ]
-  },
-  "post_install": "if (Test-Path -Path \"$dir\\setup.exe\") { Remove-Item \"$dir\\setup.exe\" -Force }",
-  "bin": "TaskExplorer.exe",
-  "shortcuts": [
-    [
-      "TaskExplorer.exe",
-      "Task Explorer"
-    ]
-  ],
-  "checkver": {
-    "url": "https://api.github.com/repos/DavidXanatos/TaskExplorer/releases/latest",
-    "regex": "\"tag_name\":\\s*\"v?([\\d.]+)\""
-  },
-  "autoupdate": {
-    "url": "https://github.com/DavidXanatos/TaskExplorer/releases/download/v$version/TaskExplorer-v$version.exe#/setup.exe"
-  }
+    "version": "1.8.0",
+    "description": "Task Explorer is an advanced Task Manager tool with emphasis on, not just monitoring what applications are running, but on finding out what applications are doing.",
+    "homepage": "https://github.com/DavidXanatos/TaskExplorer",
+    "license": "GPL-3.0-or-later",
+    "url": "https://github.com/DavidXanatos/TaskExplorer/releases/download/v1.8.0/TaskExplorer-v1.8.0.exe",
+    "hash": "e40af0d5cfd43091e626eda631cbc53d4804db129b602180d05d47be137cf744",
+    "suggest": {
+        "Kernel Driver": "systeminformer-nightly"
+    },
+    "innosetup": true,
+    "pre_install": [
+        "if (Test-Path \"$scoopdir\\apps\\systeminformer-nightly\") {",
+        "    if ($architecture -eq '64bit') {",
+        "        Copy-Item -Path \"$scoopdir\\apps\\systeminformer-nightly\\current\\ksidyn.*\" -Destination \"$dir\\AMD64\\\" -Force",
+        "    }",
+        "    if ($architecture -eq 'arm64') {",
+        "        Copy-Item -Path \"$scoopdir\\apps\\systeminformer-nightly\\current\\ksidyn.*\" -Destination \"$dir\\ARM64\\\" -Force",
+        "    }",
+        "}",
+        "if (Test-Path \"$persist_dir\\TaskExplorer.ini\") {",
+        "    Copy-Item \"$persist_dir\\TaskExplorer.ini\" \"$dir\\TaskExplorer.ini\"",
+        "} else {",
+        "    New-Item \"$dir\\TaskExplorer.ini\"",
+        "}"
+    ],
+    "pre_uninstall": [
+        "if (!(Test-Path \"$persist_dir\")) {",
+        "    New-Item \"$persist_dir\" -Type Directory | Out-Null",
+        "}",
+        "Copy-Item \"$dir\\TaskExplorer.ini\" \"$persist_dir\\TaskExplorer.ini\""
+    ],
+    "shortcuts": [
+        [
+            "TaskExplorer.exe",
+            "Task Explorer"
+        ]
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/DavidXanatos/TaskExplorer/releases/download/v$version/TaskExplorer-v$version.exe"
+    }
 }
