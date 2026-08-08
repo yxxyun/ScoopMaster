@@ -1,0 +1,24 @@
+{
+   "$schema": "https://raw.githubusercontent.com/lukesampson/scoop/master/schema.json",
+   "version": "1.0.0",
+   "description": "Fix LocalSend firewall. This enables the basic firewall rules according to https://github.com/localsend/localsend#setup.",
+   "depends": "localsend",
+   "url": "https://raw.githubusercontent.com/silver886/scoop/master/LICENSE",
+   "hash": "7e12e5df4bae12cb21581ba157ced20e1986a0508dd10d0e8a4ab9a4cf94e85c",
+   "notes": "This package needs to be reinstalled every time when `localsend` is installed or upgraded.",
+   "pre_install": "if (-not (is_admin)) { abort 'This package requires admin privileges to install' }",
+   "installer": {
+      "script": [
+         "$localsendExe = \"$(appdir localsend)\\$((ConvertFrom-Json (Get-Content -Raw \"$(appdir localsend)\\current\\manifest.json\")).version)\\localsend_app.exe\"",
+         "New-NetFirewallRule -Action Allow -Direction Inbound -Program \"$localsendExe\" -DisplayName \"LocalSend Sync (TCP) ($app)\" -LocalPort 53317 -Protocol TCP > $null",
+         "New-NetFirewallRule -Action Allow -Direction Inbound -Program \"$localsendExe\" -DisplayName \"LocalSend Sync (UDP) ($app)\" -LocalPort 53317 -Protocol UDP > $null"
+      ]
+   },
+   "pre_uninstall": "if (-not (is_admin)) { abort 'This package requires admin privileges to uninstall' }",
+   "uninstaller": {
+      "script": [
+         "Remove-NetFirewallRule -DisplayName \"LocalSend Sync (TCP) ($app)\" > $null",
+         "Remove-NetFirewallRule -DisplayName \"LocalSend Sync (UDP) ($app)\" > $null"
+      ]
+   }
+}
