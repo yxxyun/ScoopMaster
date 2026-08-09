@@ -1,70 +1,79 @@
 {
     "version": "8.7.0.101",
-    "description": "百度网盘 PC 版",
-    "homepage": "https://yun.baidu.com",
-    "license": "Unknown",
-    "url": "https://issuecdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduNetdisk_8.7.0.101.exe#/dl.7z",
+    "description": "Windows client for BaiduNetdisk",
+    "homepage": "https://pan.baidu.com/",
+    "license": "Freeware",
+    "notes": [
+        "For app still running issue in uninstallation and update, run the following command and try again:",
+        "Get-Process -Name YunDetectService, kernelUpdate -ErrorAction SilentlyContinue | Stop-Process -Force"
+    ],
+    "depends": "Scoop4kariiin/Scoop4kariiinUtils",
+    "url": "https://issuepcdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduNetdisk_8.7.0.101.exe#dl.7z",
     "hash": "312ea90a0623e1e414652b04b9275a06bf47e071a83cacfaf31fbbb734c9b748",
-    "installer": {
-        "script": [
-            "# handle runtime cache",
-            "if (!(Test-Path $persist_dir)) {",
-            "    New-Item $persist_dir -Type Directory -Force | Out-Null",
-            "}",
-            "$runtimeCachePersist = \"$persist_dir\\appdata\"",
-            "if (!(Test-Path $runtimeCachePersist)) {",
-            "    New-Item $runtimeCachePersist -Type Directory -Force | Out-Null",
-            "}",
-            "function PersistsFolder([String] $folder) {",
-            "    $folderName = $folder.Split(\"\\\")[-1]",
-            "    if (Test-Path $runtimeCachePersist\\$folderName) {",
-            "        Remove-Item $folder -Force -Recurse -ErrorAction SilentlyContinue",
-            "        New-Item -Type Junction -Path $folder -Target $runtimeCachePersist\\$folderName | Out-Null",
-            "    } else {",
-            "        if (Test-Path $folder) {",
-            "            Move-Item $folder $runtimeCachePersist -Force",
-            "            New-Item -Type Junction -Path $folder -Target $runtimeCachePersist\\$folderName | Out-Null",
-            "        }",
-            "    }",
-            "}",
-            "@(\"$env:APPDATA\\Baidu\",\"$env:APPDATA\\BaiduYunGuanjia\",\"$env:APPDATA\\BaiduYunKernel\") | ForEach-Object { PersistsFolder $_ }",
-            "#  associated browser call items",
-            "Invoke-ExternalCommand regsvr32 -ArgumentList @('/s', \"$dir\\npYunWebDetect.dll\") -RunAs | Out-Null",
-            "Invoke-ExternalCommand \"$dir\\YunDetectService.exe\" -ArgumentList @(\"reg\") -RunAs | Out-Null"
-        ]
-    },
-    "uninstaller": {
-        "script": [
-            "$runtimeCachePersist = \"$persist_dir\\appdata\"",
-            "function PersistsFolder([String] $folder) {",
-            "    $folderName = $folder.Split(\"\\\")[-1]",
-            "    if (!(Test-Path $runtimeCachePersist\\$folderName)) {",
-            "        Move-Item $folder $runtimeCachePersist -Force",
-            "    } else {",
-            "        Remove-Item $folder -Force -Recurse -ErrorAction SilentlyContinue",
-            "    }",
-            "}",
-            "@(\"$env:APPDATA\\Baidu\",\"$env:APPDATA\\BaiduYunGuanjia\",\"$env:APPDATA\\BaiduYunKernel\") | ForEach-Object { PersistsFolder $_ }",
-            "#  cancel associated browser call items",
-            "Invoke-ExternalCommand regsvr32 -ArgumentList @('/s', '/u', \"$dir\\npYunWebDetect.dll\") -RunAs | Out-Null",
-            "Invoke-ExternalCommand \"$dir\\YunDetectService.exe\" -ArgumentList @(\"unreg\") -RunAs | Out-Null"
-        ]
-    },
     "shortcuts": [
         [
             "BaiduNetdisk.exe",
-            "百度网盘"
+            "BaiduNetdisk"
         ]
     ],
+    "installer": {
+        "script": [
+            "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
+            "Write-Host \"\"",
+            "Import-Module -Name Scoop4kariiinUtils -ErrorAction Stop",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\baidunetdisk\" -AppData",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\BaiduYunGuanjia\" -AppData",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\BaiduYunKernel\" -AppData",
+            "Restore-PersistItem -AppDir \"$dir\" -PersistDir \"$persist_dir\" -Name \"AppSettingApp.dat\"",
+            "Remove-Module -Name Scoop4kariiinUtils -ErrorAction SilentlyContinue"
+        ]
+    },
     "post_install": [
-        "Remove-Item -Force -Recurse \"$dir\\`$PLUGINSDIR\"",
-        "Remove-Item -Force -Recurse \"$dir\\`$TEMP\""
+        "$ScriptsDir = Find-BucketDirectory -Root -Name $bucket | Join-Path -ChildPath \"scripts\\BaiduNetdisk\"",
+        "$BNHPaths = Get-ChildItem -Path \"$dir\" -Filter \"baidunetdiskhost.exe\" -Recurse | Select-Object -ExpandProperty Target",
+        "$BNUPaths = Get-ChildItem -Path \"$dir\" -Filter \"baidunetdiskunite.exe\" -Recurse | Select-Object -ExpandProperty Target",
+        "if (Test-Path \"$ScriptsDir\\update-firewall-rules.ps1\") {",
+        "    $Content = Get-Content \"$ScriptsDir\\update-firewall-rules.ps1\" -Encoding UTF8",
+        "    $Content = $Content.Replace('$BNHPaths', \"$BNHPaths\")",
+        "    $Content = $Content.Replace('$BNUPaths', \"$BNUPaths\")",
+        "    $Content | Out-File -FilePath \"$dir\\update-firewall-rules.ps1\" -Encoding UTF8",
+        "    Write-Host \"`nUpdating Windows firewall rules...\" -ForegroundColor Yellow",
+        "    Write-Host \"Please approve permission request if UAC prompt pops up.\" -ForegroundColor Yellow",
+        "    Start-Sleep -Seconds 1",
+        "    gsudo \"$dir\\update-firewall-rules.ps1\"",
+        "    if ($?) {",
+        "        Write-Host \"Successfully updated Windows firewall rules!\" -ForegroundColor Green",
+        "    } else {",
+        "        Write-Host \"[ERROR] Failed updating Windows firewall rules!\" -ForegroundColor Red",
+        "    }",
+        "} else {",
+        "    Write-Host \"Missing files, please re-add Scoop4kariiin bucket and re-install this app.\" -ForegroundColor Red",
+        "}"
     ],
+    "persist": [
+        "users",
+        [
+            "module\\BrowserEngine\\users",
+            "BrowserEngineUsers"
+        ]
+    ],
+    "uninstaller": {
+        "script": [
+            "Get-Process -Name YunDetectService, kernelUpdate -ErrorAction SilentlyContinue | Stop-Process -Force",
+            "Write-Host \"\"",
+            "Import-Module -Name Scoop4kariiinUtils -ErrorAction Stop",
+            "Dismount-ExternalRuntimeData -Target \"baidunetdisk\" -AppData",
+            "Dismount-ExternalRuntimeData -Target \"BaiduYunGuanjia\" -AppData",
+            "Dismount-ExternalRuntimeData -Target \"BaiduYunKernel\" -AppData",
+            "Backup-PersistItem -AppDir \"$dir\" -PersistDir \"$persist_dir\" -Name \"AppSettingApp.dat\"",
+            "Remove-Module -Name Scoop4kariiinUtils -ErrorAction SilentlyContinue"
+        ]
+    },
     "checkver": {
         "url": "https://pan.baidu.com/disk/cmsdata?do=client",
-        "regex": "BaiduNetdisk_([\\d.]+).exe"
+        "regex": "Windows电脑客户端V([\\d.]+)\""
     },
     "autoupdate": {
-        "url": "https://issuecdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduNetdisk_$version.exe#/dl.7z"
+        "url": "https://issuepcdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduNetdisk_$version.exe#dl.7z"
     }
 }
