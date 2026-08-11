@@ -8,13 +8,37 @@
     "notes": [
         "After install, run the native host registration script:",
         "  & \"$(scoop prefix open-in)\\install.bat\"",
-        "To uninstall the native host prior to 'scoop uninstall open-in':",
+        "To uninstall the native host before uninstalling this app:",
         "  & \"$(scoop prefix open-in)\\uninstall.bat\""
     ],
-    "post_install": "Write-Host \"Run '& \\\"$((scoop prefix open-in))\\install.bat\\\"' to finish setup.\"",
+    "post_install": [
+        "$installBat = \"$dir\\install.bat\"",
+        "$uninstallBat = \"$dir\\uninstall.bat\"",
+        "",
+        "# Backup originals",
+        "Copy-Item $installBat \"$dir\\install.bat.original\" -Force",
+        "Copy-Item $uninstallBat \"$dir\\uninstall.bat.original\" -Force",
+        "",
+        "# Remove pause commands from install.bat",
+        "$installContent = Get-Content $installBat -Raw",
+        "$installContent = $installContent -replace '(?i)pause.*', ''",
+        "Set-Content $installBat $installContent -Encoding ASCII",
+        "",
+        "# Remove pause commands and add error handling to uninstall.bat",
+        "$uninstallContent = Get-Content $uninstallBat -Raw",
+        "$uninstallContent = $uninstallContent -replace '(?i)pause.*', ''",
+        "$uninstallContent = $uninstallContent -replace '(reg delete .+?)\\s*$', '$1 || exit /b 0'",
+        "$uninstallContent = $uninstallContent -replace 'exit /b 0 \\|\\| exit /b 0', 'exit /b 0'",
+        "Set-Content $uninstallBat $uninstallContent -Encoding ASCII",
+        "",
+        "Write-Host 'Scripts patched. To register the native host:' -ForegroundColor Green",
+        "Write-Host \"  & \\\"$dir\\install.bat\\\"\"",
+        "Write-Host 'Running native host registration...'",
+        "& $installBat"
+    ],
     "pre_uninstall": [
-        "$uninstallPath = \"$(scoop prefix open-in)\\uninstall.bat\"",
-        "if (Test-Path $uninstallPath) { & $uninstallPath }"
+        "$uninstallBat = \"$dir\\uninstall.bat\"",
+        "if (Test-Path $uninstallBat) { & $uninstallBat }"
     ],
     "checkver": {
         "github": "https://github.com/andy-portmen/native-client",
