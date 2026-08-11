@@ -21,15 +21,25 @@
     },
     "installer": {
         "script": [
-            "$msi = Get-ChildItem $dir -Filter '*.msi' | Select-Object -First 1 -ExpandProperty FullName",
-            "$extractPath = \"$dir\\_extract\"",
-            "New-Item -ItemType Directory -Force -Path $extractPath | Out-Null",
-            "& lessmsi x \"$msi\" \"$extractPath\\\"; if ($LASTEXITCODE -ne 0) { throw \"lessmsi extraction failed (exit code $LASTEXITCODE)\" }",
-            "$btExe = Get-ChildItem $extractPath -Filter 'bt.exe' -Recurse | Select-Object -First 1",
-            "if (!$btExe) { throw 'bt.exe not found in extracted MSI contents.' }",
-            "Get-ChildItem (Split-Path $btExe.FullName) | Move-Item -Destination $dir -Force",
-            "Remove-Item $extractPath -Recurse -Force",
-            "Remove-Item $msi -Force"
+            "$msi = Get-ChildItem $dir -Filter '*.msi' -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName",
+            "if ($msi) {",
+            "    $extractPath = \"$dir\\_extract\"",
+            "    New-Item -ItemType Directory -Force -Path $extractPath | Out-Null",
+            "    & lessmsi x \"$msi\" \"$extractPath\"; if ($LASTEXITCODE -ne 0) { throw \"lessmsi extraction failed (exit code $LASTEXITCODE)\" }",
+            "    $btExe = Get-ChildItem $extractPath -Filter 'bt.exe' -Recurse | Select-Object -First 1",
+            "    if (!$btExe) { throw 'bt.exe not found in extracted MSI contents.' }",
+            "    Get-ChildItem (Split-Path $btExe.FullName) | Move-Item -Destination $dir -Force",
+            "    Remove-Item $extractPath -Recurse -Force",
+            "    Remove-Item $msi -Force",
+            "} else {",
+            "    $btExe = Get-ChildItem $dir -Filter 'bt.exe' -Recurse | Select-Object -First 1",
+            "    if ($btExe -and (Split-Path $btExe.FullName) -ne $dir) {",
+            "        Get-ChildItem (Split-Path $btExe.FullName) | Move-Item -Destination $dir -Force",
+            "        Get-ChildItem $dir -Directory -Recurse | Where-Object { @(Get-ChildItem $_ -Recurse).Count -eq 0 } | Remove-Item -Force",
+            "    } elseif (!$btExe) {",
+            "        throw 'bt.exe not found in installation directory'",
+            "    }",
+            "}"
         ]
     },
     "post_install": [
