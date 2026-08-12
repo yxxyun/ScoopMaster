@@ -17,18 +17,22 @@
             "    if (Test-Path $extract) { Remove-Item $extract -Recurse -Force -ErrorAction SilentlyContinue }",
             "    New-Item -ItemType Directory -Path $extract | Out-Null",
             "    Start-Process -FilePath $installer.FullName -ArgumentList '/S', \"/D=$extract\" -Wait -NoNewWindow",
-            "    if (Test-Path \"$extract\\*\") {",
-            "        Move-Item \"$extract\\*\" \"$dir\\\" -Force",
+            "    if (Test-Path $extract) {",
+            "        if (Get-Command robocopy -ErrorAction SilentlyContinue) {",
+            "            robocopy $extract $dir /E /MOVE /NFL /NDL /NJH /NJS /NC /NS /NP | Out-Null",
+            "        } else {",
+            "            Get-ChildItem $extract | ForEach-Object { Move-Item $_.FullName (Join-Path $dir $_.Name) -Force -ErrorAction SilentlyContinue }",
+            "        }",
+            "        Remove-Item $extract -Recurse -Force -ErrorAction SilentlyContinue",
             "    }",
-            "    Remove-Item $extract -Recurse -Force -ErrorAction SilentlyContinue",
             "}"
         ]
     },
     "post_install": "if (Test-Path \"$dir\\rebased.exe\") { Remove-Item \"$dir\\rebased.exe\" -Force -ErrorAction SilentlyContinue }",
-    "bin": "bin\\idea64.exe",
+    "bin": "bin\\rebased64.exe",
     "shortcuts": [
         [
-            "bin\\idea64.exe",
+            "bin\\rebased64.exe",
             "Rebased"
         ]
     ],
