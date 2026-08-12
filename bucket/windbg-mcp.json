@@ -1,0 +1,50 @@
+{
+    "version": "0.6.0",
+    "description": "MCP server exposing WinDbg/DbgEng (live user-mode, kernel, crash dumps, TTD) to AI agents over stdio",
+    "homepage": "https://github.com/glslang/windbg-mcp",
+    "license": "MIT",
+    "notes": [
+        "Basic live/crash-dump debugging works out of the box with the System32 engine.",
+        "",
+        "For TTD replay and crash-dump !analyze, bundle the WinDbg engine DLLs next to the binary.",
+        "If WinDbg (Microsoft.WinDbg) is installed from the Store, post_install copies them automatically.",
+        "Otherwise, see: https://github.com/glslang/windbg-mcp#bundling-the-windbg-engine"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/glslang/windbg-mcp/releases/download/v0.6.0/windbg-mcp-v0.6.0-windows-x64.zip",
+            "hash": "eef0fa7db20a3cd6ba36e189482642393680b84adfb8d64525bce77b0d9b93bf"
+        }
+    },
+    "post_install": [
+        "$wdPkg = Get-AppxPackage Microsoft.WinDbg -ErrorAction SilentlyContinue",
+        "if ($wdPkg) {",
+        "    $wd = \"$($wdPkg.InstallLocation)\\amd64\"",
+        "    $dlls = @('dbgeng.dll','dbghelp.dll','dbgcore.dll','dbgmodel.dll','symsrv.dll','msdia140.dll')",
+        "    foreach ($dll in $dlls) {",
+        "        $src = Join-Path $wd $dll",
+        "        if (Test-Path $src) { Copy-Item $src $dir -Force }",
+        "    }",
+        "    $subdirs = @('ttd','winext')",
+        "    foreach ($sub in $subdirs) {",
+        "        $src = Join-Path $wd $sub",
+        "        if (Test-Path $src) { Copy-Item $src $dir -Recurse -Force }",
+        "    }",
+        "    Write-Host 'WinDbg engine bundled for TTD replay and !analyze support.' -ForegroundColor Green",
+        "} else {",
+        "    Write-Host 'WinDbg (Microsoft.WinDbg) not found. Basic debugging works, but TTD replay' -ForegroundColor Yellow",
+        "    Write-Host 'and !analyze require the WinDbg engine. See: scoop info windbg-mcp' -ForegroundColor Yellow",
+        "}"
+    ],
+    "bin": "windbg-mcp.exe",
+    "checkver": {
+        "github": "https://github.com/glslang/windbg-mcp"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/glslang/windbg-mcp/releases/download/v$version/windbg-mcp-v$version-windows-x64.zip"
+            }
+        }
+    }
+}
