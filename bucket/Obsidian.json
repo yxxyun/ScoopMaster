@@ -1,37 +1,45 @@
 {
-    "version": "1.13.6",
+    "version": "1.13.7",
     "description": "Powerful knowledge base that works on top of a local folder of plain text Markdown files.",
     "homepage": "https://obsidian.md",
     "license": {
-        "identifier": "Freeware",
-        "url": "https://obsidian.md/license"
+        "identifier": "Proprietary",
+        "url": "https://obsidian.md/eula"
     },
-    "url": "https://github.com/obsidianmd/obsidian-releases/releases/download/v1.13.6/Obsidian-1.13.6.exe#/dl.7z",
-    "hash": "e367400d7c54d86628486d6bef5ce1b052dc2edf57ebee3d9f7a763af0181f21",
-    "architecture": {
-        "64bit": {
-            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
-        },
-        "32bit": {
-            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-32.7z\" \"$dir\""
-        },
-        "arm64": {
-            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\""
-        }
-    },
-    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\" -Force -Recurse",
-    "bin": [
-        [
-            "obsidian.com",
-            "obsidian"
-        ]
-    ],
+    "url": "https://github.com/obsidianmd/obsidian-releases/releases/download/v1.13.7/Obsidian-1.13.7.exe#/dl.7z",
+    "hash": "f233dc24896b3f2d5f9e4b01111181a561d0760b2105f0a474024c5f3143a9bc",
     "shortcuts": [
         [
             "Obsidian.exe",
             "Obsidian"
         ]
     ],
+    "pre_install": [
+        "$bucket=(scoop bucket list | where-Object { $_.Source -match 'Scoop-Store'})[0].Name",
+        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name $bucket) scripts/AirUtils.psm1)",
+        "# Extract Archive",
+        "$arch = switch ($architecture) {",
+        "    'arm64'  { 'arm64' }",
+        "    '64bit'  { '64' }",
+        "    default  { '32' }",
+        "}",
+        "$targetArchive = \"$dir\\`$PLUGINSDIR\\app-$arch.7z\"",
+        "Expand-7zipArchive $targetArchive \"$dir\"",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\" -Force -Recurse",
+        "# Redirect data directory to persist",
+        "RedirectDirectory \"$env:APPDATA\\obsidian\" \"$persist_dir\\APPDATA\\obsidian\"",
+        "Remove-Module -Name AirUtils"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    $bucket=(scoop bucket list | where-Object { $_.Source -match 'Scoop-Store'})[0].Name",
+            "    Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name $bucket) scripts/AirUtils.psm1)",
+            "    RemoveJunction \"$env:APPDATA\\obsidian\"",
+            "    Remove-Module -Name AirUtils",
+            "}"
+        ]
+    },
     "checkver": {
         "github": "https://github.com/obsidianmd/obsidian-releases"
     },
