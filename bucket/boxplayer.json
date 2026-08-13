@@ -1,31 +1,75 @@
 {
     "version": "5.0.18",
-    "description": "小白羊网盘 BoxPlayer - 多网盘统一管理 + 智能媒体库 + 媒体服务器 + 高速下载",
-    "homepage": "https://github.com/gaozhangmin/boxplayer",
-    "license": "GPL-3.0-only",
+    "description": "BoxPlayer（小白羊网盘）是免费开源的跨平台云盘管理器与 AI 智能搜索助手。支持阿里云盘、百度网盘、115、夸克、OneDrive、Google Drive、Dropbox、PikPak 等 10+ 网盘管理，AI 智能搜索，4K HDR 视频播放，Plex/Jellyfin/Emby 客户端。",
+    "homepage": "https://xbyvideohub.com/",
+    "license": "GPL-3.0-or-later",
     "architecture": {
         "64bit": {
             "url": "https://github.com/gaozhangmin/boxplayer/releases/download/v5.0.18/boxplayer-5.0.18-win-x64.exe#/dl.7z",
-            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-            "hash": "d1d826dfb413cffed4af78f3337beed0a1b7b24588abd4a5361d3b19c8c5a6a1"
+            "hash": "sha512:4590400cce907cd36fb81b79344ac259344a22c816a675d43ddb39944a7d23be9d5d2236c86fc2bdc6c24eaeae61fcb65a66653b2267005f4d2f35a630bd9ed4",
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
         }
     },
-    "post_install": "Remove-Item \"$dir\\`$*\", \"$dir\\resources\\app-update.yml\"  -Force -Recurse -ErrorAction SilentlyContinue",
+    "bin": [
+        [
+            "clouddrive-cli",
+            "$dir\\BoxPlayer.exe",
+            "$dir\\resources\\cli\\clouddrive-cli.mjs"
+        ],
+        [
+            "clouddrive-mcp",
+            "$dir\\BoxPlayer.exe",
+            "$dir\\resources\\cli\\clouddrive-mcp.mjs"
+        ]
+    ],
     "shortcuts": [
         [
             "BoxPlayer.exe",
             "BoxPlayer"
         ]
     ],
-    "notes": "BoxPlayer is NOT portable.",
+    "installer": {
+        "script": [
+            "Remove-Item \"$dir\\`$*\" -Force -Recurse",
+            "Remove-Item \"$dir\\resources\\app-update.yml\" -Force -ErrorAction SilentlyContinue",
+            "# Register URL protocols: boxplayer-auth, boxplayer-onedriveoauth, xbyboxplayer-oauth",
+            "if ($global) { $regRoot = 'HKLM:' } else { $regRoot = 'HKCU:' }",
+            "@('boxplayer-auth', 'boxplayer-onedriveoauth', 'xbyboxplayer-oauth') | ForEach-Object {",
+            "    New-Item \"$regRoot\\SOFTWARE\\Classes\\$_\" -Force -ItemType String -Value \"URL:$_\" | Out-Null",
+            "    New-ItemProperty \"$regRoot\\SOFTWARE\\Classes\\$_\" -Force -PropertyType string -Name 'URL Protocol' -Value '' | Out-Null",
+            "    New-Item \"$regRoot\\SOFTWARE\\Classes\\$_\\shell\\open\\command\" -Force -ItemType String -Value \"`\"$dir\\BoxPlayer.exe`\" `\"%1`\"\" | Out-Null",
+            "}",
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:LOCALAPPDATA\\BoxPlayer\" \"$persist_dir\\LocalAppData\" -Migrate",
+            "New-PersistDirectory \"$env:APPDATA\\BoxPlayer\" \"$persist_dir\\AppData\" -Migrate",
+            "New-PersistDirectory \"$env:USERPROFILE\\.clouddrive-cli\" \"$persist_dir\\.clouddrive-cli\" -Migrate"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\BoxPlayer\"",
+        "Remove-Junction \"$env:LOCALAPPDATA\\BoxPlayer\"",
+        "Remove-Junction \"$env:USERPROFILE\\.clouddrive-cli\"",
+        "# Cleanup URL protocols",
+        "if ($global) { $regRoot = 'HKLM' } else { $regRoot = 'HKCU' }",
+        "@('boxplayer-auth', 'boxplayer-onedriveoauth', 'xbyboxplayer-oauth') | ForEach-Object {",
+        "    reg.exe delete \"$regRoot\\SOFTWARE\\Classes\\$_\" /f *>$null",
+        "}"
+    ],
     "checkver": {
-        "url": "https://github.com/gaozhangmin/boxplayer/releases.atom",
-        "regex": "Repository/\\d+/v(.+?)<"
+        "github": "https://github.com/gaozhangmin/boxplayer"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/gaozhangmin/boxplayer/releases/download/v$version/boxplayer-$version-win-x64.exe#/dl.7z"
+                "url": "https://github.com/gaozhangmin/boxplayer/releases/download/v$version/boxplayer-$version-win-x64.exe#/dl.7z",
+                "hash": {
+                    "mode": "extract",
+                    "url": "$baseurl/latest.yml",
+                    "regex": "sha512:\\s+$base64"
+                }
             }
         }
     }
