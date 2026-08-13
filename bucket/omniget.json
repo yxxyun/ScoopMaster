@@ -1,32 +1,52 @@
 {
     "version": "0.8.5",
-    "description": "OmniGet - Open source desktop app for downloading and organizing media from 1800+ sites, with built-in PDF/EPUB readers, music player, and note-taking",
+    "description": "Open source desktop app for studying online courses and books on your computer. Watch Hotmart, Udemy, Kiwify courses with timestamped notes, spaced repetition flashcards and a focus timer. Read PDFs and EPUBs with highlights, bookmarks and a focus mode. Also downloads YouTube, Instagram, TikTok and torrents.",
     "homepage": "https://github.com/tonhowtf/omniget",
     "license": {
-        "identifier": "GPL-3.0",
-        "url": "https://github.com/tonhowtf/omniget/blob/main/LICENSE"
+        "identifier": "GPL-3.0 license",
+        "url": "https://github.com/tonhowtf/omniget#GPL-3.0-1-ov-file"
     },
-    "url": "https://github.com/tonhowtf/omniget/releases/download/v0.8.5/omniget_0.8.5_x64-setup.exe",
-    "hash": "06d2bb3d752c0ef3e6523e79cf82abe8bd88cdbb8cf469ee7338af6ab80ee57a",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/tonhowtf/omniget/releases/download/v0.8.5/omniget_0.8.5_x64-setup.exe#dl.7z",
+            "hash": "06d2bb3d752c0ef3e6523e79cf82abe8bd88cdbb8cf469ee7338af6ab80ee57a",
+            "pre_install": "Remove-Item \"$dir\\`$*\" -Force -Recurse"
+        }
+    },
     "installer": {
         "script": [
-            "7z e \"$dir\\$fname\" -o\"$dir\\_nsis_temp\" -tnsis -y | Out-Null",
-            "Copy-Item \"$dir\\_nsis_temp\\omniget.exe\" \"$dir\\omniget.exe\" -Force",
-            "Remove-Item \"$dir\\_nsis_temp\" -Recurse -Force",
-            "Remove-Item \"$dir\\$fname\" -Force"
+            "# handle runtime cache",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:LOCALAPPDATA\\wtf.tonho.omniget\"",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\userdata\" -Target \"$env:APPDATA\\wtf.tonho.omniget\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:LOCALAPPDATA\\wtf.tonho.omniget\"",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\wtf.tonho.omniget\"",
+            "Remove-Module -Name AppsUtils"
         ]
     },
     "bin": "omniget.exe",
     "shortcuts": [
         [
             "omniget.exe",
-            "OmniGet"
+            "omniget"
         ]
     ],
     "checkver": {
-        "github": "https://github.com/tonhowtf/omniget"
+        "github": "https://api.github.com/repos/tonhowtf/omniget/releases",
+        "jp": "$[0].tag_name",
+        "regex": "v([\\d.]+)"
     },
     "autoupdate": {
-        "url": "https://github.com/tonhowtf/omniget/releases/download/v$version/omniget_$version_x64-setup.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/tonhowtf/omniget/releases/download/v$version/omniget_$version_x64-setup.exe#dl.7z"
+            }
+        }
     }
 }
