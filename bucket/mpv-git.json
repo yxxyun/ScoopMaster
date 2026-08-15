@@ -1,10 +1,10 @@
 {
-    "version": "202608132037",
-    "description": "A free, open source, and cross-platform media player",
+    "version": "20260815132006+e167836802",
+    "description": "Video player based on MPlayer/mplayer2 (nightly builds by zhongfly, AVX2 required)",
     "homepage": "https://mpv.io",
     "license": "LGPL-2.1-or-later,GPL-2.0-or-later",
     "notes": [
-        "To set and unset file type associations and AutoPlay handlers, run '$dir\\mpv-register.bat' and '$dir\\mpv-unregister.bat', respectively.",
+        "To set and unset file type associations and AutoPlay handlers, run '$dir\\installer\\mpv-install.bat' and '$dir\\installer\\mpv-uninstall.bat' as administrator, respectively.",
         "You can use Icaros ('nonportable/icaros-np') to enable thumbnails for all media types."
     ],
     "suggest": {
@@ -12,15 +12,11 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/zhongfly/mpv-winbuild/releases/download/2026-08-13-7b8915bc1d/mpv-x86_64-20260813-git-7b8915bc1d.7z",
-            "hash": "bd64b25e422bae88f533256faeb2d58114ebe7936e944b207638625eec5554e5"
-        },
-        "arm64": {
-            "url": "https://github.com/zhongfly/mpv-winbuild/releases/download/2026-08-13-7b8915bc1d/mpv-aarch64-20260813-git-7b8915bc1d.7z",
-            "hash": "836c379c6f42189e7ee7fea4d170d735f7ceb21c78339c7649143b559d0be4c5"
+            "url": "https://github.com/zhongfly/mpv-winbuild/releases/download/2026-08-15-e167836802/mpv-x86_64-v3-20260815-git-e167836802.7z",
+            "hash": "11f8d36c66eca5ff813e2544cf89db0e7a3cab3692fa2b97764843c13945df3f"
         }
     },
-    "pre_install": "'updater.bat', 'installer' | ForEach-Object { Remove-Item \"$dir\\$_\" -Recurse }",
+    "pre_install": "Remove-Item \"$dir\\updater.bat\"",
     "env_add_path": ".",
     "shortcuts": [
         [
@@ -30,18 +26,27 @@
     ],
     "persist": "portable_config",
     "checkver": {
-        "github": "https://api.github.com/repos/zhongfly/mpv-winbuild/releases/latest",
-        "jsonpath": "$..['tag_name', 'name']",
-        "regex": "(?<tag>(?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})-(?<commit>[a-f0-9]{10})).*?(?<hour>\\d{2}):(?<minute>\\d{2})",
-        "replace": "${year}${month}${day}${hour}${minute}"
+        "script": [
+            "$cont = (Invoke-RestMethod -UseBasicParsing -Method Get -Headers @{'Accept' = 'application/vnd.github+json'; 'Accept-Encoding' = 'gzip' } -MaximumRedirection 0 -Uri 'https://api.github.com/repos/zhongfly/mpv-winbuild/releases?per_page=2')",
+            ":OuterLoop foreach ($release in $cont) {",
+            "    foreach ($asset in $release.assets) {",
+            "        if ($asset.name -cmatch '^mpv-x86_64-v3-(?<date>[\\d-]+)-git-(?<commit>[\\da-f]+)\\.7z$') {",
+            "            $updated_date = ([DateTime]$asset.updated_at).ToUniversalTime().ToString('yyyyMMddHHmmss')",
+            "            Write-Output ('basever:\"' + $updated_date + '+' + $matches.commit + '\"') ('tag_name:\"' + $release.tag_name + '\"') ('date:\"' + $matches.date + '\"') ('commit:\"' + $matches.commit + '\"')",
+            "            break OuterLoop",
+            "        }",
+            "    }",
+            "}"
+        ],
+        "regex": "basever:\"(.+)\"\\stag_name:\"(?<tagname>.+)\"\\sdate:\"(?<date>.+)\"\\scommit:\"(?<commit>.+)\""
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/zhongfly/mpv-winbuild/releases/download/$matchTag/mpv-x86_64-$matchYear$matchMonth$matchDay-git-$matchCommit.7z"
-            },
-            "arm64": {
-                "url": "https://github.com/zhongfly/mpv-winbuild/releases/download/$matchTag/mpv-aarch64-$matchYear$matchMonth$matchDay-git-$matchCommit.7z"
+                "url": "https://github.com/zhongfly/mpv-winbuild/releases/download/$matchTagname/mpv-x86_64-v3-$matchDate-git-$matchCommit.7z",
+                "hash": {
+                    "url": "$baseurl/sha256.txt"
+                }
             }
         }
     }
