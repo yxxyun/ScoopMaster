@@ -1,27 +1,46 @@
 {
-    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+    "##": "ltguillaume/schep",
     "version": "1.6.1",
-    "description": "A beautiful, non-destructive, and GPU-accelerated RAW image editor built with performance in mind",
+    "description": "A beautiful, non-destructive, and GPU-accelerated RAW image editor built with performance in mind. Portable.",
     "homepage": "https://github.com/CyberTimon/RapidRAW",
     "license": "AGPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/CyberTimon/RapidRAW/releases/download/v1.6.1/01_RapidRAW_v1.6.1_windows_x64.msi",
-            "hash": "1e219b94e94e260b672d841971af4fe2c4570436a68bb1752b8f493def9100e6"
+            "url": "https://github.com/CyberTimon/RapidRAW/releases/download/v1.6.1/01_RapidRAW_v1.6.1_windows_x64.exe#/dl.7z",
+            "hash": "ea0e46e8d8276e188222df19f9bf0f78154bb473076914f872600bd5b6ad237a"
         }
     },
-    "extract_dir": "PFiles/RapidRAW",
     "shortcuts": [
         [
             "RapidRAW.exe",
             "RapidRAW"
         ]
     ],
+    "post_install": [
+        "'AppData', 'LocalAppData' | ForEach-Object {",
+        "    $data = [Environment]::GetEnvironmentVariable($_) +\"\\io.github.CyberTimon.RapidRAW\"",
+        "    if (-not (Test-Path \"$data\\*\")) {",
+        "        Remove-Item \"$data\" 2>$null",
+        "        if (-not (Test-Path \"$persist_dir\\$_\")) {",
+        "            New-Item -ItemType Directory -Path \"$persist_dir\\$_\" >$null",
+        "        }",
+        "        New-DirectoryJunction \"$data\" \"$persist_dir\\$_\" >$null",
+        "    }",
+        "}"
+    ],
+    "post_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    'AppData', 'LocalAppData' | ForEach-Object {",
+        "        $data = Get-Item ([Environment]::GetEnvironmentVariable($_) +\"\\io.github.CyberTimon.RapidRAW\")",
+        "        if (\"$($data.Target)\" -eq \"$persist_dir\\$_\") { $data.Delete() }",
+        "    }",
+        "}"
+    ],
     "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/CyberTimon/RapidRAW/releases/download/v$version/01_RapidRAW_v$version_windows_x64.msi"
+                "url": "https://github.com/CyberTimon/RapidRAW/releases/download/v$version/01_RapidRAW_v$version_windows_x64.exe#/dl.7z"
             }
         }
     }
