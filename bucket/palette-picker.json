@@ -1,0 +1,36 @@
+{
+    "version": "1.12.0",
+    "description": "Windows desktop app for selecting and managing colours.",
+    "homepage": "https://markembling.info/software/palette-picker",
+    "license": "Proprietary",
+    "architecture": {
+        "64bit": {
+            "url": "https://git.markembling.info/markembling/palette-picker/releases/download/v1.12.0/PalettePicker-1.12.0.zip",
+            "hash": "1771c91814977fde8c21293b38fc6ac957a6b1e59ac73c13d62688fc7ce7fa85"
+        }
+    },
+    "bin": [ "PalettePicker.exe" ],
+    "shortcuts": [
+        [ "PalettePicker.exe", "Palette Picker" ]
+    ],
+    "notes": [
+        "For file associations, run:",
+        "reg import \"$dir\\install-associations.reg\""
+    ],
+    "post_install": [
+        "$exePath = \"$dir\\PalettePicker.exe\".Replace('\\', '\\\\')",
+        "$paletteIconPath = \"$dir\\palette.ico\".Replace('\\', '\\\\')",
+        "'install-associations', 'uninstall-associations' | ForEach-Object {",
+        "    if (Test-Path \"$bucketsdir\\$bucket\\scripts\\palette-picker\\$_.reg\") {",
+        "        $content = Get-Content \"$bucketsdir\\$bucket\\scripts\\palette-picker\\$_.reg\"",
+        "        $content = $content.Replace('$palettePickerExe', $exePath)",
+        "        $content = $content.Replace('$paletteIconPath', $paletteIconPath)",
+        "        if ($global) { $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE') }",
+        "        $content | Set-Content \"$dir\\$_.reg\"",
+        "    }",
+        "}"
+    ],
+    "uninstaller": {
+        "script": "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-associations.reg\" }"
+    }
+}
