@@ -1,0 +1,108 @@
+{
+    "version": "12.0.0-31949658004-8637546",
+    "description": "An open-source Minecraft launcher with the ability to manage multiple instances, accounts and mods. (Nightly build).",
+    "homepage": "https://prismlauncher.org/",
+    "license": "GPL-3.0-only",
+    "notes": [
+        "Add Prism Launcher file association options for .ZIPs and .MRPACKS by running:",
+        "reg import \"$dir\\install-associations.reg\""
+    ],
+    "suggest": {
+        "vcredist": "extras/vcredist2022"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://nightly.link/PrismLauncher/PrismLauncher/actions/runs/31949658004/PrismLauncher-Windows-MinGW-w64-Portable-8637546-Debug.zip",
+            "hash": "4eb3f29945e1e398610834f7718006087b2b85e75636848d8cfb7df22643ca3e"
+        }
+    },
+    "pre_install": [
+        "# Hardlinks cannot work properly here, as this app would create a new file instead of writing directly.",
+        "# Please keep the file list the same in both pre_install and pre_uninstall scripts.",
+        "$contents = @{",
+        "    'metacache' = '{}'",
+        "}",
+        "'accounts.json', 'metacache', 'prismlauncher.cfg' | ForEach-Object {",
+        "    if (Test-Path \"$persist_dir\\$_\") {",
+        "        Copy-Item \"$persist_dir\\$_\" \"$dir\\$_\" -Force",
+        "    } else {",
+        "        Set-Content -Path \"$dir\\$_\" -Value $contents[$_]",
+        "    }",
+        "}",
+        "Remove-Item -Path $dir\\prismlauncher_updater.exe -Force -ErrorAction Ignore"
+    ],
+    "post_install": [
+        "'install-associations', 'uninstall-associations' | ForEach-Object {",
+        "    if (Test-Path \"$bucketsdir\\br4ndol\\scripts\\prismlauncher-nightly\\$_.reg\") {",
+        "        $exePath = \"$dir\\prismlauncher.exe\".Replace('\\', '\\\\')",
+        "        $content = (Get-Content \"$bucketsdir\\br4ndol\\scripts\\prismlauncher-nightly\\$_.reg\").Replace('$EXEPATH', $exePath)",
+        "        if ($global) { $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE') }",
+        "        Set-Content \"$dir\\$_.reg\" $content -Encoding Ascii -Force",
+        "    }",
+        "}"
+    ],
+    "bin": "prismlauncher.exe",
+    "shortcuts": [
+        [
+            "prismlauncher.exe",
+            "Prism Launcher Nightly"
+        ]
+    ],
+    "persist": [
+        "assets",
+        "cache",
+        "catpacks",
+        "icons",
+        "iconthemes",
+        "instances",
+        "java",
+        "libraries",
+        "logs",
+        "meta",
+        "mods",
+        "skins",
+        "themes",
+        "translations"
+    ],
+    "pre_uninstall": [
+        "# Hardlinks cannot work properly here, as this app would create a new file instead of writing directly.",
+        "# Please keep the file list the same in both pre_install and pre_uninstall scripts.",
+        "'accounts.json', 'metacache', 'prismlauncher.cfg' | ForEach-Object {",
+        "    if (Test-Path -Path \"$dir\\$_\") {",
+        "        Copy-Item -Path \"$dir\\$_\" -Destination \"$persist_dir\\$_\" -Force",
+        "    }",
+        "}",
+        "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-associations.reg\" }"
+    ],
+    "checkver": {
+        "github": "https://api.github.com/repos/PrismLauncher/PrismLauncher/actions/workflows/build.yml/runs?status=success&event=merge_group",
+        "script": [
+            "$workflows = $page | ConvertFrom-Json",
+            "$workflowResult = $workflows.workflow_runs | Where-Object { $_.head_branch -like 'gh-readonly-queue/develop/*' } | Select-Object -First 1",
+            "$fullSha = $workflowResult.head_sha",
+            "$workflowId = $workflowResult.id",
+            "$runNumber = $workflowResult.run_number",
+            "$cmakeContent = Invoke-WebRequest \"https://raw.githubusercontent.com/PrismLauncher/PrismLauncher/$fullSha/CMakeLists.txt\" -UseBasicParsing | Select-Object -ExpandProperty Content",
+            "$majorVersion = [regex]::Match($cmakeContent, 'set\\(Launcher_VERSION_MAJOR (\\d+)\\)').Groups[1].Value",
+            "$minorVersion = [regex]::Match($cmakeContent, 'set\\(Launcher_VERSION_MINOR (\\d+)\\)').Groups[1].Value",
+            "$patchVersion = [regex]::Match($cmakeContent, 'set\\(Launcher_VERSION_PATCH (\\d+)\\)').Groups[1].Value",
+            "# Embed the run number into the semantic version string to guarantee strictly increasing versions.",
+            "$version = \"$majorVersion.$minorVersion.$patchVersion-$runNumber-$fullSha\"",
+            "$output = @{'result' = \"$version $workflowId\"} | ConvertTo-Json -Compress",
+            "Write-Output $output"
+        ],
+        "jsonpath": "$.result",
+        "regex": "(?<version>[\\d.]+-\\d+-(?<sha>[a-f0-9]{7}))[a-f0-9]* (?<id>\\d+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://nightly.link/PrismLauncher/PrismLauncher/actions/runs/$matchId/PrismLauncher-Windows-MinGW-w64-Portable-$matchSha-Debug.zip"
+            }
+        },
+        "hash": {
+            "url": "https://api.github.com/repos/PrismLauncher/PrismLauncher/actions/runs/$matchId/artifacts",
+            "jsonpath": "$.artifacts[?(@.name== '$basenameNoExt')].digest"
+        }
+    }
+}
