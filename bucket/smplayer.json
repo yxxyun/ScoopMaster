@@ -1,7 +1,11 @@
 {
-    "homepage": "https://www.smplayer.info/",
-    "version": "25.6.0",
-    "license": "GPL-2.0-only",
+    "version": "25.6.0.0",
+    "description": "A video player forked from MPV. It can also play Youtube videos, search and download subtitles, and includes other features like a thumbnail generator and audio and video filters.",
+    "homepage": "https://www.smplayer.info",
+    "license": {
+        "identifier": "GPL-2.0-or-later",
+        "url": "https://github.com/smplayer-dev/smplayer/blob/master/setup/license.txt"
+    },
     "architecture": {
         "64bit": {
             "url": "https://github.com/smplayer-dev/smplayer/releases/download/v25.6.0/smplayer-portable-25.6.0.0-x64.7z",
@@ -13,19 +17,19 @@
         }
     },
     "extract_dir": "smplayer-portable",
-    "bin": [
-        "smplayer.exe",
-        "simple_web_server"
-    ],
-    "persist": [
-        "smplayer.ini",
-        "playlist.ini",
-        "player_info.ini",
-        "hdpi.ini",
-        "favorites.m3u8",
-        "radio.m3u8",
-        "tv.m3u8",
-        "file_settings"
+    "pre_install": [
+        "# Disable automatic update checking and set the correct path for the screenshots directory",
+        "$cfg_dir = Join-Path -Path $persist_dir -ChildPath 'config\\smplayer.ini'",
+        "if (-not (Test-Path -Path $cfg_dir)) {",
+        "    info \"File $cfg_dir does not exist. Creating...\"",
+        "    New-Item -Path $cfg_dir -ItemType File -Force | Out-Null",
+        "    $cfg = @(",
+        "        '[update_checker]', 'enabled=false',",
+        "        '[%General]', 'screenshot_folder={screenshots_dir}'",
+        "    )",
+        "    $screenshots_dir = (Join-Path -Path $persist_dir -ChildPath 'screenshots') -replace '\\\\', '\\\\'",
+        "    $cfg | ForEach-Object { $_ -replace '{.+}', $screenshots_dir } | Set-Content -Path $cfg_dir -Encoding Ascii",
+        "}"
     ],
     "shortcuts": [
         [
@@ -33,16 +37,21 @@
             "SMPlayer"
         ]
     ],
+    "persist": [
+        "config",
+        "screenshots"
+    ],
     "checkver": {
-        "github": "https://github.com/smplayer-dev/smplayer"
+        "url": "https://www.smplayer.info/en/download-smplayer-portable",
+        "regex": "smplayer-portable-([\\d.]+)-win32-qt(?<qtversion>[\\d.]+)\\.7z"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/smplayer-dev/smplayer/releases/download/v$version/smplayer-portable-$version.0-x64.7z"
+                "url": "https://github.com/smplayer-dev/smplayer/releases/download/v$matchHead/smplayer-portable-$version-x64.7z"
             },
             "32bit": {
-                "url": "https://github.com/smplayer-dev/smplayer/releases/download/v$version/smplayer-portable-$version.0-win32-qt5.6.7z"
+                "url": "https://github.com/smplayer-dev/smplayer/releases/download/v$matchHead/smplayer-portable-$version-win32-qt$matchQtversion.7z"
             }
         }
     }
