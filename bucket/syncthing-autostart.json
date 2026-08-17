@@ -1,0 +1,80 @@
+{
+    "version": "2.1.3",
+    "description": "Open Source Continuous File Synchronization.",
+    "homepage": "https://syncthing.net/",
+    "license": "MPL-2.0",
+    "notes": "To start syncthing automatically, use a method described at https://docs.syncthing.net/users/autostart.html#windows",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/syncthing/syncthing/releases/download/v2.1.3/syncthing-windows-amd64-v2.1.3.zip",
+            "hash": "c0b79cffa6ce5dad5ed41ede86454f3325d13ccac33447a528cb59d65fbc3a21",
+            "extract_dir": "syncthing-windows-amd64-v2.1.3"
+        },
+        "32bit": {
+            "url": "https://github.com/syncthing/syncthing/releases/download/v2.1.3/syncthing-windows-386-v2.1.3.zip",
+            "hash": "97f865cfd93726696624e6611cecf7f1535b846a8c213bc20ea878b373adf706",
+            "extract_dir": "syncthing-windows-386-v2.1.3"
+        },
+        "arm64": {
+            "url": "https://github.com/syncthing/syncthing/releases/download/v2.1.3/syncthing-windows-arm64-v2.1.3.zip",
+            "hash": "c8a00ff23ce54ca07c5749e40a72c0515150dfcc57f640832fb7eb5d55184675",
+            "extract_dir": "syncthing-windows-arm64-v2.1.3"
+        }
+    },
+    "pre_install": [
+        "if (!(Test-Path \"$persist_dir\\config\") -and (Test-Path \"$env:LOCALAPPDATA\\Syncthing\")) {",
+        "    info \"Copying old '$env:LOCALAPPDATA\\Syncthing' to '$persist_dir\\config'\"",
+        "    ensure \"$dir\\config\" | Out-Null",
+        "    Copy-Item \"$env:LOCALAPPDATA\\Syncthing\\*\" \"$dir\\config\" -Exclude 'LOCK' -Recurse -Force",
+        "}",
+        "if ($cmd -eq \"install\"){",
+        "write-host \"`nfirewall command: `n`e[1;33mgsudo New-NetFirewallRule -DisplayName 'Syncthing_TCP-22000' -Direction Inbound -Protocol TCP -LocalPort 22000 -Action Allow -Profile Private`ngsudo New-NetFirewallRule -DisplayName 'Syncthing_UDP-22000' -Direction Inbound -Protocol UDP -LocalPort 22000 -Action Allow -Profile Private`ngsudo New-NetFirewallRule -DisplayName 'Syncthing_UDP-21027' -Direction Inbound -Protocol UDP -LocalPort 21027 -Action Allow -Profile Private`e[0m\"",
+        "}"
+    ],
+    "post_install": [
+        "$WshShell = New-Object -comObject WScript.Shell",
+        "$startup = [environment]::getfolderpath(\"Startup\")",
+        "$lnk = \"$startup\\syncthing.lnk\"",
+        "$Shortcut = $WshShell.CreateShortcut($lnk)",
+        "$Shortcut.TargetPath = \"C:\\Windows\\System32\\conhost.exe\"",
+        "$Shortcut.Arguments = \"`\"$dir\\syncthing.exe`\" --home `\"$dir\\config`\" --no-upgrade --no-console --no-browser\"",
+        "$Shortcut.Save()"
+    ],
+    "pre_uninstall": [
+        "write-host 'Stopping syncthing process...'",
+        "stop-process -id (get-process -Name 'syncthing').id",
+        "$startup = [environment]::getfolderpath(\"Startup\")",
+        "$lnk = \"$startup\\syncthing.lnk\"",
+        "Remove-item $lnk"
+    ],
+    "bin": [
+        [
+            "syncthing.exe",
+            "syncthing",
+            "--home \"$dir\\config\" --no-upgrade"
+        ]
+    ],
+    "persist": "config",
+    "checkver": {
+        "github": "https://github.com/syncthing/syncthing"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/syncthing/syncthing/releases/download/v$version/syncthing-windows-amd64-v$version.zip",
+                "extract_dir": "syncthing-windows-amd64-v$version"
+            },
+            "32bit": {
+                "url": "https://github.com/syncthing/syncthing/releases/download/v$version/syncthing-windows-386-v$version.zip",
+                "extract_dir": "syncthing-windows-386-v$version"
+            },
+            "arm64": {
+                "url": "https://github.com/syncthing/syncthing/releases/download/v$version/syncthing-windows-arm64-v$version.zip",
+                "extract_dir": "syncthing-windows-arm64-v$version"
+            }
+        },
+        "hash": {
+            "url": "$baseurl/sha256sum.txt.asc"
+        }
+    }
+}

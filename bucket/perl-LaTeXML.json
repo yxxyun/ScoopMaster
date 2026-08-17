@@ -1,0 +1,47 @@
+{
+    "version": "0.8.8",
+    "description": "LaTeXML is a TeX & LaTeX to XML, HTML, MathML, ePub, JATS, ... converter",
+    "homepage": "https://math.nist.gov/~BMiller/LaTeXML/",
+    "license": "NIST-PD",
+    "url": "https://cpan.metacpan.org/authors/id/B/BR/BRMILLER/LaTeXML-0.8.8.tar.gz#/LaTeXML",
+    "hash": "7d2bbe2ce252baf86ba3f388cd0dec3aa4838f49d612b9ec7cc4ff88105badcc",
+    "depends": [
+        "perl",
+        "perl-Image-Size"
+    ],
+    "suggest": {
+        "ImageMagick": [ "ghostscript", "perl-Image-Magick" ]
+    },
+    "installer": {
+        "script": [
+            "$perlCPath = ((Test-Path (appdir 'perl' $Global)) ? (appdir 'perl' $Global) : (appdir 'perl' $true)) + \"\\current\\c\\bin\"",
+            "$env:PATH = \"$perlCPath;$env:PATH\"",
+            "Rename-Item (Join-Path $dir $fname) (Join-Path $dir \"$fname.tar.gz\")",
+            "cpanm \"$(Join-Path $dir \"$fname.tar.gz\")\" -l \"$dir\" --verbose --notest",
+            "Remove-Item (Join-Path $dir \"$fname.tar.gz\")",
+            "$env:PATH = $env:PATH -replace \"^$($perlCPath -replace '\\\\', '\\\\');\"",
+            "# $perlCPath needs to be in PATH for XML::LibXML to work!",
+            "foreach ($suffix in '', 'c', 'find', 'math', 'post') {",
+            "  $bin = \"$dir\\bin\\latexml$suffix.bat\"",
+            "  attrib -r \"$bin\"",
+            "  [System.IO.File]::WriteAllBytes($bin, ([byte[]][char[]](([regex]'@set').replace((Get-Content -Raw $bin),\"@set `\"PATH=$perlCPath;%PATH%`\"`n@set\",1))))",
+            "  attrib +r \"$bin\"",
+            "}"
+    ]
+    },
+    "bin": [
+        "bin\\latexml.bat",
+        "bin\\latexmlc.bat",
+        "bin\\latexmlfind.bat",
+        "bin\\latexmlmath.bat",
+        "bin\\latexmlpost.bat"
+    ],
+    "post_install": [
+        "Add-Path -Path \"$dir\\lib\\perl5\" -TargetEnvVar PERL5LIB -Global:$Global",
+        "$env:PERL5LIB = $(Get-EnvVar -Name PERL5LIB -Global:$Global)"
+    ],
+    "pre_uninstall": [
+        "Remove-Path -Path \"$(currentdir $app)\\lib\\perl5\" -TargetEnvVar PERL5LIB -Global:$Global",
+        "$env:PERL5LIB = $(Get-EnvVar -Name PERL5LIB -Global:$Global)"
+    ]
+}

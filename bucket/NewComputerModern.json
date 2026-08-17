@@ -1,0 +1,75 @@
+{
+    "version": "7.0.4",
+    "description": "New Computer Modern is a family of OpenType fonts for typesetting texts and mathematics, based on Computer Modern.",
+    "homepage": "https://ctan.org/pkg/newcomputermodern",
+    "license": "OFL-1.1",
+    "url": "https://download.gnu.org.ua/release/newcm/newcm-7.0.4.txz",
+    "hash": "7d47291210225d194d748ace4b267032ce6257bdf27223908653a92bf32aed48",
+    "extract_dir": "newcm-7.0.4",
+    "installer": {
+        "script": [
+            "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
+            "if (-not $global) {",
+            "    New-Item $fontInstallDir -ItemType Directory -ErrorAction SilentlyContinue | Out-Null",
+            "}",
+            "$registryRoot = if ($global) { \"HKLM\" } else { \"HKCU\" }",
+            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
+            "Get-ChildItem $dir -Recurse -Include *.otf,*.ttf | ForEach-Object {",
+            "    $fontType = if ($_.Extension -eq '.otf') { ' (OpenType)' } else { ' (TrueType)' }",
+            "    $value = if ($global) { $_.Name } else { \"$fontInstallDir\\$($_.Name)\" }",
+            "    New-ItemProperty -Path $registryKey -Name ($_.Name.Replace($_.Extension, $fontType)) -Value $value -Force | Out-Null",
+            "    Copy-Item -LiteralPath $_.FullName -Destination $fontInstallDir",
+            "}"
+        ]
+    },
+    "pre_uninstall": [
+        "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
+        "Get-ChildItem $dir -Recurse -Include *.otf,*.ttf | ForEach-Object {",
+        "    Get-ChildItem $fontInstallDir -Filter $_.Name | ForEach-Object {",
+        "        try {",
+        "            Rename-Item $_.FullName $_.FullName -ErrorVariable LockError -ErrorAction Stop",
+        "        } catch {",
+        "            Write-Host \"\"",
+        "            Write-Host \" Error \" -Background DarkRed -Foreground White -NoNewline",
+        "            Write-Host \"\"",
+        "            Write-Host \" Cannot uninstall 'NewComputerModern' font.\" -Foreground DarkRed",
+        "            Write-Host \"\"",
+        "            Write-Host \" Reason \" -Background DarkCyan -Foreground White -NoNewline",
+        "            Write-Host \"\"",
+        "            Write-Host \" The 'NewComputerModern' font is currently being used by another application,\" -Foreground DarkCyan",
+        "            Write-Host \" so it cannot be deleted.\" -Foreground DarkCyan",
+        "            Write-Host \"\"",
+        "            Write-Host \" Suggestion \" -Background Magenta -Foreground White -NoNewline",
+        "            Write-Host \"\"",
+        "            Write-Host \" Close all applications that are using 'NewComputerModern' font (e.g. vscode),\" -Foreground Magenta",
+        "            Write-Host \" and then try again.\" -Foreground Magenta",
+        "            Write-Host \"\"",
+        "            exit 1",
+        "        }",
+        "    }",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
+            "$registryRoot = if ($global) { \"HKLM\" } else { \"HKCU\" }",
+            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
+            "Get-ChildItem $dir -Recurse -Include *.otf,*.ttf | ForEach-Object {",
+            "    $fontType = if ($_.Extension -eq '.otf') { ' (OpenType)' } else { ' (TrueType)' }",
+            "    Remove-ItemProperty -Path $registryKey -Name ($_.Name.Replace($_.Extension, $fontType)) -Force -ErrorAction SilentlyContinue",
+            "    Remove-Item \"$fontInstallDir\\$($_.Name)\" -Force -ErrorAction SilentlyContinue",
+            "}",
+            "if ($cmd -eq \"uninstall\") {",
+            "    Write-Host \"The 'NewComputerModern' font family has been uninstalled and will not be present after restarting your computer.\" -Foreground Magenta",
+            "}"
+        ]
+    },
+    "checkver": {
+        "url": "https://download.gnu.org.ua/release/newcm/",
+        "regex": "newcm-([\\d.]+)\\.txz",
+        "reverse": true
+    },
+    "autoupdate": {
+        "url": "https://download.gnu.org.ua/release/newcm/newcm-$version.txz"
+    }
+}

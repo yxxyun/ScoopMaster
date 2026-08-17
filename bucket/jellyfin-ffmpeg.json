@@ -1,0 +1,52 @@
+{
+    "version": "8.1.2-2",
+    "description": "A complete, cross-platform solution to record, convert and stream audio and video. (Jellyfin build)",
+    "homepage": "https://github.com/jellyfin/jellyfin-ffmpeg",
+    "license": "GPL-3.0-or-later",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/jellyfin/jellyfin-ffmpeg/releases/download/v8.1.2-2/jellyfin-ffmpeg_8.1.2-2_portable_win64-clang-gpl.zip",
+            "hash": "f765a545c41dfc440eb2dbc2e7aeb9844a010ac5d720a427af29cc16be83bd94"
+        },
+        "arm64": {
+            "url": "https://github.com/jellyfin/jellyfin-ffmpeg/releases/download/v8.1.2-2/jellyfin-ffmpeg_8.1.2-2_portable_winarm64-clang-gpl.zip",
+            "hash": "01c1cd6f9227d6f2602b3c853e612db676ae01cbdf057fcda66fd315fca3749d"
+        }
+    },
+    "bin": [
+        [
+            "ffmpeg.exe",
+            "ffmpeg-jellyfin"
+        ],
+        [
+            "ffprobe.exe",
+            "ffprobe-jellyfin"
+        ]
+    ],
+    "checkver": {
+        "script": [
+            "$cont = (Invoke-RestMethod -UseBasicParsing -Method Get -Headers @{'Accept'='application/vnd.github+json';'Accept-Encoding'='gzip'} -MaximumRedirection 0 -Uri 'https://api.github.com/repos/jellyfin/jellyfin-ffmpeg/releases?per_page=3')",
+            ":OuterLoop foreach ($release in $cont) {",
+            "    $basever = $release.tag_name.TrimStart('v')",
+            "    if ([int]($basever -split '\\.', 2)[0] -lt 6) { continue }",
+            "    foreach ($asset in $release.assets) {",
+            "        if ($asset.name -eq \"jellyfin-ffmpeg_${basever}_portable_win64-clang-gpl.zip\") {",
+            "            Write-Output $basever",
+            "            break OuterLoop",
+            "        }",
+            "    }",
+            "}"
+        ],
+        "regex": "([\\d\\.-]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/jellyfin/jellyfin-ffmpeg/releases/download/v$version/jellyfin-ffmpeg_$version_portable_win64-clang-gpl.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/jellyfin/jellyfin-ffmpeg/releases/download/v$version/jellyfin-ffmpeg_$version_portable_winarm64-clang-gpl.zip"
+            }
+        }
+    }
+}

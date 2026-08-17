@@ -1,0 +1,60 @@
+{
+    "version": "1.0.0",
+    "description": "Gyeongho's custom PowerShell scripts collection for Unix-like commands on Windows",
+    "homepage": "https://github.com/GyeongHoKim/gyeongho-custom-scripts",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/GyeongHoKim/gyeongho-custom-scripts/archive/refs/tags/v1.0.0.zip",
+            "extract_dir": "gyeongho-custom-scripts-1.0.0"
+        }
+    },
+    "post_install": [
+        "# Create PowerShell profile if it doesn't exist",
+        "if (!(Test-Path $PROFILE)) {",
+        "    New-Item -Path $PROFILE -ItemType File -Force | Out-Null",
+        "}",
+        "",
+        "# Add script loader to PowerShell profile",
+        "$profileContent = Get-Content $PROFILE -Raw -ErrorAction SilentlyContinue",
+        "$scriptPath = \"$dir\\scripts\"",
+        "$loaderScript = @\"",
+        "",
+        "# Gyeongho Custom Scripts Loader",
+        "if (Test-Path '$scriptPath') {",
+        "    Get-ChildItem '$scriptPath\\*.ps1' | ForEach-Object {",
+        "        . `$_.FullName",
+        "    }",
+        "}",
+        "\"@",
+        "",
+        "if ($profileContent -notmatch 'Gyeongho Custom Scripts Loader') {",
+        "    Add-Content $PROFILE -Value \"`n$loaderScript`n\"",
+        "    Write-Host 'Gyeongho custom scripts have been added to your PowerShell profile.' -ForegroundColor Green",
+        "    Write-Host 'Please restart your PowerShell session or run: . $PROFILE' -ForegroundColor Yellow",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "# Remove script loader from PowerShell profile",
+            "if (Test-Path $PROFILE) {",
+            "    $content = Get-Content $PROFILE -Raw",
+            "    $pattern = '# Gyeongho Custom Scripts Loader[\\s\\S]*?\\}\\s*'",
+            "    $newContent = $content -replace $pattern, ''",
+            "    Set-Content $PROFILE -Value $newContent.TrimEnd()",
+            "    Write-Host 'Gyeongho custom scripts have been removed from your PowerShell profile.' -ForegroundColor Green",
+            "}"
+        ]
+    },
+    "checkver": {
+        "github": "https://github.com/GyeongHoKim/gyeongho-custom-scripts"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/GyeongHoKim/gyeongho-custom-scripts/archive/refs/tags/v$version.zip",
+                "extract_dir": "gyeongho-custom-scripts-$version"
+            }
+        }
+    }
+}
