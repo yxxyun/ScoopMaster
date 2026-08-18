@@ -1,5 +1,5 @@
 {
-    "version": "4.7.2-stable",
+    "version": "4.7.2",
     "description": "A feature-packed, cross-platform game engine to create 2D and 3D games from a unified interface.",
     "homepage": "https://godotengine.org/",
     "license": "MIT",
@@ -13,11 +13,20 @@
             "hash": "sha512:3762f3a2b9b06521eb41468a713a1c4517470641e33f37d7260fe73ed8c71022185837f9fefbe7b5b2fe4e2cb524e8740600af8f11ff201f79941183271a8342"
         }
     },
+    "persist": "editor_data",
+    "persist_link": "$env:AppData\\Godot",
     "pre_install": [
-        "Remove-Item \"$dir\\Godot_*_console.*\"",
-        "Get-Item \"$dir\\Godot_*.exe\" | Rename-Item -NewName 'godot.exe'"
+        "Get-Item \"$dir\\Godot_*_console.exe\" | Rename-Item -NewName 'godot.console.exe'",
+        "Get-Item \"$dir\\Godot_*.exe\" | Rename-Item -NewName 'godot.exe'",
+        "New-Item \"$dir\\_sc_\" | Out-Null"
     ],
-    "bin": "godot.exe",
+    "post_install": "Set-Value -File \"editor_data\\editor_settings-$version.tres\" -Type 'ini' -ValuePath 'resource', 'network/connection/engine_version_update_mode' -Value 0",
+    "bin": [
+        [
+            "godot.console.exe",
+            "godot"
+        ]
+    ],
     "shortcuts": [
         [
             "godot.exe",
@@ -25,20 +34,20 @@
         ]
     ],
     "checkver": {
-        "script": "deno task -q -c ./scripts/deno/deno.json gh_releases godotengine godot",
-        "regex": "^(.+)$"
+        "url": "https://github.com/godotengine/godot/releases/latest",
+        "regex": "(?<version>[\\d\\w.]+)-stable"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/godotengine/godot/releases/download/$version/Godot_v$version_win64.exe.zip"
+                "url": "https://github.com/godotengine/godot/releases/download/$version-stable/Godot_v$version-stable_win64.exe.zip"
             },
             "32bit": {
-                "url": "https://github.com/godotengine/godot/releases/download/$version/Godot_v$version_win32.exe.zip"
+                "url": "https://github.com/godotengine/godot/releases/download/$version-stable/Godot_v$version-stable_win32.exe.zip"
             }
         },
         "hash": {
-            "url": "https://github.com/godotengine/godot/releases/download/$version/SHA512-SUMS.txt"
+            "url": "$baseurl/SHA512-SUMS.txt"
         }
     }
 }
