@@ -1,8 +1,18 @@
 {
+    "##": "Using homepage for checkver to avoid out-of-order versioning on GitHub (e.g., 4.6.1 -> 4.5.2).",
     "version": "4.7.2",
-    "description": "Godot: a feature-packed, cross-platform game engine to create 2D and 3D games from a unified interface.",
+    "description": "A feature-packed, cross-platform game engine to create 2D and 3D games from a unified interface.",
     "homepage": "https://godotengine.org/",
     "license": "MIT",
+    "suggest": {
+        ".NET SDK": [
+            "dotnet-sdk",
+            "versions/dotnet-sdk-lts",
+            "versions/dotnet8-sdk",
+            "versions/dotnet9-sdk",
+            "versions/dotnet10-sdk"
+        ]
+    },
     "architecture": {
         "64bit": {
             "url": "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_mono_win64.zip",
@@ -13,22 +23,40 @@
             "url": "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_mono_win32.zip",
             "hash": "sha512:3e243a73459537f290d490874983f3e5be217cee9dbb00745eb76e000d42f5c7358af498bf8788594accd33b2d8c8a95bd6ba516280e6e4c9e99e0da2dab9754",
             "extract_dir": "Godot_v4.7.2-stable_mono_win32"
+        },
+        "arm64": {
+            "url": "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_mono_windows_arm64.zip",
+            "hash": "sha512:b458d0d9fd1b1f36081980dd07e402d71e667f042ab93c337d074ff03fbf3b2eccb3016f964155b7010051f67b928caefb9378fdaac00559e57167b9cf0466d1",
+            "extract_dir": "Godot_v4.7.2-stable_mono_windows_arm64"
         }
     },
     "pre_install": [
-        "Remove-Item \"$dir\\Godot_*_console.*\"",
-        "Get-Item \"$dir\\Godot_*.exe\" | Rename-Item -NewName 'godot.windows.opt.tools.64.exe'"
+        "Get-Item \"$dir\\Godot_*_console.exe\" | Rename-Item -NewName 'godot-mono.console.exe'",
+        "Get-Item \"$dir\\Godot_*.exe\" | Rename-Item -NewName 'godot-mono.exe'",
+        "if (!(Test-Path \"$persist_dir\\editor_data\") -and (Test-Path \"$env:AppData\\Godot\")) {",
+        "    info '[Portable Mode]: Copying user data from \"$env:AppData\\Godot\"'",
+        "    warn '\"godot\" and \"godot-mono\" now use separate persistent settings and project stores'",
+        "    ensure \"$persist_dir\\editor_data\" | Out-Null",
+        "    Copy-Item -Path \"$env:AppData\\Godot\\*\" -Destination \"$persist_dir\\editor_data\" -Recurse -Force",
+        "}",
+        "New-Item -Force -Path \"$dir\" -Name '._sc_' -ItemType File | Out-Null"
     ],
-    "bin": "godot.windows.opt.tools.64.exe",
+    "bin": [
+        [
+            "godot-mono.console.exe",
+            "godot-mono"
+        ]
+    ],
     "shortcuts": [
         [
-            "godot.windows.opt.tools.64.exe",
+            "godot-mono.exe",
             "Godot Engine (Mono)"
         ]
     ],
+    "persist": "editor_data",
     "checkver": {
-        "url": "https://github.com/godotengine/godot/releases/latest",
-        "regex": "(?<version>[\\d\\w.]+)-stable"
+        "url": "https://godotengine.org",
+        "regex": "Download Latest.*?>([\\d.]+)<"
     },
     "autoupdate": {
         "architecture": {
@@ -39,6 +67,10 @@
             "32bit": {
                 "url": "https://github.com/godotengine/godot/releases/download/$version-stable/Godot_v$version-stable_mono_win32.zip",
                 "extract_dir": "Godot_v$version-stable_mono_win32"
+            },
+            "arm64": {
+                "url": "https://github.com/godotengine/godot/releases/download/$version-stable/Godot_v$version-stable_mono_windows_arm64.zip",
+                "extract_dir": "Godot_v$version-stable_mono_windows_arm64"
             }
         },
         "hash": {
