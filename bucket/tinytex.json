@@ -1,16 +1,53 @@
 {
-    "version": "2026.08",
-    "description": "A lightweight, cross-platform, portable, and easy-to-maintain LaTeX distribution based on TeX Live.",
+    "description": "A lightweight, cross-platform, portable, and easy-to-maintain LaTeX distribution based on TeX Live. This versions contains enough LaTeX packages to compile R Markdown documents. More can be installed by the user.",
     "homepage": "https://yihui.org/tinytex/",
-    "license": "GPL-2.0-only",
-    "url": "https://github.com/rstudio/tinytex-releases/releases/download/v2026.08/TinyTeX-0-windows-v2026.08.exe#/dl.7z",
-    "hash": "9deb4a08e4682b6ad7129e651fc0aa162d0bd795c52d65b4ffde2494a30285f3",
+    "url": "https://github.com/rstudio/tinytex-releases/releases/download/v2026.08/TinyTeX-1-windows-v2026.08.exe#/dl.7z",
     "extract_dir": "TinyTeX",
-    "env_add_path": "bin\\windows",
+    "license": "https://tug.org/texlive/LICENSE.TL",
+    "hash": "d0abe3db92f7003a716bf9db0fbc103689bc91a42b0729664a0675be16e4f636",
+    "version": "2026.08",
+    "notes": "For full documentation, see https://yihui.org/tinytex/",
+    "pre_install": [
+        "try{if (Test-Path $(appdir tinytex-min)) { throw \"You already have Tinytex-min installed. Run scoop uninstall tinytex-min if you want to use TinyTeX.\"}}",
+        "catch{",
+        "Write-Host \"--> Another tinytex installation has been already found. Cancelling current installation...\" -f red",
+        "scoop uninstall $app",
+        "throw $_",
+        "}",
+        "try{if (Test-Path $(appdir tinytex-extra)) { throw \"You already have Tinytex-full installed. Run scoop uninstall tinytex-extra if you want to use TinyTeX.\"}}",
+        "catch{",
+        "Write-Host \"--> Another tinytex installation has been found. Cancelling current installation...\" -f red",
+        "scoop uninstall $app",
+        "throw $_",
+        "}"
+    ],
+    "post_install": [
+        "echo \"--> Running tlmgr path add\"",
+        "Start-Process \"cmd.exe\" \"/c `\"$dir\\bin\\windows\\tlmgr.bat path add`\"\" -Wait -NoNewWindow",
+        "echo \"--> Updating tlmgr itself\"",
+        "& \"$dir\\bin\\windows\\tlmgr.bat\" update --self",
+        "if (Test-Path $env:TMP\\tinytex-pkg-installed-$(Get-Date -Format ddMMyyHH).txt) {",
+        "$tinytex_tmp_file=\"$env:TMP\\tinytex-pkg-installed-$(Get-Date -Format ddMMyyHH).txt\"",
+        "$tinytex_pkg_installed = (& \"$dir\\bin\\windows\\tlmgr.bat\" info --list --only-installed --data name)",
+        "$packages_to_reinstall = @(Get-Content $tinytex_tmp_file | Where-Object { $tinytex_pkg_installed -NotContains $_ })",
+        "if ($packages_to_reinstall.Count -gt 0) {",
+        "echo \"--> Reinstalling previous user packages\"",
+        "$packages_to_reinstall | ForEach-Object { & \"$dir\\bin\\windows\\tlmgr.bat\" install $_ }",
+        "}",
+        "Remove-Item $tinytex_tmp_file",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "& \"$dir\\bin\\windows\\tlmgr.bat\" info --list --only-installed --data name > $env:TMP/tinytex-pkg-installed-$(Get-Date -Format ddMMyyHH).txt",
+            "echo \"--> Running tlmgr path remove\"",
+            "Start-Process \"cmd.exe\" \"/c `\"$dir\\bin\\windows\\tlmgr.bat path remove`\"\" -Wait -NoNewWindow"
+        ]
+    },
     "checkver": {
         "github": "https://github.com/rstudio/tinytex-releases"
     },
     "autoupdate": {
-        "url": "https://github.com/rstudio/tinytex-releases/releases/download/v$version/TinyTeX-0-windows-v$version.exe#/dl.7z"
+        "url": "https://github.com/rstudio/tinytex-releases/releases/download/v$version/TinyTeX-1-windows-v$version.exe#/dl.7z"
     }
 }
