@@ -1,38 +1,28 @@
 {
     "version": "1.1.25",
-    "description": "Qoder CLI - An AI programming assistant for intelligent code editing and analysis.",
+    "description": "Qoder CLI - A powerful command-line interface for Qoder AI services.",
     "homepage": "https://qoder.com",
-    "license": "Unlicense",
+    "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/releases/1.1.25/qodercli-windows-x64.zip",
-            "hash": "82d75819d61ab65b9886a675956124658a7d980ca508c5de1adc271f9fd73fdc"
+            "url": "https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/releases/1.1.25/qodercli-windows-x64-legacy.zip",
+            "hash": "435e8723ef867aa3bacd554532b0269de4b0b51d0a50dd44175b0885b0635933"
         }
     },
-    "pre_install": [
-        "$exe = Get-ChildItem \"$dir\\qodercli.exe\" -ErrorAction SilentlyContinue",
-        "if (-not $exe) { $exe = Get-ChildItem \"$dir\\*.exe\" | Select-Object -First 1 }",
-        "if ($exe) { Rename-Item $exe.FullName 'qodercli.exe' -Force }"
-    ],
     "bin": "qodercli.exe",
-    "shortcuts": [
-        [
-            "qodercli.exe",
-            "Qoder CLI"
-        ]
-    ],
     "checkver": {
-        "url": "https://download.qoder.com/qodercli/channels/manifest.json",
-        "jsonpath": "$.latest"
+        "script": [
+            "$json = Invoke-RestMethod -Uri 'https://download.qoder.com/qodercli/channels/manifest.json'",
+            "$file = $json.files | Where-Object { $_.os -eq 'windows' -and $_.arch -eq 'amd64' } | Select-Object -First 1",
+            "Write-Output \"$($json.latest) $($file.url) $($file.sha256)\""
+        ],
+        "regex": "(?<version>[\\d.]+)\\s+(?<url>[^\\s]+)\\s+(?<hash>[^\\s]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://qoder-ide.oss-accelerate.aliyuncs.com/qodercli/releases/$version/qodercli-windows-x64.zip",
-                "hash": {
-                    "url": "https://download.qoder.com/qodercli/channels/manifest.json",
-                    "jsonpath": "$.files[?(@.os == 'windows' && @.arch == 'amd64' && @.variant == 'standard')].sha256"
-                }
+                "url": "$matchUrl",
+                "hash": "$matchHash"
             }
         }
     }
