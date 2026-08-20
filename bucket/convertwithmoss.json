@@ -1,0 +1,67 @@
+{
+    "version": "20.1.0",
+    "description": "ConvertWithMoss - Audio converter for hardware samplers",
+    "homepage": "http://www.mossgrabers.de/Software/ConvertWithMoss/ConvertWithMoss.html",
+    "license": "Freeware",
+    "url": "https://www.mossgrabers.de/Software/ConvertWithMoss/ConvertWithMoss-Installers-windows-latest/ConvertWithMoss-20.1.0.exe",
+    "hash": "a3a8dd726688aed4c568e78c4d8752af21bf866d27f4d19acec1db5dc748d06a",
+    "pre_install": [
+        "$typeDef = @'",
+        "using System;",
+        "using System.IO;",
+        "using System.Runtime.InteropServices;",
+        "public class ResExtractor {",
+        "    [DllImport(\"kernel32.dll\", SetLastError = true, CharSet = CharSet.Auto)]",
+        "    public static extern IntPtr LoadLibraryEx(string f, IntPtr h, uint flags);",
+        "    [DllImport(\"kernel32.dll\", SetLastError = true, CharSet = CharSet.Auto)]",
+        "    public static extern IntPtr FindResourceEx(IntPtr m, IntPtr type, string name, ushort lang);",
+        "    [DllImport(\"kernel32.dll\", SetLastError = true)]",
+        "    public static extern IntPtr LoadResource(IntPtr m, IntPtr res);",
+        "    [DllImport(\"kernel32.dll\", SetLastError = true)]",
+        "    public static extern IntPtr LockResource(IntPtr res);",
+        "    [DllImport(\"kernel32.dll\", SetLastError = true)]",
+        "    public static extern uint SizeofResource(IntPtr m, IntPtr res);",
+        "    [DllImport(\"kernel32.dll\", SetLastError = true)]",
+        "    public static extern bool FreeLibrary(IntPtr m);",
+        "    public static void Extract(string exe, string outPath) {",
+        "        IntPtr h = LoadLibraryEx(exe, IntPtr.Zero, 2);",
+        "        if (h == IntPtr.Zero) throw new Exception(\"Failed to load executable.\");",
+        "        try {",
+        "            IntPtr r = FindResourceEx(h, (IntPtr)10, \"MSI\", 0);",
+        "            if (r == IntPtr.Zero) throw new Exception(\"Resource 'MSI' not found in RCDATA.\");",
+        "            IntPtr d = LoadResource(h, r);",
+        "            IntPtr p = LockResource(d);",
+        "            uint s = SizeofResource(h, r);",
+        "            byte[] b = new byte[s];",
+        "            Marshal.Copy(p, b, 0, (int)s);",
+        "            File.WriteAllBytes(outPath, b);",
+        "        } finally {",
+        "            FreeLibrary(h);",
+        "        }",
+        "    }",
+        "}",
+        "'@",
+        "Add-Type -TypeDefinition $typeDef",
+        "$exeFile = \"$dir\\$fname\"",
+        "$msiFile = \"$dir\\installer.msi\"",
+        "[ResExtractor]::Extract($exeFile, $msiFile)",
+        "Expand-MsiArchive $msiFile \"$dir\"",
+        "Remove-Item $exeFile, $msiFile -Force -ErrorAction SilentlyContinue",
+        "Get-ChildItem \"$dir\\ConvertWithMoss\\*\" | Move-Item -Destination \"$dir\" -Force",
+        "Remove-Item \"$dir\\ConvertWithMoss\" -Recurse -Force -ErrorAction SilentlyContinue"
+    ],
+    "bin": "ConvertWithMossCLI.exe",
+    "shortcuts": [
+        [
+            "ConvertWithMoss.exe",
+            "ConvertWithMoss"
+        ]
+    ],
+    "checkver": {
+        "url": "http://www.mossgrabers.de/Software/ConvertWithMoss/ConvertWithMoss.html",
+        "regex": "ConvertWithMoss-([\\d.]+)\\.exe"
+    },
+    "autoupdate": {
+        "url": "https://www.mossgrabers.de/Software/ConvertWithMoss/ConvertWithMoss-Installers-windows-latest/ConvertWithMoss-$version.exe"
+    }
+}
