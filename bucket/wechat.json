@@ -1,5 +1,5 @@
 {
-    "version": "4.1.13.7",
+    "version": "4.1.13.10",
     "description": "Free messaging and calling app by Tencent",
     "homepage": "https://www.wechat.com/",
     "license": {
@@ -8,8 +8,8 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/cscnk52/wechat-windows-versions/releases/download/v4.1.13.7/weixin_4.1.13.7.exe#/dl.7z",
-            "hash": "faad82171ab27c786905d2d04a2effdacee34557c0fec96d15fa5676ba67ed14"
+            "url": "https://dldir1v6.qq.com/weixin/Universal/Windows/WeChatWin_4.1.13.exe#/dl.7z",
+            "hash": "68026434fd31237a3a836f8aea9847acba2c28cdb520daa7c6df2b3572a1e5bf"
         }
     },
     "installer": {
@@ -41,12 +41,35 @@
     ],
     "persist": "xwechat_files",
     "checkver": {
-        "github": "https://github.com/cscnk52/wechat-windows-versions"
+        "script": [
+            "$headers = @{ 'User-Agent' = 'scoop-checkver' }",
+            "$token = Get-GitHubToken",
+            "if ($token) { $headers['Authorization'] = \"token $token\" }",
+            "$api = 'https://api.github.com/repos/microsoft/winget-pkgs/contents/manifests/t/Tencent/WeChat/Universal'",
+            "$content = $null",
+            "for ($i = 0; $i -lt 3 -and !$content; $i++) {",
+            "    try {",
+            "        $versions = (Invoke-RestMethod -Uri $api -Headers $headers).name | Where-Object { $_ -match '^\\d+(\\.\\d+)+$' }",
+            "        $latest = $versions | Sort-Object { [version]$_ } -Descending | Select-Object -First 1",
+            "        $manifest = \"https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/t/Tencent/WeChat/Universal/$latest/Tencent.WeChat.Universal.installer.yaml\"",
+            "        $content = Invoke-RestMethod -Uri $manifest -Headers $headers",
+            "    } catch {",
+            "        Start-Sleep -Seconds (30 * ($i + 1))",
+            "    }",
+            "}",
+            "if (!$content) { return '' }",
+            "$content"
+        ],
+        "regex": "PackageVersion:\\s*(?<version>(?<short>[0-9]+\\.[0-9]+\\.[0-9]+)\\.[0-9]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/cscnk52/wechat-windows-versions/releases/download/v$version/weixin_$version.exe#/dl.7z"
+                "url": "https://dldir1v6.qq.com/weixin/Universal/Windows/WeChatWin_$matchShort.exe#/dl.7z",
+                "hash": {
+                    "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/t/Tencent/WeChat/Universal/$version/Tencent.WeChat.Universal.installer.yaml",
+                    "regex": "InstallerSha256:\\s+([a-fA-F0-9]{64})"
+                }
             }
         }
     }
