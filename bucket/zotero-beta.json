@@ -1,40 +1,51 @@
 {
-    "version": "10.0.1-beta.1",
+    "version": "10.0.1-beta.2+50976f4bb",
     "description": "Open-source reference management software to manage bibliographic data and related research materials.",
     "homepage": "https://www.zotero.org/",
     "license": "AGPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": "https://download.zotero.org/client/beta/10.0.1-beta.1%2B16a79acf7/Zotero-10.0.1-beta.1%2B16a79acf7_x64_setup.exe#/dl.7z",
-            "hash": "2a5b9eeb5c3a0c858640f8e9481de6bafb953684b1e75ba6bb1d3cfc53d12f98"
+            "url": "https://download.zotero.org/client/beta/10.0.1-beta.2%2B50976f4bb/Zotero-10.0.1-beta.2%2B50976f4bb_x64_setup.exe#/dl.7z",
+            "hash": "766f440c1be8f4776e7c348136b61ed15a104300d15b3a2807bf40415530065b"
         },
         "32bit": {
-            "url": "https://download.zotero.org/client/beta/10.0.1-beta.1%2B16a79acf7/Zotero-10.0.1-beta.1%2B16a79acf7_win32_setup.exe#/dl.7z",
-            "hash": "d219c7668b1c2dca8359e4f1f1d6bbc7d85ec80f2436a6ef502e07302a991d2a"
+            "url": "https://download.zotero.org/client/beta/10.0.1-beta.2%2B50976f4bb/Zotero-10.0.1-beta.2%2B50976f4bb_win32_setup.exe#/dl.7z",
+            "hash": "01016ec480a91e75579cb8615e627f4f8ebcf1f608ac20d776f2f6a41c480500"
+        },
+        "arm64": {
+            "url": "https://download.zotero.org/client/beta/10.0.1-beta.2%2B50976f4bb/Zotero-10.0.1-beta.2%2B50976f4bb_arm64_setup.exe#/dl.7z",
+            "hash": "f76fbd0f5f0ed43135155f1bce8a289eb1350fbdcdc9ad0eb9924d9fc8edd4d6"
         }
     },
     "extract_dir": "core",
-    "bin": "zotero.exe",
     "shortcuts": [
         [
             "zotero.exe",
-            "Zotero"
+            "Zotero Beta"
         ]
     ],
     "checkver": {
         "script": [
-            "try { $detail = Invoke-WebRequest 'https://www.zotero.org/download/client/dl?platform=win-x64-zip&channel=beta' -MaximumRedirection 0 -ErrorAction Ignore } catch { $_.Exception.Response }",
-            "return $detail.Headers.Location"
+            "$req = [System.Net.WebRequest]::Create('https://www.zotero.org/download/client/dl?channel=beta&platform=win-x64')",
+            "$req.AllowAutoRedirect = $false",
+            "$resp = $req.GetResponse()",
+            "$location = $resp.Headers['Location']",
+            "$resp.Close()",
+            "$url_noe = $location -Replace('^.*?beta/(.*?)/.*','$1')",
+            "return [System.Uri]::UnescapeDataString($url_noe) + '###' + $url_noe"
         ],
-        "regex": "Zotero-([\\d.]+-beta[\\d.]+)%2B(?<commit>[\\da-f]+)"
+        "regex": "(?<version>.*)###(?<noe>.*)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://download.zotero.org/client/beta/$version%2B$matchCommit/Zotero-$version%2B$matchCommit_x64_setup.exe#/dl.7z"
+                "url": "https://download.zotero.org/client/beta/$matchNoe/Zotero-$matchNoe_x64_setup.exe#/dl.7z"
             },
             "32bit": {
-                "url": "https://download.zotero.org/client/beta/$version%2B$matchCommit/Zotero-$version%2B$matchCommit_win32_setup.exe#/dl.7z"
+                "url": "https://download.zotero.org/client/beta/$matchNoe/Zotero-$matchNoe_win32_setup.exe#/dl.7z"
+            },
+            "arm64": {
+                "url": "https://download.zotero.org/client/beta/$matchNoe/Zotero-$matchNoe_arm64_setup.exe#/dl.7z"
             }
         }
     }
