@@ -1,12 +1,12 @@
 {
-    "version": "1.3.0",
+    "version": "1.4.1",
     "description": "Minimalist desktop GUI for sing-box — manage the runtime via the Clash API, switch selector groups, view logs and edit the config",
     "homepage": "https://github.com/noartem/vantage-box",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/noartem/vantage-box/releases/download/v1.3.0/vantage-box-portable-1.3.0.zip",
-            "hash": "d2fb6358d8cb4161e907720c35ead057ddb65f215e99c74ae91a4951d0b394e7"
+            "url": "https://github.com/noartem/vantage-box/releases/download/v1.4.1/vantage-box-portable-1.4.1.zip",
+            "hash": "2172a28d0a7edc213c6e7ee664c5169d7986e34bc419bb2cfaadbf3640b429d4"
         }
     },
     "bin": "vantage-box.exe",
@@ -16,6 +16,20 @@
             "Vantage Box"
         ]
     ],
+    "post_install": [
+        "$q = [char]34",
+        "$classes = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Software\\Classes', $true)",
+        "$v = $classes.CreateSubKey('vantage')",
+        "$v.SetValue('', 'URL:Vantage Box', 'String')",
+        "$v.SetValue('URL Protocol', '', 'String')",
+        "$c = $v.CreateSubKey('shell\\open\\command')",
+        "$c.SetValue('', ($q + \"$dir\\vantage-box.exe\" + $q + ' ' + $q + 'uri' + $q + ' ' + $q + '%1' + $q), 'String')",
+        "$c.Close(); $v.Close(); $classes.Close()"
+    ],
+    "pre_uninstall": [
+        "try { [Microsoft.Win32.Registry]::CurrentUser.DeleteSubKeyTree('Software\\Classes\\vantage', $false) } catch {}"
+    ],
+    "notes": "The vantage:// URI scheme is registered for the current user on install (the portable build does not self-register it, unlike the NSIS installer) and removed on uninstall. See: https://github.com/noartem/vantage-box/blob/main/API.md",
     "checkver": "github",
     "autoupdate": {
         "architecture": {
