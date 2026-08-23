@@ -1,42 +1,64 @@
 {
-  "version": "1.18.10",
-  "description": "Another Better Mihomo Client",
-  "homepage": "https://github.com/appshubcc/Bettbox",
-  "license": {
-    "identifier": "GPL-3.0 license",
-    "url": "https://github.com/appshubcc/Bettbox#GPL-3.0-1-ov-file"
-  },
-  "architecture": {
-    "64bit": {
-      "url": "https://github.com/appshubcc/Bettbox/releases/download/v1.18.10/Bettbox-1.18.10-windows-amd64-setup.exe",
-      "hash": "712d4826deed147357955f894945325317c11174bf8a278928bfa69ce291bd3a"
-    },
-    "arm64": {
-      "url": "https://github.com/appshubcc/Bettbox/releases/download/v1.18.10/Bettbox-1.18.10-windows-arm64-setup.exe",
-      "hash": "dcad35f789ea60a7962bf4445e42bf71a8844ac3b3f82780d2f373442086bb2e"
-    }
-  },
-  "innosetup": true,
-  "bin": "Bettbox.exe",
-  "shortcuts": [
-    [
-      "Bettbox.exe",
-      "Bettbox"
-    ]
-  ],
-  "checkver": {
-    "github": "https://api.github.com/repos/appshubcc/Bettbox/releases/latest",
-    "jp": "$.tag_name",
-    "regex": "v([\\d.]+)"
-  },
-  "autoupdate": {
+    "version": "1.18.10",
+    "description": "Another Better Mihomo Client - a multi-platform network debugging and rule-based traffic splitting client powered by Mihomo",
+    "homepage": "https://github.com/appshubcc/Bettbox",
+    "license": "GPL-3.0-only",
+    "notes": [
+        "Bettbox 的数据目录（%APPDATA%\\com.appshub\\Bettbox）已链接到 Scoop 持久化目录，更新或卸载（不带 -p）时配置、订阅与日志不会丢失。",
+        "启用 TUN/系统代理时，Bettbox 会注册管理员服务 BettboxHelperService，并可能创建开机计划任务 Bettbox；卸载时本 manifest 会自动尝试停止并清理。"
+    ],
     "architecture": {
-      "64bit": {
-        "url": "https://github.com/appshubcc/Bettbox/releases/download/v$version/Bettbox-$version-windows-amd64-setup.exe"
-      },
-      "arm64": {
-        "url": "https://github.com/appshubcc/Bettbox/releases/download/v$version/Bettbox-$version-windows-arm64-setup.exe"
-      }
+        "64bit": {
+            "url": "https://github.com/appshubcc/Bettbox/releases/download/v1.18.10/Bettbox-1.18.10-windows-amd64-setup.exe",
+            "hash": "712d4826deed147357955f894945325317c11174bf8a278928bfa69ce291bd3a"
+        },
+        "arm64": {
+            "url": "https://github.com/appshubcc/Bettbox/releases/download/v1.18.10/Bettbox-1.18.10-windows-arm64-setup.exe",
+            "hash": "dcad35f789ea60a7962bf4445e42bf71a8844ac3b3f82780d2f373442086bb2e"
+        }
+    },
+    "innosetup": true,
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+            "New-PersistDirectory \"$env:APPDATA\\com.appshub\\Bettbox\" \"$persist_dir\\AppData\" -Migrate"
+        ]
+    },
+    "bin": "Bettbox.exe",
+    "shortcuts": [
+        [
+            "Bettbox.exe",
+            "Bettbox"
+        ]
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+        "if (Get-Process -Name 'Bettbox','BettboxCore' -ErrorAction SilentlyContinue) {",
+        "    Start-Process -FilePath \"$dir\\Bettbox.exe\" -ArgumentList '--exit' -WindowStyle Hidden",
+        "    Start-Sleep -Seconds 3",
+        "    Get-Process -Name 'Bettbox','BettboxCore' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue",
+        "}",
+        "if (Get-Service -Name 'BettboxHelperService' -ErrorAction SilentlyContinue) {",
+        "    Invoke-ExternalCommand 'sc.exe' -ArgumentList @('stop', 'BettboxHelperService') -RunAs -Quiet -ContinueExitCodes @{ 1062 = 'BettboxHelperService is already stopped.'; 1060 = 'BettboxHelperService does not exist.' }",
+        "    Invoke-ExternalCommand 'sc.exe' -ArgumentList @('delete', 'BettboxHelperService') -RunAs -Quiet -ContinueExitCodes @{ 1060 = 'BettboxHelperService does not exist.' }",
+        "}",
+        "& schtasks.exe /Query /TN Bettbox 2>$null | Out-Null",
+        "if ($LASTEXITCODE -eq 0) {",
+        "    Invoke-ExternalCommand 'schtasks.exe' -ArgumentList @('/Delete', '/TN', 'Bettbox', '/F') -RunAs -Quiet",
+        "}",
+        "Remove-Junction \"$env:APPDATA\\com.appshub\\Bettbox\"",
+        "Remove-EmptyDirectory \"$env:APPDATA\\com.appshub\""
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/appshubcc/Bettbox/releases/download/v$version/Bettbox-$version-windows-amd64-setup.exe"
+            },
+            "arm64": {
+                "url": "https://github.com/appshubcc/Bettbox/releases/download/v$version/Bettbox-$version-windows-arm64-setup.exe"
+            }
+        }
     }
-  }
 }
