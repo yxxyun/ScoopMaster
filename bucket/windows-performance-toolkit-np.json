@@ -6,6 +6,7 @@
     "notes": [
         "This non-portable package installs the Windows Performance Toolkit system-wide through the Microsoft ADK installer.",
         "It installs only OptionId.WindowsPerformanceToolkit, not Windows PE or deployment tools.",
+        "The 10.1.26100.2454 ADK line supports Windows 10 and Windows 11. The newer 10.1.28000.1 ADK line is only for Windows 11 26H1 Arm64.",
         "Administrator rights are required. Tools are installed under C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit."
     ],
     "url": "https://go.microsoft.com/fwlink/?linkid=2289980#/adksetup.exe",
@@ -14,7 +15,15 @@
     "installer": {
         "script": [
             "$args = @('/quiet', '/norestart', '/features', 'OptionId.WindowsPerformanceToolkit')",
-            "Start-Process -FilePath \"$dir\\adksetup.exe\" -ArgumentList $args -Wait -Verb RunAs"
+            "Start-Process -FilePath \"$dir\\adksetup.exe\" -ArgumentList $args -Wait -Verb RunAs",
+            "$toolkit = 'C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit'",
+            "$tools = @('wpa.exe', 'wpaexporter.exe', 'wprui.exe', 'xperf.exe')",
+            "foreach ($tool in $tools) {",
+            "    $target = Join-Path $toolkit $tool",
+            "    if (!(Test-Path $target)) { warn \"Expected WPT tool not found: $target\"; continue }",
+            "    $shim = Join-Path $dir ($tool -replace '\\.exe$', '.cmd')",
+            "    Set-Content -Path $shim -Value \"@echo off`r`n`\"$target`\" %*\" -Encoding Ascii",
+            "}"
         ]
     },
     "uninstaller": {
@@ -24,7 +33,12 @@
             "Start-Process -FilePath \"$dir\\adksetup.exe\" -ArgumentList $args -Wait -Verb RunAs"
         ]
     },
-    "env_add_path": "C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit",
+    "bin": [
+        "wpa.cmd",
+        "wpaexporter.cmd",
+        "wprui.cmd",
+        "xperf.cmd"
+    ],
     "checkver": {
         "url": "https://learn.microsoft.com/en-us/windows-hardware/get-started/adk-install",
         "re": "Download the ADK ([\\d.]+) \\(December 2024\\)"
