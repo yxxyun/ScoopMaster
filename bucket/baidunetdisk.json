@@ -1,80 +1,46 @@
 {
     "version": "8.7.4.101",
-    "description": "Windows client for BaiduNetdisk",
-    "homepage": "https://pan.baidu.com/",
-    "license": "Freeware",
-    "notes": [
-        "For app still running issue in uninstallation and update, run the following command and try again:",
-        "Get-Process -Name YunDetectService, kernelUpdate -ErrorAction SilentlyContinue | Stop-Process -Force"
-    ],
-    "depends": "Scoop4kariiin/Scoop4kariiinUtils",
-    "url": "https://issuepcdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduNetdisk_8.7.4.101.exe#dl.7z",
-    "hash": "bc39103a513fe77061e23221ef5ce42ee511726c5dd3fd99f566cf5777e7452f",
+    "description": "Baidu Netdisk is a cloud storage service provided by Baidu. Users can easily upload their files to the cloud and access them from any device at any time.",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://pan.baidu.com/disk/main#/protocol/duty_mobi"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "http://issuecdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduNetdisk_8.7.4.101.exe#/dl.7z",
+            "hash": "bc39103a513fe77061e23221ef5ce42ee511726c5dd3fd99f566cf5777e7452f"
+        }
+    },
+    "homepage": "http://pan.baidu.com",
+    "bin": "BaiduNetdisk.exe",
     "shortcuts": [
+        [
+            "BaiduNetdisk.exe",
+            "百度网盘"
+        ],
         [
             "BaiduNetdisk.exe",
             "BaiduNetdisk"
         ]
     ],
-    "installer": {
-        "script": [
-            "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
-            "Write-Host \"\"",
-            "Import-Module -Name Scoop4kariiinUtils -ErrorAction Stop",
-            "Mount-ExternalRuntimeData -Source \"$persist_dir\\baidunetdisk\" -AppData",
-            "Mount-ExternalRuntimeData -Source \"$persist_dir\\BaiduYunGuanjia\" -AppData",
-            "Mount-ExternalRuntimeData -Source \"$persist_dir\\BaiduYunKernel\" -AppData",
-            "Restore-PersistItem -AppDir \"$dir\" -PersistDir \"$persist_dir\" -Name \"AppSettingApp.dat\"",
-            "Remove-Module -Name Scoop4kariiinUtils -ErrorAction SilentlyContinue"
-        ]
-    },
-    "post_install": [
-        "$ScriptsDir = Find-BucketDirectory -Root -Name $bucket | Join-Path -ChildPath \"scripts\\BaiduNetdisk\"",
-        "$BNHPaths = Get-ChildItem -Path \"$dir\" -Filter \"baidunetdiskhost.exe\" -Recurse | Select-Object -ExpandProperty Target",
-        "$BNUPaths = Get-ChildItem -Path \"$dir\" -Filter \"baidunetdiskunite.exe\" -Recurse | Select-Object -ExpandProperty Target",
-        "if (Test-Path \"$ScriptsDir\\update-firewall-rules.ps1\") {",
-        "    $Content = Get-Content \"$ScriptsDir\\update-firewall-rules.ps1\" -Encoding UTF8",
-        "    $Content = $Content.Replace('$BNHPaths', \"$BNHPaths\")",
-        "    $Content = $Content.Replace('$BNUPaths', \"$BNUPaths\")",
-        "    $Content | Out-File -FilePath \"$dir\\update-firewall-rules.ps1\" -Encoding UTF8",
-        "    Write-Host \"`nAdmin privileges are required to update firewall rules.\" -ForegroundColor Yellow",
-        "    Write-Host \"Please approve permission request if UAC prompt pops up.\" -ForegroundColor Yellow",
-        "    Start-Sleep -Seconds 1",
-        "    Write-Host \"Updating Windows firewall rules...\" -NoNewline",
-        "    gsudo \"$dir\\update-firewall-rules.ps1\"",
-        "    if ($?) {",
-        "        Write-Host \"success.\" -ForegroundColor Green",
-        "    } else {",
-        "        Write-Host \"failed.\" -ForegroundColor Red",
-        "    }",
-        "} else {",
-        "    Write-Host \"Missing files, please re-add Scoop4kariiin bucket and re-install this app.\" -ForegroundColor Red",
-        "}"
-    ],
-    "persist": [
-        "users",
-        [
-            "module\\BrowserEngine\\users",
-            "BrowserEngineUsers"
-        ]
-    ],
-    "uninstaller": {
-        "script": [
-            "Get-Process -Name YunDetectService, kernelUpdate -ErrorAction SilentlyContinue | Stop-Process -Force",
-            "Write-Host \"\"",
-            "Import-Module -Name Scoop4kariiinUtils -ErrorAction Stop",
-            "Dismount-ExternalRuntimeData -Target \"baidunetdisk\" -AppData",
-            "Dismount-ExternalRuntimeData -Target \"BaiduYunGuanjia\" -AppData",
-            "Dismount-ExternalRuntimeData -Target \"BaiduYunKernel\" -AppData",
-            "Backup-PersistItem -AppDir \"$dir\" -PersistDir \"$persist_dir\" -Name \"AppSettingApp.dat\"",
-            "Remove-Module -Name Scoop4kariiinUtils -ErrorAction SilentlyContinue"
-        ]
-    },
+    "notes": "User data is spread across multiple AppData dirs (baidu, BaiduNetdisk, BaiduYunGuanjia, BaiduYunKernel). Due to this complexity, we do not persist user data folders. You may need to re-login after reinstall.",
+    "persist": "users",
     "checkver": {
-        "url": "https://pan.baidu.com/disk/cmsdata?do=client",
-        "regex": "Windows电脑客户端V([\\d.]+)\""
+        "url": "http://pan.baidu.com/disk/cmsdata?do=client",
+        "regex": "BaiduNetdisk_([\\d.]+)\\.exe"
     },
     "autoupdate": {
-        "url": "https://issuepcdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduNetdisk_$version.exe#dl.7z"
-    }
+        "architecture": {
+            "64bit": {
+                "url": "http://issuecdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduNetdisk_$version.exe#/dl.7z",
+                "hash": {
+                    "mode": "download"
+                }
+            }
+        }
+    },
+    "post_install": [
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
+        "Remove-Item \"$dir\\`$TEMP\" -Force -Recurse"
+    ]
 }
