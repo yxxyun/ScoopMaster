@@ -1,24 +1,58 @@
 {
-    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
-    "version": "3.2.0",
-    "description": "Fast image viewing, beyond speed",
+    "version": "3.2.7.98",
+    "description": "极速看图，不止于快。",
     "homepage": "https://pic.ghxi.com",
-    "license": "Freeware",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://pic.ghxi.com/legal"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://rj.lovestu.com/api/v1/release-files/106/download?filename=1#/dl.zip",
-            "hash": "md5:f9586da58abdb3e755c5932c82d287b6"
+            "url": "https://rj.lovestu.com/api/v1/release-files/131/download#/dl.7z",
+            "hash": "f577d810f4da0b749526937406fbb1699bb8da029334efa0fb5d31ea629630eb"
         }
     },
-    "extract_dir": ["GuoheViewPortable"],
-    "installer": {
-        "script": [
-            "if (!(Test-Path \"$persist_dir\\config.ini\")) { New-Item -ItemType Directory -Path $persist_dir -Force | Out-Null; [System.IO.File]::WriteAllText(\"$persist_dir\\config.ini\", '') }"
-        ]
-    },
-    "shortcuts": [
-        ["GuoheView.exe", "GuoheView"],
-        ["GuoheView.exe", "果核看图"]
+    "extract_dir": "GuoheViewPortable",
+    "pre_install": [
+        "Remove-Item \"$dir\\GuoheView-Updater.exe\", \"$dir\\news.exe\" -Force -ErrorAction SilentlyContinue | Out-Null",
+        "if (!(Test-Path \"$dir\\config.ini\") -or !(Get-Item \"$dir\\config.ini\").Length) {",
+        "    New-Item \"$dir\\config.ini\" -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null",
+        "}"
     ],
-    "persist": ["config.ini", "plugins"]
+    "shortcuts": [
+        [
+            "GuoheView.exe",
+            "果核看图"
+        ]
+    ],
+    "persist": [
+        "config.ini",
+        "plugins",
+        "portable.ini"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App"
+    ],
+    "checkver": {
+        "script": [
+            "$response = Invoke-RestMethod -Uri 'https://rj.lovestu.com/download/gh_view'",
+            "$version = \"$($response.data.version).$($response.data.version_code)\"",
+            "$file = $response.data.files | Where-Object { $_.name -like '*.7z' }",
+            "return \"$version=====$($file.md5)=====$($file.url)\""
+        ],
+        "regex": "(.*)=====(?<md5>.*)=====(?<url>.*)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "$matchUrl#/dl.7z",
+                "hash": {
+                    "url": "https://httpbin.org/get?md5=$matchMd5",
+                    "jsonpath": "$.args.md5"
+                }
+            }
+        }
+    }
 }
