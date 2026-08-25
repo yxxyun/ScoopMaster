@@ -1,38 +1,56 @@
 {
-    "version": "5.3.0",
+    "version": "5.3.5",
     "description": "Terminal/ssh/serial port/sftp client",
     "homepage": "https://electerm.github.io/electerm/",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/electerm/electerm/releases/download/v5.3.0/electerm-5.3.0-win-x64-portable.tar.gz",
-            "hash": "124a4eed1a47e74641c8a6c0a05e3be420bbae96bb50068377b5b9684dfbccba",
-            "extract_dir": "electerm-5.3.0-win-x64-portable"
+            "url": "https://github.com/electerm/electerm/releases/download/v5.3.5/electerm-5.3.5-win-x64.tar.gz",
+            "hash": "c71d5111a2a956171c0b0aa472989f9caadf86a260aeee44c8603a08af451baf",
+            "extract_dir": "electerm-5.3.5-win-x64"
         }
     },
-    "pre_install": [
-        "# copy config from non-portable version",
-        "if (!(Test-Path \"$persist_dir\\electerm\") -and (Test-Path \"$env:Appdata\\electerm\")) {",
-        "    if (!(Test-Path \"$dir\\electerm\")) { New-Item \"$dir\\electerm\" -ItemType Directory | Out-Null }",
-        "    Copy-Item \"$env:Appdata\\electerm\\*\" \"$dir\\electerm\\\" -Recurse -Force",
-        "}"
-    ],
     "bin": "electerm.exe",
+    "installer": {
+        "script": [
+            "if (!(Test-Path \"$persist_dir\\Cache\")) {",
+            "    New-Item \"$persist_dir\\Cache\" -Type Directory -Force | Out-Null",
+            "}",
+            "$runtimeCache = \"$env:APPDATA\\electerm\"",
+            "$runtimeCachePersist = \"$persist_dir\\Cache\"",
+            "if (Test-Path $runtimeCachePersist) {",
+            "    Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+            "    New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
+            "} else {",
+            "    if (Test-Path $runtimeCache) {",
+            "        Move-Item $runtimeCache $runtimeCachePersist -Force",
+            "        New-Item -Type Junction -Path $runtimeCache -Target $runtimeCachePersist | Out-Null",
+            "    }",
+            "}"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$runtimeCache = \"$env:APPDATA\\electerm\"",
+            "$runtimeCachePersist = \"$persist_dir\"",
+            "Remove-Item $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+            "Remove-Item $runtimeCachePersist -Force -Recurse -ErrorAction SilentlyContinue"
+        ]
+    },
     "shortcuts": [
         [
             "electerm.exe",
-            "Electerm"
+            "electerm"
         ]
     ],
-    "persist": "electerm",
     "checkver": {
         "github": "https://github.com/electerm/electerm"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/electerm/electerm/releases/download/v$version/electerm-$version-win-x64-portable.tar.gz",
-                "extract_dir": "electerm-$version-win-x64-portable"
+                "url": "https://github.com/electerm/electerm/releases/download/v$version/electerm-$version-win-x64.tar.gz",
+                "extract_dir": "electerm-$version-win-x64"
             }
         }
     }
