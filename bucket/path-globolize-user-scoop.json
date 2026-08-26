@@ -1,0 +1,29 @@
+{
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+    "version": "1.0.1",
+    "description": "PATH",
+    "homepage": "https://github.com/gdm257/scoop-257",
+    "license": "Unlicense",
+    "depends": ["main/git"],
+    "url": ["https://unlicense.org/UNLICENSE"],
+    "installer": {
+        "script": [
+            "$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+            "if (-not $isAdmin) { throw 'path-globolize-user-scoop: writing Machine PATH requires an elevated shell (sudo/scoop sudo)' }",
+            "$root = scoop config root_path; if (-not $root) { $root = \"$env:USERPROFILE\\scoop\" }",
+            "$shims = Join-Path $root 'shims'",
+            "$machinePath = [Environment]::GetEnvironmentVariable('Path', 'Machine')",
+            "if ($machinePath -notlike \"*$shims*\") { [Environment]::SetEnvironmentVariable('Path', ($machinePath.TrimEnd(';') + ';' + $shims), 'Machine') }"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+            "if (-not $isAdmin) { Write-Warning 'path-globolize-user-scoop: skipping Machine PATH cleanup, not elevated'; exit 0 }",
+            "$root = scoop config root_path; if (-not $root) { $root = \"$env:USERPROFILE\\scoop\" }",
+            "$shims = Join-Path $root 'shims'",
+            "$machinePath = [Environment]::GetEnvironmentVariable('Path', 'Machine')",
+            "[Environment]::SetEnvironmentVariable('Path', (($machinePath -split ';' | Where-Object { $_ -and $_ -ne $shims }) -join ';'), 'Machine')"
+        ]
+    }
+}
