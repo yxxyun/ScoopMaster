@@ -1,31 +1,60 @@
 {
+    "##": "Why here? It is in alpha, which does meet Scoop extras bucket criterias.",
     "version": "0.0.34",
-    "description": "The open-source control plane for coding agents. Orchestrate Claude Code, Codex, OpenCode, Cursor, and Grok from one surface.",
-    "homepage": "https://t3.codes",
+    "description": "A minimal web GUI for coding agents",
+    "homepage": "https://t3.codes/",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/pingdotgg/t3code/releases/download/v0.0.34/T3-Code-0.0.34-x64.exe#/dl.7z",
-            "hash": "sha512:f2a093064d348499cf818aa1dd73b7b7e14b060ed323a2e8431490a4ae258d10866bc14fc9dd869538863021b8e2f1c830e29f2586dac6d44bd5154420362a20"
+            "url": "https://github.com/pingdotgg/t3code/releases/download/v0.0.34/T3-Code-0.0.34-x64.exe#t3code.7z",
+            "hash": "3fadb77d88bde89e09903dee67a715dce31de484169325b05482d149b9776c71",
+            "pre_install": "Expand-7zipArchive -Path \"$dir\\`$PLUGINSDIR\\app-64.7z\" -DestinationPath \"$dir\""
         }
     },
-    "installer": {
-        "script": [
-            "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-            "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\Uninstall*\", \"$dir\\`$R0\" -Force -Recurse -ErrorAction SilentlyContinue"
-        ]
-    },
+    "post_install": [
+        "# Clean up leftovers",
+        "$Directories = [string[]](",
+        "    \"$dir\\`$PLUGINSDIR\",",
+        "    \"$dir\\`$R0\"",
+        ")",
+        "Start-Sleep -Milliseconds 50",
+        "$Directories.ForEach{",
+        "    if ([System.IO.Directory]::Exists($_)) {",
+        "        $null = [System.IO.Directory]::Delete($_,$true)",
+        "        debug \"Deleted '$_'.\"",
+        "    }",
+        "}"
+    ],
     "bin": [
         [
             "T3 Code (Alpha).exe",
-            "t3code"
+            "t3code",
+            "--user-data-dir=\"$dir\\data\""
         ]
     ],
     "shortcuts": [
         [
             "T3 Code (Alpha).exe",
-            "T3 Code"
+            "T3 Code (Alpha)",
+            "--user-data-dir=\"$dir\\data\""
         ]
+    ],
+    "persist": "data",
+    "post_uninstall": [
+        "# Inform of leftover directories if any was found",
+        "$LeftoverDirs = [string[]](",
+        "    ('{0}\\.t3' -f $env:USERPROFILE),",
+        "    ('{0}\\t3code' -f $env:APPDATA) | Where-Object -FilterScript {",
+        "        [System.IO.Directory]::Exists($_)",
+        "    }",
+        ")",
+        "if ($LeftoverDirs.Count -gt 0) {",
+        "    $Message = [string] \"`r`nFound some leftover directories you might want to delete:\"",
+        "    $LeftoverDirs.ForEach{",
+        "        $Message += \"`r`n* '{0}'\" -f $_",
+        "    }",
+        "    info $Message",
+        "}"
     ],
     "checkver": {
         "github": "https://github.com/pingdotgg/t3code"
@@ -33,12 +62,8 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/pingdotgg/t3code/releases/download/v$version/T3-Code-$version-x64.exe#/dl.7z"
+                "url": "https://github.com/pingdotgg/t3code/releases/download/v$version/T3-Code-$version-x64.exe#t3code.7z"
             }
-        },
-        "hash": {
-            "url": "$baseurl/latest.yml",
-            "regex": "(?sm)$basename.*?sha512:\\s+$base64"
         }
     }
 }
