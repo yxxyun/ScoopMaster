@@ -1,11 +1,11 @@
 {
     "version": "6.1.0-beta01",
     "description": "One-stop online barrage drama tracking platform",
-    "homepage": "https://github.com/open-ani/ani",
+    "homepage": "https://github.com/open-ani/animeko",
     "license": "GPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/open-ani/ani/releases/download/v6.1.0-beta01/ani-6.1.0-beta01-windows-x86_64.zip",
+            "url": "https://github.com/open-ani/animeko/releases/download/v6.1.0-beta01/ani-6.1.0-beta01-windows-x86_64.zip",
             "hash": "a4e79f46c79e36aef16d18e64ec30bf262d3e980d2d35946cad620f6b287d351",
             "extract_dir": "Ani"
         }
@@ -17,31 +17,35 @@
             "Ani"
         ]
     ],
-    "installer": {
-        "script": [
-            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name muggle) scripts/DoradoUtils.psm1)",
-            "Mount-ExternalRuntimeData -Source \"$persist_dir\\data\" -Target \"$env:APPDATA\\Him188\"",
-            "Mount-ExternalRuntimeData -Source \"$persist_dir\\cache\" -Target \"$env:LOCALAPPDATA\\Him188\"",
-            "Remove-Module -Name DoradoUtils"
+    "persist_external": [
+        [
+            "$env:APPDATA\\Him188",
+            "data",
+            "directory"
+        ],
+        [
+            "$env:LOCALAPPDATA\\Him188",
+            "cache",
+            "directory"
         ]
-    },
-    "uninstaller": {
-        "script": [
-            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name muggle) scripts/DoradoUtils.psm1)",
-            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\Him188\"",
-            "Dismount-ExternalRuntimeData -Target \"$env:LOCALAPPDATA\\Him188\"",
-            "Remove-Module -Name DoradoUtils"
-        ]
-    },
+    ],
+    "post_install": [
+        ". \"$(Find-BucketDirectory -Root -Name (coalesce $bucket 'muggle'))/scripts/persist-external.ps1\"",
+        "Invoke-PersistExternalInstall -Manifest $manifest -PersistDir $persist_dir -Dir $dir"
+    ],
+    "pre_uninstall": [
+        ". \"$(Find-BucketDirectory -Root -Name (coalesce $bucket 'muggle'))/scripts/persist-external.ps1\"",
+        "Invoke-PersistExternalUninstall -Manifest $manifest -Dir $dir"
+    ],
     "checkver": {
-        "url": "https://api.github.com/repos/open-ani/ani/releases",
-        "jsonpath": "$..tag_name",
-        "regex": "v([-\\d.\\w]+)"
+        "url": "https://api.github.com/repos/open-ani/animeko/releases?per_page=10",
+        "jsonpath": "$.[?(@.prerelease==true)].tag_name",
+        "regex": "v([\\d.]+[-\\w]*)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/open-ani/ani/releases/download/v$version/ani-$version-windows-x86_64.zip"
+                "url": "https://github.com/open-ani/animeko/releases/download/v$version/ani-$version-windows-x86_64.zip"
             }
         }
     }
