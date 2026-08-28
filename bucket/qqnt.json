@@ -1,7 +1,7 @@
 {
     "version": "9.9.33.260813",
-    "description": "An instant messaging tool that gives you the best way to keep in touch with your friends and family, Build with Electron",
-    "homepage": "https://im.qq.com",
+    "description": "QQ Windows版，全新NT架构，轻松做自己。",
+    "homepage": "https://im.qq.com/pcqq/index.shtml",
     "license": {
         "identifier": "Proprietary",
         "url": "https://ti.qq.com/agreement/index.html"
@@ -20,6 +20,14 @@
             "hash": "ee77d6d8bdfc4f4c9bf9c6d2521322ff410d2614a7e8ba005aaa9703fc9ef174"
         }
     },
+    "extract_dir": "Files",
+    "shortcuts": [
+        [
+            "QQ.exe",
+            "QQ"
+        ]
+    ],
+    "persist": "Tencent Files",
     "installer": {
         "script": [
             "$configpath = \"$([Environment]::GetFolderPath('CommonDocuments'))\\Tencent\\QQ\"",
@@ -31,26 +39,17 @@
             "}"
         ]
     },
-    "shortcuts": [
-        [
-            "Files\\QQ.exe",
-            "QQ"
-        ]
-    ],
-    "persist": "Tencent Files",
     "pre_uninstall": [
         "$bucket = $install.bucket",
         ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Require-Admin",
         "Stop-App"
     ],
-    "uninstaller": {
-        "script": [
-            "if ($cmd -eq 'uninstall') {",
-            "    Remove-Item -Path \"$([Environment]::GetFolderPath('CommonDocuments'))\\Tencent\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
-            "    Remove-Item -Path \"$env:AppData\\QQ\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
-            "}"
-        ]
-    },
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        ". \"$bucketsdir\\$bucket\\scripts\\qqnt\\uninstall.ps1\""
+    ],
     "checkver": {
         "script": [
             "# Please keep this script. Using 'cdn-go.cn' may result in receiving expired cache responses.",
@@ -61,20 +60,24 @@
             "$url = $url -Replace [regex]::Escape($hostname), $ip",
             "Invoke-WebRequest -Uri $url -UseBasicParsing -Headers @{'Host' = $hostname} | Select-Object -ExpandProperty Content"
         ],
-        "regex": "QQNT/([\\d.]+)/release/([a-z0-9]+)/QQ_[\\d.]+_(\\d+)_x86_01.exe",
-        "replace": "${1}.${3}"
+        "regex": "QQNT/(.*?)/QQ_([\\d.]+)_([\\d]+)_x86_01.exe",
+        "replace": "${2}.${3}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://qqdl.gtimg.cn/qqfile/QQNT/$match1/release/$match2/QQ_$match1_$match3_x64_01.exe#/dl.7z"
+                "url": "https://qqdl.gtimg.cn/qqfile/QQNT/$match1/QQ_$match2_$match3_x64_01.exe#/dl.7z"
             },
             "32bit": {
-                "url": "https://qqdl.gtimg.cn/qqfile/QQNT/$match1/release/$match2/QQ_$match1_$match3_x86_01.exe#/dl.7z"
+                "url": "https://qqdl.gtimg.cn/qqfile/QQNT/$match1/QQ_$match2_$match3_x86_01.exe#/dl.7z"
             },
             "arm64": {
-                "url": "https://qqdl.gtimg.cn/qqfile/QQNT/$match1/release/$match2/QQ_$match1_$match3_arm64_01.exe#/dl.7z"
+                "url": "https://qqdl.gtimg.cn/qqfile/QQNT/$match1/QQ_$match2_$match3_arm64_01.exe#/dl.7z"
             }
         }
-    }
+    },
+    "notes": [
+        "User data and chat messages are persisted in \"$persist_dir\".",
+        "Please manually disable QQ's auto-update feature in the settings. (Set it once and it will remember)"
+    ]
 }
