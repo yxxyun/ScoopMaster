@@ -1,0 +1,53 @@
+{
+    "version": "0.5.2",
+    "description": "Internet access is a right, not a privilege. Terminal client and VPN service.",
+    "homepage": "https://github.com/openrung/openrung",
+    "license": "GPL-3.0-only",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/openrung/openrung/releases/download/client-v0.5.2/openrung-client-windows-amd64.zip",
+            "hash": "6bc14f03f78f209bca99dc461bfd7019d2e820e3ad574c5b51b0341b1a6615b6",
+            "extract_dir": "openrung-client-windows-amd64"
+        }
+    },
+    "bin": [
+        "openrung-client.exe",
+        [
+            "openrung-client.exe",
+            "openrung"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "openrung-client.exe",
+            "OpenRung"
+        ]
+    ],
+    "post_install": [
+        "if (!(Test-Path \"$persist_dir\")) { New-Item -ItemType Directory -Path \"$persist_dir\" | Out-Null }",
+        "if (Test-Path \"$env:AppData\\openrung\") {",
+        "    if ((Get-Item \"$env:AppData\\openrung\").LinkType -ne 'Junction') {",
+        "        Copy-Item \"$env:AppData\\openrung\\*\" \"$persist_dir\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "        Remove-Item \"$env:AppData\\openrung\" -Recurse -Force",
+        "    }",
+        "}",
+        "if (!(Test-Path \"$env:AppData\\openrung\")) {",
+        "    New-DirectoryJunction \"$env:AppData\\openrung\" \"$persist_dir\" | Out-Null",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$data = Get-Item \"$env:AppData\\openrung\" -ErrorAction SilentlyContinue",
+        "if ($data -and $data.LinkType -eq 'Junction') { $data.Delete() }"
+    ],
+    "checkver": {
+        "github": "https://github.com/openrung/openrung",
+        "regex": "client-v([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/openrung/openrung/releases/download/client-v$version/openrung-client-windows-amd64.zip"
+            }
+        }
+    }
+}
