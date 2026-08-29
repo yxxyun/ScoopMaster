@@ -1,50 +1,61 @@
 {
     "version": "2.0.10",
-    "description": "支持多模型服务的 Windows/macOS GPT 客户端。",
+    "description": "A desktop client that supports for multiple LLM providers.",
     "homepage": "https://cherry-ai.com",
     "license": "Apache-2.0",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v2.0.10/Cherry-Studio-2.0.10-x64-setup.exe#dl.7z",
-            "hash": "sha512:1e81c1c445276ddf3f12d13619cde057fdf610173ec3811defcc169046bac93514803915da5f392fdf45d60eb2a91a65c13c12aec2eafa56ca160fb2c601dc00"
+            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v2.0.10/Cherry-Studio-2.0.10-x64-setup.exe#/dl.7z",
+            "hash": "sha512:1e81c1c445276ddf3f12d13619cde057fdf610173ec3811defcc169046bac93514803915da5f392fdf45d60eb2a91a65c13c12aec2eafa56ca160fb2c601dc00",
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
         },
         "arm64": {
-            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v2.0.10/Cherry-Studio-2.0.10-arm64-setup.exe#dl.7z ",
-            "hash": "sha512:1e81c1c445276ddf3f12d13619cde057fdf610173ec3811defcc169046bac93514803915da5f392fdf45d60eb2a91a65c13c12aec2eafa56ca160fb2c601dc00"
+            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v2.0.10/Cherry-Studio-2.0.10-arm64-setup.exe#/dl.7z",
+            "hash": "sha512:5a03ab0dab836dee73fafb6c747118d0b8166cc18c889bc6fa8e7b46aaa9fecf026ad5f41dd12f50aee2bd5d379e5ba326d58482921ec93f3c0be5b485f2f886",
+            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\""
         }
     },
-    "pre_install": [
-        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Recurse"
-    ],
-    "bin": [
-        "Cherry Studio.exe",
-        "Cherry Studio",
-        "--user-data-dir=\"$dir\\User Data\""
-    ],
     "shortcuts": [
         [
             "Cherry Studio.exe",
-            "Cherry Studio",
-            "--user-data-dir=\"$dir\\User Data\""
+            "Cherry Studio"
         ]
     ],
-    "persist": "User Data",
+    "installer": {
+        "script": [
+            "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name localbucket) scripts/LocalUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:APPDATA\\CherryStudio\"",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\dotdata\" -Target \"$env:USERPROFILE\\.cherrystudio\"",
+            "Remove-Module -Name LocalUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name localbucket) scripts/LocalUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\CherryStudio\"",
+            "Dismount-ExternalRuntimeData -Target \"$env:USERPROFILE\\.cherrystudio\"",
+            "Remove-Module -Name LocalUtils"
+        ]
+    },
     "checkver": {
-        "github": "https://github.com/CherryHQ/cherry-studio",
-        "regex": "/CherryHQ/cherry-studio/releases/tag/v([\\d.]+)"
+        "github": "https://github.com/CherryHQ/cherry-studio"
     },
     "autoupdate": {
-        "hash": {
-            "url": "$baseurl/latest.yml",
-            "regex": "(?sm).*?sha512:\\s+$base64"
-        },
         "architecture": {
             "64bit": {
-                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-x64-setup.exe#dl.7z"
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-x64-setup.exe#/dl.7z",
+                "hash": {
+                    "url": "$baseurl/latest.yml",
+                    "regex": "(?s)x64.*?sha512: $base64"
+                }
             },
             "arm64": {
-                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-arm64-setup.exe#dl.7z "
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-arm64-setup.exe#/dl.7z",
+                "hash": {
+                    "url": "$baseurl/latest.yml",
+                    "regex": "(?s)arm64.*?sha512: $base64"
+                }
             }
         }
     }

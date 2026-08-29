@@ -1,31 +1,69 @@
 {
+    "##": "Why here? It is in alpha, which does meet Scoop extras bucket criterias.",
     "version": "0.0.36",
-    "description": "",
-    "homepage": "https://t3.codes",
+    "description": "A minimal web GUI for coding agents",
+    "homepage": "https://t3.codes/",
     "license": "MIT",
-    "url": "https://github.com/pingdotgg/t3code/releases/download/v0.0.36/T3-Code-0.0.36-x64.exe#/dl.7z",
-    "hash": "sha512:5e5b6f8afe63db2a71c0e82da384df81fa29a05e8819a537a185aba430f3dd50eea252ba544ae6ad7b8151a61ce6111b6ba3f72d15d9a99d9a5eb39c2c384813",
     "architecture": {
         "64bit": {
-            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
+            "url": "https://github.com/pingdotgg/t3code/releases/download/v0.0.36/T3-Code-0.0.36-x64.exe#t3code.7z",
+            "hash": "1e0609b64512f4c2b40d032db595ec29a15378a9520a9ed9aae0bace18fcbdb0",
+            "pre_install": "Expand-7zipArchive -Path \"$dir\\`$PLUGINSDIR\\app-64.7z\" -DestinationPath \"$dir\""
         }
     },
-    "post_install": "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse",
+    "post_install": [
+        "# Clean up leftovers",
+        "$Directories = [string[]](",
+        "    \"$dir\\`$PLUGINSDIR\",",
+        "    \"$dir\\`$R0\"",
+        ")",
+        "Start-Sleep -Milliseconds 50",
+        "$Directories.ForEach{",
+        "    if ([System.IO.Directory]::Exists($_)) {",
+        "        $null = [System.IO.Directory]::Delete($_,$true)",
+        "        debug \"Deleted '$_'.\"",
+        "    }",
+        "}"
+    ],
+    "bin": [
+        [
+            "T3 Code (Alpha).exe",
+            "t3code",
+            "--user-data-dir=\"$dir\\data\""
+        ]
+    ],
     "shortcuts": [
         [
             "T3 Code (Alpha).exe",
-            "T3 Code"
+            "T3 Code (Alpha)",
+            "--user-data-dir=\"$dir\\data\""
         ]
     ],
-    "notes": "Alpha build. Application data is kept in %APPDATA%\\T3 Code (Alpha), outside the Scoop app directory, so it survives updates; delete that folder to remove it completely after uninstalling.",
+    "persist": "data",
+    "post_uninstall": [
+        "# Inform of leftover directories if any was found",
+        "$LeftoverDirs = [string[]](",
+        "    ('{0}\\.t3' -f $env:USERPROFILE),",
+        "    ('{0}\\t3code' -f $env:APPDATA) | Where-Object -FilterScript {",
+        "        [System.IO.Directory]::Exists($_)",
+        "    }",
+        ")",
+        "if ($LeftoverDirs.Count -gt 0) {",
+        "    $Message = [string] \"`r`nFound some leftover directories you might want to delete:\"",
+        "    $LeftoverDirs.ForEach{",
+        "        $Message += \"`r`n* '{0}'\" -f $_",
+        "    }",
+        "    info $Message",
+        "}"
+    ],
     "checkver": {
         "github": "https://github.com/pingdotgg/t3code"
     },
     "autoupdate": {
-        "url": "https://github.com/pingdotgg/t3code/releases/download/v$version/T3-Code-$version-x64.exe#/dl.7z",
-        "hash": {
-            "url": "$baseurl/latest.yml",
-            "regex": "sha512:\\s+$base64"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/pingdotgg/t3code/releases/download/v$version/T3-Code-$version-x64.exe#t3code.7z"
+            }
         }
     }
 }
