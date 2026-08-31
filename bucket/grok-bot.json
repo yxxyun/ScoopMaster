@@ -1,16 +1,16 @@
 {
-    "version": "0.28.0",
+    "version": "0.30.0",
     "description": "AI teammates that use apps and websites to complete work",
-    "homepage": "https://x.ai/bot",
+    "homepage": "https://cursor.com/grokbot",
     "license": "Proprietary",
     "architecture": {
         "64bit": {
-            "url": "https://downloads.cursor.com/grokbot/stable/win32-x64/0.28.0/Grok_Bot_0.28.0_Setup.exe",
-            "hash": "skip"
+            "url": "https://downloads.cursor.com/grokbot/stable/win32-x64/0.30.0/Grok_Bot_0.30.0_Setup.exe",
+            "hash": "cb1a5ef75b4d3ebeee7e7833ecdd66440e2639864f255e18ec6d5029058e814d"
         },
         "arm64": {
-            "url": "https://downloads.cursor.com/grokbot/stable/win32-arm64/0.28.0/Grok_Bot_0.28.0_Setup.exe",
-            "hash": "skip"
+            "url": "https://downloads.cursor.com/grokbot/stable/win32-arm64/0.30.0/Grok_Bot_0.30.0_Setup.exe",
+            "hash": "492d228f8becb4b5a54f8be126215593567fa040a358cf65a2e75299e4cf1768"
         }
     },
     "installer": {
@@ -29,8 +29,37 @@
         ]
     ],
     "checkver": {
-        "url": "https://x.ai/bot",
-        "regex": "Grok_Bot_(?<version>[\\d.]+)\\.(?:dmg|exe)"
+        "script": [
+            "function Test-GrokBotVersion([string]$Version) {",
+            "    $url = \"https://downloads.cursor.com/grokbot/stable/win32-x64/$Version/Grok_Bot_${Version}_Setup.exe\"",
+            "    try {",
+            "        Invoke-WebRequest -Uri $url -Method Head -UseBasicParsing -ErrorAction Stop | Out-Null",
+            "        return $true",
+            "    } catch {",
+            "        return $false",
+            "    }",
+            "}",
+            "$ver = [version]'0.27.0'",
+            "$changed = $true",
+            "while ($changed) {",
+            "    $changed = $false",
+            "    $candidates = @(",
+            "        [version]::new($ver.Major, $ver.Minor, $ver.Build + 1),",
+            "        [version]::new($ver.Major, $ver.Minor + 1, 0),",
+            "        [version]::new($ver.Major + 1, 0, 0)",
+            "    )",
+            "    foreach ($candidate in ($candidates | Where-Object { $_ -gt $ver } | Sort-Object -Descending)) {",
+            "        $candidateStr = \"$($candidate.Major).$($candidate.Minor).$($candidate.Build)\"",
+            "        if (Test-GrokBotVersion $candidateStr) {",
+            "            $ver = $candidate",
+            "            $changed = $true",
+            "            break",
+            "        }",
+            "    }",
+            "}",
+            "\"$($ver.Major).$($ver.Minor).$($ver.Build)\""
+        ],
+        "regex": "^(?<version>[\\d.]+)$"
     },
     "autoupdate": {
         "architecture": {
