@@ -1,0 +1,61 @@
+{
+    "version": "0.3.15",
+    "description": "Codex CLI 跨平台可视化增强管理器：提示词模板注入、Provider 切换与 TOML/JSON 配置管理",
+    "homepage": "https://yynxxxxx.github.io/Codex-X/",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/yynxxxxx/Codex-X/releases/download/v0.3.15/Codex-X-0.3.15-windows-x64-portable.zip",
+            "hash": "ef1d08835668d43e324c9a6de65d85b9e3b15478cace706ed358fceef9bbb298"
+        }
+    },
+    "pre_install": [
+        "if (!(Test-Path \"$persist_dir\\.codexx\")) {",
+        "    $oldConfig = \"$env:USERPROFILE\\.codexx\"",
+        "    if ((Test-Path $oldConfig) -and !(Get-Item $oldConfig -Force).LinkType) {",
+        "        info 'Migrating existing config from %USERPROFILE%\\.codexx'",
+        "        Copy-Item -Path $oldConfig -Destination \"$persist_dir\\.codexx\" -Recurse -Force",
+        "    } else {",
+        "        New-Item -ItemType Directory -Path \"$persist_dir\\.codexx\" -Force | Out-Null",
+        "    }",
+        "}"
+    ],
+    "post_install": [
+        "$configPath = \"$persist_dir\\.codexx\"",
+        "$symlinkPath = \"$env:USERPROFILE\\.codexx\"",
+        "if (Test-Path $symlinkPath) {",
+        "    $item = Get-Item $symlinkPath -Force",
+        "    if ($item.LinkType -ne 'Junction' -and $item.LinkType -ne 'SymbolicLink') {",
+        "        warn 'Existing .codexx is not a symlink, skipping'",
+        "    }",
+        "} else {",
+        "    New-Item -ItemType Junction -Path $symlinkPath -Target $configPath -Force | Out-Null",
+        "    info 'Created junction: %USERPROFILE%\\.codexx -> persist\\.codexx'",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$symlinkPath = \"$env:USERPROFILE\\.codexx\"",
+        "if (Test-Path $symlinkPath) {",
+        "    $item = Get-Item $symlinkPath -Force",
+        "    if ($item.LinkType -eq 'Junction' -or $item.LinkType -eq 'SymbolicLink') {",
+        "        Remove-Item $symlinkPath -Force",
+        "        info 'Removed junction: %USERPROFILE%\\.codexx'",
+        "    }",
+        "}"
+    ],
+    "shortcuts": [
+        [
+            "Codex-X.exe",
+            "Codex-X"
+        ]
+    ],
+    "persist": ".codexx",
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/yynxxxxx/Codex-X/releases/download/v$version/Codex-X-$version-windows-x64-portable.zip"
+            }
+        }
+    }
+}
