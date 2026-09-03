@@ -1,0 +1,34 @@
+{
+    "version": "45",
+    "description": "gpt-5.6-sol Codex 破甲提示词注入工具 — 安装时自动注入配置和提示词，卸载时安全移除",
+    "homepage": "https://github.com/MDX-Tom/gpt-5.6-instruct",
+    "license": "MIT",
+    "notes": [
+        "⚠️ 使用破甲提示词存在 Codex 封号风险，请自行承担。",
+        "安装时自动部署 gpt-5.6-sol 提示词到 ~/.codex 并修改 config.toml。",
+        "卸载时自动恢复 config.toml 并移除提示词文件，不影响 CCSwitch 等反代工具的 provider 配置。",
+        "若 ~/.codex 下已存在同名提示词文件且不属于本脚本管理，安装将失败，请先手动移除。"
+    ],
+    "depends": "python312",
+    "url": [
+        "https://raw.githubusercontent.com/MDX-Tom/gpt-5.6-instruct/main/codex-instruct.py",
+        "https://raw.githubusercontent.com/MDX-Tom/gpt-5.6-instruct/main/gpt-5.6-sol-unrestricted-v45.zip"
+    ],
+    "hash": [
+        "c35df258e6367833e5a9d8418f88c3254576443b59af4c2bcc33f674c6a739dc",
+        "c86c2c6d20a4d1155d87422f485eb37b77539132270918c002b5d8237a5adf54"
+    ],
+    "post_install": [
+        "python \"$dir\\codex-instruct.py\" --file \"$dir\\gpt-5.6-sol-unrestricted-v45.md\" --codex-dir \"$env:USERPROFILE\\.codex\"",
+        "# Windows 上 atomic_write_text 以 CRLF 写入提示词，导致状态哈希与 LF 文本哈希不匹配，卸载时 --reset 无法删除文件；归一化为 LF 使其匹配",
+        "$md = \"$env:USERPROFILE\\.codex\\gpt-5.6-sol-unrestricted-v45.md\"",
+        "if (Test-Path $md) {",
+        "    $content = [IO.File]::ReadAllText($md)",
+        "    $content = $content -replace \"`r`n?\", \"`n\"",
+        "    [IO.File]::WriteAllText($md, $content, [Text.UTF8Encoding]::new($false))",
+        "}"
+    ],
+    "uninstaller": {
+        "script": "\"y\" | python \"$dir\\codex-instruct.py\" --reset --codex-dir \"$env:USERPROFILE\\.codex\""
+    }
+}
