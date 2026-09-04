@@ -1,0 +1,61 @@
+{
+    "version": "26.901.4073.0",
+    "description": "Official ChatGPT desktop app with Codex, unpacked from the Store-signed MSIX without AppX registration.",
+    "homepage": "https://learn.chatgpt.com/docs/windows/windows-app",
+    "license": "Proprietary",
+    "architecture": {
+        "64bit": {
+            "url": "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-x64.msix?build=26.901.4073.0#/ChatGPT-x64.zip",
+            "hash": "d38ffea42d90d3cf4f57fa1a29c563ed17c643f19d3664080895384e9f3bdb8a"
+        },
+        "arm64": {
+            "url": "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-arm64.msix?build=26.901.4073.0#/ChatGPT-arm64.zip",
+            "hash": "8fd7f47eab09450185b08165a9a2a0286634f8d70b2e5b64d685e6d213933c9f"
+        }
+    },
+    "pre_install": [
+        "Get-ChildItem -LiteralPath (Join-Path $dir 'app\\resources\\cua_node\\bin\\node_modules') -Recurse -Force | Where-Object Name -Match '%[0-9A-Fa-f]{2}' | Sort-Object { $_.FullName.Length } -Descending | ForEach-Object { Rename-Item -LiteralPath $_.FullName -NewName ([Uri]::UnescapeDataString($_.Name)) -ErrorAction Stop }",
+        "$protocolKey = 'Registry::HKEY_CURRENT_USER\\Software\\Classes\\codex'",
+        "New-Item -Path \"$protocolKey\\shell\\open\\command\" -Force | Out-Null",
+        "Set-Item -LiteralPath $protocolKey -Value 'URL:codex'",
+        "New-ItemProperty -LiteralPath $protocolKey -Name 'URL Protocol' -Value '' -PropertyType String -Force | Out-Null",
+        "Set-Item -LiteralPath \"$protocolKey\\shell\\open\\command\" -Value ('\"' + (Join-Path (Join-Path (Split-Path -Parent $dir) 'current') 'app\\ChatGPT.exe') + '\" \"%1\"')"
+    ],
+    "pre_uninstall": [
+        "Remove-Item -LiteralPath 'Registry::HKEY_CURRENT_USER\\Software\\Classes\\codex' -Recurse -Force"
+    ],
+    "shortcuts": [
+        [
+            "app\\ChatGPT.exe",
+            "ChatGPT (Scoop)"
+        ]
+    ],
+    "checkver": {
+        "url": "https://persistent.oaistatic.com/codex-app-prod/windows-store-update.json",
+        "script": [
+            "$release = $page | ConvertFrom-Json",
+            "if ($release.buildVersion -ceq $expected_ver) { $release.buildVersion; return }",
+            "$reader = Join-Path (Split-Path -Parent (Split-Path -Parent $file)) 'bin\\get-remote-msix-manifest.ps1'",
+            "$versions = 'x64', 'arm64' | ForEach-Object { (& $reader -Uri \"https://persistent.oaistatic.com/codex-app-prod/ChatGPT-$_.msix\").Version }",
+            "if (@($versions | Where-Object { $_ -cne $release.buildVersion }).Count -eq 0) { $release.buildVersion } else { $expected_ver }"
+        ],
+        "regex": "([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-x64.msix?build=$version#/ChatGPT-x64.zip"
+            },
+            "arm64": {
+                "url": "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-arm64.msix?build=$version#/ChatGPT-arm64.zip"
+            }
+        }
+    },
+    "notes": [
+        "Codex state remains in ~/.codex, %APPDATA%\\Codex, and %LOCALAPPDATA%\\OpenAI\\Codex; Scoop does not move or delete it.",
+        "Scoop does not configure ChatGPT in-app updates.",
+        "To disable them, add the following to %ProgramData%\\OpenAI\\Codex\\requirements.toml, merge it into an existing [features] table if needed, then fully quit and reopen ChatGPT:",
+        "[features]",
+        "in_app_updates = false"
+    ]
+}
