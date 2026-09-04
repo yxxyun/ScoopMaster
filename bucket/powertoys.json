@@ -1,24 +1,37 @@
 {
     "version": "0.101.2432.0",
-    "description": "Powertoys with my custom settings added",
+    "description": "A set of utilities for power users to tune and streamline their Windows experience for greater productivity.",
     "homepage": "https://github.com/microsoft/PowerToys",
     "license": "MIT",
-    "url": "https://github.com/microsoft/PowerToys/releases/download/v0.101.2432.0/PowerToysUserSetup-0.101.2432.0-x64.exe",
-    "hash": "ba0bc563e8a40b223f617c8635e8b32c591fa08120503278791f7eab855086a4",
+    "notes": [
+        "Add PowerToys context menu option by running:",
+        "Invoke-Expression -Command \"$dir\\install-context.ps1\"",
+        "",
+        "If an error occurs when updating or uninstalling, execute the following command then retry:",
+        "`Stop-Process -Name 'explorer'`"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/microsoft/PowerToys/releases/download/v0.101.2432.0/PowerToysUserSetup-0.101.2432.0-x64.exe",
+            "hash": "ba0bc563e8a40b223f617c8635e8b32c591fa08120503278791f7eab855086a4"
+        },
+        "arm64": {
+            "url": "https://github.com/microsoft/PowerToys/releases/download/v0.101.2432.0/PowerToysUserSetup-0.101.2432.0-arm64.exe",
+            "hash": "f44b1cbf5a67894221654c854f8bd26db29ea0fdc648b124abea253866d0c2e8"
+        }
+    },
+    "persist_link": [
+        [
+            "$env:LocalAppData\\Microsoft\\PowerToys",
+            "LocalAppData"
+        ]
+    ],
     "installer": {
         "script": [
             "Expand-DarkArchive \"$dir\\$fname\" \"$dir\\.tmp\"",
             "Get-ChildItem \"$dir\\.tmp\\AttachedContainer\\PowerToysUserSetup*.msi\" | Rename-Item -NewName 'PowerToysSetup.msi' -Force",
-            "$ver = ([xml](Get-Content -Raw \"$dir\\.tmp\\UX\\manifest.xml\" -Encoding utf8)).BurnManifest.EngineVersion",
-            "if (($null -ne $ver) -and ($ver -like \"5.*\")) {",
-            "    Expand-MsiArchive \"$dir\\.tmp\\AttachedContainer\\PowerToysSetup.msi\" \"$dir\" -ExtractDir 'LocalApp\\PowerToys'",
-            "} else {",
-            "    Expand-MsiArchive \"$dir\\.tmp\\AttachedContainer\\PowerToysSetup.msi\" \"$dir\" -ExtractDir 'PowerToys'",
-            "}",
-            "Remove-Item \"$dir\\.tmp\", \"$dir\\$fname\" -Force -Recurse",
-            "Get-Content \"$dir\\WinUI3Apps\\hardlinks.txt\" -ErrorAction Ignore | ForEach-Object {",
-            "    Copy-Item \"$dir\\$_\" \"$dir\\WinUI3Apps\\$_\" -Force",
-            "}"
+            "Expand-MsiArchive \"$dir\\.tmp\\AttachedContainer\\PowerToysSetup.msi\" \"$dir\" -ExtractDir 'PowerToys'",
+            "Remove-Item \"$dir\\.tmp\", \"$dir\\$fname\" -Force -Recurse"
         ]
     },
     "post_install": [
@@ -41,17 +54,8 @@
         "}",
         "if (Test-Path -Path $regpath) {",
         "    Remove-Item -Path $regpath -Recurse -Force | Out-Null",
-        "    Invoke-Expression -Command \"& `\"$dir\\install-context.ps1`\"\"",
-        "}",
-        "[void](mkdir -force -ea 0 \"$env:userprofile\\Documents\\powertoys\\backup\")",
-        "cp -force \"$bucketsdir\\$bucket\\scripts\\$app\\settings_*.ptb\" \"$env:userprofile\\Documents\\powertoys\\backup\""
-    ],
-    "pre_uninstall": [
-        "if (get-process powertoys -ea 0) {stop-process -name powertoys -force -ea 0; wait-process -name powertoys -ea 0; start-sleep 0.5}",
-        "if (get-process powertoys.imageresizer -ea 0) {stop-process -name powertoys.imageresizer -force -ea 0; wait-process -name powertoys.imageresizer -ea 0; start-sleep 0.5}",
-        "if (get-process powertoys.settings -ea 0) {stop-process -name powertoys.settings -force -ea 0; wait-process -name powertoys.settings -ea 0; start-sleep 0.5}",
-        "if (get-process powertoys.peek.ui -ea 0) {stop-process -name powertoys.peek.ui -force -ea 0; wait-process -name powertoys.peek.ui -ea 0; start-sleep 0.5}",
-        "if (get-process powertoys.quickaccess -ea 0) {stop-process -name powertoys.quickaccess -force -ea 0; wait-process -name powertoys.quickaccess -ea 0; start-sleep 0.5}"
+        "    Invoke-Expression -Command \"$dir\\install-context.ps1\"",
+        "}"
     ],
     "uninstaller": {
         "script": [
@@ -60,14 +64,13 @@
             "    $regpath = $regpath.Replace('HKCU', 'HKLM')",
             "}",
             "if (Test-Path -Path $regpath) {",
-            "    Invoke-Expression -Command \"& `\"$dir\\uninstall-context.ps1`\"\"",
+            "    Invoke-Expression -Command \"$dir\\uninstall-context.ps1\"",
             "    if ($cmd -ne 'uninstall') {",
             "        New-Item -Path $regpath -Force | Out-Null",
             "    }",
             "}"
         ]
     },
-    "post_uninstall": "[void](rm -r -force -ea 0 \"$env:userprofile\\Documents\\powertoys\")",
     "shortcuts": [
         [
             "PowerToys.exe",
@@ -80,6 +83,21 @@
         "regex": "/releases/download/(?<tag>[\\w.]+)/PowerToysUserSetup-([\\d.]+)-x64\\.exe"
     },
     "autoupdate": {
-        "url": "https://github.com/microsoft/PowerToys/releases/download/v$version/PowerToysUserSetup-$version-x64.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/microsoft/PowerToys/releases/download/$matchTag/PowerToysUserSetup-$version-x64.exe",
+                "hash": {
+                    "url": "https://github.com/microsoft/PowerToys/releases/tag/$matchTag",
+                    "regex": ">$sha256<"
+                }
+            },
+            "arm64": {
+                "url": "https://github.com/microsoft/PowerToys/releases/download/$matchTag/PowerToysUserSetup-$version-arm64.exe",
+                "hash": {
+                    "url": "https://github.com/microsoft/PowerToys/releases/tag/$matchTag",
+                    "regex": ">(?:[a-fA-F0-9]{64})<[\\s\\S]*?>([a-fA-F0-9]{64})<"
+                }
+            }
+        }
     }
 }
