@@ -1,43 +1,22 @@
 {
-    "version": "0.0.42-19927",
-    "description": "Sony PlayStation 3 emulator",
+    "version": "0.0.42-19929",
     "homepage": "https://rpcs3.net/",
+    "description": "Sony Playstation 3 Emulator",
     "license": {
         "identifier": "GPL-2.0",
         "url": "https://github.com/RPCS3/rpcs3/blob/master/LICENSE"
     },
-    "notes": [
-        "ATTENTION: RPCS3 requires a copy of the official PS3 firmware to function.",
-        "Install the ps3-system-software package.  You must still manually load PS3UPDAT.PUP",
-        "See the official quickstart guide for further instructions: https://rpcs3.net/quickstart"
-    ],
-    "depends": "ps3-system-software",
+    "url": "https://github.com/RPCS3/rpcs3-binaries-win/releases/download/build-bf949109ad1d2f3c963a03419a515eccd3fd6341/rpcs3-v0.0.42-19929-bf949109_win64_msvc.7z",
+    "hash": "17acab69b6a9ed10b9151d69d1b32bd73bfca5dea23dca20a80870a754df0081",
+    "bin": "rpcs3.exe",
+    "depends": "ps3-firmware",
     "suggest": {
         "Microsoft Visual C++ Runtime 2022": "extras/vcredist2022"
     },
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/RPCS3/rpcs3-binaries-win/releases/download/build-7be182e33bfa92a22d01bfb1b9c4188eff1165d5/rpcs3-v0.0.42-19927-7be182e3_win64_msvc.7z",
-            "hash": "10925710078945fa5595a1285b20934c8221d3eded48e004ca4da8b58d78c292"
-        },
-        "arm64": {
-            "url": "https://github.com/RPCS3/rpcs3-binaries-win-arm64/releases/download/build-7be182e33bfa92a22d01bfb1b9c4188eff1165d5/rpcs3-v0.0.42-19927-7be182e3_win64_aarch64_clang.7z",
-            "hash": "d871043496e5842800224506efb639107e270ce99674e066f5121ccf673c128f"
-        }
-    },
-    "pre_install": [
-        "if (!(Test-Path \"$persist_dir\")) {",
-        "   New-Item \"$persist_dir\" -ItemType Directory | Out-Null",
-        "   New-Item \"$persist_dir\\config.yml\" -ItemType File | Out-Null",
-        "   New-Item \"$persist_dir\\games.yml\" -ItemType File | Out-Null",
-        "   '[Meta]', 'checkUpdateStart=false' | Set-Content \"$dir\\GuiConfigs\\CurrentSettings.ini\"",
-        "}"
-    ],
-    "bin": "rpcs3.exe",
     "shortcuts": [
         [
             "rpcs3.exe",
-            "Sony PlayStation 3 [ps3][rpcs3]"
+            "PS3"
         ]
     ],
     "persist": [
@@ -48,34 +27,43 @@
         "dev_hdd1",
         "dev_usb000",
         "cache",
-        "captures",
-        "config.yml",
         "config",
-        "firmware",
-        "games.yml",
+        "patches",
+        "captures",
+        "recordings",
+        "savestates",
         "GuiConfigs",
-        "Icons",
-        "patches"
+        "config.yml",
+        "games.yml"
     ],
+    "installer": {
+        "script": [
+            "function create($Path, $Type, $Content) {",
+            "   if (-not (Test-Path \"$path\")) {",
+            "       New-Item \"$path\" -ItemType $type -Value ($content -join \"`n\") -Force | Out-Null",
+            "       Write-Output \"Creating $path...\"",
+            "   }",
+            "}",
+            "$conf = \"$persist_dir\\config.yml\"",
+            "$games = \"$persist_dir\\games.yml\"",
+            "$settings = \"$persist_dir\\GuiConfigs\\CurrentSettings.ini\"",
+            "create $conf -Type File",
+            "create $games -Type File",
+            "create $settings -Type File -Content ('[Meta]', 'checkUpdateStart=false', \"`n[main_window]\", 'infoBoxEnabledWelcome=false')",
+            "Copy-Item \"$dir/GuiConfigs/**\" -Exclude 'CurrentSettings.ini' -Destination \"$persist_dir/GuiConfigs/\" -Recurse -Force"
+        ]
+    },
     "checkver": {
         "url": "https://api.github.com/repos/RPCS3/rpcs3-binaries-win/releases/latest",
-        "jsonpath": "$.assets[?(@.name =~ /rpcs3-v[a-f\\d.-]+_win64_msvc\\.7z$/)].browser_download_url",
-        "regex": "releases/download/(?<build>build-[a-f\\d]+)/rpcs3-v(?<version>[\\d.-]+)-(?<commit>[a-f\\d]+)_win64_msvc\\.7z"
+        "jsonpath": {
+            "version": "$.name",
+            "download": "$.assets[?(@.name =~ /.*\\.7z$/)].browser_download_url"
+        }
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/RPCS3/rpcs3-binaries-win/releases/download/$matchBuild/rpcs3-v$version-$matchCommit_win64_msvc.7z",
-                "hash": {
-                    "url": "https://github.com/RPCS3/rpcs3-binaries-win/releases/download/$matchBuild/rpcs3-v$version-$matchCommit_win64_msvc.7z.sha256"
-                }
-            },
-            "arm64": {
-                "url": "https://github.com/RPCS3/rpcs3-binaries-win-arm64/releases/download/$matchBuild/rpcs3-v$version-$matchCommit_win64_aarch64_clang.7z",
-                "hash": {
-                    "url": "https://github.com/RPCS3/rpcs3-binaries-win-arm64/releases/download/$matchBuild/rpcs3-v$version-$matchCommit_win64_aarch64_clang.7z.sha256"
-                }
-            }
+        "url": "$matchDownload",
+        "hash": {
+            "url": "$url.sha256"
         }
     }
 }
