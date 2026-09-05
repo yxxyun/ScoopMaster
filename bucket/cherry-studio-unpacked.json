@@ -1,0 +1,87 @@
+{
+    "version": "2.0.12",
+    "description": "Cherry Studio unpacked at install time to avoid extracting the portable package on every launch",
+    "homepage": "https://github.com/CherryHQ/cherry-studio",
+    "license": "AGPL-3.0-only",
+    "notes": [
+        "This is an unofficial redistribution of the official Cherry Studio portable binaries.",
+        "The application is unpacked only during install or upgrade. User data is persisted in '$persist_dir\\data'.",
+        "Close Cherry Studio before upgrading this package."
+    ],
+    "suggest": {
+        "vcredist": "extras/vcredist2022"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v2.0.12/Cherry-Studio-2.0.12-win-x64-portable.exe#/dl.7z",
+            "hash": "9323251b5d60166a7eaba3b8ed04c97e82cdd359244969f18766afff672d0f17"
+        },
+        "arm64": {
+            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v2.0.12/Cherry-Studio-2.0.12-win-arm64-portable.exe#/dl.7z",
+            "hash": "0752db346ff2e71eeec397fa4016df9ad921a9188622a781de008c7e7e55af9a"
+        }
+    },
+    "pre_install": [
+        "$pluginDirectory = \"$dir\\`$PLUGINSDIR\"",
+        "$appArchive = Get-ChildItem -LiteralPath $pluginDirectory -Filter 'app-*.7z' -File | Select-Object -First 1",
+        "if (!$appArchive) { throw 'The embedded Cherry Studio application archive was not found.' }",
+        "Write-Host ''",
+        "info 'Extracting Cherry Studio application files...'",
+        "$appDirectory = \"$dir\\app\"",
+        "Remove-Item -LiteralPath $appDirectory -Recurse -Force -ErrorAction SilentlyContinue",
+        "ensure $appDirectory | Out-Null",
+        "Expand-7zipArchive -Path $appArchive.FullName -DestinationPath $appDirectory",
+        "if (!(Test-Path -LiteralPath \"$appDirectory\\Cherry Studio.exe\" -PathType Leaf)) { throw 'The Cherry Studio application payload is incomplete.' }",
+        "Remove-Item -LiteralPath $pluginDirectory -Recurse -Force",
+        "$launcherBuildScript = \"$bucketsdir\\$bucket\\scripts\\cherry-studio-unpacked\\build-launcher.ps1\"",
+        "if (!(Test-Path -LiteralPath $launcherBuildScript -PathType Leaf)) { throw \"Launcher source was not found at '$launcherBuildScript'.\" }",
+        "$localBuildScript = \"$dir\\launcher-source.ps1\"",
+        "Copy-Item -LiteralPath $launcherBuildScript -Destination $localBuildScript",
+        "$windowsPowerShellPath = \"$env:SystemRoot\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\"",
+        "$launcherPath = \"$dir\\cherry-studio-unpacked.exe\"",
+        "info 'Building the unpacked launcher...'",
+        "& $windowsPowerShellPath -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $localBuildScript -OutputPath $launcherPath",
+        "if ($LASTEXITCODE -ne 0 -or !(Test-Path -LiteralPath $launcherPath -PathType Leaf)) { throw 'Failed to build the unpacked launcher.' }",
+        "info 'Writing upstream metadata...'",
+        "$architectureInfo = $manifest.architecture.$architecture",
+        "$assetUrl = @($architectureInfo.url)[0] -replace '#/.*$', ''",
+        "$assetHash = @($architectureInfo.hash)[0] -replace '^sha256:', ''",
+        "$upstreamMetadata = [ordered]@{",
+        "    name = 'Cherry Studio'",
+        "    version = $version",
+        "    tag = \"v$version\"",
+        "    release_url = \"https://github.com/CherryHQ/cherry-studio/releases/tag/v$version\"",
+        "    source_url = \"https://github.com/CherryHQ/cherry-studio/tree/v$version\"",
+        "    asset_url = $assetUrl",
+        "    asset_sha256 = $assetHash",
+        "    license = 'AGPL-3.0-only'",
+        "    package = 'cherry-studio-unpacked'",
+        "    launcher = 'cherry-studio-unpacked.exe'",
+        "    application = 'app\\Cherry Studio.exe'",
+        "}",
+        "$upstreamMetadata | ConvertTo-Json | Out-UTF8File \"$dir\\UPSTREAM.json\""
+    ],
+    "bin": [["cherry-studio-unpacked.exe", "cherry-studio-unpacked"]],
+    "shortcuts": [
+        [
+            "cherry-studio-unpacked.exe",
+            "Cherry Studio",
+            "",
+            "app\\Cherry Studio.exe"
+        ]
+    ],
+    "persist": "data",
+    "checkver": {
+        "github": "https://github.com/CherryHQ/cherry-studio"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-win-x64-portable.exe#/dl.7z"
+            },
+            "arm64": {
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-win-arm64-portable.exe#/dl.7z"
+            }
+        }
+    }
+}
