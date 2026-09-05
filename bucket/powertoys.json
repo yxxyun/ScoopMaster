@@ -5,7 +5,7 @@
     "license": "MIT",
     "notes": [
         "Add PowerToys context menu option by running:",
-        "Invoke-Expression -Command \"& `\"$dir\\install-context.ps1`\"\"",
+        "Invoke-Expression -Command \"$dir\\install-context.ps1\"",
         "",
         "If an error occurs when updating or uninstalling, execute the following command then retry:",
         "`Stop-Process -Name 'explorer'`"
@@ -20,20 +20,18 @@
             "hash": "ec2432148a2a2fd5498b9afe9a3ae5d8f6d21c9282d7b50d2e44b4eda7199617"
         }
     },
+    "persist_link": [
+        [
+            "$env:LocalAppData\\Microsoft\\PowerToys",
+            "LocalAppData"
+        ]
+    ],
     "installer": {
         "script": [
             "Expand-DarkArchive \"$dir\\$fname\" \"$dir\\.tmp\"",
             "Get-ChildItem \"$dir\\.tmp\\AttachedContainer\\PowerToysUserSetup*.msi\" | Rename-Item -NewName 'PowerToysSetup.msi' -Force",
-            "$ver = ([xml](Get-Content -Raw \"$dir\\.tmp\\UX\\manifest.xml\" -Encoding utf8)).BurnManifest.EngineVersion",
-            "if (($null -ne $ver) -and ($ver -like \"5.*\")) {",
-            "    Expand-MsiArchive \"$dir\\.tmp\\AttachedContainer\\PowerToysSetup.msi\" \"$dir\" -ExtractDir 'LocalApp\\PowerToys'",
-            "} else {",
-            "    Expand-MsiArchive \"$dir\\.tmp\\AttachedContainer\\PowerToysSetup.msi\" \"$dir\" -ExtractDir 'PowerToys'",
-            "}",
-            "Remove-Item \"$dir\\.tmp\", \"$dir\\$fname\" -Force -Recurse",
-            "Get-Content \"$dir\\WinUI3Apps\\hardlinks.txt\" -ErrorAction Ignore | ForEach-Object {",
-            "    Copy-Item \"$dir\\$_\" \"$dir\\WinUI3Apps\\$_\" -Force",
-            "}"
+            "Expand-MsiArchive \"$dir\\.tmp\\AttachedContainer\\PowerToysSetup.msi\" \"$dir\" -ExtractDir 'PowerToys'",
+            "Remove-Item \"$dir\\.tmp\", \"$dir\\$fname\" -Force -Recurse"
         ]
     },
     "post_install": [
@@ -56,7 +54,7 @@
         "}",
         "if (Test-Path -Path $regpath) {",
         "    Remove-Item -Path $regpath -Recurse -Force | Out-Null",
-        "    Invoke-Expression -Command \"& `\"$dir\\install-context.ps1`\"\"",
+        "    Invoke-Expression -Command \"$dir\\install-context.ps1\"",
         "}"
     ],
     "uninstaller": {
@@ -66,7 +64,7 @@
             "    $regpath = $regpath.Replace('HKCU', 'HKLM')",
             "}",
             "if (Test-Path -Path $regpath) {",
-            "    Invoke-Expression -Command \"& `\"$dir\\uninstall-context.ps1`\"\"",
+            "    Invoke-Expression -Command \"$dir\\uninstall-context.ps1\"",
             "    if ($cmd -ne 'uninstall') {",
             "        New-Item -Path $regpath -Force | Out-Null",
             "    }",
@@ -80,22 +78,26 @@
         ]
     ],
     "checkver": {
-        "github": "https://api.github.com/repos/microsoft/PowerToys/releases",
+        "url": "https://api.github.com/repos/microsoft/PowerToys/releases",
         "jsonpath": "$[0].assets[*].browser_download_url",
         "regex": "/releases/download/(?<tag>[\\w.]+)/PowerToysUserSetup-([\\d.]+)-x64\\.exe"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/microsoft/PowerToys/releases/download/v$version/PowerToysUserSetup-$version-x64.exe"
+                "url": "https://github.com/microsoft/PowerToys/releases/download/$matchTag/PowerToysUserSetup-$version-x64.exe",
+                "hash": {
+                    "url": "https://github.com/microsoft/PowerToys/releases/tag/$matchTag",
+                    "regex": ">$sha256<"
+                }
             },
             "arm64": {
-                "url": "https://github.com/microsoft/PowerToys/releases/download/v$version/PowerToysUserSetup-$version-arm64.exe"
+                "url": "https://github.com/microsoft/PowerToys/releases/download/$matchTag/PowerToysUserSetup-$version-arm64.exe",
+                "hash": {
+                    "url": "https://github.com/microsoft/PowerToys/releases/tag/$matchTag",
+                    "regex": ">(?:[a-fA-F0-9]{64})<[\\s\\S]*?>([a-fA-F0-9]{64})<"
+                }
             }
-        },
-        "hash": {
-            "url": "https://github.com/microsoft/PowerToys/releases/tag/v$version",
-            "regex": "(?sm)$basename.*?>$sha256<"
         }
     }
 }
