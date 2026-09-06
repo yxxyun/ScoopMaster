@@ -1,0 +1,47 @@
+{
+    "version": "10.0.1",
+    "description": "Open-source workspace platform for advanced image and media comparison.",
+    "homepage": "https://github.com/Loganavter/Improve-ImgSLI",
+    "license": "GPL-3.0-or-later",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Loganavter/Improve-ImgSLI/releases/download/v10.0.1/Improve_ImgSLI_Setup_v10.0.1.exe",
+            "hash": "ea9b74a484b25c9cc682775be23d062c056f8b344627da5932fbfb096f573857"
+        }
+    },
+    "innosetup": true,
+    "pre_uninstall": [
+        "if ($cmd -ne 'uninstall') { return }",
+        "$classes = 'Registry::HKEY_CURRENT_USER\\Software\\Classes'",
+        "$commandKey = Get-Item -LiteralPath \"$classes\\ImproveImgSLI.Project\\shell\\open\\command\" -ErrorAction Ignore",
+        "$command = if ($commandKey) { $commandKey.GetValue('') } else { $null }",
+        "if ($command -notlike \"*$(appdir $app $global)*\") { return }",
+        "Remove-Item -LiteralPath \"$classes\\ImproveImgSLI.Project\" -Recurse -Force -ErrorAction Ignore",
+        "$extensionKey = Get-Item -LiteralPath \"$classes\\.imgsli\" -ErrorAction Ignore",
+        "if ($extensionKey -and $extensionKey.GetValue('') -eq 'ImproveImgSLI.Project') { Remove-Item -LiteralPath $extensionKey.PSPath -Recurse -Force }"
+    ],
+    "post_uninstall": [
+        "if (-not $purge) { return }",
+        "$software = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Software', $true)",
+        "if ($null -ne $software) { $software.DeleteSubKeyTree('improve-imgsli', $false); $software.Dispose() }",
+        "$dataDirs = @((Join-Path $env:APPDATA 'ImproveImgSLI'), (Join-Path $env:LOCALAPPDATA 'improve-imgsli'))",
+        "foreach ($dataDir in $dataDirs) { if ([IO.Directory]::Exists($dataDir)) { [IO.Directory]::Delete($dataDir, $true) } }"
+    ],
+    "shortcuts": [
+        [
+            "Improve_ImgSLI.exe",
+            "Improve ImgSLI"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/Loganavter/Improve-ImgSLI"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Loganavter/Improve-ImgSLI/releases/download/v$version/Improve_ImgSLI_Setup_v$version.exe"
+            }
+        }
+    },
+    "notes": "Settings and recent projects are retained on regular uninstall. Use 'scoop uninstall -p improve-imgsli' to also remove settings, logs, and caches."
+}
