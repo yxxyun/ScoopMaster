@@ -1,5 +1,5 @@
 {
-    "version": "12.26.5",
+    "version": "12.27.0",
     "description": "Complete API development environment.",
     "homepage": "https://www.getpostman.com/",
     "license": {
@@ -8,14 +8,17 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://dl.pstmn.io/download/12.26.5/Postman%20v12.26.5%20(x64).exe#/dl.7z",
-            "hash": "sha1:b1d8a7a0fa73f8d028bd98b9364ee2e4143658e6"
+            "url": "https://dl.pstmn.io/download/12.27.0/Postman%20v12.27.0%20(x64).exe#/dl.7z",
+            "hash": "sha1:70854a06287ef7ade3992a920344f175878be706"
         }
     },
     "installer": {
         "script": [
             "Expand-7zipArchive \"$dir\\Postman-$version-full.nupkg\" \"$dir\\app\" -ExtractDir 'lib\\net45' -Removal",
-            "'background.gif', 'RELEASES', 'setupIcon.ico' | ForEach-Object { Remove-Item \"$dir\\$_\" }"
+            "'background.gif', 'RELEASES', 'setupIcon.ico', 'Update.exe' | ForEach-Object { Remove-Item \"$dir\\$_\" -Force -ErrorAction SilentlyContinue }",
+            "Remove-Item \"$dir\\app\\squirrel.exe\" -Force -ErrorAction SilentlyContinue",
+            ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+            "New-PersistDirectory \"$env:APPDATA\\Postman\" \"$persist_dir\\AppData\" -Migrate"
         ]
     },
     "shortcuts": [
@@ -23,6 +26,12 @@
             "app/Postman.exe",
             "Postman"
         ]
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+        "Get-Process -Name 'Postman' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue",
+        "Remove-Junction \"$env:APPDATA\\Postman\""
     ],
     "checkver": {
         "url": "https://dl.pstmn.io/changelog?channel=stable&platform=win64",
