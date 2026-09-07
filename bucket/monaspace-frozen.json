@@ -1,14 +1,11 @@
 {
     "version": "1.400",
-    "description": "An innovative superfamily of fonts for code",
-    "homepage": "https://github.com/githubnext/monaspace",
+    "description": "An innovative superfamily of fonts for code.",
+    "homepage": "https://monaspace.githubnext.com",
     "license": "OFL-1.1",
     "url": "https://github.com/githubnext/monaspace/releases/download/v1.400/monaspace-frozen-v1.400.zip",
     "hash": "f4a846421d1d6bb1233e5cb748d2afb85c7111b3da994a200504eaffd97a3a05",
-    "checkver": "github",
-    "autoupdate": {
-        "url": "https://github.com/githubnext/monaspace/releases/download/v$version/monaspace-frozen-v$version.zip"
-    },
+    "extract_dir": "Frozen Fonts",
     "installer": {
         "script": [
             "$currentBuildNumber = [int] (Get-ItemProperty \"HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\").CurrentBuildNumber",
@@ -41,32 +38,16 @@
             "}",
             "$registryRoot = if ($global) { \"HKLM\" } else { \"HKCU\" }",
             "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
-            "Get-ChildItem $dir -File -Filter '*monaspace*' -Recurse | Where-Object { @(\".ttf\", \".otf\", \".ttc\") -contains $_.Extension } | ForEach-Object {",
+            "Get-ChildItem $dir -Filter '*.ttf' -Recurse | ForEach-Object {",
             "    $value = if ($global) { $_.Name } else { \"$fontInstallDir\\$($_.Name)\" }",
-            "    $fontType = if ($_.Extension -eq '.otf') { ' (OpenType)' } else { ' (TrueType)' }",
-            "    New-ItemProperty -Path $registryKey -Name $_.Name.Replace($_.Extension, $fontType) -Value $value -Force | Out-Null",
+            "    New-ItemProperty -Path $registryKey -Name $_.Name.Replace($_.Extension, ' (TrueType)') -Value $value -Force | Out-Null",
             "    Copy-Item -LiteralPath $_.FullName -Destination $fontInstallDir",
-            "}"
-        ]
-    },
-    "uninstaller": {
-        "script": [
-            "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
-            "$registryRoot = if ($global) { \"HKLM\" } else { \"HKCU\" }",
-            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
-            "Get-ChildItem $dir -File -Filter '*monaspace*' -Recurse | ForEach-Object {",
-            "    $fontType = if ($_.Extension -eq '.otf') { ' (OpenType)' } else { ' (TrueType)' }",
-            "    Remove-ItemProperty -Path $registryKey -Name $_.Name.Replace($_.Extension, $fontType) -Force -ErrorAction SilentlyContinue",
-            "    Remove-Item \"$fontInstallDir\\$($_.Name)\" -Force -ErrorAction SilentlyContinue",
-            "}",
-            "if ($cmd -eq \"uninstall\") {",
-            "    Write-Host \"The '$app' Font family has been uninstalled and will not be present after restarting your computer.\" -Foreground Magenta",
             "}"
         ]
     },
     "pre_uninstall": [
         "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
-        "Get-ChildItem $dir -File -Filter '*monaspace*' | ForEach-Object {",
+        "Get-ChildItem $dir -Filter '*.ttf' -Recurse | ForEach-Object {",
         "    Get-ChildItem $fontInstallDir -Filter $_.Name | ForEach-Object {",
         "        try {",
         "            Rename-Item $_.FullName $_.FullName -ErrorVariable LockError -ErrorAction Stop",
@@ -90,5 +71,26 @@
         "        }",
         "    }",
         "}"
-    ]
+    ],
+    "uninstaller": {
+        "script": [
+            "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
+            "$registryRoot = if ($global) { \"HKLM\" } else { \"HKCU\" }",
+            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
+            "Get-ChildItem $dir -Filter '*.ttf' -Recurse | ForEach-Object {",
+            "    Remove-ItemProperty -Path $registryKey -Name $_.Name.Replace($_.Extension, ' (TrueType)') -Force -ErrorAction SilentlyContinue",
+            "    Remove-Item \"$fontInstallDir\\$($_.Name)\" -Force -ErrorAction SilentlyContinue",
+            "}",
+            "if ($cmd -eq \"uninstall\") {",
+            "    Write-Host \"The '$app' Font family has been uninstalled and will not be present after restarting your computer.\" -Foreground Magenta",
+            "}"
+        ]
+    },
+    "checkver": {
+        "github": "https://github.com/githubnext/monaspace"
+    },
+    "autoupdate": {
+        "url": "https://github.com/githubnext/monaspace/releases/download/v$version/monaspace-frozen-v$version.zip",
+        "extract_dir": "Frozen Fonts"
+    }
 }
