@@ -1,49 +1,41 @@
 {
     "version": "2.1.2",
-    "description": "A Flutter BiliBili desktop client forked from PiliPlus, with offline cache support",
+    "description": "PiliNara - 第三方BiliBili客户端 (BiliBili third-party client)",
     "homepage": "https://github.com/Starfallan/PiliNara",
     "license": "GPL-3.0-only",
-    "notes": "The app checks for updates at startup by default; disable it in the app settings if you prefer Scoop-managed updates.",
     "architecture": {
         "64bit": {
             "url": "https://github.com/Starfallan/PiliNara/releases/download/2.1.2/PiliNara_windows_2.1.2%2B5790_x64_portable.zip",
-            "hash": "cfeb171e0236b3fade46d6ef1b9562b127871a7905425b5ed018f895d9f8064e"
+            "hash": "cfeb171e0236b3fade46d6ef1b9562b127871a7905425b5ed018f895d9f8064e",
+            "extract_dir": "PiliNara-Win"
         }
     },
-    "extract_dir": "PiliNara-Win",
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:APPDATA\\com.example.piliplus\" \"$persist_dir\\AppData\" -Migrate"
+        ]
+    },
     "shortcuts": [
         [
             "pilinara.exe",
             "PiliNara"
         ]
     ],
-    "post_install": [
-        ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
-        "New-PersistDirectory \"$env:APPDATA\\com.example\\PiliNara\" \"$persist_dir\\AppData\" -Migrate"
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\com.example.piliplus\""
     ],
-    "uninstaller": {
-        "script": [
-            "$bucket = $install.bucket",
-            ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
-            "Remove-Junction \"$env:APPDATA\\com.example\\PiliNara\"",
-            "Remove-EmptyDirectory \"$env:APPDATA\\com.example\""
-        ]
-    },
     "checkver": {
-        "script": [
-            "$headers = @{ 'User-Agent' = 'Scoop' }",
-            "if ($env:SCOOP_GH_TOKEN) { $headers['Authorization'] = \"Bearer $env:SCOOP_GH_TOKEN\" }",
-            "$releases = Invoke-RestMethod -Headers $headers -Uri 'https://api.github.com/repos/Starfallan/PiliNara/releases?per_page=100'",
-            "$release = $releases | Where-Object { $_.assets | Where-Object { $_.name -like 'PiliNara_windows_*x64_portable.zip' } } | Select-Object -First 1",
-            "$asset = $release.assets | Where-Object { $_.name -like 'PiliNara_windows_*x64_portable.zip' } | Select-Object -First 1",
-            "Write-Output \"$($release.tag_name) $($asset.browser_download_url)\""
-        ],
-        "regex": "(?<version>[^\\s]+)\\s(?<url>[^\\s]+)"
+        "url": "https://api.github.com/repos/Starfallan/PiliNara/releases/latest",
+        "regex": "\"tag_name\"\\s*:\\s*\"([^\"]+)\"[\\s\\S]*?PiliNara_windows_([\\d.]+)%2B(\\d+)_x64_portable\\.zip"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "$matchUrl"
+                "url": "https://github.com/Starfallan/PiliNara/releases/download/$version/PiliNara_windows_$match2%2B$match3_x64_portable.zip"
             }
         }
     }
