@@ -1,0 +1,50 @@
+{
+    "version": "1.14.3",
+    "description": "ai-usagebar test builds from the djalmajr fork (Windows tray, TUI, CLI). For trying unreleased changes; use 'ai-usagebar' for upstream releases",
+    "homepage": "https://github.com/djalmajr/ai-usagebar",
+    "license": "MIT",
+    "notes": [
+        "This is a fork test build, not a release of akitaonrails/ai-usagebar. Install 'ai-usagebar' instead unless you are testing.",
+        "Start the tray with 'ai-usagebar-tray' or the Start Menu shortcut 'AI Usage (dev)'; update with 'scoop update ai-usagebar-dev' or from the tray's Settings."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/djalmajr/ai-usagebar/releases/download/dev-v1.14.3/ai-usagebar-windows-x86_64.zip",
+            "hash": "edf81cadedf3aab5bddf9b7c3f00b0d90817a64d8c35bc34178076f2c81b6bda"
+        }
+    },
+    "bin": [
+        "ai-usagebar.exe",
+        "ai-usagebar-tui.exe",
+        "ai-usagebar-tray.exe"
+    ],
+    "shortcuts": [
+        [
+            "ai-usagebar-tray.exe",
+            "AI Usage (dev)"
+        ]
+    ],
+    "pre_uninstall": "Stop-Process -Name 'ai-usagebar-tray' -Force -ErrorAction SilentlyContinue",
+    "post_uninstall": [
+        "$root = Split-Path $dir",
+        "$run = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "$value = (Get-ItemProperty -Path $run -Name 'ai-usagebar-tray' -ErrorAction SilentlyContinue).'ai-usagebar-tray'",
+        "if ($value -and $value -like \"*$root*\") { Remove-ItemProperty -Path $run -Name 'ai-usagebar-tray' -ErrorAction SilentlyContinue }",
+        "Get-ChildItem 'HKCU:\\Control Panel\\NotifyIconSettings' -ErrorAction SilentlyContinue | ForEach-Object { $icon = Get-ItemProperty $_.PSPath; if ($icon.ExecutablePath -like \"$root\\*\") { Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue } }"
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/djalmajr/ai-usagebar/releases",
+        "jsonpath": "$[0].tag_name",
+        "regex": "dev-v([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/djalmajr/ai-usagebar/releases/download/dev-v$version/ai-usagebar-windows-x86_64.zip"
+            }
+        },
+        "hash": {
+            "url": "$url.sha256"
+        }
+    }
+}

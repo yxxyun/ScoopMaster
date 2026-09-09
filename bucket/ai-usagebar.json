@@ -1,0 +1,46 @@
+{
+    "version": "1.14.0",
+    "description": "Usage meters for AI subscriptions and API plans (Claude, Codex, Copilot, Cursor, SuperGrok, Antigravity, ...) as a Windows tray popover, a TUI and a CLI",
+    "homepage": "https://github.com/akitaonrails/ai-usagebar",
+    "license": "MIT",
+    "notes": [
+        "Start the tray with 'ai-usagebar-tray' or the Start Menu shortcut 'AI Usage', then turn on 'Start with Windows' from its menu.",
+        "Update with 'scoop update ai-usagebar'. The tray's own updater can stay on Notify (the default); let Scoop do the install."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/akitaonrails/ai-usagebar/releases/download/v1.14.0/ai-usagebar-windows-x86_64.zip",
+            "hash": "c7b00fd6a1c545fedeac31e230bc0886c71ad4f9fa3354e3f2c60f2efa4854b4"
+        }
+    },
+    "bin": [
+        "ai-usagebar.exe",
+        "ai-usagebar-tui.exe",
+        "ai-usagebar-tray.exe"
+    ],
+    "shortcuts": [
+        [
+            "ai-usagebar-tray.exe",
+            "AI Usage"
+        ]
+    ],
+    "pre_uninstall": "Stop-Process -Name 'ai-usagebar-tray' -Force -ErrorAction SilentlyContinue",
+    "post_uninstall": [
+        "$root = Split-Path $dir",
+        "$run = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "$value = (Get-ItemProperty -Path $run -Name 'ai-usagebar-tray' -ErrorAction SilentlyContinue).'ai-usagebar-tray'",
+        "if ($value -and $value -like \"*$root*\") { Remove-ItemProperty -Path $run -Name 'ai-usagebar-tray' -ErrorAction SilentlyContinue }",
+        "Get-ChildItem 'HKCU:\\Control Panel\\NotifyIconSettings' -ErrorAction SilentlyContinue | ForEach-Object { $icon = Get-ItemProperty $_.PSPath; if ($icon.ExecutablePath -like \"$root\\*\") { Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue } }"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/akitaonrails/ai-usagebar/releases/download/v$version/ai-usagebar-windows-x86_64.zip"
+            }
+        },
+        "hash": {
+            "url": "$url.sha256"
+        }
+    }
+}
