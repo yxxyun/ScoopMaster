@@ -1,51 +1,50 @@
 {
-    "version": "4.0.26245.218",
+    "version": "4.0.26253.624",
     "description": "A powerful, multi-purpose tool that helps you monitor system resources, debug software and detect malware.",
     "homepage": "https://systeminformer.sourceforge.io",
     "license": "MIT",
     "architecture": {
         "32bit": {
-            "url": "https://github.com/winsiderss/si-builds/releases/download/4.0.26245.218/systeminformer-build-win32-bin.zip",
-            "hash": "335da2c805f9c3eeb856a1937926bbc1603bf1c2a24d18ef9b240f51fa6c6c1a"
+            "url": "https://github.com/winsiderss/si-builds/releases/download/4.0.26253.624/systeminformer-build-win32-bin.zip",
+            "hash": "819cfcb6ac9ce863eb493d38c77e2b070207a419d37273b56befef545fb73199"
         },
         "64bit": {
-            "url": "https://github.com/winsiderss/si-builds/releases/download/4.0.26245.218/systeminformer-build-win64-bin.zip",
-            "hash": "02e18de046d0675457c90cf54c1e795bf7b1b1fa5086dd803a4a09a4d51d2037"
+            "url": "https://github.com/winsiderss/si-builds/releases/download/4.0.26253.624/systeminformer-build-win64-bin.zip",
+            "hash": "99436feaef63b48033591bf00a1d333caf2de9c8b45ab90ef9f69b8480321f93"
         },
         "arm64": {
-            "url": "https://github.com/winsiderss/si-builds/releases/download/4.0.26245.218/systeminformer-build-arm64-bin.zip",
-            "hash": "19d440796303ec3a1ef47d85016188989f26980967047041462ad665c2cbfe6c"
+            "url": "https://github.com/winsiderss/si-builds/releases/download/4.0.26253.624/systeminformer-build-arm64-bin.zip",
+            "hash": "1c2c2a112b4531ae9e017b3ba51ed64b93bb958dd9c1cabe4d4a3713a31c6f4e"
         }
     },
     "pre_install": [
-        "# Hardlink cannot be used here, as System Informer would create a new file instead of writing directly.",
-        "'SystemInformer.exe.settings.xml', 'usernotesdb.xml' | ForEach-Object {",
-        "    if (-not (Test-Path \"$persist_dir\\$_\")) {",
-        "        New-Item \"$dir\\$_\" -ItemType File | Out-Null",
+        "'SystemInformer.exe.settings.json', 'peview.exe.settings.json', 'usernotesdb.json' | ForEach-Object {",
+        "    if (Test-Path \"$persist_dir\\$_\") {",
+        "        Copy-Item \"$persist_dir\\$_\" \"$dir\\$_\"",
         "    } else {",
-        "        Copy-Item \"$persist_dir\\$_\" \"$dir\\$_\" -ErrorAction 'SilentlyContinue'",
+        "        Set-Content \"$dir\\$_\" -Value \"{}\" | Out-Null",
         "    }",
+        "}",
+        "if (-not (Test-Path \"$persist_dir\\scan.db\")) {",
+        "    New-Item \"$dir\\scan.db\" | Out-Null",
         "}"
     ],
-    "post_install": [
-        "# Clear icon GUIDs",
-        "$settings = Get-ChildItem \"$dir\\SystemInformer.exe.settings.xml\"",
-        "$settingsXml = [xml](Get-Content $settings)",
-        "if ($settingsXml.settings -eq $null) { return }",
-        "($settingsXml.settings.ChildNodes | Where-Object { $_.name.Contains(\"IconGuids\") }) | ForEach-Object { [void]$_.ParentNode.RemoveChild($_) }",
-        "$settingsXml.Save($settings)"
-    ],
+    "bin": "peview.exe",
     "shortcuts": [
         [
             "SystemInformer.exe",
             "System Informer"
+        ],
+        [
+            "peview.exe",
+            "PE Viewer"
         ]
     ],
+    "persist": "scan.db",
     "pre_uninstall": [
-        "# Hardlink cannot be used here, as System Informer would create a new file instead of writing directly.",
         "ensure $persist_dir",
-        "'SystemInformer.exe.settings.xml', 'usernotesdb.xml' | ForEach-Object {",
-        "    Copy-Item \"$dir\\$_\" \"$persist_dir\\$_\" -ErrorAction 'SilentlyContinue'",
+        "'SystemInformer.exe.settings.json', 'peview.exe.settings.json', 'usernotesdb.json' | ForEach-Object {",
+        "    Copy-Item \"$dir\\$_\" \"$persist_dir\\$_\"",
         "}"
     ],
     "checkver": {
