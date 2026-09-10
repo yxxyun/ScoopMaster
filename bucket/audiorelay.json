@@ -1,38 +1,38 @@
 {
-    "version": "0.27.5",
-    "description": "音频: AudioRelay",
-    "homepage": "https://audiorelay.net",
-    "license": "Unknown",
-    "url": "https://dl.audiorelay.net/setups/windows/audiorelay-0.27.5.exe",
-    "hash": "ef4b2398d492a12ee25d25917b725294523b97bb6e532bed1a3e5ff020d6368f",
-    "innosetup": true,
-    "shortcuts": [
-        [
-            "AudioRelay.exe",
-            "AudioRelay"
-        ]
-    ],
-    "post_install": [
-        "Copy-Item $dir\\app\\AudioRelay.cfg.win10 $dir\\app\\AudioRelay.cfg",
-        "# Cleanup directory",
-        "Set-Location $dir",
-        "Write-Output \"Installing driver...\"",
-        "& $dir\\tools\\drivers\\AudioConnect.DriverHelper.exe install $dir\\drivers\\AudioRelayVirtualMic\\audiorelay.virtual-mic.inf *audiorelayvirtualmic",
-        "& $dir\\tools\\drivers\\AudioConnect.DriverHelper.exe install $dir\\drivers\\AudioRelayVirtualSpeaker\\audiorelay.virtual-speaker.inf *audiorelayvirtualspeaker"
-    ],
-    "uninstaller": {
-        "script": [
-            "Write-Output \"Uninstalling driver...\"",
-            "& $dir\\tools\\drivers\\AudioConnect.DriverHelper.exe uninstall *audiorelayvirtualmic",
-            "& $dir\\tools\\drivers\\AudioConnect.DriverHelper.exe uninstall *AudioRelayVirtualSpeaker",
-            "Write-Output \"A system reboot is required to finalize the uninstallation.\""
-        ]
-    },
-    "checkver": {
-        "url": "https://api.audiorelay.net/downloads",
-        "jsonpath": "$.windows.version"
-    },
-    "autoupdate": {
-        "url": "https://dl.audiorelay.net/setups/windows/audiorelay-$version.exe"
-    }
+  "version": "0.27.5",
+  "description": "Audio Relay",
+  "homepage": "https://audiorelay.net/downloads",
+  "license": {
+    "identifier": "Proprietary",
+    "url": "https://audiorelay.net/terms"
+  },
+  "url": "https://dl.audiorelay.net/setups/windows/audiorelay-0.27.5.exe#/setup.exe",
+  "hash": "EF4B2398D492A12EE25D25917B725294523B97BB6E532BED1A3E5FF020D6368F",
+  "innosetup": true,
+  "post_install": [
+    "cp $dir\\app\\AudioRelay.cfg.win10 $dir\\app\\AudioRelay.cfg",
+    "write-host ''",
+    "start-process -wait -nonewwindow \"$dir\\tools\\drivers\\AudioConnect.DriverHelper.exe\" -a \"install $dir\\drivers\\AudioRelayVirtualMic\\audiorelay.virtual-mic.inf *audiorelayvirtualmic\"",
+    "start-process -wait -nonewwindow \"$dir\\tools\\drivers\\AudioConnect.DriverHelper.exe\" -a \"install $dir\\drivers\\AudioRelayVirtualSpeaker\\audiorelay.virtual-speaker.inf *audiorelayvirtualspeaker\""
+  ],
+  "pre_uninstall": [
+    "if ($cmd -ne 'uninstall') {return}",
+    "foreach ($pname in @(\"AudioRelay\", \"audiorelay-backend\")) {",
+    "   if ($p = get-process $pname -ea 0) {",
+    "      stop-process $p -force -ea 0",
+    "      wait-process -inputobject $p -ea 0",
+    "      start-sleep 0.5",
+    "   }",
+    "}",
+    "start-process -wait -nonewwindow \"$dir\\tools\\drivers\\AudioConnect.DriverHelper.exe\" -a \"uninstall *audiorelayvirtualmic\"",
+    "start-process -wait -nonewwindow \"$dir\\tools\\drivers\\AudioConnect.DriverHelper.exe\" -a \"uninstall *audiorelayvirtualspeaker\"",
+    "write-host ''",
+    "write-host -f y 'NOTE: A REBOOT IS LIKELY REQUIRED TO COMPLETELY UNINSTALL AUDIORELAY VIRTUAL DEVICES'",
+    "write-host ''"
+  ],
+  "shortcuts": [["AudioRelay.exe", "AudioRelay"]],
+  "checkver": "href=\"https://dl\\.audiorelay\\.net/setups/windows/audiorelay-([\\d.]+)\\.exe\"",
+  "autoupdate": {
+    "url": "https://dl.audiorelay.net/setups/windows/audiorelay-$version.exe#/setup.exe"
+  }
 }

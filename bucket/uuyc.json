@@ -6,23 +6,12 @@
         "identifier": "Proprietary",
         "url": "https://uuyc.163.com/"
     },
-    "url": "https://a56.gdl.netease.com/UURemote_Setup_4.40.0.1780_0909122045_gwqd.exe?key1=678ef9fc0468831d11d7f0b5b3814b10&key2=6aa20135&n=uuyc_4.40.0.exe",
+    "url": "https://a56.gdl.netease.com/UURemote_Setup_4.40.0.1780_0909122045_gwqd.exe?key1=26e8795283bd29b7a9bc4afbe0d5fcd8&key2=6aa20152&n=uuyc_4.40.0.exe",
     "hash": "98be3b6a3785285efa8af5b9dd12067cda507ce27aa9efeb44f366032ae200c6",
     "installer": {
         "script": [
-            "$src = \"$env:LOCALAPPDATA\\GameViewer\"",
-            "$dst = \"$persist_dir\\AppData\"",
-            "if (!(Test-Path $dst)) { New-Item -ItemType Directory -Path $dst -Force | Out-Null }",
-            "if (Test-Path $src) {",
-            "    $item = Get-Item $src",
-            "    if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq 0) {",
-            "        Copy-Item -Path \"$src\\*\" -Destination $dst -Recurse -Force -ErrorAction SilentlyContinue",
-            "        Remove-Item -Path $src -Recurse -Force -ErrorAction SilentlyContinue",
-            "        cmd /c mklink /j \"$src\" \"$dst\" | Out-Null",
-            "    }",
-            "} else {",
-            "    cmd /c mklink /j \"$src\" \"$dst\" | Out-Null",
-            "}",
+            ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+            "New-PersistDirectory \"$env:LOCALAPPDATA\\GameViewer\" \"$persist_dir\\AppData\" -Migrate",
             "$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
             "if (-not $isAdmin) { Write-Warning \"`nuuyc installation requires administrator privileges.`nPlease rerun Scoop in an elevated PowerShell.`n\"; exit 1 }",
             "$installer = Get-ChildItem \"$dir\\*.exe\" | Select-Object -First 1",
@@ -35,13 +24,7 @@
             "Get-ChildItem \"$env:ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\" -Filter '*UU*.lnk' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue"
         ]
     },
-    "pre_uninstall": [
-        "Get-ScheduledTask -TaskName '*GameViewer*' -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue",
-        "Get-ScheduledTask -TaskName '*UU*' -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue",
-        "if (Get-Service -Name 'GameViewerService' -ErrorAction SilentlyContinue) { Set-Service -Name 'GameViewerService' -StartupType Disabled -ErrorAction SilentlyContinue; Stop-Service -Name 'GameViewerService' -Force -ErrorAction SilentlyContinue; sc.exe delete GameViewerService | Out-Null }",
-        "@('GameViewerService', 'GameViewerServer', 'GameViewerHealthd', 'GameViewer', 'crashpad_handler') | ForEach-Object { Get-Process -Name $_ -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue }",
-        "Start-Sleep -Seconds 1"
-    ],
+    "pre_uninstall": "if (Get-Service -Name 'GameViewerService' -ErrorAction SilentlyContinue) { Stop-Service -Name 'GameViewerService' -Force -ErrorAction SilentlyContinue; sc.exe delete GameViewerService | Out-Null }",
     "uninstaller": {
         "script": [
             "$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
