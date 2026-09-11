@@ -1,6 +1,6 @@
 {
     "version": "1.0.1",
-    "description": "A translation assistant for academic literature reading and fast cross-language communication. | 面向学术文献阅读与跨语言快捷交流的翻译助手",
+    "description": "A desktop translation and screenshot OCR assistant for academic reading, web browsing, and cross-language communication.",
     "homepage": "https://manggo.pylogmon.cn/",
     "license": "Proprietary",
     "architecture": {
@@ -15,11 +15,31 @@
             "Manggo"
         ]
     ],
-    "post_install": "Remove-Item \"$dir\\uninstall*\", \"$dir\\`$*\" -Force -Recurse -ErrorAction SilentlyContinue",
-    "notes": "Manggo is NOT portable.",
+    "installer": {
+        "script": [
+            "$runtimeCache = \"$env:LocalAppData\\Manggo\\Manggo\"",
+            "$runtimeCachePersist = \"$persist_dir\\Manggo\"",
+            "if (!(Test-Path $runtimeCachePersist) -and (Test-Path $runtimeCache)) {",
+            "    New-Item -ItemType Directory -Path $persist_dir -Force | Out-Null",
+            "    Move-Item -Path $runtimeCache -Destination $runtimeCachePersist -Force",
+            "}"
+        ]
+    },
+    "post_install": [
+        "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\uninstall.exe\" -Force -Recurse -ErrorAction SilentlyContinue",
+        "$runtimeCache = \"$env:LocalAppData\\Manggo\\Manggo\"",
+        "$runtimeCachePersist = \"$persist_dir\\Manggo\"",
+        "Remove-Item -Path $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue",
+        "New-DirectoryJunction $runtimeCache $runtimeCachePersist | Out-Null"
+    ],
+    "post_uninstall": [
+        "$runtimeCache = \"$env:LocalAppData\\Manggo\\Manggo\"",
+        "Remove-Item -Path $runtimeCache -Force -Recurse -ErrorAction SilentlyContinue"
+    ],
+    "persist": "Manggo",
     "checkver": {
-        "url": "https://manggo-update.pylogmon.cn",
-        "jsonpath": "$.version"
+        "url": "https://api.gitcode.com/api/v5/repos/Pylogmon/Manggo/releases/latest",
+        "jsonpath": "$.tag_name"
     },
     "autoupdate": {
         "architecture": {

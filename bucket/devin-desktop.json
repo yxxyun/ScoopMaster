@@ -1,0 +1,111 @@
+{
+    "version": "3.9.19",
+    "description": "Agent-native editor from Cognition (formerly Windsurf) for running Devin agents locally and in the cloud",
+    "homepage": "https://devin.ai/desktop",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://cognition.com/legal/platform-terms-of-service"
+    },
+    "notes": [
+        "本包将 Devin 的数据目录持久化到 Scoop persist，并在原路径创建 Junction 指向 persist（所有启动方式共用同一份数据）：",
+        "  %APPDATA%\\Devin      -> persist\\devin-desktop\\user-data",
+        "  %USERPROFILE%\\.devin  -> persist\\devin-desktop\\dot-devin",
+        "首次安装会把已存在的数据迁移到 persist；卸载（不带 -p）后数据保留，重装可复用。",
+        "注意：%APPDATA%\\Devin 同时也是 Devin CLI 的配置目录（config.json、mcp、cli），卸载时不要加 -p，否则 CLI 配置会被一并删除。"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://windsurf-stable.codeiumdata.com/win32-x64-user/stable/e2b252e21dd5cdfd88fce58f49477260e90294bc/DevinUserSetup-x64-3.9.19.exe",
+            "hash": "0affaf0b145c3b552b1daeac4137f8d4c69a7f2c0c2f152eb1099f718785c6be"
+        },
+        "arm64": {
+            "url": "https://windsurf-stable.codeiumdata.com/win32-arm64-user/stable/e2b252e21dd5cdfd88fce58f49477260e90294bc/DevinUserSetup-arm64-3.9.19.exe",
+            "hash": "7916a0846aa31abedf6def3deaa541271fce5a4d83bc64df82aca7da9ccab129"
+        }
+    },
+    "innosetup": true,
+    "extract_dir": "{code_GetDestDir}",
+    "pre_install": [
+        "Rename-Item -Path \"$dir\\{code_GetExeBasename}\" -NewName 'Devin.exe'",
+        "Rename-Item -Path \"$dir\\{code_GetVisualElementsManifest}\" -NewName 'Devin.VisualElementsManifest.xml'",
+        "Rename-Item -Path \"$dir\\bin\\{code_GetBinDirApplicationCmdFilename}\" -NewName 'devin-desktop.cmd'",
+        "Rename-Item -Path \"$dir\\bin\\{code_GetBinDirApplicationFilename}\" -NewName 'devin-desktop'"
+    ],
+    "post_install": [
+        "$createJunction = {",
+        "    param($source, $name)",
+        "    $target = Join-Path $persist_dir $name",
+        "    ensure $target | Out-Null",
+        "",
+        "    if (Test-Path $source) {",
+        "        $item = Get-Item -LiteralPath $source -Force",
+        "        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "            info \"Junction already exists, skipping: $source\"",
+        "            return",
+        "        }",
+        "        if (-not $item.PSIsContainer) {",
+        "            throw \"Data path exists but is not a directory: $source\"",
+        "        }",
+        "",
+        "        & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "        if ($LASTEXITCODE -gt 7) {",
+        "            warn \"Migration failed, keeping the original directory: $source\"",
+        "            return",
+        "        }",
+        "",
+        "        $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "        try {",
+        "            Move-Item -LiteralPath $source -Destination $backup -Force",
+        "            info \"Original data directory backed up to $backup\"",
+        "        } catch {",
+        "            warn \"Could not rename the original directory: $source\"",
+        "            return",
+        "        }",
+        "    }",
+        "",
+        "    New-Item -Path $source -ItemType Junction -Value $target | Out-Null",
+        "    info \"Linked $source -> $target\"",
+        "}",
+        "",
+        "& $createJunction \"$env:AppData\\Devin\" 'user-data'",
+        "& $createJunction \"$env:USERPROFILE\\.devin\" 'dot-devin'"
+    ],
+    "pre_uninstall": [
+        "$paths = @(\"$env:AppData\\Devin\", \"$env:USERPROFILE\\.devin\")",
+        "if ($purge) {",
+        "    foreach ($path in $paths) {",
+        "        if ((Get-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue).Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "            & \"$env:COMSPEC\" /c \"rmdir `\"$path`\"\"",
+        "            info \"Removed link $path (data purged)\"",
+        "        }",
+        "    }",
+        "} else {",
+        "    info \"Persisted data kept, links left in place: $($paths -join ', ')\"",
+        "}"
+    ],
+    "bin": "bin\\devin-desktop.cmd",
+    "shortcuts": [
+        [
+            "Devin.exe",
+            "Devin"
+        ]
+    ],
+    "persist": [
+        "user-data",
+        "dot-devin"
+    ],
+    "checkver": {
+        "url": "https://docs.devin.ai/desktop/changelog.md",
+        "regex": "win32-x64-user/stable/(?<Code>[\\w]+)/DevinUserSetup-x64-([\\d.]+).exe"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://windsurf-stable.codeiumdata.com/win32-x64-user/stable/$matchCode/DevinUserSetup-x64-$version.exe"
+            },
+            "arm64": {
+                "url": "https://windsurf-stable.codeiumdata.com/win32-arm64-user/stable/$matchCode/DevinUserSetup-arm64-$version.exe"
+            }
+        }
+    }
+}

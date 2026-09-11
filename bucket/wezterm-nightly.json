@@ -1,26 +1,17 @@
 {
-    "version": "20260910-035345",
-    "description": "A GPU-accelerated cross-platform terminal emulator and multiplexer written by @wez and implemented in Rust",
+    "version": "c53ca64c33d1658602b9a3aaa412eca9c6544294",
+    "description": "GPU-accelerated terminal emulator (nightly builds)",
     "homepage": "https://github.com/wez/wezterm",
-    "license": {
-        "identifier": "MIT",
-        "url": "https://github.com/wezterm/wezterm/blob/main/LICENSE.md"
-    },
+    "license": "Apache-2.0",
     "notes": [
-        "Add Open with Wezterm as a context menu option by running:",
+        "Add \"Open with Wezterm\" as a context menu option by running:",
         "reg import \"$dir\\install-context.reg\""
     ],
-    "checkver": {
-        "url": "https://api.github.com/repos/wezterm/wezterm/releases/tags/nightly",
-        "jsonpath": "$.assets[?(@.name == 'WezTerm-windows-nightly.zip')].updated_at",
-        "regex": "(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})Z",
-        "replace": "$1$2$3-$4$5$6"
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/wez/wezterm/releases/download/nightly/WezTerm-windows-nightly.zip"
+        }
     },
-    "autoupdate": {
-        "url": "https://github.com/wez/wezterm/releases/download/nightly/WezTerm-windows-nightly.zip"
-    },
-    "url": "https://github.com/wez/wezterm/releases/download/nightly/WezTerm-windows-nightly.zip",
-    "hash": "4b0dcd6570ff6de5c07bd5c6ef50a781aa19adb3f7f67035d3a8149a965961f1",
     "installer": {
         "script": [
             "$foldername = (Get-Item $dir\\WezTerm-windows-*).Name",
@@ -31,8 +22,8 @@
     "post_install": [
         "$weztermPath = \"$dir\\wezterm-gui.exe\".Replace('\\', '\\\\')",
         "'install-context', 'uninstall-context' | ForEach-Object {",
-        "    if (Test-Path \"$bucketsdir\\doge\\scripts\\$app\\$_.reg\") {",
-        "        $content = Get-Content \"$bucketsdir\\doge\\scripts\\$app\\$_.reg\"",
+        "    if (Test-Path \"$bucketsdir\\my-scoop\\scripts\\$app\\$_.reg\") {",
+        "        $content = Get-Content \"$bucketsdir\\my-scoop\\scripts\\$app\\$_.reg\"",
         "        $content = $content.Replace('$weztermPath', $weztermPath)",
         "        if ($global) { $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE') }",
         "        Set-Content \"$dir\\$_.reg\" $content -Encoding Ascii -Force",
@@ -40,19 +31,31 @@
         "}"
     ],
     "bin": [
-        [
-            "wezterm.exe",
-            "wezterm_nightly"
-        ],
-        [
-            "wezterm-gui.exe",
-            "wezterm-gui_nightly"
-        ]
+        "wezterm.exe",
+        "wezterm-gui.exe"
     ],
     "shortcuts": [
         [
             "wezterm-gui.exe",
-            "Wezterm Nightly"
+            "WezTerm"
         ]
-    ]
+    ],
+    "uninstaller": {
+        "script": "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-context.reg\" *> $null }"
+    },
+    "checkver": {
+        "url": "https://github.com/wez/wezterm/releases/tag/nightly",
+        "script": [
+            "$m = [regex]::Match($page, 'commit/([0-9a-f]{40})')",
+            "if (-not $m.Success) { throw 'Could not find the build commit on the wezterm nightly release page' }",
+            "$m.Groups[1].Value"
+        ]
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/wez/wezterm/releases/download/nightly/WezTerm-windows-nightly.zip"
+            }
+        }
+    }
 }
