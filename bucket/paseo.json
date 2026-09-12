@@ -1,55 +1,92 @@
 {
     "version": "0.8.0",
-    "description": "Coding agents from your phone, desktop and CLI (Desktop Edition)",
-    "homepage": "https://paseo.sh",
-    "license": "AGPL-3.0-only",
-    "notes": [
-        "Paseo uses a local daemon to manage coding agents.",
-        "Desktop: opening the Paseo app starts the daemon automatically.",
-        "CLI / headless:",
-        "  paseo daemon start     # start the daemon",
-        "  paseo daemon status    # check status",
-        "  paseo daemon stop      # stop the daemon",
-        "CLI reference: https://paseo.sh/docs/cli"
-    ],
+    "description": "One interface for Claude Code, Codex, Copilot, OpenCode, and Pi agents.",
+    "homepage": "https://github.com/getpaseo/paseo",
+    "license": "AGPL-3.0-or-later",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/getpaseo/paseo/releases/download/v0.8.0/Paseo-Setup-0.8.0-x64.exe#/dl.7z",
-            "hash": "sha512:cefc3cd82c14fb0014688cca0df212b580882a7033010b7346709c0357b6b4a98dcbf148ca09ed24f8af4c830f3185227d9b6047c8139a3ec41a8a6aac5e21e6"
+            "url": "https://github.com/getpaseo/paseo/releases/download/v0.8.0/Paseo-Setup-0.8.0-x64.zip",
+            "hash": "bbed88d077b605c1265455fdb581a8f511e1ec583b8666163981540c07b00354"
         },
         "arm64": {
-            "url": "https://github.com/getpaseo/paseo/releases/download/v0.8.0/Paseo-Setup-0.8.0-arm64.exe#/dl.7z",
-            "hash": "sha512:b48138d96504fa80a47dfb9eb8021e42571ebee5d4ffb7e74bb6676c5d6d774b842172b2c5b4ef342a1430ca71979ce327d90578c6dcf95c409ce0d075824cad"
+            "url": "https://github.com/getpaseo/paseo/releases/download/v0.8.0/Paseo-Setup-0.8.0-arm64.zip",
+            "hash": "c63dcbb75450eb327c8053e9b6d951c5dae27ad4f662ac224b0b87c9c02de45c"
         }
     },
     "installer": {
         "script": [
-            "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-*.7z\" \"$dir\"",
-            "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\Uninstall*\", \"$dir\\`$R0\" -Force -Recurse -ErrorAction SilentlyContinue"
+            "Get-Process -Name 'Paseo' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue",
+            "if (!(Test-Path $persist_dir)) {",
+            "    New-Item $persist_dir -Type Directory -Force | Out-Null",
+            "}",
+            "$runtimeCaches = @(",
+            "    @{ Source = \"$env:APPDATA\\Paseo\"; Target = \"$persist_dir\\appdata\" },",
+            "    @{ Source = \"$env:USERPROFILE\\.paseo\"; Target = \"$persist_dir\\.paseo\" }",
+            ")",
+            "foreach ($cache in $runtimeCaches) {",
+            "    if (Test-Path $cache.Source) {",
+            "        $sourceItem = Get-Item $cache.Source -Force",
+            "        if (!(($sourceItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0)) {",
+            "            if (Test-Path $cache.Target) {",
+            "                Copy-Item \"$($cache.Source)\\*\" $cache.Target -Recurse -Force -ErrorAction SilentlyContinue",
+            "                try {",
+            "                    Remove-Item $cache.Source -Force -Recurse -ErrorAction Stop",
+            "                } catch {",
+            "                    throw \"Failed to prepare persisted path '$($cache.Source)'. Close Paseo and retry. $($_.Exception.Message)\"",
+            "                }",
+            "            } else {",
+            "                try {",
+            "                    Move-Item $cache.Source $cache.Target -Force -ErrorAction Stop",
+            "                } catch {",
+            "                    throw \"Failed to migrate '$($cache.Source)' to '$($cache.Target)'. Close Paseo and retry. $($_.Exception.Message)\"",
+            "                }",
+            "            }",
+            "        }",
+            "    } elseif (!(Test-Path $cache.Target)) {",
+            "        New-Item $cache.Target -Type Directory -Force | Out-Null",
+            "    }",
+            "    if (!(Test-Path $cache.Source)) {",
+            "        New-Item -Type Junction -Path $cache.Source -Target $cache.Target | Out-Null",
+            "    }",
+            "}"
         ]
     },
-    "bin": "resources\\bin\\paseo.cmd",
+    "uninstaller": {
+        "script": [
+            "Get-Process -Name 'Paseo' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue",
+            "$runtimeCaches = @(",
+            "    @{ Source = \"$env:APPDATA\\Paseo\"; Target = \"$persist_dir\\appdata\" },",
+            "    @{ Source = \"$env:USERPROFILE\\.paseo\"; Target = \"$persist_dir\\.paseo\" }",
+            ")",
+            "foreach ($cache in $runtimeCaches) {",
+            "    if (Test-Path $cache.Source) {",
+            "        $sourceItem = Get-Item $cache.Source -Force",
+            "        if (($sourceItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {",
+            "            Remove-Item $cache.Source -Force -Recurse -ErrorAction SilentlyContinue",
+            "        } elseif (!(Test-Path $cache.Target)) {",
+            "            Move-Item $cache.Source $cache.Target -Force",
+            "        } else {",
+            "            Remove-Item $cache.Source -Force -Recurse -ErrorAction SilentlyContinue",
+            "        }",
+            "    }",
+            "}"
+        ]
+    },
     "shortcuts": [
         [
             "Paseo.exe",
             "Paseo"
         ]
     ],
-    "checkver": {
-        "github": "https://github.com/getpaseo/paseo"
-    },
+    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/getpaseo/paseo/releases/download/v$version/Paseo-Setup-$version-x64.exe#/dl.7z"
+                "url": "https://github.com/getpaseo/paseo/releases/download/v$version/Paseo-Setup-$version-x64.zip"
             },
             "arm64": {
-                "url": "https://github.com/getpaseo/paseo/releases/download/v$version/Paseo-Setup-$version-arm64.exe#/dl.7z"
+                "url": "https://github.com/getpaseo/paseo/releases/download/v$version/Paseo-Setup-$version-arm64.zip"
             }
-        },
-        "hash": {
-            "url": "$baseurl/latest.yml",
-            "regex": "(?sm)$basename.*?sha512:\\s+$base64"
         }
     }
 }

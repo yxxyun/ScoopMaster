@@ -11,7 +11,8 @@
         "Stable channel: tracks GA releases of Wheels.",
         "Conflicts with 'wheels-be' (bleeding-edge) - install only one channel at a time.",
         "Switch channels with: scoop uninstall wheels ; scoop install wheels-be",
-        "First run will sync the module and framework into ~/.wheels."
+        "First run will sync the module and framework into ~/.wheels.",
+        "The prebuilt guides and API reference are installed offline and mirrored into an app's public\\wheels-docs."
     ],
     "architecture": {
         "64bit": {
@@ -61,6 +62,7 @@
         "$lines.Add('set \"PATH=%JAVA_HOME%\\bin;%PATH%\"')",
         "$lines.Add('set \"MOD_VER_SRC=%~dp0share\\module\\.module-version\"')",
         "$lines.Add('set \"MOD_VER_DST=%LUCLI_HOME%\\modules\\wheels\\.module-version\"')",
+        "$lines.Add('set \"WHEELS_DOCS_SRC=%~dp0share\\docs\"')",
         "$lines.Add('set \"SQLITE_SRC=%~dp0sqlite-jdbc-3.49.1.0.jar\"')",
         "$lines.Add('')",
         "$lines.Add('if \"%~1\"==\"--version\" goto :show_version')",
@@ -86,6 +88,26 @@
         "$lines.Add('  xcopy /E /I /Y /Q \"%WHEELS_FRAMEWORK_SRC%\" \"%WHEELS_FRAMEWORK_DST%\" >nul 2>&1')",
         "$lines.Add(')')",
         "$lines.Add('')",
+        "$lines.Add('')",
+        "$lines.Add('set \"WHEELS_DOCS_DST=%LUCLI_HOME%\\docs\\!src_ver!\"')",
+        "$lines.Add('set \"WHEELS_DOCS_ZIP=%WHEELS_DOCS_SRC%\\wheels-docs-!src_ver!.zip\"')",
+        "$lines.Add(':: Offline docs bundle -- unpacked once per version into ~/.wheels/docs/<version>,')",
+        "$lines.Add(':: which is where the framework resolves it from. Shipped as the release zip rather')",
+        "$lines.Add(':: than unpacked so the scoop install dir stays a sane download.')",
+        "$lines.Add('if exist \"%WHEELS_DOCS_ZIP%\" if not exist \"%WHEELS_DOCS_DST%\\manifest.json\" (')",
+        "$lines.Add('  if exist \"%WHEELS_DOCS_DST%\" rmdir /S /Q \"%WHEELS_DOCS_DST%\" >nul 2>&1')",
+        "$lines.Add('  mkdir \"%WHEELS_DOCS_DST%\" >nul 2>&1')",
+        "$lines.Add('  powershell -NoProfile -ExecutionPolicy Bypass -Command \"Expand-Archive -Force -LiteralPath ''%WHEELS_DOCS_ZIP%'' -DestinationPath ''%WHEELS_DOCS_DST%''\" >nul 2>&1')",
+        "$lines.Add(')')",
+        "$lines.Add('')",
+        "$lines.Add(':: Mirror into the current app webroot when run from one. Required, not cosmetic:')",
+        "$lines.Add(':: the dev server only routes extension-less paths to the front controller, so the')",
+        "$lines.Add(':: bundle''s extension-bearing asset URLs must be real files under the webroot.')",
+        "$lines.Add('if exist \".\\vendor\\wheels\\wheels.json\" if exist \".\\public\" if exist \"%WHEELS_DOCS_DST%\" (')",
+        "$lines.Add('  if exist \".\\public\\wheels-docs\" rmdir /S /Q \".\\public\\wheels-docs\" >nul 2>&1')",
+        "$lines.Add('  mklink /J \".\\public\\wheels-docs\" \"%WHEELS_DOCS_DST%\" >nul 2>&1 || xcopy /E /I /Y /Q \"%WHEELS_DOCS_DST%\" \".\\public\\wheels-docs\" >nul 2>&1')",
+        "$lines.Add(')')",
+        "$lines.Add('')",
         "$lines.Add(':: Drop sqlite-jdbc into LuCLI''s extracted express lib/ext on every run (self-heal).')",
         "$lines.Add(':: The express dir only exists after the first LuCLI run, so this is a no-op on the very')",
         "$lines.Add(':: first invocation and self-heals on every run after.')",
@@ -102,7 +124,7 @@
         "$lines.Add('set \"ver=unknown\"')",
         "$lines.Add('if exist \"%MOD_VER_DST%\" for /f \"usebackq delims=\" %%V in (\"%MOD_VER_DST%\") do set \"ver=%%V\"')",
         "$lines.Add('if \"!ver!\"==\"unknown\" if exist \"%MOD_VER_SRC%\" for /f \"usebackq delims=\" %%V in (\"%MOD_VER_SRC%\") do set \"ver=%%V\"')",
-        "$lines.Add('echo Wheels Version: !ver! (stable)')",
+        "$lines.Add('echo Wheels Version: !ver! (bleeding-edge)')",
         "$lines.Add('echo.')",
         "$lines.Add('echo  __        ___               _ ')",
         "$lines.Add('echo  \\ \\      / / ^|__   ___  ___^| ^|___')",
@@ -117,7 +139,7 @@
         "$lines.Add('set \"ver=unknown\"')",
         "$lines.Add('if exist \"%MOD_VER_DST%\" for /f \"usebackq delims=\" %%V in (\"%MOD_VER_DST%\") do set \"ver=%%V\"')",
         "$lines.Add('if \"!ver!\"==\"unknown\" if exist \"%MOD_VER_SRC%\" for /f \"usebackq delims=\" %%V in (\"%MOD_VER_SRC%\") do set \"ver=%%V\"')",
-        "$lines.Add('echo Wheels CLI !ver! (stable)')",
+        "$lines.Add('echo Wheels CLI !ver! (bleeding-edge)')",
         "$lines.Add('echo   CFML MVC framework - code generation, migrations, testing, server management')",
         "$lines.Add('echo.')",
         "$lines.Add('echo Usage:')",
@@ -139,7 +161,8 @@
                     "https://github.com/wheels-dev/wheels/releases/download/v$version/wheels-core-$version.zip",
                     "https://github.com/cybersonic/LuCLI/releases/download/v0.3.7/lucli-0.3.7.bat",
                     "https://repo1.maven.org/maven2/org/xerial/sqlite-jdbc/3.49.1.0/sqlite-jdbc-3.49.1.0.jar",
-                    "https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_windows-x64_bin.zip"
+                    "https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_windows-x64_bin.zip",
+                    "https://github.com/wheels-dev/wheels-snapshots/releases/download/v$version/wheels-docs-$version.zip"
                 ],
                 "hash": [
                     {
@@ -150,7 +173,10 @@
                     },
                     "sha512:75c948319b333d2e9d653d4986e766463f3f29062f62c364ccde2288e5f295bf65a857d54eda2e888cd5a80c2bd9fb727e016f4fca05fc42e56ee219225dd71b",
                     "sha512:90b3f6aed150f611fcb9454dfda5fbb9d7faad369937fa8718ac8813c45eb6f0430e6014b7b4c94b4b63e404ade68e83126571f94216de7bf6d2947f1c642803",
-                    "sha256:b6c17e747ae78cdd6de4d7532b3164b277daee97c007d3eaa2b39cca99882664"
+                    "sha256:b6c17e747ae78cdd6de4d7532b3164b277daee97c007d3eaa2b39cca99882664",
+                    {
+                        "url": "$url.sha512"
+                    }
                 ]
             }
         }
