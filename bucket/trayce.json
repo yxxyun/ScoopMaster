@@ -16,6 +16,32 @@
             "Trayce"
         ]
     ],
+    "post_install": [
+        "$junctionPath = \"$env:LOCALAPPDATA\\unieditdept\\trayce\"",
+        "$exists = Test-Path $junctionPath",
+        "$isJunction = $exists -and ((Get-Item $junctionPath -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)",
+        "if (!$isJunction) {",
+        "    New-Item $persist_dir -ItemType Directory -Force | Out-Null",
+        "    if ($exists) {",
+        "        Move-Item \"$junctionPath\\*\" $persist_dir -Force",
+        "        Remove-Item $junctionPath -Recurse -Force",
+        "    }",
+        "    New-Item $junctionPath -ItemType Junction -Value $persist_dir | Out-Null",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    $junctionPath = \"$env:LOCALAPPDATA\\unieditdept\\trayce\"",
+            "    $webviewCache = \"$env:APPDATA\\unieditdept\\trayce\"",
+            "    $isJunction = (Test-Path $junctionPath) -and ((Get-Item $junctionPath -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)",
+            "    if ($isJunction) {",
+            "        [IO.Directory]::Delete($junctionPath)",
+            "    }",
+            "    Remove-Item $webviewCache -Recurse -Force -ErrorAction SilentlyContinue",
+            "}"
+        ]
+    },
     "checkver": {
         "url": "https://api.github.com/repos/KaiZhou554/trayce/releases/latest",
         "regex": "download/v([\\d.]+)/trayce-v(\\d+)\\.exe"
@@ -28,7 +54,7 @@
         },
         "hash": {
             "url": "https://api.github.com/repos/KaiZhou554/trayce/releases/latest",
-            "regex": "\"digest\": \"sha256:([a-fA-F0-9]{64})\""
+            "regex": "\"name\": ?\"trayce-v[^\"]+\\.exe\".*?\"digest\": ?\"sha256:([\\da-f]{64})\""
         }
     }
 }

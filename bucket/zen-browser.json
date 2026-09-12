@@ -7,6 +7,7 @@
         "To set profile 'Scoop' as *DEFAULT*, or profiles/settings was lost after update:",
         "  - Run 'Zen Browser Profile Manager', choose 'Scoop' then click 'Start Zen Browser'.",
         "  - Visit 'about:profiles' page in Zen Browser to check *DEFAULT* profile.",
+        "  - Run 'zen-fix-links' once Zen is set as the default browser to ensure links open in the Scoop profile",
         "For details: https://support.mozilla.org/en-US/kb/profile-manager-create-remove-switch-firefox-profiles"
     ],
     "architecture": {
@@ -19,20 +20,55 @@
             "hash": "273d6ed85e1c989228d5c20d835c70c4d076ca70f92ef08e67bcb45eb028b938"
         }
     },
+    "pre_install": [
+        "$scriptLines = @(",
+        "  '$targetExe = Join-Path $PSScriptRoot \"zen.exe\"',",
+        "  '$newCmd = ''\"'' + $targetExe + ''\" -P Scoop \"%1\"''',",
+        "  '$newBaseCmd = ''\"'' + $targetExe + ''\" -P Scoop''',",
+        "  '\"Firefox*\", \"Zen*\" | ForEach-Object {',",
+        "  '  Get-ChildItem -Path \"HKCU:\\Software\\Classes\\$_\" -ErrorAction SilentlyContinue | ForEach-Object {',",
+        "  '    $cmdKey = Join-Path $_.PSPath \"shell\\open\\command\"',",
+        "  '    if (Test-Path $cmdKey) {',",
+        "  '      $currentCmd = Get-ItemPropertyValue -Path $cmdKey -Name \"(default)\" -ErrorAction SilentlyContinue',",
+        "  '      if ($currentCmd -match \"zen\\.exe\") { Set-ItemProperty -Path $cmdKey -Name \"(default)\" -Value $newCmd }',",
+        "  '    }',",
+        "  '  }',",
+        "  '}',",
+        "  'Get-ChildItem -Path \"HKCU:\\Software\\Clients\\StartMenuInternet\" -ErrorAction SilentlyContinue | ForEach-Object {',",
+        "  '  $appName = Get-ItemPropertyValue -Path $_.PSPath -Name \"(default)\" -ErrorAction SilentlyContinue',",
+        "  '  if ($appName -match \"Zen Browser\") {',",
+        "  '    $cmdKey = Join-Path $_.PSPath \"shell\\open\\command\"',",
+        "  '    if (Test-Path $cmdKey) { Set-ItemProperty -Path $cmdKey -Name \"(default)\" -Value $newBaseCmd }',",
+        "  '  }',",
+        "  '}',",
+        "  'Write-Host \"Zen Browser registry keys patched to use exact versioned path and Scoop profile.\"'",
+        ")",
+        "Set-Content -Path \"$dir\\zen-fix-links.ps1\" -Value $scriptLines"
+    ],
     "post_install": [
         "zen -CreateProfile \"Scoop $persist_dir\\profile\"",
         "$Addition = \"$persist_dir\\addition\"",
         "if (Test-Path $Addition) {",
         "  info 'Copying additional items...'",
         "  Copy-Item -Path $Addition\\* -Destination $dir -Force -Recurse -ErrorAction SilentlyContinue",
-        "}"
+        "}",
+        "info 'Running registry patch (will apply if Zen is already default)...'",
+        "& \"$dir\\zen-fix-links.ps1\""
     ],
     "extract_dir": "core",
-    "bin": "zen.exe",
+    "bin": [
+        [
+            "zen.exe",
+            "zen",
+            "-P Scoop"
+        ],
+        "zen-fix-links.ps1"
+    ],
     "shortcuts": [
         [
             "zen.exe",
-            "Zen Browser"
+            "Zen Browser",
+            "-P Scoop"
         ],
         [
             "zen.exe",
