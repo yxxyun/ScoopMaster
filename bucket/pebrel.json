@@ -1,0 +1,73 @@
+{
+    "version": "1.7.0",
+    "description": "AI-native, GPU-accelerated terminal emulator with SSH, persistent sessions, split panes, and first-class AI CLI workflows",
+    "homepage": "https://github.com/Kuddev/pebrel",
+    "license": "GPL-3.0-or-later",
+    "notes": [
+        "Pebrel is the renamed Nebula terminal; its data directory moved from %APPDATA%\\Nebula to %APPDATA%\\Pebrel",
+        "Scoop owns the profile: PEBREL_CONFIG_DIR points at the persist directory, holding settings, command history, sessions, SSH profiles, imported fonts, providers, backups and logs",
+        "On first install an existing %APPDATA%\\Nebula directory is copied into the persist directory; Pebrel renames the legacy nebula.* files on first launch",
+        "Keep the ZIP layout intact; runtime\\conpty.dll, runtime\\OpenConsole.exe and runtime\\pebrel-hook.exe are required",
+        "Saved SSH passwords live in Windows Credential Manager, not in the profile directory, and are intentionally not managed by this package",
+        "Pebrel may register its own hooks in Claude Code, Codex, opencode and Pi configuration files; those external configs stay user-owned",
+        "Close Pebrel before installing, updating or uninstalling this package"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Kuddev/pebrel/releases/download/v1.7.0/Pebrel-v1.7.0-windows-x64.zip",
+            "hash": "412c192b7d64754f5e4fa4ee930e89bb3d229e5e53b40cf6b26cd802640d4c49"
+        }
+    },
+    "pre_install": [
+        "$running = @(Get-Process -Name 'pebrel' -ErrorAction SilentlyContinue)",
+        "if ($running.Count -gt 0) { throw 'Pebrel is running. Close it before installing or upgrading this package.' }"
+    ],
+    "bin": "pebrel.exe",
+    "shortcuts": [
+        [
+            "pebrel.exe",
+            "Pebrel"
+        ]
+    ],
+    "post_install": [
+        "$target = Join-Path $persist_dir 'data'",
+        "$legacy = Join-Path $env:APPDATA 'Nebula'",
+        "ensure $target",
+        "",
+        "$profileFiles = @(Get-ChildItem -LiteralPath $target -Force -ErrorAction SilentlyContinue)",
+        "if ($profileFiles.Count -eq 0 -and (Test-Path -LiteralPath $legacy)) {",
+        "    Write-Host \"Seeding the Pebrel profile from the previous Nebula data directory: $legacy\"",
+        "    & robocopy $legacy $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"Seeding failed with robocopy exit code $LASTEXITCODE. The previous data was left untouched; copy it into $target manually to keep it.\"",
+        "    }",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "$running = @(Get-Process -Name 'pebrel' -ErrorAction SilentlyContinue)",
+            "if ($running.Count -gt 0) { throw 'Pebrel is running. Close it before uninstalling this package.' }",
+            "$exe = Join-Path $dir 'pebrel.exe'",
+            "if (Test-Path -LiteralPath $exe) {",
+            "    & $exe setup-ai --remove | Out-Host",
+            "    if ($LASTEXITCODE -ne 0) {",
+            "        Write-Warning \"Pebrel AI integration cleanup exited with code $LASTEXITCODE. Remove leftover Claude Code / Codex / opencode / Pi hook entries manually if needed.\"",
+            "    }",
+            "}"
+        ]
+    },
+    "env_set": {
+        "PEBREL_CONFIG_DIR": "$persist_dir\\data"
+    },
+    "persist": "data",
+    "checkver": {
+        "github": "https://github.com/Kuddev/pebrel"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Kuddev/pebrel/releases/download/v$version/Pebrel-v$version-windows-x64.zip"
+            }
+        }
+    }
+}
