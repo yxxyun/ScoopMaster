@@ -1,0 +1,35 @@
+{
+    "version": "3.65.10.1",
+    "##": "Upstream only publishes a .rar wrapper containing Joyxoff-<version>.msi (the homepage lists the MSI SHA256). 7zip unpacks the rar, then msiexec installs the MSI (non-portable: the MSI registers the JoyxSvc service used for 'Run on UAC prompts').",
+    "description": "Xbox controller mapper - emulate keyboard, mouse, media functions and per-process profiles from a gamepad.",
+    "homepage": "https://joyxoff.com/en/",
+    "license": "Proprietary",
+    "depends": "7zip",
+    "url": "https://www.joyxoff.com/en/Joyxoff-3.65.10.1.rar",
+    "hash": "926acf6fbe8dfc03c23662186c844eb3821e4f6ebd44c92b60a959b6098cbcd8",
+    "notes": [
+        "Runs from Program Files and installs the JoyxSvc service - install from an elevated (Administrator) terminal.",
+        "The MSI is kept in the app directory so 'scoop uninstall joyxoff' can run 'msiexec /x' against it."
+    ],
+    "installer": {
+        "script": [
+            "$msi = (Get-ChildItem \"$dir\\Joyxoff-*.msi\").FullName",
+            "$proc = Start-Process msiexec.exe -ArgumentList @('/i', ('\"{0}\"' -f $msi), '/qn', '/norestart') -Wait -PassThru",
+            "if ($proc.ExitCode -notin @(0, 1641, 3010)) { abort \"msiexec /i failed with exit code $($proc.ExitCode)\" }"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$msi = (Get-ChildItem \"$dir\\Joyxoff-*.msi\").FullName",
+            "$proc = Start-Process msiexec.exe -ArgumentList @('/x', ('\"{0}\"' -f $msi), '/qn', '/norestart') -Wait -PassThru",
+            "if ($proc.ExitCode -notin @(0, 1641, 3010)) { abort \"msiexec /x failed with exit code $($proc.ExitCode)\" }"
+        ]
+    },
+    "checkver": {
+        "url": "https://joyxoff.com/en/",
+        "regex": "download\\.php\\?culture=en&version=([\\d.]+)"
+    },
+    "autoupdate": {
+        "url": "https://www.joyxoff.com/en/Joyxoff-$version.rar"
+    }
+}

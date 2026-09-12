@@ -1,23 +1,34 @@
 {
     "version": "1.4.0",
-    "description": "Open-source screen recorder with auto-zoom, animated cursors, and a timeline editor for polished demo videos.",
+    "description": "An open-source screen recorder and editor for walkthroughs, demos, product videos, and more.",
     "homepage": "https://recordly.dev/",
-    "license": "AGPL-3.0",
+    "license": "AGPL-3.0-only",
     "architecture": {
         "64bit": {
             "url": "https://github.com/webadderallorg/Recordly/releases/download/v1.4.0/Recordly-windows-x64.exe#/dl.7z",
-            "hash": "sha512:5db9eece1ad1e396457021155766f731d0c504df6205c4856df006c2f84df57beea6b421e41fc4450266ec82ad539fefe5d30b88482f9178b218c433d01896de"
+            "hash": "4ccd3916f6cc34aa3bbb8c682287ae5d34baf99dc98912f38cd57c1ac5584337"
         }
     },
-    "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
+    "installer": {
+        "script": [
+            "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+            "Remove-Item \"$dir\\`$*\", \"$dir\\resources\\app-update.yml\" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null",
+            ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+            "New-PersistDirectory \"$env:APPDATA\\Recordly\" \"$persist_dir\\AppData\" -Migrate"
+        ]
+    },
     "shortcuts": [
         [
             "Recordly.exe",
             "Recordly"
         ]
     ],
-    "post_install": "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse",
-    "notes": "Settings are stored in %APPDATA%\\Recordly, outside the Scoop app directory, so they are kept across updates. To remove them completely, delete that folder after uninstalling.",
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+        "Remove-Junction \"$env:APPDATA\\Recordly\"",
+        "Remove-Item \"$env:LocalAppData\\recordly-updater\" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null"
+    ],
     "checkver": {
         "github": "https://github.com/webadderallorg/Recordly"
     },
@@ -26,10 +37,6 @@
             "64bit": {
                 "url": "https://github.com/webadderallorg/Recordly/releases/download/v$version/Recordly-windows-x64.exe#/dl.7z"
             }
-        },
-        "hash": {
-            "url": "$baseurl/latest.yml",
-            "regex": "sha512:\\s+$base64"
         }
     }
 }
