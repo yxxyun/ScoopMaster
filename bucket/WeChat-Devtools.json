@@ -1,11 +1,8 @@
 {
-    "homepage": "https://developers.weixin.qq.com/miniprogram/dev/devtools/stable.html",
-    "description": "为了帮助开发者简单和高效地开发和调试微信小程序，腾讯在原有的公众号网页调试工具的基础上，推出了全新的发者工具，集成了公众号网页调试和小程序调试两种开发模式。",
     "version": "2.01.2510290",
-    "license": {
-        "identifier": "EULA",
-        "url": "https://weixin.qq.com/cgi-bin/readtemplate?lang=zh_CN&t=weixin_agreement&s=default"
-    },
+    "description": "To help developers develop and debug Weixin Mini Programs more simply and efficiently.",
+    "homepage": "https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html",
+    "license": "Freeware",
     "architecture": {
         "64bit": {
             "url": "https://dldir1.qq.com/WechatWebDev/release/be1ec64cf6184b0fa64091919793f068/wechat_devtools_2.01.2510290_win32_x64.exe#/dl.7z",
@@ -16,24 +13,44 @@
             "hash": "b221ca766c951bd195944517039b829ca2c98df784addc05b89201f9c6f96eac"
         }
     },
-    "checkver": {
-        "url": "https://wingetgui.com/apps/Tencent-WeixinDevTools",
-        "regex": "<a name=\"V([\\d.]+)\".*?>.*?([\\d.]+)</a>"
-    },
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://dldir1.qq.com/WechatWebDev/release/be1ec64cf6184b0fa64091919793f068/wechat_devtools_$version_win32_x64.exe#/dl.7z"
-            },
-            "32bit": {
-                "url": "https://dldir1.qq.com/WechatWebDev/release/be1ec64cf6184b0fa64091919793f068/wechat_devtools_$version_win32_ia32.exe#/dl.7z"
-            }
-        }
-    },
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Remove-Item -R -Path \"$dir\\`$PLUGINSDIR\" -ErrorAction SilentlyContinue | Out-Null",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Write-Host \"`nPersisting $env:APPDATA\\微信开发者工具 ... \" -NoNewline",
+        "New-PersistDirectory \"$env:LOCALAPPDATA\\微信开发者工具\" \"$persist_dir\\微信开发者工具\" -Migrate"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Write-Host (\"`nDeleting $env:APPDATA\\微信开发者工具 ... \") -f DarkGray -NoNewline",
+        "Remove-Junction \"$env:APPDATA\\微信开发者工具\" -ErrorAction SilentlyContinue | Out-Null"
+    ],
     "shortcuts": [
         [
             "微信开发者工具.exe",
             "微信开发者工具"
         ]
-    ]
+    ],
+    "checkver": {
+        "script": [
+            "$req = [System.Net.HttpWebRequest]::Create('https://servicewechat.com/wxa-dev-logic/download_redirect?type=x64&from=mpwiki')",
+            "$req.Method = 'HEAD'",
+            "$req.AllowAutoRedirect = $false",
+            "try { $res = $req.GetResponse() } catch { $res = $_.Exception.Response }",
+            "if ($res) { $res.Headers['Location'] } else { '' }"
+        ],
+        "regex": "/(?<hash>[\\w]+)/wechat_devtools_(?<maj>\\d+)\\.(?<min>\\d+)\\.(?<patch>\\d+)_",
+        "replace": "${maj}.${min}.${patch}"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://dldir1.qq.com/WechatWebDev/release/$matchHash/wechat_devtools_$matchMaj.$matchMin.$matchPatch_win32_x64.exe#/dl.7z"
+            },
+            "32bit": {
+                "url": "https://dldir1.qq.com/WechatWebDev/release/$matchHash/wechat_devtools_$matchMaj.$matchMin.$matchPatch_win32_ia32.exe#/dl.7z"
+            }
+        }
+    }
 }
