@@ -1,47 +1,52 @@
 {
-  "version": "1.2.2",
-  "description": "Antigravity CLI (agy) - An agentic coding assistant in your terminal by Google DeepMind",
-  "homepage": "https://antigravity.google",
-  "license": "Freeware",
-  "architecture": {
-    "64bit": {
-      "url": "https://storage.googleapis.com/antigravity-public/antigravity-cli/1.2.2-6061403484848128/windows-x64/cli_windows_x64.exe#/agy.exe",
-      "hash": "sha256:80a029a8f22dccc123fd39453bd4d51c93d6384d4f365993a3d5accfa4af4b47"
-    },
-    "arm64": {
-      "url": "https://storage.googleapis.com/antigravity-public/antigravity-cli/1.2.2-6061403484848128/windows-arm/cli_windows_arm64.exe#/agy.exe",
-      "hash": "sha256:fe589dfba43ea957c3cb4db1b919b9436843ab413c08ac0439367eb03586161c"
-    }
-  },
-  "url": "https://storage.googleapis.com/antigravity-public/antigravity-cli/1.2.2-6061403484848128/windows-x64/cli_windows_x64.exe#/agy.exe",
-  "hash": "sha256:80a029a8f22dccc123fd39453bd4d51c93d6384d4f365993a3d5accfa4af4b47",
-  "bin": [
-    "agy.exe",
-    [
-      "agy.exe",
-      "antigravity"
-    ]
-  ],
-  "checkver": {
-    "url": "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_amd64.json",
-    "regex": "\"version\":\\s*\"([\\d.]+)\",\\s*\"url\":\\s*\"https://storage\\.googleapis\\.com/antigravity-public/antigravity-cli/[\\d.]+-([\\d]+)/"
-  },
-  "autoupdate": {
+    "version": "1.2.2",
+    "description": "Antigravity CLI - AI agent runtime manager",
+    "homepage": "https://github.com/google-antigravity/antigravity-cli",
+    "license": "MIT",
+    "notes": [
+        "agy 具有内置自更新能力，安装后会自行管理版本更新。",
+        "scoop update agy 仅更新 manifest 中的指向，实际二进制由 agy 自身管理。"
+    ],
     "architecture": {
-      "64bit": {
-        "url": "https://storage.googleapis.com/antigravity-public/antigravity-cli/$version-$match1/windows-x64/cli_windows_x64.exe#/agy.exe",
-        "hash": {
-          "url": "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_amd64.json",
-          "jsonpath": "$.sha512"
+        "64bit": {
+            "url": "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_amd64.json",
+            "hash": "ddafa443243e185333fad9a2e4ec288aba0182e9b21407f86332ddcbaaf625e6"
+        },
+        "arm64": {
+            "url": "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_arm64.json",
+            "hash": "a70df8047923232c6e1d07bd00697620c4019eea110c8cf3899dc2b3bde6c7a1"
         }
-      },
-      "arm64": {
-        "url": "https://storage.googleapis.com/antigravity-public/antigravity-cli/$version-$match1/windows-arm/cli_windows_arm64.exe#/agy.exe",
-        "hash": {
-          "url": "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_arm64.json",
-          "jsonpath": "$.sha512"
+    },
+    "pre_install": [
+        "# 读取 manifest（Scoop 刚刚下载的 JSON 文件）",
+        "$manifest = Get-Content \"$dir\\$fname\" -Encoding UTF8 | ConvertFrom-Json",
+        "",
+        "# 从 manifest 中的 url 下载实际二进制",
+        "Write-Host \"Downloading agy $($manifest.version)...\"",
+        "Invoke-WebRequest -Uri $manifest.url -OutFile \"$dir\\agy.exe\"",
+        "",
+        "# 校验 SHA512",
+        "$hash = (Get-FileHash \"$dir\\agy.exe\" -Algorithm SHA512).Hash.ToLower()",
+        "if ($hash -ne $manifest.sha512.ToLower()) {",
+        "    error 'Antigravity CLI: checksum mismatch, the downloaded binary may be corrupted or compromised!'",
+        "    break",
+        "}",
+        "",
+        "Unblock-File -Path \"$dir\\agy.exe\" -ErrorAction SilentlyContinue"
+    ],
+    "bin": "agy.exe",
+    "checkver": {
+        "url": "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_amd64.json",
+        "jsonpath": "$.version"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_amd64.json"
+            },
+            "arm64": {
+                "url": "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_arm64.json"
+            }
         }
-      }
     }
-  }
 }
