@@ -1,0 +1,52 @@
+{
+    "version": "1.1.4",
+    "description": "Control Sony INZONE headsets from the Windows tray, the command line and Stream Deck",
+    "homepage": "https://github.com/penguinwokrs/openinzone",
+    "license": "GPL-3.0-only",
+    "notes": [
+        "Up to 1.1.2, the update button inside the app installs the setup.exe version alongside this one: update those with 'scoop update openinzone', with the tray closed.",
+        "1.1.3: the update button updates through Scoop; 'scoop update openinzone' needs the tray closed.",
+        "Later versions: 'scoop update openinzone' also works with the tray running, which then restarts as the new version. Stop any 'inzone watch' first.",
+        "The Stream Deck plugin is not part of this package: Settings > Plugin downloads it."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/penguinwokrs/openinzone/releases/download/v1.1.4/OpenInzone-1.1.4-win-x64.zip",
+            "hash": "8d81b0579fa5584292a2d2dec74c4fa19ec26cd3e35c7be52993003248586875"
+        }
+    },
+    "bin": "inzone.exe",
+    "shortcuts": [
+        [
+            "inzonetray.exe",
+            "OpenInzone"
+        ]
+    ],
+    "pre_uninstall": [
+        "# Only for scoop uninstall: this hook also runs during scoop update, where stopping the tray would leave nothing to restart it.",
+        "if (Get-PSCallStack | Where-Object { $_.ScriptName -like '*\\scoop-uninstall.ps1' }) {",
+        "    $runs = Join-Path $env:LOCALAPPDATA \"openinzone-scoop\\$app\"",
+        "    $appdir = Split-Path $dir",
+        "    Get-Process -Name inzonetray, inzoned, inzone -ErrorAction SilentlyContinue |",
+        "        Where-Object { $_.Path -and ($_.Path.StartsWith(\"$runs\\\", 'OrdinalIgnoreCase') -or $_.Path.StartsWith(\"$appdir\\\", 'OrdinalIgnoreCase')) } |",
+        "        Stop-Process -Force -ErrorAction SilentlyContinue",
+        "    Start-Sleep -Milliseconds 700",
+        "    # Delete, not Remove-Item -Recurse: on a junction that removes the link, never the app it points at.",
+        "    Get-ChildItem $runs -Directory -ErrorAction SilentlyContinue | ForEach-Object { try { [IO.Directory]::Delete($_.FullName) } catch { } }",
+        "    try { [IO.Directory]::Delete($runs) } catch { }",
+        "    try { [IO.Directory]::Delete((Split-Path $runs)) } catch { }",
+        "    $key = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "    if ((Get-ItemProperty $key -Name OpenInzone -ErrorAction SilentlyContinue).OpenInzone -like \"*\\apps\\$app\\*\") {",
+        "        Remove-ItemProperty $key -Name OpenInzone",
+        "    }",
+        "}"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/penguinwokrs/openinzone/releases/download/v$version/OpenInzone-$version-win-x64.zip"
+            }
+        }
+    }
+}
