@@ -8,7 +8,7 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/07dbe338x/Feishu-win32_x64-8.0.3-signed.exe#/feishu-8.0.3.7z",
+            "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/a689c249/Feishu-win32_x64-8.0.3-signed.exe#/feishu-8.0.3.7z",
             "hash": "md5:c767ce7541f3cfe0b372863ba7e3d634"
         },
         "32bit": {
@@ -25,19 +25,26 @@
     ],
     "checkver": {
         "url": "https://www.feishu.cn/api/downloads",
-        "regex": "(?sm)Windows.*?https://(?<path>[\\w.-/].*?)/Feishu.*?-(?<version>[\\d.]+).*?.exe.*?Windows_x64.*?https://(?<pathx>[\\w.-/].*?)/Feishu"
+        "script": [
+            "$release = $page | ConvertFrom-Json",
+            "$version = $release.versions.Windows.version_number -replace 'Windows@V?', ''",
+            "$id32 = if ($release.versions.Windows.download_link -match '(?<=/)\\w+(?=/Feishu-win32)') { $Matches[0] }",
+            "$id64 = if ($release.versions.Windows_x64.download_link -match '(?<=/)\\w+(?=/Feishu-win32)') { $Matches[0] }",
+            "Write-Output \"$version $id32 $id64\""
+        ],
+        "regex": "(?<version>[\\d.]+) (?<id32>\\w+) (?<id64>\\w+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://$matchPathx/Feishu-win32_x64-$version-signed.exe#/feishu-$version.7z",
+                "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/$matchId64/Feishu-win32_x64-$version-signed.exe#/feishu-$version.7z",
                 "hash": {
                     "url": "https://www.feishu.cn/api/downloads",
                     "jsonpath": "$.versions.Windows_x64.hash"
                 }
             },
             "32bit": {
-                "url": "https://$matchPath/Feishu-win32_ia32-$version-signed.exe#/feishu-$version.7z",
+                "url": "https://sf3-cn.feishucdn.com/obj/ee-appcenter/$matchId32/Feishu-win32_ia32-$version-signed.exe#/feishu-$version.7z",
                 "hash": {
                     "url": "https://www.feishu.cn/api/downloads",
                     "jsonpath": "$.versions.Windows.hash"
