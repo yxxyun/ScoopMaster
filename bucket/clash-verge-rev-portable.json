@@ -1,25 +1,21 @@
 {
     "version": "1.7.7",
-    "description": "Clash.meta GUI: A sleek Tauri-based interface revolutionizing ease of use across Windows, macOS, and Linux, merging beauty with simplicity for an unparalleled user experience",
+    "description": "Continuation of Clash Verge - A Clash Meta GUI based on Tauri.",
     "homepage": "https://github.com/clash-verge-rev/clash-verge-rev",
-    "license": {
-        "identifier": "GPL-3.0 license",
-        "url": "https://github.com/clash-verge-rev/clash-verge-rev/blob/main/LICENSE"
-    },
+    "license": "GPL-3.0-only",
     "architecture": {
         "64bit": {
             "url": "https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v1.7.7/Clash.Verge_1.7.7_x64_portable.zip",
             "hash": "c3b8c63b908a2674811643cb89635ef89e32a1b9b39114ff087a01890a5d8ee0"
+        },
+        "32bit": {
+            "url": "https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v1.7.7/Clash.Verge_1.7.7_x86_portable.zip",
+            "hash": "3a9e33e3779f1546ee6f989f16ca7785f3866ed16534402dba3ed2fb8718ce6a"
+        },
+        "arm64": {
+            "url": "https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v1.7.7/Clash.Verge_1.7.7_arm64_portable.zip",
+            "hash": "f54e2b0d6e746f26b7c5d0c430106f7703b96f612d1da9736b286e1131db941a"
         }
-    },
-    "installer": {
-        "script": [
-            "ensure \"$persist_dir\" | Out-Null",
-            "New-Item \"$env:USERPROFILE\\.config\\clash-verge\" -ItemType Junction -Target \"$persist_dir\" | Out-Null"
-        ]
-    },
-    "uninstaller": {
-        "script": "Remove-Item \"$env:USERPROFILE\\.config\\clash-verge\" -Recurse -Force -ErrorAction 'SilentlyContinue'"
     },
     "shortcuts": [
         [
@@ -27,14 +23,31 @@
             "Clash Verge"
         ]
     ],
-    "checkver": {
-        "url": "https://api.github.com/repos/clash-verge-rev/clash-verge-rev/releases",
-        "regex": "(?sm)browser_download_url.*?(?<file>Clash.Verge_([\\d.]+)_x64_portable\\.zip)"
+    "persist": ".config",
+    "post_install": [
+        "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name air) scripts/AirUtils.psm1)",
+        "EnsureFile \"$persist_dir\\.config\\PORTABLE\"",
+        "Remove-Module -Name AirUtils"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    Invoke-ExternalCommand \"$dir\\resources\\uninstall-service.exe\" -Quiet",
+            "    Start-Sleep 2",
+            "}"
+        ]
     },
+    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v$version/$matchFile"
+                "url": "https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v$version/Clash.Verge_$version_x64_portable.zip"
+            },
+            "32bit": {
+                "url": "https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v$version/Clash.Verge_$version_x86_portable.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v$version/Clash.Verge_$version_arm64_portable.zip"
             }
         }
     }
