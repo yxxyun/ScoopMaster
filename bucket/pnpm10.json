@@ -1,40 +1,77 @@
 {
-	"version": "10.34.5",
-	"description": "Fast, disk space efficient package manager (version 10)",
-	"homepage": "https://pnpm.io/",
-	"license": "MIT",
-	"architecture": {
-		"64bit": {
-			"url": "https://github.com/pnpm/pnpm/releases/download/v10.34.5/pnpm-win-x64.exe",
-			"hash": "fa9f420f55723453aaa99a98ca720e9d0e9f58cc808953669927bf15a95b4542"
-		},
-		"arm64": {
-			"url": "https://github.com/pnpm/pnpm/releases/download/v10.34.5/pnpm-win-arm64.exe",
-			"hash": "3b155b024217aaee9ad1410dcdae22df9222c270f43218a400a037592b009442"
-		}
-	},
-	"bin": ["pnpm.exe", ["pnpm.exe", "pnpx", "dlx"]],
-	"pre_install": "mv \"$dir/$fname\" \"$dir/pnpm.exe\"",
-	"post_install": [
-		"pnpm config set enable-global-virtual-store true",
-		"pnpm config set cache-dir \"$($persist_dir -replace '\\\\', '/')/cache\"",
-		"pnpm config set state-dir \"$($persist_dir -replace '\\\\', '/')/state\"",
-		"pnpm config set store-dir \"$($persist_dir -replace '\\\\', '/')/store\"",
-		"pnpm setup"
-	],
-	"env_set": { "PNPM_HOME": "$persist_dir" },
-	"checkver": {
-		"url": "https://github.com/pnpm/pnpm/releases?q=v10",
-		"regex": "/pnpm/pnpm/releases/tag/v(10[.][0-9.]+)"
-	},
-	"autoupdate": {
-		"architecture": {
-			"64bit": {
-				"url": "https://github.com/pnpm/pnpm/releases/download/v$version/pnpm-win-x64.exe"
-			},
-			"arm64": {
-				"url": "https://github.com/pnpm/pnpm/releases/download/v$version/pnpm-win-arm64.exe"
-			}
-		}
-	}
+    "version": "10.34.5",
+    "description": "PNPM 10.x",
+    "homepage": "https://pnpm.io",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/pnpm/pnpm/releases/download/v10.34.5/pnpm-win-x64.exe#/pnpm.exe",
+            "hash": "fa9f420f55723453aaa99a98ca720e9d0e9f58cc808953669927bf15a95b4542"
+        },
+        "arm64": {
+            "url": "https://github.com/pnpm/pnpm/releases/download/v10.34.5/pnpm-win-arm64.exe#/pnpm.exe",
+            "hash": "3b155b024217aaee9ad1410dcdae22df9222c270f43218a400a037592b009442"
+        }
+    },
+    "bin": [
+        "pnpm.exe",
+        [
+            "pnpm.exe",
+            "pn"
+        ],
+        [
+            "pnpm.exe",
+            "pnpx",
+            "dlx"
+        ],
+        [
+            "pnpm.exe",
+            "pnx",
+            "dlx"
+        ]
+    ],
+    "post_install": [
+        "pnpm config set storeDir \"$dir\\store\"",
+        "pnpm config set cacheDir \"$dir\\cache\"",
+        "pnpm config set stateDir \"$dir\\state\""
+    ],
+    "env_add_path": "bin",
+    "env_set": {
+        "PNPM_HOME": "$dir"
+    },
+    "persist": [
+        "store",
+        "cache",
+        "state"
+    ],
+    "checkver": {
+        "script": [
+            "$auth = Get-GitHubToken",
+            "$head = @{}",
+            "if($auth) { $head.add('authorization', \"Bearer $auth\") }",
+            "$url = 'https://api.github.com/repos/pnpm/pnpm/releases?per_page=100'",
+            "$latest_ver = [Version]::new(0,0,0,0)",
+            "$releases = $(Invoke-WebRequest -Headers $head $url).Content | ConvertFrom-Json",
+            "$releases | ForEach-Object {",
+            "    if (!($_.tag_name -match '([\\d.]+)')) { return }",
+            "    if ($_.prerelease) { return }",
+            "    $ver = [Version]::new($matches[1])",
+            "    if ($ver.Major -ne 10) { return } # 메이저 버전 고정",
+            "    if ($ver -gt $latest_ver) { $latest_ver = $ver }",
+            "}",
+            "if ($latest_ver -eq [Version]::new(0,0,0,0)) { error \"Could not match version string in '$url'\"; continue }",
+            "Write-Output $latest_ver"
+        ],
+        "regex": "v([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/pnpm/pnpm/releases/download/v$version/pnpm-win-x64.exe#/pnpm.exe"
+            },
+            "arm64": {
+                "url": "https://github.com/pnpm/pnpm/releases/download/v$version/pnpm-win-arm64.exe#/pnpm.exe"
+            }
+        }
+    }
 }
