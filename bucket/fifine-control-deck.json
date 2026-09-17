@@ -1,0 +1,55 @@
+{
+    "version": "3.10.201.0506",
+    "description": "Configuration software for the FIFINE AmpliGame D6 stream controller (key mapping, hotkeys, scene control).",
+    "homepage": "https://fifinemicrophone.com/pages/download-fifine-d6-software",
+    "license": "Freeware",
+    "notes": [
+        "Advanced Installer bootstrapper (no version in the download URL - the version is read from the",
+        "installer's PE version resource, hence the checkver script). Installs machine-wide into",
+        "C:\\Program Files (x86)\\fifine Control Deck, so an elevated terminal may be required."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://cdn1.key123.vip/Custom/fifine/fifine-Control-Deck-Installer_Windows.exe",
+            "hash": "8a6d90350c8a413dba5d2504e9571a636b11c93f15de8a4771f674321e4ffbbd"
+        }
+    },
+    "installer": {
+        "script": [
+            "# Advanced Installer bootstrapper: /exenoui /qn = silent, no UI.",
+            "Start-Process -FilePath \"$dir\\fifine-Control-Deck-Installer_Windows.exe\" -ArgumentList '/exenoui', '/qn' -Wait"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "# Product code is not stable across releases, so resolve it from the ARP entry at uninstall time.",
+            "$key = Get-ItemProperty 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', `",
+            "    'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue |",
+            "    Where-Object DisplayName -eq 'fifine Control Deck' | Select-Object -First 1",
+            "if ($key) { Start-Process -FilePath 'msiexec.exe' -ArgumentList '/x', $key.PSChildName, '/qn' -Wait }"
+        ]
+    },
+    "checkver": {
+        "regex": "(?<version>[0-9][0-9.]*)",
+        "script": [
+            "# The download URL never changes, so no version can be scraped from a page or filename.",
+            "# Only the first 2 MiB are fetched - the installer's PE version resource lives there.",
+            "$url = 'https://cdn1.key123.vip/Custom/fifine/fifine-Control-Deck-Installer_Windows.exe'",
+            "$req = [Net.HttpWebRequest]::Create($url)",
+            "$req.AddRange(0, 2097151)",
+            "$req.Timeout = 120000",
+            "$ms = New-Object IO.MemoryStream",
+            "$req.GetResponse().GetResponseStream().CopyTo($ms)",
+            "$s = [Text.Encoding]::Unicode.GetString($ms.ToArray())",
+            "if ($s -match 'FileVersion\\x00+([0-9.]+)') { $Matches[1] }"
+        ]
+    },
+    "##": "checkver.regex is required even with a script: scoop matches the script output with it.",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://cdn1.key123.vip/Custom/fifine/fifine-Control-Deck-Installer_Windows.exe"
+            }
+        }
+    }
+}
