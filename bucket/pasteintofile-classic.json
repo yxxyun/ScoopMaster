@@ -1,0 +1,51 @@
+{
+    "version": "1.5",
+    "description": "Original Paste Into File by EslaMx7 (last release v1.5 in 2020): paste clipboard text or images into files from the Explorer context menu. The maintained successor is the 'pasteintofile' manifest (eltos/PasteIntoFile)",
+    "homepage": "https://github.com/EslaMx7/PasteIntoFile",
+    "license": "Unknown",
+    "url": "https://github.com/EslaMx7/PasteIntoFile/releases/download/v1.5/PasteIntoFile.zip",
+    "hash": "76d94f5a930ca70198723fc66e639618840347f4fb1dfd9972637edbc42ae867",
+    "bin": [
+        [
+            "PasteIntoFile.exe",
+            "pasteintofile-classic"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "PasteIntoFile.exe",
+            "Paste Into File Classic"
+        ]
+    ],
+    "post_install": [
+        "# 注册资源管理器右键菜单，等价于 `PasteIntoFile.exe /reg`；直接写注册表是为了避开该命令的模态提示框（会卡住安装）",
+        "# $dir 是 current junction，注册表里记录的路径升级后依然有效",
+        "$exe = \"$dir\\PasteIntoFile.exe\"",
+        "$q = [char]34",
+        "$menus = @{ 'shell' = '%1'; 'Background\\shell' = '%V' }",
+        "foreach ($scope in $menus.Keys) {",
+        "    $key = \"HKCU:\\Software\\Classes\\Directory\\$scope\\Paste Into File\"",
+        "    New-Item -Path \"$key\\command\" -Force | Out-Null",
+        "    New-ItemProperty -Path $key -Name Icon -Value ($q + $exe + $q + ',0') -PropertyType String -Force | Out-Null",
+        "    Set-Item -Path \"$key\\command\" -Value ($q + $exe + $q + ' ' + $q + $menus[$scope] + $q)",
+        "}"
+    ],
+    "pre_uninstall": [
+        "# 等价于 `PasteIntoFile.exe /unreg`（同样避开模态提示框），并连带清除 filename 子项，与官方卸载行为一致",
+        "foreach ($scope in 'shell', 'Background\\shell') {",
+        "    Remove-Item -LiteralPath \"HKCU:\\Software\\Classes\\Directory\\$scope\\Paste Into File\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "}"
+    ],
+    "notes": [
+        "EslaMx7 的原版 Paste Into File（v1.5，2020-04 后再无更新）；维护中的续作是本仓库的 `pasteintofile`（eltos/PasteIntoFile，v5.x），两者可同时安装。",
+        "安装时已注册资源管理器右键菜单（HKCU\\Software\\Classes\\Directory\\shell 与 Directory\\Background\\shell 下的“Paste Into File”），Windows 11 需在“显示更多选项”里查看。",
+        "右键菜单命令指向 current junction，升级不会失效；卸载时自动清理上述注册表项。",
+        "默认文件名格式存放在 HKCU\\Software\\Classes\\Directory\\shell\\Paste Into File\\filename，可用 `pasteintofile-classic /filename yyyy-MM-dd_HHmmss` 修改（该命令会弹出提示框需手动确认）。",
+        "需要 .NET Framework 4.5+（Windows 10 1809 及以上已内置，Windows 11 自带 4.8）。",
+        "上游仓库没有 LICENSE 文件，license 记为 Unknown。"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/EslaMx7/PasteIntoFile/releases/download/v$version/PasteIntoFile.zip"
+    }
+}

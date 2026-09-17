@@ -1,0 +1,57 @@
+{
+    "version": "0.1.2",
+    "description": "Scoop shim launcher (Rust implementation). Runs the executable described in its paired .shim file.",
+    "homepage": "https://github.com/ScoopInstaller/Shim",
+    "license": "Unlicense OR MIT",
+    "notes": [
+        "Scoop core has no support for the new shim implementations yet, so this manifest overwrites every built-in Scoop shim (supporting\\shims\\71, kiennq and scoopcs).",
+        "Whatever 'scoop config shim' is set to (or the default kiennq), Scoop will use this implementation.",
+        "Install only one of scoop-shim-cs, scoop-shim-cpp, scoop-shim-rust or scoop-shim-zig at a time.",
+        "Uninstalling restores the original files from Scoop's git checkout."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/ScoopInstaller/Shim/releases/download/rust/v0.1.2/shim-x64.zip",
+            "hash": "19d85cfe5202568bdc48bbdb9ac35700d8ff74186283df956ec3a9c9bb266381"
+        },
+        "32bit": {
+            "url": "https://github.com/ScoopInstaller/Shim/releases/download/rust/v0.1.2/shim-x86.zip",
+            "hash": "0eca2156014209c0fbdaba00275a80fa333e38e24a1c3cb2bc55118af20015df"
+        },
+        "arm64": {
+            "url": "https://github.com/ScoopInstaller/Shim/releases/download/rust/v0.1.2/shim-arm64.zip",
+            "hash": "fd68d93c507742d9ee71768f8099d1f95cf62b6641acd5593c1f85cb3b27581c"
+        }
+    },
+    "post_install": [
+        "$shimRoot = \"$scoopdir\\apps\\scoop\\current\\supporting\\shims\"",
+        "$impls = @('71', 'kiennq', 'scoopcs')",
+        "if (Test-Path $shimRoot) { $impls = @($impls + @(Get-ChildItem $shimRoot -Directory -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name) | Select-Object -Unique) }",
+        "foreach ($impl in $impls) {",
+        "    $shimDir = ensure \"$shimRoot\\$impl\"",
+        "    Copy-Item \"$dir\\shim.exe\" \"$shimDir\\shim.exe\" -Force",
+        "    if (Test-Path \"$dir\\shim.exe.sha256\") { Copy-Item \"$dir\\shim.exe.sha256\" \"$shimDir\\checksum.sha256\" -Force }",
+        "    if (Test-Path \"$dir\\shim.exe.sha512\") { Copy-Item \"$dir\\shim.exe.sha512\" \"$shimDir\\checksum.sha512\" -Force }",
+        "    if (Test-Path \"$dir\\version\") { Copy-Item \"$dir\\version\" \"$shimDir\\version.txt\" -Force }",
+        "}"
+    ],
+    "pre_uninstall": "git -C \"$scoopdir\\apps\\scoop\\current\" checkout -- supporting/shims",
+    "checkver": {
+        "url": "https://api.github.com/repos/ScoopInstaller/Shim/releases",
+        "jsonpath": "$[*].tag_name",
+        "regex": "rust/v([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/ScoopInstaller/Shim/releases/download/rust/v$version/shim-x64.zip"
+            },
+            "32bit": {
+                "url": "https://github.com/ScoopInstaller/Shim/releases/download/rust/v$version/shim-x86.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/ScoopInstaller/Shim/releases/download/rust/v$version/shim-arm64.zip"
+            }
+        }
+    }
+}
