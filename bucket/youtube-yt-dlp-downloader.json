@@ -1,0 +1,83 @@
+{
+    "version": "0.2.2",
+    "description": "YouTube 视频下载 Chrome 扩展的本地组件：yt-dlp Native Messaging host + unpacked 扩展源码",
+    "homepage": "https://github.com/fengjunda888/youtube-download-extension",
+    "license": "MIT",
+    "depends": "yt-dlp",
+    "suggest": {
+        ".NET 8 运行时": "dotnet-sdk",
+        "ffmpeg": "ffmpeg"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/fengjunda888/youtube-download-extension/releases/download/v0.2.2/youtube-yt-dlp-downloader-0.2.2.zip",
+            "hash": "83fe9c477c6341403dcb5f216a57fa6822dbec1ddb9d8dcf4fb91e65124f3d9c"
+        }
+    },
+    "installer": {
+        "script": [
+            "$currentDir = Join-Path (Split-Path $dir -Parent) 'current'",
+            "$hostExe = \"$dir\\native-host\\publish\\YouTubeYtDlpHost.exe\"",
+            "if (-not (Test-Path $hostExe)) { error \"Native host not found in $dir\" }",
+            "$manifestPath = \"$dir\\native-host\\com.fengj.youtube_ytdlp.json\"",
+            "$manifest = @{",
+            "    name            = 'com.fengj.youtube_ytdlp'",
+            "    description     = 'Native host for downloading YouTube videos with yt-dlp'",
+            "    path            = \"$currentDir\\native-host\\publish\\YouTubeYtDlpHost.exe\"",
+            "    type            = 'stdio'",
+            "    allowed_origins = @('chrome-extension://lgdfehfacdnpknkphkfmmollklciaaal/')",
+            "} | ConvertTo-Json -Depth 4",
+            "Set-Content -LiteralPath $manifestPath -Value $manifest -Encoding UTF8",
+            "New-Item -Path 'HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.fengj.youtube_ytdlp' -Force -Value \"$currentDir\\native-host\\com.fengj.youtube_ytdlp.json\" | Out-Null",
+            "info 'Registered Chrome native messaging host for user'",
+            "$oauthFile = \"$persist_dir\\oauth_client_id.txt\"",
+            "if ($env:YTDLP_EXT_OAUTH_CLIENT_ID) {",
+            "    $null = ensure $persist_dir",
+            "    Set-Content -LiteralPath $oauthFile -Value $env:YTDLP_EXT_OAUTH_CLIENT_ID.Trim() -Encoding ASCII",
+            "}",
+            "if (Test-Path $oauthFile) {",
+            "    $clientId = (Get-Content -LiteralPath $oauthFile -Raw).Trim()",
+            "    $extManifest = \"$dir\\extension\\manifest.json\"",
+            "    $ext = Get-Content -LiteralPath $extManifest -Raw | ConvertFrom-Json",
+            "    if ($ext.oauth2.client_id -ne $clientId) {",
+            "        $ext.oauth2.client_id = $clientId",
+            "        [System.IO.File]::WriteAllText($extManifest, ($ext | ConvertTo-Json -Depth 10), (New-Object System.Text.UTF8Encoding($false)))",
+            "        info 'Patched Google OAuth client id into extension manifest'",
+            "    }",
+            "}",
+            "$runtimes = @()",
+            "if (Get-Command dotnet -ErrorAction SilentlyContinue) { $runtimes = & dotnet --list-runtimes 2>$null }",
+            "if (-not ($runtimes -match 'Microsoft\\.NETCore\\.App 8\\.')) {",
+            "    $shared = Join-Path $env:ProgramFiles 'dotnet\\shared\\Microsoft.NETCore.App'",
+            "    if (-not (Test-Path $shared) -or -not (Get-ChildItem $shared -Filter '8.*' -ErrorAction SilentlyContinue)) {",
+            "        warn 'Native host requires the .NET 8 runtime (not detected). Install with: scoop install dotnet-sdk, or from https://dotnet.microsoft.com/download/dotnet/8.0'",
+            "    }",
+            "}",
+            "info \"Extension dir for 'Load unpacked': $currentDir\\extension\""
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Remove-Item -Path 'HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.fengj.youtube_ytdlp' -Recurse -Force -ErrorAction SilentlyContinue"
+        ]
+    },
+    "notes": [
+        "本清单自动化了除「Chrome 加载扩展」之外的全部步骤：下载源码、注册 Native Messaging host、依赖 yt-dlp。",
+        "Native messaging host 注册在当前用户 HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts，无需管理员权限；路径指向 current junction，升级后不失效。",
+        "Chrome 出于安全限制无法自动加载 unpacked 扩展，需手动完成一次（约 30 秒）：",
+        "  1. 打开 chrome://extensions/ 并开启 Developer mode",
+        "  2. Load unpacked -> 选择安装日志中 'Extension dir' 打印的路径（<scoop>\\apps\\youtube-yt-dlp-downloader\\current\\extension）",
+        "  3. 确认扩展 ID 为 lgdfehfacdnpknkphkfmmollklciaaal（manifest 内置固定 key）",
+        "升级/更新后扩展文件随 current 同步；若未自动生效，在 chrome://extensions/ 点一次「重新加载」。",
+        "可选账号功能：先在 Google Cloud 创建 Chrome 扩展类型 OAuth 客户端（扩展 ID 用上面那个），然后设置环境变量 YTDLP_EXT_OAUTH_CLIENT_ID=<client_id> 并重装本应用，安装脚本会写入扩展 manifest 且保存到 persist，后续升级自动保留。",
+        "依赖说明：yt-dlp 自动安装；ffmpeg 为 1080p/720p/480p/MP3 画质合成所需；.NET 8 运行时缺失时安装会警告。"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/fengjunda888/youtube-download-extension/releases/download/v$version/youtube-yt-dlp-downloader-$version.zip"
+            }
+        }
+    }
+}
