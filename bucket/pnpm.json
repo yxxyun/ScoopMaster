@@ -7,10 +7,18 @@
         "64bit": {
             "url": "https://github.com/pnpm/pnpm/releases/download/v12.5.1/pnpm-win32-x64.zip",
             "hash": "fd20b55fe51414951efd4870a24dc4609694e391d07620e0df69aac151278989"
+        },
+        "arm64": {
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.5.1/pnpm-win32-arm64.zip",
+            "hash": "04e81aeb4f66bebc730e2f95a42dbb0eb8f2ce1ebba2d1eb33f8a27571f8b94a"
         }
     },
     "bin": [
         "pnpm.exe",
+        [
+            "pnpm.exe",
+            "pn"
+        ],
         [
             "pnpm.exe",
             "pnpx",
@@ -18,32 +26,25 @@
         ],
         [
             "pnpm.exe",
-            "npm"
+            "pnx",
+            "dlx"
         ]
     ],
-    "env_set": {
-        "PNPM_HOME": "$persist_dir\\pnpm-home"
-    },
-    "env_add_path": "pnpm-home",
-    "persist": [
-        "pnpm-home",
-        "state",
-        "store",
-        "cache"
-    ],
-    "pre_install": [
-        "# 创建必要的目录结构",
-        "New-Item -ItemType Directory -Force -Path \"$persist_dir\\pnpm-home\"",
-        "New-Item -ItemType Directory -Force -Path \"$persist_dir\\state\"",
-        "New-Item -ItemType Directory -Force -Path \"$persist_dir\\store\"",
-        "New-Item -ItemType Directory -Force -Path \"$persist_dir\\cache\""
-    ],
     "post_install": [
-        "# 仅在未由用户显式配置时再设置，避免覆盖用户设置",
-        "if (-not $env:PNPM_STATE_DIR -and ((& \"$dir\\pnpm.exe\" config get state-dir --location=global) -eq 'undefined')) { & \"$dir\\pnpm.exe\" config set state-dir \"$dir\\state\" --global }",
-        "if (-not $env:PNPM_STORE_DIR -and ((& \"$dir\\pnpm.exe\" config get store-dir --location=global) -eq 'undefined')) { & \"$dir\\pnpm.exe\" config set store-dir \"$dir\\store\" --global }",
-        "if (-not $env:PNPM_CACHE_DIR -and ((& \"$dir\\pnpm.exe\" config get cache-dir --location=global) -eq 'undefined')) { & \"$dir\\pnpm.exe\" config set cache-dir \"$dir\\cache\" --global }",
-        "if (-not $env:PNPM_HOME -and ((& \"$dir\\pnpm.exe\" config get global-bin-dir --location=global) -eq 'undefined')) { & \"$dir\\pnpm.exe\" config set global-bin-dir \"$dir\\pnpm-home\" --global }"
+        "pnpm config set storeDir \"$dir\\store\"",
+        "pnpm config set cacheDir \"$dir\\cache\"",
+        "pnpm config set stateDir \"$dir\\state\""
+    ],
+    "env_add_path": "bin",
+    "env_set": {
+        "PNPM_HOME": "$dir"
+    },
+    "persist": [
+        "bin",
+        "global",
+        "store",
+        "cache",
+        "state"
     ],
     "checkver": {
         "script": [
@@ -51,7 +52,7 @@
             "$auth = Get-GitHubToken",
             "$head = @{}",
             "if($auth) { $head.add('authorization', \"Bearer $auth\") }",
-            "$url = 'https://api.github.com/repositories/50565430/releases'",
+            "$url = 'https://api.github.com/repos/pnpm/pnpm/releases'",
             "$latest_ver = [Version]::new(0,0,0,0) # note: Powershell 5 does not support casting 'int' or 'float' to 'System.Version'",
             "$releases = $(Invoke-WebRequest -Headers $head $url).Content | ConvertFrom-Json",
             "$releases | ForEach-Object {",
@@ -66,6 +67,13 @@
         "regex": "([\\d.]+)"
     },
     "autoupdate": {
-        "url": "https://github.com/pnpm/pnpm/releases/download/v$version/pnpm-win32-x64.zip"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/pnpm/pnpm/releases/download/v$version/pnpm-win32-x64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/pnpm/pnpm/releases/download/v$version/pnpm-win32-arm64.zip"
+            }
+        }
     }
 }
