@@ -1,17 +1,28 @@
 {
-    "version": "4.41.1.2335",
+    "version": "4.41.0.2311",
     "description": "网易UU远程，提供低延迟远程连接与云游戏体验。",
     "homepage": "https://uuyc.163.com/",
     "license": {
         "identifier": "Proprietary",
         "url": "https://uuyc.163.com/"
     },
-    "url": "https://a56.gdl.netease.com/UURemote_Setup_4.41.1.2335_0917134939_gwqd.exe?key1=8361e41baf40da3ee69637c95be866cd&key2=6aaf7f8b&n=uuyc_4.41.1.exe",
-    "hash": "4de4af35656d8395e01be64d094c5f750b2fd7c8b47db4289bce7b05cf85412e",
+    "url": "https://a56.gdl.netease.com/UURemote_Setup_4.41.0.2311_0917074721_gwqd.exe?key1=95799b624b6902ba48e2e89552e98c9b&key2=6aac9428&n=uuyc_4.41.0.exe",
+    "hash": "0c9ae8dd64ddb4acad5030e053a51add91114264594e97aea61c2a9571bb55ed",
     "installer": {
         "script": [
-            ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
-            "New-PersistDirectory \"$env:LOCALAPPDATA\\GameViewer\" \"$persist_dir\\AppData\" -Migrate",
+            "$src = \"$env:LOCALAPPDATA\\GameViewer\"",
+            "$dst = \"$persist_dir\\AppData\"",
+            "if (!(Test-Path $dst)) { New-Item -ItemType Directory -Path $dst -Force | Out-Null }",
+            "if (Test-Path $src) {",
+            "    $item = Get-Item $src",
+            "    if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq 0) {",
+            "        Copy-Item -Path \"$src\\*\" -Destination $dst -Recurse -Force -ErrorAction SilentlyContinue",
+            "        Remove-Item -Path $src -Recurse -Force -ErrorAction SilentlyContinue",
+            "        cmd /c mklink /j \"$src\" \"$dst\" | Out-Null",
+            "    }",
+            "} else {",
+            "    cmd /c mklink /j \"$src\" \"$dst\" | Out-Null",
+            "}",
             "$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
             "if (-not $isAdmin) { Write-Warning \"`nuuyc installation requires administrator privileges.`nPlease rerun Scoop in an elevated PowerShell.`n\"; exit 1 }",
             "$installer = Get-ChildItem \"$dir\\*.exe\" | Select-Object -First 1",
@@ -24,7 +35,13 @@
             "Get-ChildItem \"$env:ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\" -Filter '*UU*.lnk' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue"
         ]
     },
-    "pre_uninstall": "if (Get-Service -Name 'GameViewerService' -ErrorAction SilentlyContinue) { Stop-Service -Name 'GameViewerService' -Force -ErrorAction SilentlyContinue; sc.exe delete GameViewerService | Out-Null }",
+    "pre_uninstall": [
+        "Get-ScheduledTask -TaskName '*GameViewer*' -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue",
+        "Get-ScheduledTask -TaskName '*UU*' -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue",
+        "if (Get-Service -Name 'GameViewerService' -ErrorAction SilentlyContinue) { Set-Service -Name 'GameViewerService' -StartupType Disabled -ErrorAction SilentlyContinue; Stop-Service -Name 'GameViewerService' -Force -ErrorAction SilentlyContinue; sc.exe delete GameViewerService | Out-Null }",
+        "@('GameViewerService', 'GameViewerServer', 'GameViewerHealthd', 'GameViewer', 'crashpad_handler') | ForEach-Object { Get-Process -Name $_ -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue }",
+        "Start-Sleep -Seconds 1"
+    ],
     "uninstaller": {
         "script": [
             "$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
@@ -79,13 +96,12 @@
             "$response.Close()",
             "return $location"
         ],
-        "regex": "(?<url>https://a56\\.gdl\\.netease\\.com/UURemote_Setup_(?<version>[\\d.]+)_[^?]+\\.exe\\?.*)"
+        "regex": "https://a56\\.gdl\\.netease\\.com/UURemote_Setup_(?<version>[\\d.]+)_(?<build>[^?]+)\\.exe(?<query>\\?.*)"
     },
     "autoupdate": {
-        "url": "$matchUrl",
+        "url": "https://a56.gdl.netease.com/UURemote_Setup_$matchVersion_$matchBuild.exe$matchQuery",
         "hash": {
             "mode": "download"
         }
-    },
-    "note": "This app does not persist user data, as there is no need to do so."
+    }
 }
