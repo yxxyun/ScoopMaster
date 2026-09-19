@@ -13,10 +13,23 @@
             "hash": "45db7f05cb31b100a7f4dbc750f58827673c4c9cc305754cef8b66bcca0daf2f"
         }
     },
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+        "New-PersistDirectory \"$env:APPDATA\\Zed\" \"$persist_dir\\AppData\" -Migrate",
+        "New-PersistDirectory \"$env:LOCALAPPDATA\\Zed\" \"$persist_dir\\LocalAppData\" -Migrate",
+        "if (!(Test-Path \"$persist_dir\\AppData\\settings.json\") -or !(Get-Item \"$persist_dir\\AppData\\settings.json\").Length) {",
+        "    New-Item \"$persist_dir\\AppData\\settings.json\" -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null",
+        "    Set-Content -Path \"$persist_dir\\AppData\\settings.json\" -Value '{\"auto_update\":false,\"telemetry\":{\"diagnostics\":false,\"metrics\":false}}'",
+        "}"
+    ],
     "bin": [
         [
             "bin\\ZedG.exe",
             "zedg"
+        ],
+        [
+            "bin\\ZedG.exe",
+            "zed"
         ]
     ],
     "shortcuts": [
@@ -25,17 +38,11 @@
             "ZedG"
         ]
     ],
-    "post_install": [
-        "$desktop = [Environment]::GetFolderPath(\"Desktop\")",
-        "$ws = New-Object -ComObject WScript.Shell",
-        "$lnk = $ws.CreateShortcut(\"$desktop\\ZedG.lnk\")",
-        "$lnk.TargetPath = \"$dir\\ZedG.exe\"",
-        "$lnk.WorkingDirectory = \"$dir\"",
-        "$lnk.Save()"
-    ],
     "pre_uninstall": [
-        "$desktop = [Environment]::GetFolderPath(\"Desktop\")",
-        "Remove-Item \"$desktop\\ZedG.lnk\" -ErrorAction SilentlyContinue"
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+        "Remove-Junction \"$env:APPDATA\\Zed\"",
+        "Remove-Junction \"$env:LOCALAPPDATA\\Zed\""
     ],
     "checkver": {
         "github": "https://github.com/x6nux/zed-globalization"
