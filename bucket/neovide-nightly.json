@@ -1,8 +1,15 @@
 {
-    "version": "20260920.0533-105fd640",
+    "version": "20260920.053139.576197108",
     "description": "A simple GUI for Neovim (nightly build)",
     "homepage": "https://neovide.dev",
     "license": "MIT",
+    "notes": "Requires Neovim 0.10 or newer. The version identifies the Windows nightly build.",
+    "suggest": {
+        "neovim": [
+            "neovim",
+            "neovim-nightly"
+        ]
+    },
     "architecture": {
         "64bit": {
             "url": "https://github.com/neovide/neovide/releases/download/nightly/neovide-windows-x86_64.zip",
@@ -18,13 +25,23 @@
     ],
     "checkver": {
         "url": "https://api.github.com/repos/neovide/neovide/releases/tags/nightly",
-        "regex": "(?s)\"target_commitish\":\\s*\"(?<sha>[0-9a-f]{8})[0-9a-f]*\".*?\"published_at\":\\s*\"(?<y>\\d{4})-(?<mo>\\d{2})-(?<d>\\d{2})T(?<h>\\d{2}):(?<mi>\\d{2})",
-        "replace": "${y}${mo}${d}.${h}${mi}-${sha}"
+        "script": [
+            "$release = $page | ConvertFrom-Json",
+            "$assets = @($release.assets | Where-Object name -CEQ 'neovide-windows-x86_64.zip')",
+            "if ($release.draft -or $release.tag_name -cne 'nightly' -or $assets.Count -ne 1 -or $assets[0].state -ne 'uploaded') { throw 'Windows nightly asset is unavailable.' }",
+            "$stamp = ([DateTimeOffset]$assets[0].updated_at).ToUniversalTime().ToString('yyyyMMdd.HHmmss')",
+            "\"$stamp.$($assets[0].id)|nightly\""
+        ],
+        "regex": "^(?<version>\\d{8}\\.\\d{6}\\.\\d+)\\|(?<tag>nightly)$"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/neovide/neovide/releases/download/nightly/neovide-windows-x86_64.zip"
+                "url": "https://github.com/neovide/neovide/releases/download/nightly/neovide-windows-x86_64.zip",
+                "hash": {
+                    "url": "https://api.github.com/repos/neovide/neovide/releases/assets/$patchVersion",
+                    "jsonpath": "$.digest"
+                }
             }
         }
     }

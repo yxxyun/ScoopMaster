@@ -1,0 +1,69 @@
+{
+    "version": "26.09.2",
+    "description": "Powerful and intelligent flash cards (latest available release, including prereleases)",
+    "homepage": "https://apps.ankiweb.net",
+    "license": "AGPL-3.0-only",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/ankitects/anki/releases/download/26.09.2/anki-26.09.2-win-x64.msi",
+            "hash": "91e211db3d9f61e6a7dfed966966d677c9fb580cb8b1a97891a4f7bcdd8629b5",
+            "extract_dir": "PFiles64\\Anki"
+        }
+    },
+    "pre_install": [
+        "@(",
+        "    '@echo off'",
+        "    'setlocal'",
+        "    'set \"ANKI_BASE=%~dp0data\"'",
+        "    'start \"\" \"%~dp0anki.exe\" %*'",
+        ") | Set-Content \"$dir\\anki.cmd\" -Encoding ASCII"
+    ],
+    "bin": "anki.cmd",
+    "shortcuts": [
+        [
+            "anki.cmd",
+            "Anki Latest",
+            "",
+            "anki.exe"
+        ]
+    ],
+    "persist": "data",
+    "checkver": {
+        "url": "https://api.github.com/repos/ankitects/anki/releases?per_page=100",
+        "script": [
+            "$latest = $null",
+            "foreach ($release in ($page | ConvertFrom-Json)) {",
+            "    if ($release.draft) { continue }",
+            "    $tag = [string]$release.tag_name",
+            "    if ($tag -notmatch '^(?<base>\\d+\\.\\d{2}(?:\\.\\d+)?)(?:(?<channel>a|b|rc)(?<seq>\\d+))?$') { continue }",
+            "    $candidateVersion = $Matches['base']",
+            "    $channel = $Matches['channel']",
+            "    $sequence = $Matches['seq']",
+            "    if ($channel) {",
+            "        $label = @{ a = 'alpha'; b = 'beta'; rc = 'rc' }[$channel]",
+            "        $candidateVersion = \"$candidateVersion-$label$sequence\"",
+            "    }",
+            "    $asset = @($release.assets | Where-Object { $_.name -ceq \"anki-$tag-win-x64.msi\" -and $_.state -eq 'uploaded' })",
+            "    if ($asset.Count -ne 1) { continue }",
+            "    if (!$latest -or (Compare-Version -ReferenceVersion $latest.version -DifferenceVersion $candidateVersion) -gt 0) {",
+            "        $latest = [PSCustomObject]@{ version = $candidateVersion; tag = $tag }",
+            "    }",
+            "}",
+            "if (!$latest) { throw 'No published Anki release with a Windows x64 MSI was found.' }",
+            "\"$($latest.version)|$($latest.tag)\""
+        ],
+        "regex": "^(?<version>[^\\s|]+)\\|(?<tag>[^\\s|]+)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/ankitects/anki/releases/download/$matchTag/anki-$matchTag-win-x64.msi"
+            }
+        }
+    },
+    "##": "Based on ScoopInstaller/Extras anki; latest Windows x64 release includes alpha, beta and RC builds.",
+    "notes": [
+        "This channel includes prereleases. Close Anki before updating.",
+        "Use Scoop to update this copy. Card data is kept in the Scoop persist directory."
+    ]
+}
