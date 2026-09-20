@@ -1,0 +1,71 @@
+{
+    "version": "2.0.0-preview.1",
+    "description": "NyaTerm Preview - GPUI native rewrite preview of the modern remote terminal workspace (SSH/SFTP/Telnet/Serial, RDP/VNC, AI)",
+    "homepage": "https://nyaterm.app",
+    "license": "MIT",
+    "notes": [
+        "NyaTerm Preview is the Rust + GPUI native rewrite (preview channel), not a drop-in replacement for stable NyaTerm.",
+        "It uses a separate app identity and a .nyaterm-preview config directory, so it can be installed alongside zyqpkg/nyaterm.",
+        "Early preview: UI polish, edge-case terminal/SSH/SFTP behavior, and RDP/VNC compatibility may still be incomplete.",
+        "Feedback: https://github.com/nyakang/nyaterm/issues/new?template=01_gpui_preview_bug.yml"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/nyakang/nyaterm/releases/download/v2.0.0-preview.1/NyaTerm_2.0.0-preview.1_windows_x64_portable.zip",
+            "hash": "ad7b6cb0b19101fffefac85f1a68d85e970ea9d29b887d386744a16fd508faab"
+        },
+        "arm64": {
+            "url": "https://github.com/nyakang/nyaterm/releases/download/v2.0.0-preview.1/NyaTerm_2.0.0-preview.1_windows_arm64_portable.zip",
+            "hash": "8082c63cdd8ab156bf863b90e5bc18e7c2e0e07e48cbeb12b8ad1dfa75a62130"
+        }
+    },
+    "pre_install": [
+        "$src = Join-Path $dir 'NyaTerm-portable'",
+        "if (Test-Path -LiteralPath $src) {",
+        "    Get-ChildItem -LiteralPath $src -Force | ForEach-Object {",
+        "        # Zip contains an empty stub named nyaterm-portable; moving it onto $dir collides with the source folder on Windows (case-insensitive).",
+        "        if ($_.Name -ieq 'nyaterm-portable') {",
+        "            Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue",
+        "        } else {",
+        "            Move-Item -LiteralPath $_.FullName -Destination $dir -Force",
+        "        }",
+        "    }",
+        "    Remove-Item -LiteralPath $src -Force -Recurse -ErrorAction SilentlyContinue",
+        "}"
+    ],
+    "bin": [
+        [
+            "NyaTerm.exe",
+            "nyaterm-preview"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "NyaTerm.exe",
+            "NyaTerm Preview"
+        ]
+    ],
+    "persist": "data",
+    "checkver": {
+        "url": "https://github.com/nyakang/nyaterm/releases",
+        "regex": "/releases/tag/v(?<version>[\\d.]+-preview\\.\\d+)\""
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/nyakang/nyaterm/releases/download/v$version/NyaTerm_$version_windows_x64_portable.zip",
+                "hash": {
+                    "url": "https://github.com/nyakang/nyaterm/releases/download/v$version/SHA256SUMS",
+                    "regex": "(?i)([a-fA-F0-9]{64})\\s+NyaTerm_$version_windows_x64_portable\\.zip"
+                }
+            },
+            "arm64": {
+                "url": "https://github.com/nyakang/nyaterm/releases/download/v$version/NyaTerm_$version_windows_arm64_portable.zip",
+                "hash": {
+                    "url": "https://github.com/nyakang/nyaterm/releases/download/v$version/SHA256SUMS",
+                    "regex": "(?i)([a-fA-F0-9]{64})\\s+NyaTerm_$version_windows_arm64_portable\\.zip"
+                }
+            }
+        }
+    }
+}
