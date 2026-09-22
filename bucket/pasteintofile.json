@@ -1,6 +1,6 @@
 {
     "version": "5.6.1",
-    "description": "Paste clipboard contents into files, or copy file contents to the clipboard, from the Explorer context menu or a global hotkey",
+    "description": "Paste clipboard data into files and copy file contents directly via hotkey or context menu",
     "homepage": "https://github.com/eltos/PasteIntoFile",
     "license": "MIT",
     "url": "https://github.com/eltos/PasteIntoFile/releases/download/v5.6.1/PasteIntoFile_v5.6.1_portable_signed.zip",
@@ -9,37 +9,18 @@
     "shortcuts": [
         [
             "PasteIntoFile.exe",
-            "Paste Into File"
+            "PasteIntoFile"
         ]
     ],
-    "pre_install": "if (!(Test-Path \"$persist_dir\\settings.config\")) { New-Item \"$dir\\settings.config\" -ItemType File -Force | Out-Null }",
-    "post_install": [
-        "# 与官方 MSI 安装包行为一致：注册右键菜单并开启托盘自启。$dir 是 current junction，注册表记录的路径升级后依然有效",
-        "if (Test-Path \"$dir\\PasteIntoFile.exe\") {",
-        "    & \"$dir\\PasteIntoFile.exe\" config --register",
-        "    & \"$dir\\PasteIntoFile.exe\" config --enable-autostart",
-        "}"
-    ],
-    "pre_uninstall": [
-        "if (Test-Path \"$dir\\PasteIntoFile.exe\") {",
-        "    & \"$dir\\PasteIntoFile.exe\" config --unregister 2>$null",
-        "    & \"$dir\\PasteIntoFile.exe\" config --disable-autostart",
-        "}",
-        "# config --unregister 遇到不存在的菜单项会中止，这里按官方 MSI 的注册表键列表兜底清理",
-        "$entries = 'Directory\\shell\\PasteIntoFile', 'Directory\\Background\\shell\\PasteIntoFile', '*\\shell\\PasteIntoFile', '*\\shell\\PasteIntoFile_replace', '*\\shell\\PasteIntoFile_replace_append'",
-        "$entries | ForEach-Object { Remove-Item -LiteralPath \"HKCU:\\Software\\Classes\\$_\" -Recurse -Force -ErrorAction SilentlyContinue }"
-    ],
-    "persist": "settings.config",
-    "notes": [
-        "安装后已按官方安装包的做法注册资源管理器右键菜单（粘贴到文件 / 复制文件内容 / 粘贴并替换）并开启开机托盘自启，Windows 11 需在“显示更多选项”里查看。",
-        "首次启动会弹出向导，可调整右键菜单项、托盘自启、热键 Win+Alt+V 与文件名模板；在向导里取消勾选的项在下次升级后会被重新注册。",
-        "便携版把设置写在程序目录的 settings.config，已通过 persist 持久化，升级与卸载（不带 -p）均不丢失。",
-        "命令行可用：pasteintofile help（paste / copy / config 等子命令，如 pasteintofile config --disable-autostart）。",
-        "需要 .NET Framework 4.8（Windows 10 1903 及以上、Windows 11 均已内置）。",
-        "本仓库另有 `pasteintofile-classic`：原作者 EslaMx7 的旧版（v1.5，2020 年停更）；本清单是其维护中的续作。"
-    ],
-    "checkver": "github",
+    "checkver": {
+        "url": "https://api.github.com/repos/eltos/PasteIntoFile/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "v([\\d.]+)"
+    },
     "autoupdate": {
-        "url": "https://github.com/eltos/PasteIntoFile/releases/download/v$version/PasteIntoFile_v$version_portable_signed.zip"
+        "url": "https://github.com/eltos/PasteIntoFile/releases/download/v$version/PasteIntoFile_v$version_portable_signed.zip",
+        "hash": {
+            "url": "https://github.com/eltos/PasteIntoFile/releases/download/v$version/PasteIntoFile_v$version_portable_signed.zip.sha256"
+        }
     }
 }
