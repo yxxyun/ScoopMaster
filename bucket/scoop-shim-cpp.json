@@ -6,8 +6,7 @@
     "notes": [
         "Scoop core has no support for the new shim implementations yet, so this manifest overwrites every built-in Scoop shim (supporting\\shims\\71, kiennq and scoopcs).",
         "Whatever 'scoop config shim' is set to (or the default kiennq), Scoop will use this implementation.",
-        "Install only one of scoop-shim-cs, scoop-shim-cpp, scoop-shim-rust or scoop-shim-zig at a time.",
-        "Uninstalling restores the original files from Scoop's git checkout."
+        "Install only one of scoop-shim-cs, scoop-shim-cpp, scoop-shim-rust or scoop-shim-zig at a time."
     ],
     "architecture": {
         "64bit": {
@@ -24,18 +23,23 @@
         }
     },
     "post_install": [
-        "$shimRoot = \"$scoopdir\\apps\\scoop\\current\\supporting\\shims\"",
-        "$impls = @('71', 'kiennq', 'scoopcs')",
-        "if (Test-Path $shimRoot) { $impls = @($impls + @(Get-ChildItem $shimRoot -Directory -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name) | Select-Object -Unique) }",
-        "foreach ($impl in $impls) {",
-        "    $shimDir = ensure \"$shimRoot\\$impl\"",
-        "    Copy-Item \"$dir\\shim.exe\" \"$shimDir\\shim.exe\" -Force",
-        "    if (Test-Path \"$dir\\shim.exe.sha256\") { Copy-Item \"$dir\\shim.exe.sha256\" \"$shimDir\\checksum.sha256\" -Force }",
-        "    if (Test-Path \"$dir\\shim.exe.sha512\") { Copy-Item \"$dir\\shim.exe.sha512\" \"$shimDir\\checksum.sha512\" -Force }",
-        "    if (Test-Path \"$dir\\version\") { Copy-Item \"$dir\\version\" \"$shimDir\\version.txt\" -Force }",
-        "}"
+        "if (scoop config shim) {",
+        "    $shimBuild = scoop config shim",
+        "} else {",
+        "    $shimBuild = \"kiennq\"",
+        "}",
+        "Copy-Item \"$dir\\shim.exe\" \"$scoopdir\\apps\\scoop\\current\\supporting\\shims\\$shimBuild\\shim.exe\" -Force",
+        "git -C \"$scoopdir\\apps\\scoop\\current\" update-index --skip-worktree \"supporting\\shims\\$shimBuild\\shim.exe\""
     ],
-    "pre_uninstall": "git -C \"$scoopdir\\apps\\scoop\\current\" checkout -- supporting/shims",
+    "pre_uninstall": [
+        "if (scoop config shim) {",
+        "    $shimBuild = scoop config shim",
+        "} else {",
+        "    $shimBuild = \"kiennq\"",
+        "}",
+        "git -C \"$scoopdir\\apps\\scoop\\current\" update-index --no-skip-worktree \"supporting\\shims\\$shimBuild\\shim.exe\"",
+        "git -C \"$scoopdir\\apps\\scoop\\current\" checkout -- \"supporting\\shims\\$shimBuild\\shim.exe\""
+    ],
     "checkver": {
         "url": "https://api.github.com/repos/ScoopInstaller/Shim/releases",
         "jsonpath": "$[*].tag_name",
