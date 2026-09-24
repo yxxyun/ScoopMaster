@@ -3,16 +3,64 @@
     "description": "A tiny game backup and homebrew app manager for the Wii",
     "homepage": "https://github.com/mq1/TinyWiiBackupManager",
     "license": "GPL-3.0-only",
-    "url": "https://github.com/mq1/TinyWiiBackupManager/releases/download/v6.0.8/TinyWiiBackupManager-v6.0.8-windows-x64.exe#/TinyWiiBackupManager.exe",
-    "hash": "c12f91b984abd50d58fb57493b6480df8c85404cc3e6a1c1fe23ffc8fcc6f637",
+    "env_set": {
+        "TWBM_DISABLE_UPDATES": "1"
+    },
+    "pre_install": [
+        "$oldData = \"$env:APPDATA\\mq1\\TinyWiiBackupManager\\data\"",
+        "$targetData = \"$dir\\TinyWiiBackupManager-data\"",
+        "if (Test-Path $oldData) {",
+        "    $choice = Read-Host \"`nExisting configuration found. We now use portable mode, would you like to migrate? (Y/N)\"",
+        "    if ($choice -match '^[Yy]') {",
+        "        Write-Host 'Migrating AppData configuration...' -ForegroundColor Cyan",
+        "        Move-Item -Path $oldData -Destination $targetData -Force",
+        "        $appFolder = Split-Path $oldData -Parent",
+        "        $vendorFolder = Split-Path $appFolder -Parent",
+        "        if ((Test-Path $appFolder) -and (Get-ChildItem $appFolder).Count -eq 0) {",
+        "            Remove-Item -Path $appFolder -Force",
+        "        }",
+        "        if ((Test-Path $vendorFolder) -and (Get-ChildItem $vendorFolder).Count -eq 0) {",
+        "            Remove-Item -Path $vendorFolder -Force",
+        "        }",
+        "    }",
+        "}",
+        "if (!(Test-Path $targetData)) {",
+        "    New-Item -ItemType Directory -Path $targetData | Out-Null",
+        "}"
+    ],
+    "persist": "TinyWiiBackupManager-data",
     "shortcuts": [
         [
-            "TinyWiiBackupManager.exe",
+            "TinyWiiBackupManager-portable.exe",
             "TinyWiiBackupManager"
         ]
     ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/mq1/TinyWiiBackupManager/releases/download/v6.0.8/TinyWiiBackupManager-v6.0.8-windows-x64.exe#/TinyWiiBackupManager-portable.exe",
+            "hash": "c12f91b984abd50d58fb57493b6480df8c85404cc3e6a1c1fe23ffc8fcc6f637"
+        },
+        "arm64": {
+            "url": "https://github.com/mq1/TinyWiiBackupManager/releases/download/v6.0.8/TinyWiiBackupManager-v6.0.8-windows-arm64.exe#/TinyWiiBackupManager-portable.exe",
+            "hash": "185cc9113c527d771fb4760bdc0e73d1cd23a86cc6116c012555f7d5b40cfb64"
+        },
+        "32bit": {
+            "url": "https://github.com/mq1/TinyWiiBackupManager/releases/download/v6.0.8/TinyWiiBackupManager-v6.0.8-windows-x86.exe#/TinyWiiBackupManager-portable.exe",
+            "hash": "30d788e295c898034dc875b6a344b5a42643fd327d4436e7e812301f32475078"
+        }
+    },
     "checkver": "github",
     "autoupdate": {
-        "url": "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$version/TinyWiiBackupManager-v$version-windows-x64.exe#/TinyWiiBackupManager.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$version/TinyWiiBackupManager-v$version-windows-x64.exe#/TinyWiiBackupManager-portable.exe"
+            },
+            "arm64": {
+                "url": "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$version/TinyWiiBackupManager-v$version-windows-arm64.exe#/TinyWiiBackupManager-portable.exe"
+            },
+            "32bit": {
+                "url": "https://github.com/mq1/TinyWiiBackupManager/releases/download/v$version/TinyWiiBackupManager-v$version-windows-x86.exe#/TinyWiiBackupManager-portable.exe"
+            }
+        }
     }
 }
