@@ -1,63 +1,48 @@
 {
     "version": "3.9.0",
-    "description": "视频转字幕、字幕翻译、AI 配音与字幕烧录一站式桌面工具（妙幕） / Local video subtitle generation, translation, dubbing and burning tool",
-    "homepage": "https://smartsub.linxiaodong.com/",
-    "license": "MIT",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/buxuku/SmartSub/releases/download/v3.9.0/SmartSub_Windows_3.9.0_x64.exe#/dl.7z",
-            "hash": "94237438408486d378d3b2acb7f25db83bb00218d7a1707fbbf1115d9d1ceac1"
-        }
+    "description": "批量为视频生成字幕，并可将字幕翻译成其它语言。这是一个客户端工具, 跨平台支持 mac 和 windows 系统",
+    "homepage": "https://github.com/buxuku/SmartSub",
+    "license": {
+        "identifier": "MIT license",
+        "url": "https://github.com/buxuku/SmartSub#MIT-1-ov-file"
     },
+    "url": "https://github.com/buxuku/SmartSub/releases/download/v3.9.0/SmartSub_Windows_3.9.0_x64.exe#/dl.7z",
+    "hash": "sha512:ca23d1e91709fa75d40d3631aa23d45d69f0f736291c53b141e6acac25cc5460d4ca6c6472dd1fd2ded060ee0058a0c23d3362a7c76b5966ea5e90b0619ecab9",
     "pre_install": [
         "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\" -Force -Recurse -ErrorAction SilentlyContinue"
+        "Remove-Item \"$dir\\`$*\" -Force -Recurse"
     ],
-    "post_install": [
-        "$dataDir = \"$env:APPDATA\\smartsub\"",
-        "$persistData = \"$persist_dir\\smartsub\"",
-        "$linkOk = $false",
-        "if (Test-Path $dataDir) {",
-        "    $item = Get-Item $dataDir -Force",
-        "    if ($item.LinkType -eq 'Junction') {",
-        "        $target = (Resolve-Path $item.Target -ErrorAction SilentlyContinue).Path",
-        "        if (Test-Path $persistData) {",
-        "            $linkOk = $target -eq (Resolve-Path $persistData).Path",
-        "        }",
-        "        if (-not $linkOk) {",
-        "            Remove-Item $dataDir -Force -Recurse",
-        "        }",
-        "    } elseif (-not (Get-ChildItem $persistData -Force -ErrorAction SilentlyContinue)) {",
-        "        Remove-Item $persistData -Force -Recurse -ErrorAction SilentlyContinue",
-        "        Move-Item $dataDir $persistData",
-        "    } else {",
-        "        Move-Item $dataDir \"$dataDir.old\" -Force -ErrorAction SilentlyContinue",
-        "    }",
-        "}",
-        "if (-not $linkOk) {",
-        "    New-Item -ItemType Directory -Path $persistData -Force | Out-Null",
-        "    if (-not (Test-Path $dataDir)) {",
-        "        New-DirectoryJunction $dataDir $persistData | Out-Null",
-        "    }",
-        "}"
-    ],
+    "installer": {
+        "script": [
+            "# handle runtime cache",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\" -Target \"$env:APPDATA\\video-subtitle-master\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\video-subtitle-master\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
     "shortcuts": [
         [
             "SmartSub.exe",
             "SmartSub"
         ]
     ],
-    "persist": "smartsub",
-    "notes": "应用内的「检查更新」下载的是官方安装包，会另行安装到用户目录。升级请使用 scoop update smartsub。",
-    "post_uninstall": "Remove-Item \"$env:APPDATA\\smartsub\" -Force -Recurse -ErrorAction SilentlyContinue",
     "checkver": {
-        "github": "https://github.com/buxuku/SmartSub"
+        "github": "https://api.github.com/repos/buxuku/SmartSub/releases",
+        "jp": "$[0].tag_name",
+        "regex": "v([\\w.-]+)"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/buxuku/SmartSub/releases/download/v$version/SmartSub_Windows_$version_x64.exe#/dl.7z"
-            }
+        "url": "https://github.com/buxuku/SmartSub/releases/download/v$version/SmartSub_Windows_$version_x64.exe#/dl.7z",
+        "hash": {
+            "url": "$baseurl/latest.yml",
+            "regex": "sha512:\\s+$base64"
         }
     }
 }
