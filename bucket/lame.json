@@ -1,30 +1,54 @@
 {
-    "homepage": "https://lame.sourceforge.net/",
-    "description": "LAME is a high quality MPEG Audio Layer III (MP3) encoder",
+    "version": "4.0-q4-patched",
+    "description": "High quality MPEG Audio Layer III (MP3) encoder",
+    "homepage": "https://lame.sourceforge.io/",
     "license": "LGPL-2.0-only",
-    "version": "3.100",
     "architecture": {
         "64bit": {
-            "url": "http://www.rarewares.org/files/mp3/lame3.100-64.zip",
-            "hash": "c9cddf1650fff0ebe0ba79de794b1fa9b334f43f08e2d365b7a158941ad78fa7"
+            "url": "http://www.rarewares.org/files/mp3/lame-4.0-x64-q4-patched.zip",
+            "hash": "c900843218ae13b1ddfc334c705298be4503d8a1e9db6bb3d03458dd1c1f1157"
         },
         "32bit": {
-            "url": "http://www.rarewares.org/files/mp3/lame3.100.zip",
-            "hash": "910e14565e7edc419e3b841d1cd7eb83db52727d0f34fceec2b04d905a148ac6"
+            "url": "http://www.rarewares.org/files/mp3/lame-4.0-x86-q4-patched.zip",
+            "hash": "ec67c7dcc63f56e081cfb05dd580826dfbaab721c0f55f67cd36d6b939c58874"
         }
     },
     "bin": "lame.exe",
     "checkver": {
         "url": "http://www.rarewares.org/mp3-lame-bundle.php",
-        "re": "http://www.rarewares.org/files/mp3/lame([\\d.]+).zip"
+        "script": [
+            "$versions = [regex]::Matches(",
+            "    $page,",
+            "    '/files/mp3/lame-(?<version>[\\d.]+)-x64(?<patch>-[-\\w]+)?\\.zip',",
+            "    [System.Text.RegularExpressions.RegexOptions]::IgnoreCase",
+            ") | ForEach-Object {",
+            "    $version = $_.Groups['version'].Value",
+            "    $patch   = $_.Groups['patch'].Value",
+            "",
+            "    [PSCustomObject]@{",
+            "        Version     = [version]$version",
+            "        Patch       = $patch",
+            "        FullVersion = \"${version}${patch}\"",
+            "        Url         = \"https://www.rarewares.org$($_.Value)\"",
+            "    }",
+            "} | Sort-Object -Property `",
+            "    @{ Expression = 'Version'; Descending = $true },",
+            "    @{ Expression = { -not [string]::IsNullOrEmpty($_.Patch) }; Descending = $true },",
+            "    @{ Expression = 'Patch'; Descending = $true } `",
+            "  | Select-Object -First 1",
+            "",
+            "$versions.FullVersion"
+        ],
+        "regex": "(?<version>[\\d.]+)(?<patch>-[-\\w]+)?",
+        "replace": "${version}${patch}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "http://www.rarewares.org/files/mp3/lame$version-64.zip"
+                "url": "http://www.rarewares.org/files/mp3/lame-$matchVersion-x64$matchPatch.zip"
             },
             "32bit": {
-                "url": "http://www.rarewares.org/files/mp3/lame$version.zip"
+                "url": "http://www.rarewares.org/files/mp3/lame-$matchVersion-x86$matchPatch.zip"
             }
         }
     }
