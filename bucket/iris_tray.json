@@ -1,26 +1,24 @@
 {
-  "version": "1.0.7.0",
+  "version": "1.0.10.0",
   "description": "InterSystems Windows Tray",
   "homepage": "https://www.intersystems.com/",
   "license": "Proprietary",
-  "architecture": {
-    "64bit": {
-      "url": "https://iris-windows-tray-bucket.s3.us-east-2.amazonaws.com/v1.0.7.0/IrisNotificationArea_1.0.7.0_x64.msix",
-      "hash": "sha256:6CE094857263668C16745321C216B8DFC0406B7248118DA1153607DA4321D403"
-    }
-  },
+  "url": "https://iris-windows-tray-bucket.s3.us-east-2.amazonaws.com/v1.0.10.0/IrisTray_1.0.10.0.msixbundle",
+  "hash": "sha256:2AB2469CB889D3192DF1D7DF5093FA1FFB9A4FD2BE309F1BC24E6E61D42ACB70",
   "pre_install": [
     "Stop-Process -Name 'IrisNotificationArea' -Force -ErrorAction SilentlyContinue"
   ],
   "installer": {
     "script": [
-      "Write-Host 'Registering MSIX Package with Windows...' -ForegroundColor Cyan",
-      "Add-AppxPackage -Path (Get-ChildItem \"$dir\\*.msix\").FullName"
+      "Write-Host 'Registering MSIX Bundle with Windows...' -ForegroundColor Cyan",
+      "$bundle = Get-ChildItem \"$dir\\*.msixbundle\" | Select-Object -First 1",
+      "if ($bundle) { Add-AppxPackage -Path $bundle.FullName } else { throw 'No .msixbundle file found in package directory.' }"
     ]
   },
   "post_install": [
     "Write-Host 'Launching IRIS Windows Tray...' -ForegroundColor Cyan",
-    "Start-Process \"shell:AppsFolder\\com.intersystems.tray_736885xzhtrt2!App\""
+    "$app = Get-AppxPackage -Name '*intersystems.tray*'",
+    "if ($app) { Start-Process \"shell:AppsFolder\\$($app.PackageFamilyName)!App\" } else { Start-Process \"shell:AppsFolder\\com.intersystems.tray_736885xzhtrt2!App\" }"
   ],
   "pre_uninstall": [
     "Stop-Process -Name 'IrisNotificationArea' -Force -ErrorAction SilentlyContinue"
