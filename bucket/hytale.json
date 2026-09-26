@@ -1,22 +1,67 @@
 {
-    "version": "nightly",
-    "description": "Official launcher for the game Hytale",
-    "notes": [
-        "To force Hytale to use its default folders, run:",
-        "\"$dir\\default-folders.reg\""
-    ],
-    "homepage": "https://hytale.com",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://hytale.com/terms-of-service"
+    "version": "2026.09.21-909ac0c",
+    "description": "The Official launcher for Hytale.",
+    "homepage": "https://hytale.com/",
+    "license": "Freeware",
+    "architecture": {
+        "64bit": {
+            "url": "https://launcher.hytale.com/builds/release/windows/amd64/hytale-launcher-2026.09.21-909ac0c.zip",
+            "hash": "57ad4f90579b3dc6f7f973237fe9d49f7584b6f293335d6856c7fe6377c3ed2c"
+        }
     },
-    "url": "https://launcher.hytale.com/builds/release/windows/amd64/hytale-launcher-installer-latest.exe#/.7z",
-    "pre_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
-    "post_install": "Copy-Item \"$bucketsdir\\games\\scripts\\hytale\\default-folders.reg\" \"$dir\\default-folders.reg\" -Force -Recurse",
+    "suggest": {
+        "Microsoft Visual C++ Redistributables": "extras/vcredist2022"
+    },
+    "pre_install": [
+        "Get-ChildItem \"$dir\" -Filter \"*.exe\" | Select-Object -First 1 | Rename-Item -NewName \"hytale-launcher.exe\" -ErrorAction SilentlyContinue",
+        "if (!(Test-Path \"$persist_dir\\data\")) {",
+        "    New-Item -Path \"$persist_dir\\data\" -ItemType Directory | Out-Null",
+        "    if (Test-Path \"$env:APPDATA\\Hytale\") {",
+        "        Write-Host \"Migrating existing Hytale data from AppData to persist directory...\" -ForegroundColor Yellow",
+        "        Copy-Item -Path \"$env:APPDATA\\Hytale\\*\" -Destination \"$persist_dir\\data\" -Recurse -Force",
+        "        Remove-Item -Path \"$env:APPDATA\\Hytale\" -Recurse -Force",
+        "    }",
+        "}"
+    ],
+    "post_install": [
+        "$gameDataPath = \"$persist_dir\\data\"",
+        "if (!(Test-Path 'HKCU:\\Software\\Hypixel Studios\\Hytale')) { New-Item -Path 'HKCU:\\Software\\Hypixel Studios\\Hytale' -Force | Out-Null }",
+        "Set-ItemProperty -Path 'HKCU:\\Software\\Hypixel Studios\\Hytale' -Name 'GameInstallPath' -Value $gameDataPath -Force",
+        "if (!(Test-Path 'HKCU:\\Software\\Hypixel Studios\\Hytale Launcher')) { New-Item -Path 'HKCU:\\Software\\Hypixel Studios\\Hytale Launcher' -Force | Out-Null }",
+        "Set-ItemProperty -Path 'HKCU:\\Software\\Hypixel Studios\\Hytale Launcher' -Name 'InstallDir' -Value \"$dir\" -Force"
+    ],
+    "uninstaller": {
+        "script": [
+            "Remove-ItemProperty -Path 'HKCU:\\Software\\Hypixel Studios\\Hytale' -Name 'GameInstallPath' -ErrorAction SilentlyContinue",
+            "Remove-ItemProperty -Path 'HKCU:\\Software\\Hypixel Studios\\Hytale Launcher' -Name 'InstallDir' -ErrorAction SilentlyContinue"
+        ]
+    },
+    "bin": [
+        [
+            "hytale-launcher.exe",
+            "hytale"
+        ]
+    ],
     "shortcuts": [
         [
             "hytale-launcher.exe",
-            "Hytale"
+            "Hytale Launcher"
         ]
-    ]
+    ],
+    "persist": "data",
+    "checkver": {
+        "url": "https://launcher.hytale.com/version/release/launcher.json",
+        "jsonpath": "$.version"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://launcher.hytale.com/builds/release/windows/amd64/hytale-launcher-$version.zip"
+            }
+        },
+        "hash": {
+            "url": "https://launcher.hytale.com/version/release/launcher.json",
+            "jsonpath": "$.download_url.windows.amd64.sha256"
+        }
+    }
 }
