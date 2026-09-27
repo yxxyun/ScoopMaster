@@ -1,0 +1,51 @@
+{
+    "version": "0.1.149",
+    "description": "A desktop canvas for AI coding agents: run agent CLIs side by side and wire them to browsers, terminals and notes.",
+    "homepage": "https://neurosquad.ai/",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://neurosquad.ai/"
+    },
+    "notes": [
+        "NeuroSquad is in the Start menu. It needs a free NeuroSquad account and keeps itself up to date;",
+        "'scoop update neurosquad' also works. Your data (%APPDATA%\\NeuroSquad) is kept on uninstall."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/glmn-ai/neurosquad-releases/releases/download/v0.1.149/NeuroSquad-Setup.exe#/setup.exe",
+            "hash": "9f15e7e4a7dd5c5c5ad03be4013339d8b996d9f33edab77bf31ab0f8f71765b8"
+        }
+    },
+    "installer": {
+        "script": [
+            "# NeuroSquad's own installer, unattended, into $dir\\app: it refuses a folder that holds other",
+            "# files, and $dir holds the downloaded setup.exe. It adds the Start menu shortcut (with the",
+            "# AppUserModelID that Windows notifications need) and the Apps & features entry.",
+            "$p = Start-Process -FilePath \"$dir\\setup.exe\" -ArgumentList \"--silent --no-desktop --dir `\"$dir\\app`\"\" -Wait -PassThru",
+            "if ($p.ExitCode -eq 2) { throw 'NeuroSquad is running and its files are in use. Close it (also from the tray) and try again.' }",
+            "if ($p.ExitCode -ne 0) { throw \"The NeuroSquad installer exited with code $($p.ExitCode); its log is %TEMP%\\NeuroSquad-Setup-<time>.log\" }",
+            "Remove-Item -LiteralPath \"$dir\\setup.exe\" -Force -ErrorAction SilentlyContinue"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "# Removes exactly what the installer put there (uninstall.dat), the shortcut and the Apps entry;",
+            "# ends NeuroSquad if it is running. User data stays.",
+            "$u = \"$dir\\app\\Uninstall NeuroSquad.exe\"",
+            "if (Test-Path -LiteralPath $u) {",
+            "    $p = Start-Process -FilePath $u -ArgumentList '--silent' -Wait -PassThru",
+            "    if ($p.ExitCode -ne 0) { throw \"The NeuroSquad uninstaller exited with code $($p.ExitCode)\" }",
+            "}"
+        ]
+    },
+    "checkver": {
+        "github": "https://github.com/glmn-ai/neurosquad-releases"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/glmn-ai/neurosquad-releases/releases/download/v$version/NeuroSquad-Setup.exe#/setup.exe"
+            }
+        }
+    }
+}
