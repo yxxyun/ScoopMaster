@@ -1,37 +1,54 @@
 {
-    "version": "5.6.2.39458645",
-    "description": "A full-scenario AI workbench from Tencent.",
-    "homepage": "https://www.workbuddy.ai",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://www.workbuddy.ai/document/term"
-    },
+    "version": "5.6.2",
+    "description": "An AI-native desktop Agent WorkBench",
+    "homepage": "https://www.codebuddy.cn/work/",
+    "license": "Proprietary",
+    "from": "zyqpkg/scoop-bucket",
     "architecture": {
         "64bit": {
-            "url": "https://codebuddy-1328495429.cos.accelerate.myqcloud.com/workbuddy/saas/win32-x64-user/WorkBuddy-win32-x64-user-5.6.2.39458645-35219ed6.exe#/dl.7z",
-            "hash": "0f160cef68c273caf3d459a6ea70e68650d64cda670a5508b2ae19ba0540571d"
+            "url": "https://download.codebuddy.cn/workbuddy/saas/win32-x64-user/WorkBuddy-win32-x64-user-5.6.2.39298511-37a65c0b.exe#dl.7z",
+            "hash": "627e5a565436d0876740af69c2747759648662c52958d2a5df1ba330a82c3025",
+            "installer": {
+                "script": [
+                    "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+                    "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\" -Force -Recurse"
+                ]
+            }
         }
     },
-    "installer": {
-        "script": [
-            "Get-Item \"$dir\\`$PLUGINSDIR\\app*.7z\" | Select-Object -First 1 | Expand-7zipArchive -DestinationPath $dir",
-            "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Force -Recurse -ErrorAction Ignore"
-        ]
-    },
+    "post_install": [
+        "if (!(Test-Path \"$dir\\data\\extensions\") -and (Test-Path \"$env:USERPROFILE\\.workbuddy\\extensions\")) {",
+        "    info '[Portable Mode] Copying extensions...'",
+        "    Copy-Item \"$env:USERPROFILE\\.workbuddy\\extensions\" \"$dir\\data\" -Recurse",
+        "}",
+        "if (!(Test-Path \"$dir\\data\\user-data\") -and (Test-Path \"$env:AppData\\WorkBuddy\")) {",
+        "    info '[Portable Mode] Copying user data...'",
+        "    Copy-Item \"$env:AppData\\WorkBuddy\" \"$dir\\data\\user-data\" -Recurse",
+        "}",
+        "$extensions_file = \"$dir\\data\\extensions\\extensions.json\"",
+        "if ((Test-Path \"$extensions_file\")) {",
+        "    info 'Adjusting path in extensions file...'",
+        "    (Get-Content \"$extensions_file\") -replace '(?<=workbuddy(/|\\\\\\\\)).*?(?=(/|\\\\\\\\)data(/|\\\\\\\\)extensions)', $version | Set-Content \"$extensions_file\"",
+        "}"
+    ],
+    "bin": "WorkBuddy.exe",
     "shortcuts": [
         [
-            "WorkBuddyAI.exe",
-            "WorkBuddyAI"
+            "WorkBuddy.exe",
+            "WorkBuddy",
+            "--user-data-dir=\"$dir\\data\\user-data\" --extensions-dir=\"$dir\\data\\extensions\""
         ]
     ],
+    "persist": "data",
     "checkver": {
-        "url": "https://www.workbuddy.ai/v2/update?platform=workbuddy-win32-x64-user",
-        "regex": "WorkBuddy-win32-x64-user-(?<version>\\d+(?:\\.\\d+)+)-(?<sha>[0-9a-f]+).exe"
+        "url": "https://www.codebuddy.cn/v2/update?platform=workbuddy-win32-x64-user",
+        "jsonpath": "$.url",
+        "regex": "(?<url>.*WorkBuddy-win32-x64-user-(?<version>[\\d.]+-[\\w.]+)\\.exe)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://codebuddy-1328495429.cos.accelerate.myqcloud.com/workbuddy/saas/win32-x64-user/WorkBuddy-win32-x64-user-$version-$matchSha.exe#/dl.7z"
+                "url": "https://download.codebuddy.cn/workbuddy/saas/win32-x64-user/WorkBuddy-win32-x64-user-$version.exe#dl.7z"
             }
         }
     }

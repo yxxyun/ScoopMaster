@@ -1,11 +1,14 @@
 {
     "version": "2.10.0",
-    "description": "Composit font of Genju Gothic and Hack",
+    "description": "Hack と源柔ゴシックを合成したプログラミングフォント 白源 (はくげん／HackGen)",
     "homepage": "https://github.com/yuru7/HackGen",
     "license": "OFL-1.1",
     "url": "https://github.com/yuru7/HackGen/releases/download/v2.10.0/HackGen_v2.10.0.zip",
     "hash": "ed182e2a4b95792d94dea7932f6b45280b5ae353651be249d5f6b7867b788db7",
-    "extract_dir": "HackGen_v2.10.0",
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/yuru7/HackGen/releases/download/v$version/HackGen_v$version.zip"
+    },
     "installer": {
         "script": [
             "$currentBuildNumber = [int] (Get-ItemProperty \"HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\").CurrentBuildNumber",
@@ -38,16 +41,32 @@
             "}",
             "$registryRoot = if ($global) { \"HKLM\" } else { \"HKCU\" }",
             "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
-            "Get-ChildItem $dir -Filter '*.ttf' | ForEach-Object {",
+            "Get-ChildItem $dir -File -Filter '*HackGen*' -Recurse | Where-Object { @(\".ttf\", \".otf\", \".ttc\") -contains $_.Extension } | ForEach-Object {",
             "    $value = if ($global) { $_.Name } else { \"$fontInstallDir\\$($_.Name)\" }",
-            "    New-ItemProperty -Path $registryKey -Name $_.Name.Replace($_.Extension, ' (TrueType)') -Value $value -Force | Out-Null",
+            "    $fontType = if ($_.Extension -eq '.otf') { ' (OpenType)' } else { ' (TrueType)' }",
+            "    New-ItemProperty -Path $registryKey -Name $_.Name.Replace($_.Extension, $fontType) -Value $value -Force | Out-Null",
             "    Copy-Item -LiteralPath $_.FullName -Destination $fontInstallDir",
+            "}"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
+            "$registryRoot = if ($global) { \"HKLM\" } else { \"HKCU\" }",
+            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
+            "Get-ChildItem $dir -File -Filter '*HackGen*' -Recurse | ForEach-Object {",
+            "    $fontType = if ($_.Extension -eq '.otf') { ' (OpenType)' } else { ' (TrueType)' }",
+            "    Remove-ItemProperty -Path $registryKey -Name $_.Name.Replace($_.Extension, $fontType) -Force -ErrorAction SilentlyContinue",
+            "    Remove-Item \"$fontInstallDir\\$($_.Name)\" -Force -ErrorAction SilentlyContinue",
+            "}",
+            "if ($cmd -eq \"uninstall\") {",
+            "    Write-Host \"The '$app' Font family has been uninstalled and will not be present after restarting your computer.\" -Foreground Magenta",
             "}"
         ]
     },
     "pre_uninstall": [
         "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
-        "Get-ChildItem $dir -Filter '*.ttf' | ForEach-Object {",
+        "Get-ChildItem $dir -File -Filter '*HackGen*' | ForEach-Object {",
         "    Get-ChildItem $fontInstallDir -Filter $_.Name | ForEach-Object {",
         "        try {",
         "            Rename-Item $_.FullName $_.FullName -ErrorVariable LockError -ErrorAction Stop",
@@ -71,24 +90,5 @@
         "        }",
         "    }",
         "}"
-    ],
-    "uninstaller": {
-        "script": [
-            "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
-            "$registryRoot = if ($global) { \"HKLM\" } else { \"HKCU\" }",
-            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
-            "Get-ChildItem $dir -Filter '*.ttf' | ForEach-Object {",
-            "    Remove-ItemProperty -Path $registryKey -Name $_.Name.Replace($_.Extension, ' (TrueType)') -Force -ErrorAction SilentlyContinue",
-            "    Remove-Item \"$fontInstallDir\\$($_.Name)\" -Force -ErrorAction SilentlyContinue",
-            "}",
-            "if ($cmd -eq \"uninstall\") {",
-            "    Write-Host \"The '$app' Font family has been uninstalled and will not be present after restarting your computer.\" -Foreground Magenta",
-            "}"
-        ]
-    },
-    "checkver": "github",
-    "autoupdate": {
-        "url": "https://github.com/yuru7/HackGen/releases/download/v$version/HackGen_v$version.zip",
-        "extract_dir": "HackGen_v$version"
-    }
+    ]
 }
