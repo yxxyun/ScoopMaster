@@ -1,22 +1,112 @@
 {
     "version": "0.4.1",
-    "description": "A cross-platform break reminder app — Take regular breaks, protect your eyes, and maintain healthy work habits.",
+    "description": "A cross-platform break reminder app",
     "homepage": "https://github.com/pilgrimlyieu/Focust",
-    "license": "GPL-3.0 license",
-    "url": "https://github.com/pilgrimlyieu/Focust/releases/download/v0.4.1/focust_0.4.1_windows_portable.zip",
-    "hash": "2e3b8fd8328462254f519cec09e994edff6652bd7ff17a26f16d310cf0fa627d",
+    "license": {
+        "identifier": "GPL-3.0",
+        "url": "https://github.com/pilgrimlyieu/Focust/blob/main/LICENSE"
+    },
+    "notes": [
+        "Requires the Microsoft Edge WebView2 Runtime.",
+        "Configuration remains in %APPDATA%\\com.fesmoph.focust. Update this copy with Scoop."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/pilgrimlyieu/Focust/releases/download/v0.4.1/focust_0.4.1_windows_portable.zip",
+            "hash": "2e3b8fd8328462254f519cec09e994edff6652bd7ff17a26f16d310cf0fa627d"
+        }
+    },
+    "bin": "focust.exe",
     "shortcuts": [
         [
-            "Focust.exe",
+            "focust.exe",
             "Focust"
         ]
     ],
-    "persist": "com.fesmoph.focust",
-    "post_uninstall": "Remove-Item -Recurse -Force -LiteralPath \"$env:LOCALAPPDATA\\com.fesmoph.focust\"",
+    "post_install": [
+        "if (!('Scoop.FocustShortcut' -as [type])) {",
+        "    Add-Type -TypeDefinition @'",
+        "using System;",
+        "using System.Runtime.InteropServices;",
+        "using System.Runtime.InteropServices.ComTypes;",
+        "",
+        "namespace Scoop {",
+        "    public static class FocustShortcut {",
+        "        [ComImport, Guid(\"00021401-0000-0000-C000-000000000046\")]",
+        "        private class ShellLink { }",
+        "",
+        "        [StructLayout(LayoutKind.Sequential)]",
+        "        private struct PropertyKey {",
+        "            public Guid FormatId;",
+        "            public uint PropertyId;",
+        "        }",
+        "",
+        "        [StructLayout(LayoutKind.Sequential)]",
+        "        private struct PropVariant {",
+        "            public ushort Type, Reserved1, Reserved2, Reserved3;",
+        "            public IntPtr StringPointer;",
+        "            public int Padding;",
+        "        }",
+        "",
+        "        [ComImport, Guid(\"886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99\"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]",
+        "        private interface IPropertyStore {",
+        "            [PreserveSig] int GetCount(out uint count);",
+        "            [PreserveSig] int GetAt(uint index, out PropertyKey key);",
+        "            [PreserveSig] int GetValue(ref PropertyKey key, out PropVariant value);",
+        "            [PreserveSig] int SetValue(ref PropertyKey key, ref PropVariant value);",
+        "            [PreserveSig] int Commit();",
+        "        }",
+        "",
+        "        [DllImport(\"ole32.dll\")]",
+        "        private static extern int PropVariantClear(ref PropVariant value);",
+        "",
+        "        [DllImport(\"shell32.dll\", CharSet = CharSet.Unicode)]",
+        "        private static extern void SHChangeNotify(uint changeEvent, uint flags, string item1, IntPtr item2);",
+        "",
+        "        public static void SetAppUserModelId(string path, string appId) {",
+        "            object link = new ShellLink();",
+        "            var value = new PropVariant();",
+        "            try {",
+        "                var file = (IPersistFile)link;",
+        "                file.Load(path, 2);",
+        "                var store = (IPropertyStore)link;",
+        "                // PKEY_AppUserModel_ID, stored as VT_LPWSTR.",
+        "                var key = new PropertyKey {",
+        "                    FormatId = new Guid(\"9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3\"),",
+        "                    PropertyId = 5",
+        "                };",
+        "                value.Type = 31;",
+        "                value.StringPointer = Marshal.StringToCoTaskMemUni(appId);",
+        "                Marshal.ThrowExceptionForHR(store.SetValue(ref key, ref value));",
+        "                Marshal.ThrowExceptionForHR(store.Commit());",
+        "                file.Save(path, true);",
+        "            } finally {",
+        "                if (value.StringPointer != IntPtr.Zero) PropVariantClear(ref value);",
+        "                Marshal.FinalReleaseComObject(link);",
+        "            }",
+        "            // Notify SHCNE_UPDATEITEM with SHCNF_PATHW | SHCNF_FLUSH.",
+        "            SHChangeNotify(0x00002000, 0x00001005, path, IntPtr.Zero);",
+        "        }",
+        "    }",
+        "}",
+        "'@",
+        "}",
+        "[Scoop.FocustShortcut]::SetAppUserModelId((Join-Path (shortcut_folder $global) 'Focust.lnk'), 'com.fesmoph.focust')"
+    ],
     "checkver": {
-        "github": "https://github.com/pilgrimlyieu/Focust"
+        "url": "https://api.github.com/repos/pilgrimlyieu/Focust/releases/latest",
+        "script": [
+            "$release = $page | ConvertFrom-Json",
+            "if ($release.draft -or $release.prerelease -or $release.tag_name -notmatch '^v(?<version>\\d+\\.\\d+\\.\\d+)$') { throw 'Expected a stable version tag.' }",
+            "\"$($Matches.version)|$($release.tag_name)\""
+        ],
+        "regex": "^(?<version>[\\d.]+)\\|(?<tag>v[\\d.]+)$"
     },
     "autoupdate": {
-        "url": "https://github.com/pilgrimlyieu/Focust/releases/download/v$version/focust_$version_windows_portable.zip"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/pilgrimlyieu/Focust/releases/download/$matchTag/focust_$version_windows_portable.zip"
+            }
+        }
     }
 }
