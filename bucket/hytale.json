@@ -1,15 +1,24 @@
 {
-    "version": "2026.09.28-87cfbb7",
+    "version": "2026.09.30-326a0c2",
     "description": "The Official launcher for Hytale.",
     "homepage": "https://hytale.com/",
     "license": "Freeware",
-    "url": "https://launcher.hytale.com/builds/release/windows/amd64/hytale-launcher-2026.09.28-87cfbb7.zip",
-    "hash": "fc7337fd052bacbae3d75cc958f7b096561304b0f09377646daa772fae407cf2",
+    "url": "https://launcher.hytale.com/builds/release/windows/amd64/hytale-launcher-2026.09.30-326a0c2.zip#/hytale-launcher.bin",
+    "hash": "3d1ba63c8f81fd59f116be394ee630586b450e9525673047828c9c4949db8cf3",
     "suggest": {
         "Microsoft Visual C++ Redistributables": "extras/vcredist2022"
     },
     "pre_install": [
-        "Get-ChildItem \"$dir\" -Filter \"*.exe\" | Select-Object -First 1 | Rename-Item -NewName \"hytale-launcher.exe\" -ErrorAction SilentlyContinue",
+        "$bin = \"$dir\\hytale-launcher.bin\"",
+        "$bytes = [System.IO.File]::ReadAllBytes($bin)",
+        "$head = [System.Text.Encoding]::GetEncoding(28591).GetString($bytes, 0, [Math]::Min($bytes.Length, 8192))",
+        "if ($head -match '\"payload\":\\{\"format\":\"zip\",\"size\":(\\d+)') { $offset = [int]($bytes.Length - [long]$Matches[1]) } else { $offset = $head.IndexOf('PK' + [char]3 + [char]4) }",
+        "if ($offset -lt 0) { throw 'No se encontro el zip dentro del paquete de Hytale' }",
+        "$zip = \"$dir\\payload.zip\"",
+        "$fs = [System.IO.File]::OpenWrite($zip); $fs.Write($bytes, $offset, $bytes.Length - $offset); $fs.Close()",
+        "$ProgressPreference = 'SilentlyContinue'",
+        "Expand-Archive -Path $zip -DestinationPath $dir -Force",
+        "Remove-Item $zip, $bin -Force",
         "if (!(Test-Path \"$persist_dir\\data\")) {",
         "    New-Item -Path \"$persist_dir\\data\" -ItemType Directory | Out-Null",
         "    if (Test-Path \"$env:APPDATA\\Hytale\") {",
@@ -17,7 +26,8 @@
         "        Copy-Item -Path \"$env:APPDATA\\Hytale\\*\" -Destination \"$persist_dir\\data\" -Recurse -Force",
         "        Remove-Item -Path \"$env:APPDATA\\Hytale\" -Recurse -Force",
         "    }",
-        "}"
+        "}",
+        "Remove-Item \"$dir\\hytale-launcher-$version.zip\" -Force -ErrorAction SilentlyContinue"
     ],
     "post_install": [
         "$gameDataPath = \"$persist_dir\\data\"",
@@ -50,10 +60,10 @@
         "jsonpath": "$.version"
     },
     "autoupdate": {
-        "url": "https://launcher.hytale.com/builds/release/windows/amd64/hytale-launcher-$version.zip",
+        "url": "https://launcher.hytale.com/builds/release/windows/amd64/hytale-launcher-$version.zip#/hytale-launcher.bin",
         "hash": {
             "url": "https://launcher.hytale.com/version/release/launcher.json",
             "jsonpath": "$.download_url.windows.amd64.sha256"
-        }
     }
+}
 }
