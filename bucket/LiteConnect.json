@@ -1,0 +1,84 @@
+{
+    "version": "1.0.3",
+    "description": "面向开发与运维的多协议连接客户端，集成 SSH 终端、SFTP、服务器监控、Docker 管理、MySQL/PostgreSQL/Oracle 数据库工具与带工具调用的 AI 助手",
+    "homepage": "https://github.com/wat4me/LiteConnect",
+    "license": "GPL-3.0-only",
+    "notes": [
+        "应用数据（SSH 与数据库连接、凭据、命令历史、AI 对话、会话日志、壁纸）全部位于 %APPDATA%\\lite-connect，本包用目录级联接点把它托管到 persist\\LiteConnect\\appdata，升级与重装都不会丢失",
+        "该目录名来自应用自身 package.json 的 name 字段（无 productName），因此是 lite-connect 而不是显示名 LiteConnect",
+        "导入系统 SSH 配置属于只读功能，本包不改动你的 ~/.ssh 目录",
+        "应用内的自动更新（electron-updater）会绕过 Scoop，升级请使用 scoop update liteconnect",
+        "X11 转发需要另行安装随包附带的 VcXsrv（位于安装目录 resources\\third-party），Scoop 不会自动安装"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/wat4me/LiteConnect/releases/download/v1.0.3/LiteConnect.Setup.1.0.3.exe#/dl.7z",
+            "hash": "0aca2a444363f7187103ab1447211a19400ed3cb41f4188350525c0d4f7a8ce7"
+        }
+    },
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
+        "Remove-Item \"$dir\\`$*\" -Force -Recurse -ErrorAction SilentlyContinue"
+    ],
+    "shortcuts": [
+        [
+            "LiteConnect.exe",
+            "LiteConnect"
+        ]
+    ],
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'lite-connect'",
+        "$target = Join-Path $persist_dir 'appdata'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"数据路径已存在且不是目录：$source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"迁移失败，保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原数据目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原目录：$source\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "post_uninstall": [
+        "$source = Join-Path $env:APPDATA 'lite-connect'",
+        "if (Test-Path -LiteralPath $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Remove-Item -LiteralPath $source -Force",
+        "    }",
+        "}"
+    ],
+    "checkver": {
+        "github": "https://github.com/wat4me/LiteConnect"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/wat4me/LiteConnect/releases/download/v$version/LiteConnect.Setup.$version.exe#/dl.7z"
+            }
+        },
+        "hash": {
+            "mode": "download"
+        }
+    }
+}
