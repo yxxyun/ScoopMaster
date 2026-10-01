@@ -1,0 +1,72 @@
+{
+    "version": "1.2.16.0",
+    "description": "Audio enhancer and sound equalizer for Windows.",
+    "homepage": "https://github.com/fxsound2/fxsound-app",
+    "license": "AGPL-3.0-only",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/fxsound2/fxsound-app/releases/download/beta/fxsound_setup.exe",
+            "hash": "3e4c6aead03e1dd9f093de4ff9842b8d7ed9487f8b033a87c3ab83e5f65ca710"
+        },
+        "arm64": {
+            "url": "https://github.com/fxsound2/fxsound-app/releases/download/beta/fxsound_setup.arm64.exe",
+            "hash": "a60e8e73e98e1ddcd4d90deeb53297258d22708efa155fa3479182b648b83a35"
+        }
+    },
+    "installer": {
+        "args": [
+            "/exenoui",
+            "/qn",
+            "/norestart",
+            "APPDIR=$dir"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$uninstallPaths = @(",
+            "    'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*',",
+            "    'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'",
+            ")",
+            "$entry = Get-ItemProperty -Path $uninstallPaths -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq 'FxSound' } | Select-Object -First 1",
+            "if (!$entry) { throw 'FxSound MSI registration was not found.' }",
+            "$productCode = $entry.PSChildName",
+            "$driver = Get-CimInstance Win32_PnPSignedDriver -ErrorAction SilentlyContinue | Where-Object { $_.DeviceName -eq 'FxSound Audio Enhancer' -and $_.InfName -match '^oem\\d+\\.inf$' } | Select-Object -First 1",
+            "$infName = if ($driver) { $driver.InfName } else { $null }",
+            "$process = Start-Process 'msiexec.exe' -Wait -Verb RunAs -ArgumentList @('/x', $productCode, '/qn', '/norestart') -PassThru",
+            "if ($process.ExitCode -ne 0) { throw ('FxSound MSI uninstall failed with exit code ' + $process.ExitCode + '.') }",
+            "if ($infName) {",
+            "    $delete = Start-Process 'pnputil.exe' -Wait -Verb RunAs -ArgumentList @('/delete-driver', $infName, '/uninstall', '/force') -PassThru",
+            "    if ($delete.ExitCode -ne 0) { throw ('FxSound driver package removal failed with exit code ' + $delete.ExitCode + '.') }",
+            "}"
+        ]
+    },
+    "pre_uninstall": [
+        "Get-Process -Name 'FxSound' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue"
+    ],
+    "bin": "FxSound.exe",
+    "shortcuts": [
+        [
+            "FxSound.exe",
+            "FxSound Beta"
+        ]
+    ],
+    "checkver": {
+        "url": "https://github.com/fxsound2/fxsound-app/releases",
+        "regex": "Version ([\\d.]+) \\(Beta\\)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/fxsound2/fxsound-app/releases/download/beta/fxsound_setup.exe"
+            },
+            "arm64": {
+                "url": "https://github.com/fxsound2/fxsound-app/releases/download/beta/fxsound_setup.arm64.exe"
+            }
+        }
+    },
+    "notes": [
+        "Uses the official FxSound installer because FxSound requires its virtual audio driver.",
+        "The application files are installed into the Scoop app directory via APPDIR.",
+        "The FxSound virtual audio driver is installed system-wide by the official MSI."
+    ]
+}

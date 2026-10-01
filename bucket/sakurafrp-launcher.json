@@ -1,10 +1,10 @@
 {
     "version": "3.2.0.2",
-    "description": "SakuraFrp 启动器，提供内网穿透服务",
+    "description": "SakuraFrp 启动器 Windows 用户界面",
     "homepage": "https://www.natfrp.com/",
-    "license": "Shareware",
-    "url": "https://nya.globalslb.net/natfrp/client/launcher-windows/3.2.0.2/SakuraLauncher.exe#/dl.exe",
-    "hash": "25d943a11c8b7c58bee705750a2ce0b9f9ee5ca4b7a2139b2b72821fbc615d61",
+    "license": "AGPL-3.0-or-later",
+    "url": "https://nya.globalslb.net/natfrp/client/launcher-windows/3.2.0.2/SakuraLauncher.exe",
+    "hash": "md5:5c8a9d8da89f1fa5dd36ef3163324164",
     "architecture": {
         "64bit": {
             "pre_install": "Get-ChildItem \"$dir\" '*,2.*' | ForEach-Object { Rename-Item $_.Fullname ($_.Name -Replace ',2') }"
@@ -16,19 +16,37 @@
             "pre_install": "Get-ChildItem \"$dir\" '*,3.*' | ForEach-Object { Rename-Item $_.Fullname ($_.Name -Replace ',3') }"
         }
     },
-    "post_install": "Remove-Item \"$dir\\*,*.exe\", \"$dir\\*,*.sig\"  -Force -Recurse",
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "New-PersistDirectory \"$env:LOCALAPPDATA\\SakuraLauncher\" \"$persist_dir\\LocalAppData\" -Migrate",
+            "Remove-Item \"$dir\\*,*.exe\", \"$dir\\*,*.sig\" -Recurse -Force"
+        ]
+    },
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:LOCALAPPDATA\\SakuraLauncher\""
+    ],
     "innosetup": true,
     "shortcuts": [
         [
             "SakuraLauncher.exe",
-            "SakuraFrp Launcher"
+            "SakuraFrp 启动器"
         ]
     ],
     "checkver": {
         "url": "https://www.natfrp.com/cgi/v4/system/clients",
-        "jsonpath": "$.windows.ver"
+        "jsonpath": "$.windows.archs.default.url",
+        "regex": "launcher-windows/([\\d.]+)/SakuraLauncher.exe"
     },
     "autoupdate": {
-        "url": "https://nya.globalslb.net/natfrp/client/launcher-windows/$version/SakuraLauncher.exe#/dl.exe"
+        "url": "https://nya.globalslb.net/natfrp/client/launcher-windows/$version/SakuraLauncher.exe",
+        "hash": {
+            "url": "https://www.natfrp.com/cgi/v4/system/clients",
+            "mode": "json",
+            "jsonpath": "$.windows.archs.default.hash"
+        }
     }
 }

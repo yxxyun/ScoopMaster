@@ -1,0 +1,96 @@
+{
+    "version": "2.1.0",
+    "description": "Desktop workspace for running and reviewing AI coding work with OpenCode",
+    "homepage": "https://github.com/openchamber/openchamber",
+    "license": "MIT",
+    "notes": [
+        "OpenChamber Desktop bundles its own OpenCode CLI (2.0.21 in this build), so a separate OpenCode installation is not required.",
+        "That bundled CLI is the same release as 'versions/opencode2', and both share the OpenCode 2.x profile in ~/.config/opencode and ~/.local/share/opencode, so provider credentials and sessions carry over either way.",
+        "An installed 'opencode2' of 2.0.20 or newer is only needed by the OpenChamber CLI/Web and VS Code surfaces, which run your own OpenCode binary instead of the bundled one.",
+        "Both store locations live in Scoop's persist directory: the OpenChamber data directory (projects, sessions, settings, speech models) is '$persist_dir\\openchamber-data', migrated from ~/.config/openchamber on first install, and the Electron profile (Local Storage, caches, logs) is '$persist_dir\\electron-profile', set by a '--user-data-dir' argument on the Start Menu shortcut.",
+        "OPENCHAMBER_DATA_DIR is a USER-level environment variable with no per-shortcut equivalent, so an OpenChamber installed by the official installer shares this data directory. 'scoop uninstall' removes the variable and the app falls back to ~/.config/openchamber, so a pre_uninstall hook mirrors the state there first (projects, sessions, chats, extensions, settings - not the multi-gigabyte speech-models directory, which is re-downloaded on demand). OpenChamber also always recreates ~/.config/openchamber/managed-opencode, because that process-registry path is hard-coded and ignores OPENCHAMBER_DATA_DIR.",
+        "The app ships its own updater; prefer 'scoop update openchamber-desktop' so the install and this manifest stay in sync."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/openchamber/openchamber/releases/download/v2.1.0/OpenChamber-2.1.0-win-x64.exe#/dl.7z",
+            "hash": "sha512:5ff8de269d6900ad0b96803898ebf745d8d6bab8185ddc8b77d8680a9fd6e711ab12a55b98b6e013e786a5441920f87ab0929b8b2d352d03f0bbd73daf553a61",
+            "installer": {
+                "script": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal"
+            }
+        },
+        "arm64": {
+            "url": "https://github.com/openchamber/openchamber/releases/download/v2.1.0/OpenChamber-2.1.0-win-arm64.exe#/dl.7z",
+            "hash": "sha512:a505db6825990e0a922f360d1eebc4f120126de4ba6df884e31e1cf0840635d604a0f7f024028af9148377ecc71997408d3126d0867aa248cc4f1172673819b0",
+            "installer": {
+                "script": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\" -Removal"
+            }
+        }
+    },
+    "pre_install": [
+        "$target = \"$persist_dir\\openchamber-data\"",
+        "$legacy = \"$env:USERPROFILE\\.config\\openchamber\"",
+        "if (!(Test-Path $target) -and (Test-Path $legacy) -and (Get-Process -Name 'OpenChamber' -ErrorAction SilentlyContinue)) {",
+        "    abort 'OpenChamber is running, so ~/.config/openchamber cannot be copied into Scoop persist safely. Close every OpenChamber window (including the tray icon), and use the official installer''s uninstaller or the tray Quit, then run the install again.'",
+        "}",
+        "if (!(Test-Path $target) -and (Test-Path $legacy)) {",
+        "    $previous = $ErrorActionPreference",
+        "    $ErrorActionPreference = 'Continue'",
+        "    $null = robocopy $legacy $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
+        "    $code = $LASTEXITCODE",
+        "    $ErrorActionPreference = $previous",
+        "    if ($code -ge 8) { warn \"robocopy exit $code while copying '$legacy' to '$target'; compare the two directories before relying on the new location.\" } else { info \"Copied '$legacy' to '$target'.\" }",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$legacy = \"$env:USERPROFILE\\.config\\openchamber\"",
+        "$data = \"$persist_dir\\openchamber-data\"",
+        "if (!(Test-Path \"$data\\settings.json\")) { return }",
+        "if (Get-Process -Name 'OpenChamber' -ErrorAction SilentlyContinue) {",
+        "    warn 'OpenChamber is running, so the state was not mirrored back to ~/.config/openchamber. Close it and uninstall again if you want that safety copy.'",
+        "    return",
+        "}",
+        "$previous = $ErrorActionPreference",
+        "$ErrorActionPreference = 'Continue'",
+        "$null = robocopy $data $legacy /E /XO /XD speech-models /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
+        "$code = $LASTEXITCODE",
+        "$ErrorActionPreference = $previous",
+        "if ($code -ge 8) { warn \"robocopy exit $code while mirroring '$data' back to '$legacy'.\" } else { info \"Mirrored '$data' back to '$legacy': scoop removes OPENCHAMBER_DATA_DIR on uninstall and OpenChamber falls back to that path. The speech-models directory is excluded.\" }"
+    ],
+    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\", \"$dir\\Uninstall*.exe\", \"$dir\\uninstallerIcon.ico\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "persist": [
+        "electron-profile",
+        "openchamber-data"
+    ],
+    "env_set": {
+        "OPENCHAMBER_DATA_DIR": "$persist_dir\\openchamber-data"
+    },
+    "shortcuts": [
+        [
+            "OpenChamber.exe",
+            "OpenChamber",
+            "--user-data-dir=\"$persist_dir\\electron-profile\""
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/openchamber/openchamber"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/openchamber/openchamber/releases/download/v$version/OpenChamber-$version-win-x64.exe#/dl.7z",
+                "hash": {
+                    "url": "https://github.com/openchamber/openchamber/releases/download/v$version/latest.yml",
+                    "regex": "sha512:\\s*$base64"
+                }
+            },
+            "arm64": {
+                "url": "https://github.com/openchamber/openchamber/releases/download/v$version/OpenChamber-$version-win-arm64.exe#/dl.7z",
+                "hash": {
+                    "url": "https://github.com/openchamber/openchamber/releases/download/v$version/latest-arm64.yml",
+                    "regex": "sha512:\\s*$base64"
+                }
+            }
+        }
+    }
+}
