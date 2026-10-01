@@ -1,14 +1,27 @@
 {
     "version": "0.2.0-rc.2",
-    "description": "DeepSeek Harness desktop app for agent tasks and plugins",
-    "homepage": "https://www.deepseek.com/harness/",
+    "description": "DeepSeek official desktop client for the Harness agent runtime, supporting background tasks, local file access and plugin management.",
+    "homepage": "https://www.deepseek.com/download",
     "license": "MIT",
-    "url": "https://download.deepseek.com/desktop/dsh-latest-windows-x64.exe#/dl.7z",
-    "hash": "d61cd8882f8b8a1251144320493ad27920d15139503eba2465b9579eee720cfc",
-    "pre_install": [
-        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\Uninstall DeepSeek Harness.exe\" -Force -Recurse"
+    "notes": [
+        "DeepSeek Harness official desktop app (Electron NSIS installer, 64-bit).",
+        "Two-layer extraction: Scoop 7z-extracts the NSIS installer, then the inner $PLUGINSDIR\\app-64.7z is expanded, which contains 'DeepSeek Harness.exe'.",
+        "The Windows download URL is versionless (dsh-latest-windows-x64.exe); Scoop autoupdate recomputes the SHA-256 by downloading the new installer, so updates may take a while.",
+        "Version is sourced from the deepseek-ai/deepseek-harness GitHub releases, which mirror the desktop client releases."
     ],
+    "architecture": {
+        "64bit": {
+            "url": "https://download.deepseek.com/desktop/dsh-latest-windows-x64.exe#/dl.7z",
+            "hash": "d61cd8882f8b8a1251144320493ad27920d15139503eba2465b9579eee720cfc",
+            "installer": {
+                "script": [
+                    "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
+                    "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\Uninstall DeepSeek Harness.exe\" -Recurse -Force -ErrorAction SilentlyContinue"
+                ]
+            }
+        }
+    },
+    "bin": "DeepSeek Harness.exe",
     "shortcuts": [
         [
             "DeepSeek Harness.exe",
@@ -16,36 +29,14 @@
         ]
     ],
     "checkver": {
-        "script": [
-            "$url = 'https://download.deepseek.com/desktop/dsh-latest-windows-x64.exe'",
-            "$request = [System.Net.HttpWebRequest]::Create($url)",
-            "$request.AddRange(0, 2097151)",
-            "$request.Timeout = 30000",
-            "$request.ReadWriteTimeout = 30000",
-            "$response = $null",
-            "$tempFile = $null",
-            "try {",
-            "    $response = $request.GetResponse()",
-            "    if ([int]$response.StatusCode -ne 206) { throw \"Expected a partial download (HTTP 206), received $([int]$response.StatusCode)\" }",
-            "    if ($response.ContentLength -gt 2097152) { throw \"Version probe exceeded 2 MiB: $($response.ContentLength)\" }",
-            "    $tempFile = [System.IO.Path]::GetTempFileName()",
-            "    $output = [System.IO.File]::OpenWrite($tempFile)",
-            "    try { $response.GetResponseStream().CopyTo($output) } finally { $output.Dispose() }",
-            "    if ((Get-Item $tempFile).Length -gt 2097152) { throw 'Version probe exceeded 2 MiB' }",
-            "    $version = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($tempFile).ProductVersion",
-            "    if ($version -notmatch '^[\\d.]+(?:-[\\w.]+)?$') { throw \"Unexpected installer ProductVersion: $version\" }",
-            "    Write-Output $version",
-            "} finally {",
-            "    if ($response) { $response.Close() }",
-            "    if ($tempFile -and (Test-Path $tempFile)) { Remove-Item $tempFile -Force }",
-            "}"
-        ],
-        "regex": "(?<version>[\\d.]+(?:-[\\w.]+)?)"
+        "url": "https://github.com/deepseek-ai/deepseek-harness/releases",
+        "regex": "/releases/tag/dsh-v([\\d.]+(?:-rc\\.[\\d]+)?)"
     },
     "autoupdate": {
-        "url": "https://download.deepseek.com/desktop/dsh-latest-windows-x64.exe#/dl.7z",
-        "hash": {
-            "mode": "download"
+        "architecture": {
+            "64bit": {
+                "url": "https://download.deepseek.com/desktop/dsh-latest-windows-x64.exe#/dl.7z"
+            }
         }
     }
 }
