@@ -2,29 +2,74 @@
     "version": "0.68",
     "description": "本程序为美国NSA的方程式工具包图形界面版，由ABC_123于2017年开始编写，仅用来扫描和验证MS17-010、MS09-050、MS08-067漏洞，并可协助管理员修复系统漏洞。",
     "homepage": "https://github.com/abc123info/EquationToolsGUI",
-    "license": "UNKNOWN",
-    "url": "https://github.com/abc123info/EquationToolsGUI/releases/download/v0.68/EquationToolsGUI_V0.68.zip#/EquationToolsGUI.zip1",
-    "pre_install": [
-        "7z x \"$dir\\EquationToolsGUI.zip1\" -p123456 -o\"$dir\" -y",
-        "Move-Item -Path \"$dir\\方程式工具包图形界面版V$version\\*\" -Destination \"$dir\" -Force",
-        "Remove-Item \"$dir\\方程式工具包图形界面版V$version\" -Force -Recurse",
-        "Remove-Item \"$dir\\EquationToolsGUI.zip1\" -Force",
-        "Get-ChildItem \"$dir\" '方程式工具包图形界面版*.jar' | Select-Object -First 1 | Rename-Item -NewName 'EquationToolsGUI.jar'",
-        "Set-Content \"$dir\\EquationToolsGUI.bat\" '@pushd %~dp0",
-        "@call oraclejre8",
-        "@start javaw.exe -jar \"EquationToolsGUI.jar\" %*",
-        "@popd' -Encoding Ascii"
-    ],
+    "license": "Freeware",
+    "suggest": {
+        "JDK": [
+            "java/oraclejdk",
+            "java/openjdk"
+        ]
+    },
+    "url": "https://github.com/abc123info/EquationToolsGUI/releases/download/v0.68/EquationToolsGUI_V0.68.zip#dl.zip_",
     "hash": "793a1179f03c41de4a26f79501e0f8847c2b05095e00479d49298e591c62698f",
-    "bin": "EquationToolsGUI.bat",
+    "installer": {
+        "script": [
+            "$zip = \"$dir\\EquationToolsGUI_V$version.zip#dl.zip_\"",
+            "$out = \"$dir\"",
+            "$7z = \"$env:SCOOP\\apps\\7zip\\current\\7z.exe\"",
+            "if (!(Test-Path $7z)) { $7z = \"$(scoop which 7z)\" }",
+            "& \"$7z\" x -y -p123456 -o\"$out\" \"$zip\" | Out-Null",
+            "Remove-Item -Force \"$zip\""
+        ]
+    },
+    "pre_install": [
+        "$batContent = @\"",
+        "@echo off",
+        "setlocal EnableDelayedExpansion",
+        "",
+        "set \"jdk_path=\"",
+        "set \"addOpens=\"",
+        "",
+        "set \"common_addOpens=--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.lang.invoke=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.desktop/sun.awt=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED\"",
+        "",
+        "for %%J in (JDK_19_HOME JDK_17_HOME JDK_11_HOME) do (",
+        "if defined %%J (",
+        "set \"jdk_path=!%%J!\\bin\\\"",
+        "set \"addOpens=%common_addOpens%\"",
+        ")",
+        ")",
+        "",
+        "if not defined jdk_path if defined JAVA_HOME (",
+        "set \"jdk_path=%JAVA_HOME%\\bin\\\"",
+        ")",
+        "",
+        "set \"javafx_args=\"",
+        "if defined JAVAFX_HOME (",
+        "if exist \"%JAVAFX_HOME%\\lib\" (",
+        "set \"javafx_args=--module-path %JAVAFX_HOME%\\lib --add-modules javafx.controls,javafx.fxml\"",
+        ") else (",
+        "echo WARNING: JAVAFX_HOME is defined but the lib directory is missing.",
+        ")",
+        ")",
+        "",
+        "@pushd %~dp0",
+        "@\"%jdk_path%javaw.exe\" %javafx_args% %addOpens% -jar \"方程式工具包图形界面版V%version%.jar\" %*",
+        "@popd",
+        "",
+        "endlocal",
+        "\"@",
+        "",
+        "$path = \"$dir\\equationtoolsgui.bat\"",
+        "Set-Content -Path $path -Value $batContent -Encoding Ascii"
+    ],
+    "bin": "equationtoolsgui.bat",
     "shortcuts": [
         [
-            "EquationToolsGUI.bat",
-            "EquationToolsGUI"
+            "equationtoolsgui.bat",
+            "Equationtoolsgui"
         ]
     ],
     "checkver": "github",
     "autoupdate": {
-        "url": "https://github.com/abc123info/EquationToolsGUI/releases/download/v$version/EquationToolsGUI_V$version.zip#/EquationToolsGUI.zip1"
+        "url": "https://github.com/abc123info/EquationToolsGUI/releases/download/v$version/EquationToolsGUI_V$version.zip#dl.zip_"
     }
 }
