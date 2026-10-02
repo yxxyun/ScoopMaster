@@ -6,26 +6,25 @@
     "notes": "Add 7-Zip as a context menu option by running: \"$dir\\install-context.reg\"",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/ip7z/7zip/releases/download/26.03/7z2603-x64.msi",
-            "hash": "c0680064d698a62dd4a5a47f403db356a6531a5473e4c4b1d090ea2590513926",
-            "extract_dir": "Files\\7-Zip"
+            "url": "https://github.com/ip7z/7zip/releases/download/26.03/7z2603-x64.exe",
+            "hash": "0859c524b8a63551848f0c246abddcb1d0b7b656b0fbfe879f8d85e61a9e6edd"
         },
         "32bit": {
-            "url": "https://github.com/ip7z/7zip/releases/download/26.03/7z2603.msi",
-            "hash": "23b5a8843b09db629b6f6a63364bae5430f66d6ecd4b38e11e1661bfaff5d2c6",
-            "extract_dir": "Files\\7-Zip"
+            "url": "https://github.com/ip7z/7zip/releases/download/26.03/7z2603.exe",
+            "hash": "0f6ec2eda1f8c5dc4c267ee761c0dad8a9d5e8863e0c84b7ac026bc9625a1560"
         },
         "arm64": {
             "url": "https://github.com/ip7z/7zip/releases/download/26.03/7z2603-arm64.exe",
-            "hash": "e22ce71c11dcf503c448fe51e56f41830eb4e1344fa5c7731ae63bce533a8e8e",
-            "pre_install": [
-                "$7zr = Join-Path $env:TMP '7zr.exe'",
-                "Invoke-WebRequest https://www.7-zip.org/a/7zr.exe -OutFile $7zr",
-                "Invoke-ExternalCommand $7zr @('x', \"$dir\\$fname\", \"-o$dir\", '-y') | Out-Null",
-                "Remove-Item \"$dir\\Uninstall.exe\", \"$dir\\*-arm64.exe\", $7zr"
-            ]
+            "hash": "e22ce71c11dcf503c448fe51e56f41830eb4e1344fa5c7731ae63bce533a8e8e"
         }
     },
+    "pre_install": [
+        "$7zr = Join-Path $env:TMP '7zr.exe'",
+        "Invoke-WebRequest https://www.7-zip.org/a/7zr.exe -OutFile $7zr",
+        "Invoke-ExternalCommand $7zr @('x', \"$dir\\$fname\", \"-o$dir\", '-y') | Out-Null",
+        "Remove-Item \"$dir\\Uninstall.exe\", $7zr -Force -ErrorAction SilentlyContinue",
+        "Get-ChildItem -LiteralPath $dir -File | Where-Object { $_.Name -match '^7z\\d+(?:-(?:x64|arm64))?\\.exe$' } | Remove-Item -Force"
+    ],
     "post_install": [
         "$7zip_root = \"$dir\".Replace('\\', '\\\\')",
         "'install-context.reg', 'uninstall-context.reg' | ForEach-Object {",
@@ -52,16 +51,19 @@
         "Codecs",
         "Formats"
     ],
+    "uninstaller": {
+        "script": "if ($cmd -eq 'uninstall') { reg import \"$dir\\uninstall-context.reg\" *> $null }"
+    },
     "checkver": {
         "github": "https://github.com/ip7z/7zip"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/ip7z/7zip/releases/download/$version/7z$cleanVersion-x64.msi"
+                "url": "https://github.com/ip7z/7zip/releases/download/$version/7z$cleanVersion-x64.exe"
             },
             "32bit": {
-                "url": "https://github.com/ip7z/7zip/releases/download/$version/7z$cleanVersion.msi"
+                "url": "https://github.com/ip7z/7zip/releases/download/$version/7z$cleanVersion.exe"
             },
             "arm64": {
                 "url": "https://github.com/ip7z/7zip/releases/download/$version/7z$cleanVersion-arm64.exe"

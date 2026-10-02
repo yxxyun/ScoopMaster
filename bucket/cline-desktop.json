@@ -1,0 +1,72 @@
+{
+    "version": "0.0.42",
+    "description": "Open source desktop app for open-weight models, with parallel sessions, scheduled tasks, flexible model choice, and imports from other coding agents",
+    "homepage": "https://cline.bot/desktop",
+    "license": "Apache-2.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/cline/cline/releases/download/desktop-v0.0.42/Cline_0.0.42_x64-setup.exe#/dl.7z",
+            "hash": "4ca2a157a3f604bdda2a42439b3c225b8109cf3d76dba2202750f72fb7a0d056"
+        }
+    },
+    "pre_install": [
+        "$target = \"$persist_dir\\.cline\"",
+        "$legacy = \"$env:USERPROFILE\\.cline\"",
+        "if (!(Test-Path $target) -and (Test-Path $legacy)) {",
+        "    if (Get-Process -Name 'cline-app', 'code-sidecar' -ErrorAction SilentlyContinue) {",
+        "        abort 'Cline is running, so ~/.cline cannot be copied into Scoop persist safely. Quit Cline (including its tray icon), then run the install again.'",
+        "    }",
+        "    $previous = $ErrorActionPreference",
+        "    $ErrorActionPreference = 'Continue'",
+        "    $null = robocopy $legacy $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
+        "    $code = $LASTEXITCODE",
+        "    $ErrorActionPreference = $previous",
+        "    if ($code -ge 8) { warn \"robocopy exit $code while copying '$legacy' to '$target'; compare the two directories before relying on the new location.\" } else { info \"Copied '$legacy' to '$target'.\" }",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$legacy = \"$env:USERPROFILE\\.cline\"",
+        "$data = \"$persist_dir\\.cline\"",
+        "if (!(Test-Path $data)) { return }",
+        "if (Get-Process -Name 'cline-app', 'code-sidecar' -ErrorAction SilentlyContinue) {",
+        "    warn 'Cline is running, so the state was not mirrored back to ~/.cline. Quit it and uninstall again if you want that safety copy.'",
+        "    return",
+        "}",
+        "$previous = $ErrorActionPreference",
+        "$ErrorActionPreference = 'Continue'",
+        "$null = robocopy $data $legacy /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
+        "$code = $LASTEXITCODE",
+        "$ErrorActionPreference = $previous",
+        "if ($code -ge 8) { warn \"robocopy exit $code while mirroring '$data' back to '$legacy'.\" } else { info \"Mirrored '$data' back to '$legacy': scoop removes CLINE_DIR on uninstall and Cline falls back to that path.\" }"
+    ],
+    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\", \"$dir\\Uninstall*.exe\", \"$dir\\uninstall.exe\", \"$dir\\MicrosoftEdgeWebView2Setup.exe\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "shortcuts": [
+        [
+            "cline-app.exe",
+            "Cline"
+        ]
+    ],
+    "persist": ".cline",
+    "env_set": {
+        "CLINE_DIR": "$persist_dir\\.cline",
+        "CLINE_KANBAN_DATA_DIR": "$persist_dir\\.cline\\apps\\kanban"
+    },
+    "notes": [
+        "Cline's data directory (sessions, settings, provider credentials, connectors, logs) is redirected to '$persist_dir\\.cline' through the CLINE_DIR environment variable, so it lives in Scoop's persist directory and survives updates.",
+        "Kanban-style session logs are redirected to '$persist_dir\\.cline\\apps\\kanban' through CLINE_KANBAN_DATA_DIR, matching the layout Cline uses under ~/.cline by default.",
+        "The Tauri WebView2 profile (Local Storage, caches) stays in '%LOCALAPPDATA%\\bot.cline.app' and cannot be redirected; it lives outside Scoop, survives updates and is not removed on uninstall.",
+        "CLINE_DIR and CLINE_KANBAN_DATA_DIR are USER-level environment variables, so any other Cline surface (CLI/SDK) that honors them also uses this data directory.",
+        "The app ships its own Tauri updater, which installs a separate copy under %LOCALAPPDATA%\\Programs\\Cline; prefer 'scoop update cline-desktop' so the install and this manifest stay in sync."
+    ],
+    "checkver": {
+        "url": "https://github.com/cline/cline/releases/download/desktop-latest/latest.json",
+        "jsonpath": "$.version"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/cline/cline/releases/download/desktop-v$version/Cline_$version_x64-setup.exe#/dl.7z"
+            }
+        }
+    }
+}
