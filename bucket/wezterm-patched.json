@@ -1,0 +1,59 @@
+{
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+    "version": "main-20261004-050625",
+    "description": "GPU-accelerated cross-platform terminal emulator and multiplexer (custom patched build)",
+    "homepage": "https://github.com/kkkykin/wezterm-patched",
+    "license": "MIT",
+    "notes": [
+        "Add Open with WezTerm as a context menu option by running:",
+        "reg import \"$dir\\install-context.reg\"",
+        "To remove it, run:",
+        "reg import \"$dir\\uninstall-context.reg\""
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/kkkykin/wezterm-patched/releases/download/main-20261004-050625/WezTerm-windows-main-20261004-050625.zip",
+            "hash": "c43f65ce2106df113f98b102e6779db9ebb085922f805b7948c29ab3963256eb"
+        }
+    },
+    "extract_dir": "WezTerm-windows-main-20261004-050625",
+    "post_install": [
+        "$weztermPath = \"$dir\\wezterm-gui.exe\".Replace('\\', '\\\\')",
+        "'install-context', 'uninstall-context' | ForEach-Object {",
+        "    $reg = \"$bucketsdir\\$bucket\\scripts\\$app\\$_.reg\"",
+        "    if (Test-Path $reg) {",
+        "        $content = Get-Content $reg",
+        "        $content = $content.Replace('$weztermPath', $weztermPath)",
+        "        if ($global) { $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE') }",
+        "        Set-Content \"$dir\\$_.reg\" $content -Encoding Ascii -Force",
+        "    }",
+        "}"
+    ],
+    "bin": [
+        "wezterm.exe",
+        "wezterm-gui.exe",
+        "wezterm-mux-server.exe",
+        "strip-ansi-escapes.exe"
+    ],
+    "shortcuts": [
+        [
+            "wezterm-gui.exe",
+            "WezTerm"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/kkkykin/wezterm-patched",
+        "regex": "(?:WezTerm-windows-|/tag/|^)([\\w-]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/kkkykin/wezterm-patched/releases/download/$version/WezTerm-windows-$version.zip"
+            }
+        },
+        "extract_dir": "WezTerm-windows-$version",
+        "hash": {
+            "url": "$url.sha256"
+        }
+    }
+}

@@ -1,8 +1,15 @@
 {
     "version": "2.1.1",
-    "description": "AI-native, GPU-accelerated terminal emulator with SSH, persistent sessions, split panes, and first-class AI CLI workflows",
+    "description": "AI-native, GPU-accelerated terminal emulator for Windows with SSH, persistent sessions, split panes, and first-class AI CLI workflows.",
     "homepage": "https://github.com/Kuddev/pebrel",
-    "license": "GPL-3.0",
+    "license": {
+        "identifier": "GPL-3.0-or-later"
+    },
+    "notes": [
+        "Settings, SSH profiles, sessions, history, themes and imported fonts are stored by the application in %APPDATA%\\Pebrel. The manifest junctions that path to persist\\pebrel, so upgrades, 'scoop cleanup' and 'scoop uninstall pebrel' never lose them; 'scoop uninstall pebrel -p' purges them.",
+        "The installed copy carries a 'pebrel-distribution' marker, so Pebrel's in-app updater reports that this installation is managed by Scoop. Upgrade with 'scoop update pebrel'.",
+        "Do not delete docs/, skills/, licenses/ or runtime/ next to pebrel.exe: the bundled ConPTY helpers, shell hooks and runtime skill assets are read from those directories."
+    ],
     "architecture": {
         "64bit": {
             "url": "https://github.com/Kuddev/pebrel/releases/download/v2.1.1/Pebrel-v2.1.1-windows-x64.zip",
@@ -13,36 +20,59 @@
             "hash": "253fb898b818957fb2308723b70ddc26368817b87e8d2a2d35a038f3fbbdad4a"
         }
     },
-    "pre_install": "Remove-Item \"$dir\\docs\", \"$dir\\skills\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "pre_install": "[IO.File]::WriteAllText((Join-Path $dir 'pebrel-distribution'), \"scoop`n\", [Text.UTF8Encoding]::new($false))",
+    "post_install": [
+        "$dataDir = \"$env:APPDATA\\Pebrel\"",
+        "$persistData = \"$persist_dir\"",
+        "$linkOk = $false",
+        "if (Test-Path $dataDir) {",
+        "    $item = Get-Item $dataDir -Force",
+        "    if ($item.LinkType -eq 'Junction') {",
+        "        $target = (Resolve-Path $item.Target -ErrorAction SilentlyContinue).Path",
+        "        if (Test-Path $persistData) {",
+        "            $linkOk = $target -eq (Resolve-Path $persistData).Path",
+        "        }",
+        "        if (-not $linkOk) {",
+        "            Remove-Item $dataDir -Force -Recurse",
+        "        }",
+        "    } elseif (-not (Get-ChildItem $persistData -Force -ErrorAction SilentlyContinue)) {",
+        "        Remove-Item $persistData -Force -Recurse -ErrorAction SilentlyContinue",
+        "        Move-Item $dataDir $persistData",
+        "    } else {",
+        "        Move-Item $dataDir \"$dataDir.old\" -Force -ErrorAction SilentlyContinue",
+        "    }",
+        "}",
+        "if (-not $linkOk) {",
+        "    New-Item -ItemType Directory -Path $persistData -Force | Out-Null",
+        "    if (-not (Test-Path $dataDir)) {",
+        "        New-DirectoryJunction $dataDir $persistData | Out-Null",
+        "    }",
+        "}"
+    ],
     "bin": "pebrel.exe",
     "shortcuts": [
         [
             "pebrel.exe",
-            "Pebrel"
+            "Pebrel",
+            "--gpui"
         ]
     ],
-    "persist": [
-        "config",
-        "data"
-    ],
-    "checkver": {
-        "url": "https://api.github.com/repos/Kuddev/pebrel/releases/latest",
-        "regex": "\"tag_name\":\\s*\"v([\\d.]+)\""
-    },
+    "post_uninstall": "if (Test-Path \"$env:APPDATA\\Pebrel\") { $link = Get-Item \"$env:APPDATA\\Pebrel\" -Force; if ($link.LinkType -eq 'Junction') { Remove-Item \"$env:APPDATA\\Pebrel\" -Force -Recurse -ErrorAction SilentlyContinue } }",
+    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
                 "url": "https://github.com/Kuddev/pebrel/releases/download/v$version/Pebrel-v$version-windows-x64.zip",
                 "hash": {
-                    "url": "https://api.github.com/repos/Kuddev/pebrel/releases/latest",
-                    "find": "Pebrel-v$version-windows-x64\\.zip`: `([a-fA-F0-9]{64})"
+                    "url": "https://github.com/Kuddev/pebrel/releases/download/v$version/SHA256SUMS",
+                    "find": "([a-fA-F0-9]{64})\\s+Pebrel-v$version-windows-x64\\.zip"
                 }
             },
             "arm64": {
                 "url": "https://github.com/Kuddev/pebrel/releases/download/v$version/Pebrel-v$version-windows-arm64.zip",
                 "hash": {
-                    "url": "https://api.github.com/repos/Kuddev/pebrel/releases/latest",
-                    "find": "Pebrel-v$version-windows-arm64\\.zip`: `([a-fA-F0-9]{64})"
+                    "url": "https://github.com/Kuddev/pebrel/releases/download/v$version/SHA256SUMS",
+                    "find": "([a-fA-F0-9]{64})\\s+Pebrel-v$version-windows-arm64\\.zip"
                 }
             }
         }
