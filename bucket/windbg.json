@@ -1,46 +1,43 @@
 {
+    "##": "derived from 'winget show Microsoft.windbg'",
+    "depends": "7zip",
     "version": "1.2606.22001.0",
     "description": "WinDbg is a debugger that can be used to analyze crash dumps, debug live user-mode and kernel-mode code, and examine CPU registers and memory.",
     "homepage": "https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://learn.microsoft.com/en-us/legal/windows-sdk/windbg-preview---software-license-terms"
-    },
-    "notes": "At least Windows 10 build 17763 is required to use WinDbg.",
-    "architecture": {
-        "64bit": {
-            "pre_install": "Get-ChildItem \"$dir\" -Exclude '*x64.msix' | Remove-Item -Force -Recurse"
-        },
-        "32bit": {
-            "pre_install": "Get-ChildItem \"$dir\" -Exclude '*x86.msix' | Remove-Item -Force -Recurse"
-        },
-        "arm64": {
-            "pre_install": "Get-ChildItem \"$dir\" -Exclude '*arm64.msix' | Remove-Item -Force -Recurse"
-        }
-    },
+    "license": "Proprietary",
     "url": "https://windbg.download.prss.microsoft.com/dbazure/prod/1-2606-22001-0/windbg.msixbundle#/dl.7z",
     "hash": "12e63fb884347567bdd35f67f7aad61b26a08f8404553dad6951a10776f7d771",
     "installer": {
-        "script": "Get-ChildItem \"$dir\" '*.msix' | Select-Object -ExpandProperty Fullname | Expand-7zipArchive -DestinationPath \"$dir\" -Removal"
-    },
-    "bin": [
-        [
-            "DbgX.Shell.exe",
-            "WinDbgX"
+        "script": [
+            "$metadataPath = Join-Path $dir 'AppxMetadata'",
+            "$xml = [xml](Get-Content (Join-Path $metadataPath 'AppxBundleManifest.xml'))",
+            "Remove-Item $metadataPath -Force -Recurse",
+            "$x64Package = $xml.Bundle.Packages.Package | Where-Object Architecture -eq 'x64'",
+            "Write-Host -ForegroundColor Yellow ('Expanding {0} ({1}) v{2}' -f $x64Package.FileName, $x64Package.Architecture, $x64Package.Version)",
+            "7z.exe x (Join-Path $dir $x64Package.FileName) -o\"$dir\" -y",
+            "Remove-Item (Join-Path $dir windbg_win7-x64.msix)",
+            "Remove-Item (Join-Path $dir windbg_win7-x86.msix)",
+            "Remove-Item (Join-Path $dir windbg_win-arm64.msix)"
         ]
-    ],
+    },
     "shortcuts": [
         [
             "DbgX.Shell.exe",
             "WinDbg"
         ]
     ],
+    "bin": [
+        [
+            "DbgX.Shell.exe",
+            "windbg"
+        ]
+    ],
     "checkver": {
-        "url": "https://raw.githubusercontent.com/MicrosoftDocs/windows-driver-docs/refs/heads/staging/windows-driver-docs-pr/debuggercmds/windbg-release-notes.md",
-        "regex": "## +(?:[vV]ersion +)?(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)",
-        "replace": "${1}.${2}.${3}.${4}"
+        "url": "https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/windbg-release-notes",
+        "regex": "<h2 id=\"\\d+\">(?<major>\\d{1,5})\\.(?<minor>\\d{1,5})\\.(?<build>\\d{1,5})\\.(?<revision>\\d{1,5})</h2>",
+        "replace": "${major}.${minor}.${build}.${revision}"
     },
     "autoupdate": {
-        "url": "https://windbg.download.prss.microsoft.com/dbazure/prod/$dashVersion/windbg.msixbundle#/dl.7z"
+        "url": "https://windbg.download.prss.microsoft.com/dbazure/prod/$matchMajor-$matchMinor-$matchBuild-$matchRevision/windbg.msixbundle#/dl.7z"
     }
 }
