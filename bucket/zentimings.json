@@ -1,27 +1,34 @@
 {
     "version": "141.706",
-    "description": "A free, simple and lightweight app for monitoring memory timings on Ryzen platform",
-    "homepage": "https://zentimings.protonrom.com/",
+    "description": "A free, simple and lightweight app for monitoring memory timings on Ryzen platform.",
+    "homepage": "https://zentimings.com/",
     "license": "GPL-3.0-only",
     "url": "https://github.com/irusanov/ZenTimings/releases/download/v141.706/ZenTimings_v141.706.zip",
     "hash": "6e40c699fb5b431ed09eaad3863ab9b46d1098d6e73a4a753b8d7c0d1c93c9f0",
-    "extract_dir": "ZenTimings_v141.706",
-    "persist": "ZenTimings.exe.config",
-    "bin": "ZenTimings.exe",
+    "pre_install": [
+        "if (!(Test-Path \"$persist_dir\\settings.xml\")) {",
+        "    New-Item \"$dir\\settings.xml\" -ItemType File -Value '<?xml version=\"1.0\" encoding=\"utf-8\"?><AppSettings><CheckForUpdates>false</CheckForUpdates></AppSettings>' | Out-Null",
+        "}"
+    ],
     "shortcuts": [
         [
             "ZenTimings.exe",
             "ZenTimings"
         ]
     ],
+    "persist": "settings.xml",
     "checkver": {
-        "url": "https://api.github.com/repos/irusanov/ZenTimings/releases",
-        "jsonpath": "$[?(@.prerelease == false)].name",
-        "regex": "(?i)\"v?([\\d.]+)(?![^\"]*(?:alpha|beta))"
+        "script": [
+            "try {",
+            "    $latest = Invoke-RestMethod https://api.github.com/repositories/235689342/releases/latest",
+            "    $latest.tag_name, $latest.assets[0].name -join ' '",
+            "}",
+            "catch { '' }"
+        ],
+        "regex": "\\Av(?<tag>[\\S]+) ZenTimings_v([a-z\\d.-]+)\\.zip\\Z"
     },
     "autoupdate": {
-        "url": "https://github.com/irusanov/ZenTimings/releases/download/v$version/ZenTimings_v$version.zip",
-        "extract_dir": "ZenTimings_v$version",
+        "url": "https://github.com/irusanov/ZenTimings/releases/download/v$matchTag/ZenTimings_v$version.zip",
         "hash": {
             "url": "$url.sha256"
         }
