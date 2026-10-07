@@ -5,33 +5,70 @@
     "license": "proprietary",
     "notes": [
         "Jump Desktop provides remote desktop access via RDP, VNC, and Fluid protocols with end-to-end encryption.",
-        "Installs per-machine when run elevated and per-user when run without admin rights."
+        "The built-in updater is not configured for this portable install. Use 'scoop update jump-desktop' instead.",
+        "Saved servers are stored in '$persist_dir\\Servers' and linked from '%LOCALAPPDATA%\\Jump Desktop\\Client\\Servers'."
     ],
-    "url": "https://jumpdesktop.com/downloads/jdwin#/JumpDesktop.exe",
-    "hash": "93eaa610ff9cd54ef6dd70ed31796c56eabcb9d452924165875c0bbd5024a46d",
-    "installer": {
-        "script": [
-            "$p = Start-Process -FilePath \"$dir\\JumpDesktop.exe\" -Wait -PassThru",
-            "if ($p.ExitCode -ne 0) { throw \"Installer exited with code $($p.ExitCode).\" }",
-            "Remove-Item \"$dir\\JumpDesktop.exe\" -Force"
-        ]
+    "architecture": {
+        "64bit": {
+            "url": "https://mirror.jumpdesktop.com/downloads/viewer/JumpDesktop-10.15.31.msi",
+            "hash": "e6e198222e52bb14924569f0c0e201570319a09065aa8643c5a407d40d4ff8ec"
+        }
     },
-    "uninstaller": {
-        "script": [
-            "$entry = Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq 'Jump Desktop' -and $_.Publisher -eq 'Phase Five Systems' } | Select-Object -First 1",
-            "if (-not $entry) { warning 'Jump Desktop uninstall entry not found. It may have already been removed.'; break }",
-            "if ($entry.PSPath -like 'Microsoft.PowerShell.Core\\Registry::HKEY_LOCAL_MACHINE*' -and !(is_admin)) { error \"$app requires admin rights to uninstall machine-wide install\"; break }",
-            "$productCode = if ($entry.PSChildName -match '^\\{[0-9A-F-]+\\}$') { $entry.PSChildName } elseif ($entry.UninstallString -match '\\{[0-9A-F-]+\\}') { $matches[0] }",
-            "if (-not $productCode) { throw 'Unable to determine Jump Desktop MSI product code.' }",
-            "$p = Start-Process -FilePath 'msiexec.exe' -ArgumentList '/x', $productCode, '/qn', '/norestart' -Wait -PassThru",
-            "if ($p.ExitCode -ne 0) { throw \"Uninstaller exited with code $($p.ExitCode).\" }"
+    "pre_install": [
+        "# lessmsi extracts into an APPDIR subfolder, msiexec extracts into the root",
+        "if (Test-Path \"$dir\\APPDIR\") {",
+        "    Get-ChildItem \"$dir\\APPDIR\" -Force | Move-Item -Destination $dir -Force",
+        "    Remove-Item \"$dir\\APPDIR\" -Recurse -Force",
+        "}"
+    ],
+    "post_install": [
+        "# Keep saved servers in the persist dir and link the folder the client reads from to it",
+        "$client = \"$env:LOCALAPPDATA\\Jump Desktop\\Client\"",
+        "$servers = \"$client\\Servers\"",
+        "$target = \"$persist_dir\\Servers\"",
+        "ensure $client | Out-Null",
+        "ensure $target | Out-Null",
+        "$item = Get-Item $servers -Force -ErrorAction SilentlyContinue",
+        "if ($item -and $item.LinkType) {",
+        "    $item.Delete()",
+        "} elseif ($item) {",
+        "    Copy-Item \"$servers\\*\" $target -Recurse -Force -ErrorAction Stop",
+        "    Remove-Item $servers -Recurse -Force",
+        "}",
+        "New-Item -ItemType Junction -Path $servers -Target $target | Out-Null",
+        "# Register the .jump file association for the current user",
+        "$classes = 'HKCU:\\Software\\Classes'",
+        "$progId = 'Phase Five Systems.Jump Desktop.jump'",
+        "New-Item \"$classes\\$progId\" -Value 'Jump Desktop Server File' -Force | Out-Null",
+        "New-Item \"$classes\\$progId\\DefaultIcon\" -Value \"$dir\\JumpClient.exe,0\" -Force | Out-Null",
+        "New-Item \"$classes\\$progId\\shell\\open\\command\" -Value \"`\"$dir\\JumpClient.exe`\" `\"%1`\"\" -Force | Out-Null",
+        "New-Item \"$classes\\.jump\" -Value $progId -Force | Out-Null"
+    ],
+    "pre_uninstall": [
+        "$servers = \"$env:LOCALAPPDATA\\Jump Desktop\\Client\\Servers\"",
+        "$item = Get-Item $servers -Force -ErrorAction SilentlyContinue",
+        "if ($item -and $item.LinkType) { $item.Delete() }",
+        "$classes = 'HKCU:\\Software\\Classes'",
+        "$progId = 'Phase Five Systems.Jump Desktop.jump'",
+        "Remove-Item \"$classes\\$progId\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "$ext = Get-Item \"$classes\\.jump\" -ErrorAction SilentlyContinue",
+        "if ($ext -and $ext.GetValue('') -eq $progId) { Remove-Item \"$classes\\.jump\" -Recurse -Force }"
+    ],
+    "shortcuts": [
+        [
+            "JumpClient.exe",
+            "Jump Desktop"
         ]
-    },
+    ],
     "checkver": {
-        "url": "https://mirror.jumpdesktop.com/downloads/jdwin/client-win3.txt",
+        "url": "https://mirror.jumpdesktop.com/downloads/viewer/viewer-win-prod-relmgr.txt",
         "regex": "ProductVersion = ([\\d.]+)"
     },
     "autoupdate": {
-        "url": "https://jumpdesktop.com/downloads/jdwin#/JumpDesktop.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://mirror.jumpdesktop.com/downloads/viewer/JumpDesktop-$version.msi"
+            }
+        }
     }
 }

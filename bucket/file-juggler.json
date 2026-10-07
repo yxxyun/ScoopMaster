@@ -3,23 +3,48 @@
     "description": "Automatic file organization software that helps organize documents based on content and customizable rules",
     "homepage": "https://www.filejuggler.com",
     "license": "proprietary",
-    "notes": "File Juggler requires admin rights to install for system-wide file organization capabilities.",
+    "notes": [
+        "Rules, state and logs are stored in '$persist_dir\\FileJuggler3' and linked from '%APPDATA%\\FileJuggler3'.",
+        "Close File Juggler from its tray icon before updating or uninstalling."
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://www.filejuggler.com/media/vswl1ajl/filejuggler.exe",
-            "hash": "8ee71ef21c9db1c54b71bbe0a55bf68f2aad6730aa8f3e235cbbeea5afebf43b"
+            "url": "https://www.filejuggler.com/download/filejuggler.exe#/setup.exe",
+            "hash": "6671fb7e9f1b5a4a07d7e278421d4ef9ad7e49834b08a43ed10f01bae28a22b8"
         }
     },
-    "installer": {
-        "script": [
-            "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
-            "Start-Process -Wait \"$dir\\filejuggler.exe\" -ArgumentList '/SILENT' -Verb RunAs | Out-Null",
-            "Remove-Item \"$dir\\filejuggler.exe\""
+    "innosetup": true,
+    "post_install": [
+        "# Keep rules, state and logs in the persist dir and link the folder the app reads from to it",
+        "$data = \"$env:APPDATA\\FileJuggler3\"",
+        "$target = \"$persist_dir\\FileJuggler3\"",
+        "ensure $target | Out-Null",
+        "$item = Get-Item $data -Force -ErrorAction SilentlyContinue",
+        "if ($item -and $item.LinkType) {",
+        "    $item.Delete()",
+        "} elseif ($item) {",
+        "    Copy-Item \"$data\\*\" $target -Recurse -Force -ErrorAction Stop",
+        "    Remove-Item $data -Recurse -Force",
+        "}",
+        "New-Item -ItemType Junction -Path $data -Target $target | Out-Null"
+    ],
+    "pre_uninstall": [
+        "$data = \"$env:APPDATA\\FileJuggler3\"",
+        "$item = Get-Item $data -Force -ErrorAction SilentlyContinue",
+        "if ($item -and $item.LinkType) { $item.Delete() }",
+        "# Remove the autostart entry the app registers for itself",
+        "if ($cmd -eq 'uninstall') {",
+        "    $run = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "    $value = (Get-ItemProperty $run -Name 'FileJuggler2' -ErrorAction SilentlyContinue).FileJuggler2",
+        "    if ($value -and $value.Contains(\"\\apps\\$app\\\")) { Remove-ItemProperty $run -Name 'FileJuggler2' }",
+        "}"
+    ],
+    "shortcuts": [
+        [
+            "FileJuggler.exe",
+            "File Juggler 3"
         ]
-    },
-    "uninstaller": {
-        "script": "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }"
-    },
+    ],
     "checkver": {
         "url": "https://www.filejuggler.com/news/",
         "regex": "File Juggler ([\\d.]+)"
@@ -27,7 +52,7 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://www.filejuggler.com/media/vswl1ajl/filejuggler.exe"
+                "url": "https://www.filejuggler.com/download/filejuggler.exe#/setup.exe"
             }
         }
     }
