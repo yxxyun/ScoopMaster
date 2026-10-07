@@ -1,27 +1,60 @@
 {
     "version": "2.15.0",
     "description": "The modern, open source Flyout app for Windows 11. Media Flyouts, Taskbar Widgets and more.",
-    "homepage": "https://github.com/unchihugo/FluentFlyout",
-    "license": {
-        "identifier": "GPL-3.0-only",
-        "url": "https://github.com/unchihugo/FluentFlyout/blob/master/LICENSE"
+    "homepage": "https://fluentflyout.com/",
+    "license": "GPL-3.0-only",
+    "architecture": {
+        "64bit": {
+            "url": "https://files.fluentflyout.com/FluentFlyout_2.15.0_x64_Installer.zip",
+            "hash": "e107cc258d8b4ab0700cc9f95f0b03dcca3298dea3c1b9b89ebbd1e2028c2154"
+        }
     },
-    "notes": "Unofficial automated build from https://github.com/tailscalelogin69/FluentFlyout-AutoBuild (official binaries at files.fluentflyout.com block automated downloads).",
-    "url": "https://github.com/tailscalelogin69/FluentFlyout-AutoBuild/releases/download/v2.15.0-full/FluentFlyout-v2.15.0-Full-x64.zip",
-    "hash": "595d03d5251b372753ea826c8cd4c981a43dcedff33a0497fee8b9fc6d48135b",
+    "extract_to": "Deploy",
+    "pre_install": [
+        "Get-ChildItem \"$dir\\Deploy\\SystemFiles\\*.msixbundle\"   | ForEach-Object { Expand-7zipArchive $_ \"$dir\\Deploy\" }",
+        "Get-ChildItem \"$dir\\Deploy\\*.msix\" | ForEach-Object { Expand-7zipArchive $_ \"$dir\" }"
+    ],
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "Enable-DevelopmentMode",
+            "Remove-Item \"$dir\\AppxSignature.p7x\" -Force -ErrorAction SilentlyContinue | Out-Null",
+            "Remove-Item \"$dir\\Deploy\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+            "Import-AppxPSModule",
+            "Add-AppxPackage -Path \"$dir\\AppxManifest.xml\" -Register"
+        ]
+    },
     "shortcuts": [
         [
-            "FluentFlyout.exe",
+            "FluentFlyout\\FluentFlyout.exe",
             "FluentFlyout",
             "",
-            "Resources\\FluentFlyout2.ico"
+            "FluentFlyout\\Resources\\FluentFlyout2.ico"
         ]
     ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Import-AppxPSModule",
+        "if ($cmd -eq 'uninstall') {",
+        "    Get-AppxPackage -Name \"unchihugo.FluentFlyout\" | Remove-AppxPackage",
+        "} else {",
+        "    Get-AppxPackage -Name \"unchihugo.FluentFlyout\" | Remove-AppxPackage -PreserveApplicationData",
+        "}"
+    ],
     "checkver": {
-        "github": "https://github.com/tailscalelogin69/FluentFlyout-AutoBuild",
-        "regex": "v([\\d.]+)-full"
+        "script": [
+            ". \"$pwd\\bin\\utils.ps1\"",
+            "\"https://fluentflyout.com/files/latest/x64\" | Get-RedirectedUrl1st"
+        ],
+        "regex": "https://files.fluentflyout.com/FluentFlyout_([\\d.]+)_x64_Installer.zip"
     },
     "autoupdate": {
-        "url": "https://github.com/tailscalelogin69/FluentFlyout-AutoBuild/releases/download/v$version-full/FluentFlyout-v$version-Full-x64.zip"
+        "architecture": {
+            "64bit": {
+                "url": "https://files.fluentflyout.com/FluentFlyout_$version_x64_Installer.zip"
+            }
+        }
     }
 }
