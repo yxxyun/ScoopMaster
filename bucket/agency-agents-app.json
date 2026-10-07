@@ -1,0 +1,53 @@
+{
+    "##": "Upstream ships a NSIS installer only (no portable zip). Scoop does not auto-extract '.exe' URLs (lib/decompress.ps1 dispatches on extension; the .exe branch only fires for 'innosetup'), so pre_install unpacks it with 7-Zip by hand. The '-xr!' switches drop the NSIS payload dirs that would otherwise pollute the app dir.",
+    "version": "0.3.2",
+    "description": "Desktop app for browsing, installing and tracking the agency-agents persona roster across AI coding tools",
+    "homepage": "https://agencyagents.app",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/msitarzewski/agency-agents-app/releases/download/v0.3.2/Agency_Agents_0.3.2_x64-setup.exe",
+            "hash": "685c80817f67735f8163b290628134b98cb615b065934daed2aa6faaec76a811"
+        },
+        "arm64": {
+            "url": "https://github.com/msitarzewski/agency-agents-app/releases/download/v0.3.2/Agency_Agents_0.3.2_arm64-setup.exe",
+            "hash": "36517de4b4076ac215ea294845fe8dc5cfbd9f9b18be7166fdb609b82b02e58c"
+        }
+    },
+    "pre_install": "Expand-7zipArchive -Path \"$dir\\Agency_Agents_${version}_x64-setup.exe\" -DestinationPath $dir -Switches '-xr!$PLUGINSDIR -xr!$TEMP' -Removal",
+    "bin": "agency-agents-app.exe",
+    "shortcuts": [
+        [
+            "agency-agents-app.exe",
+            "Agency Agents"
+        ]
+    ],
+    "notes": [
+        "Requires the Microsoft Edge WebView2 Runtime (preinstalled on current Windows 10/11).",
+        "The installer is not code-signed yet, so SmartScreen may warn on first run.",
+        "Installs agent personas into the config dirs of the tools it detects, e.g. '~/.claude/agents'."
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/msitarzewski/agency-agents-app/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "v?([\\d.]+(?:-[0-9A-Za-z.-]+)?)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/msitarzewski/agency-agents-app/releases/download/v$version/Agency_Agents_$version_x64-setup.exe",
+                "hash": {
+                    "url": "https://api.github.com/repos/msitarzewski/agency-agents-app/releases/tags/v$version",
+                    "jsonpath": "$.assets[?(@.name == 'Agency_Agents_$version_x64-setup.exe')].digest"
+                }
+            },
+            "arm64": {
+                "url": "https://github.com/msitarzewski/agency-agents-app/releases/download/v$version/Agency_Agents_$version_arm64-setup.exe",
+                "hash": {
+                    "url": "https://api.github.com/repos/msitarzewski/agency-agents-app/releases/tags/v$version",
+                    "jsonpath": "$.assets[?(@.name == 'Agency_Agents_$version_arm64-setup.exe')].digest"
+                }
+            }
+        }
+    }
+}
