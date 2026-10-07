@@ -1,0 +1,59 @@
+{
+    "version": "9.0.1",
+    "description": "Network simulation and visualization for Cisco networking labs",
+    "homepage": "https://www.netacad.com/cisco-packet-tracer",
+    "license": "Freeware",
+    "architecture": {
+        "64bit": {
+            "url": "https://archive.org/download/cisco-packet-tracer-901-mac-os-64bit/CiscoPacketTracer_901_win_64bit.exe",
+            "hash": "615e60ba1d58ec2f61bf7f0d5e7fcc735d0204ef769c6a741db5165c854efdeb"
+        }
+    },
+    "innosetup": true,
+    "extract_to": "CiscoPacketTracer-Scoop",
+    "pre_install": [
+        "if ($global) { throw 'Packet Tracer document redirection requires a per-user Scoop installation.' }",
+        "$ptUserFolder = Join-Path $env:USERPROFILE 'CiscoPacketTracer-Scoop'",
+        "$ptDocuments = Join-Path $persist_dir 'documents'",
+        "$ptUserItem = Get-Item -LiteralPath $ptUserFolder -Force -ErrorAction SilentlyContinue",
+        "if ($ptUserItem -and ($ptUserItem.LinkType -ne 'Junction' -or [IO.Path]::GetFullPath([string]$ptUserItem.Target).TrimEnd('\\') -ne [IO.Path]::GetFullPath($ptDocuments).TrimEnd('\\'))) {",
+        "    throw \"The folder '$ptUserFolder' already exists and is not this package's data junction. Its contents have been left untouched.\"",
+        "}"
+    ],
+    "bin": [
+        [
+            "CiscoPacketTracer-Scoop\\bin\\PacketTracer.exe",
+            "packettracer"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "CiscoPacketTracer-Scoop\\bin\\PacketTracer.exe",
+            "Cisco Packet Tracer"
+        ]
+    ],
+    "env_set": {
+        "PT8HOME": "$dir\\CiscoPacketTracer-Scoop"
+    },
+    "persist": "documents",
+    "post_install": [
+        "$ptUserFolder = Join-Path $env:USERPROFILE 'CiscoPacketTracer-Scoop'",
+        "$ptDocuments = Join-Path $persist_dir 'documents'",
+        "if (-not (Get-Item -LiteralPath $ptUserFolder -Force -ErrorAction SilentlyContinue)) {",
+        "    New-Item -ItemType Junction -Path $ptUserFolder -Value $ptDocuments -ErrorAction Stop | Out-Null",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "$ptUserFolder = Join-Path $env:USERPROFILE 'CiscoPacketTracer-Scoop'",
+            "$ptDocuments = Join-Path $persist_dir 'documents'",
+            "$ptUserItem = Get-Item -LiteralPath $ptUserFolder -Force -ErrorAction SilentlyContinue",
+            "if ($ptUserItem -and $ptUserItem.LinkType -eq 'Junction' -and [IO.Path]::GetFullPath([string]$ptUserItem.Target).TrimEnd('\\') -eq [IO.Path]::GetFullPath($ptDocuments).TrimEnd('\\')) {",
+            "    [IO.Directory]::Delete($ptUserFolder)",
+            "}"
+        ]
+    },
+    "notes": [
+        "This package uses a third-party Archive.org mirror."
+    ]
+}
