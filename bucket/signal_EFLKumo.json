@@ -1,85 +1,85 @@
 {
-    "version": "8.29.0",
-    "description": "A cross-platform encrypted messaging service.",
-    "homepage": "https://signal.org",
-    "license": "GPL-3.0-only",
+  "version": "8.29.0",
+  "description": "A cross-platform encrypted messaging service.",
+  "homepage": "https://signal.org",
+  "license": "GPL-3.0-only",
+  "architecture": {
+    "64bit": {
+      "url": "https://updates.signal.org/desktop/signal-desktop-win-x64-8.29.0.exe#/dl.7z",
+      "hash": "sha512:16b6dc62bafa82844b8ebd1866db7242ef73210003fa7f29293168f26e8d4ba22b7e36811a6f6d8b63fb9d2d5030d18fbd9be869bca940b8638ba0947fa8986f",
+      "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
+    },
+    "arm64": {
+      "url": "https://updates.signal.org/desktop/signal-desktop-win-arm64-8.29.0.exe#/dl.7z",
+      "hash": "sha512:0c8863640f04078ca4664e3a2c50b7c828bc3676ee19918ed0f76c57eda15efe907dcf11c4ce09a5f386cd26b2f156e04096aa7e2634c81346c8ded8e5f052c0",
+      "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\""
+    }
+  },
+  "post_install": [
+    "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*.exe\" -Recurse -Force",
+    "$appDataPath = \"$env:APPDATA\\Signal\"",
+    "$persistPath = \"$persist_dir\\Roaming\"",
+    "function Test-PersistJunction($item, $target) {",
+    "    if (-not $item) { return $false }",
+    "    $linkTarget = if ($item.PSObject.Properties['LinkTarget'] -and $item.LinkTarget) { $item.LinkTarget } else { $item.Target }",
+    "    if ($linkTarget -is [array]) { $linkTarget = $linkTarget[0] }",
+    "    if (-not $linkTarget) { return $false }",
+    "    return $linkTarget.ToString().TrimEnd('\\', '/') -ieq $target.TrimEnd('\\', '/')",
+    "}",
+    "function Remove-PersistTarget($path) {",
+    "    $item = Get-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue",
+    "    if ($item) {",
+    "        Remove-Item -LiteralPath $path -Force -Recurse -ErrorAction Stop",
+    "    }",
+    "}",
+    "$appData = Get-Item -LiteralPath $appDataPath -Force -ErrorAction SilentlyContinue",
+    "$isJunction = [bool]($appData -and ($appData.Attributes -band [System.IO.FileAttributes]::ReparsePoint))",
+    "if (-not ($isJunction -and (Test-PersistJunction $appData $persistPath))) {",
+    "    $persistHasData = (Test-Path -LiteralPath $persistPath) -and (Get-ChildItem -LiteralPath $persistPath -Force -ErrorAction SilentlyContinue | Select-Object -First 1)",
+    "    if (-not $persistHasData) {",
+    "        New-Item -ItemType Directory -Path (Split-Path -Path $persistPath -Parent) -Force -ErrorAction Stop | Out-Null",
+    "        Remove-PersistTarget $persistPath",
+    "        if ($appData -and -not $isJunction) {",
+    "            Move-Item -LiteralPath $appDataPath -Destination $persistPath -Force -ErrorAction Stop",
+    "            $appData = $null",
+    "        } else {",
+    "            New-Item -Path $persistPath -ItemType Directory -Force -ErrorAction Stop | Out-Null",
+    "        }",
+    "    }",
+    "    if ($appData -and -not $isJunction) {",
+    "        $bakName = \"Signal.bak_$(Get-Date -Format 'yyyyMMddHHmmss')\"",
+    "        Rename-Item -LiteralPath $appDataPath -NewName $bakName -Force -ErrorAction Stop",
+    "        Write-Host \"Existing Signal user data has been backed up to: $bakName\" -ForegroundColor Yellow",
+    "    }",
+    "    if ($isJunction) {",
+    "        [System.IO.Directory]::Delete($appDataPath)",
+    "    }",
+    "    New-Item -ItemType Junction -Path $appDataPath -Target $persistPath -ErrorAction Stop | Out-Null",
+    "}"
+  ],
+  "shortcuts": [
+    [
+      "Signal.exe",
+      "Signal"
+    ]
+  ],
+  "checkver": {
+    "url": "https://updates.signal.org/desktop/latest.yml",
+    "regex": "version:\\s([\\d.]+)"
+  },
+  "autoupdate": {
     "architecture": {
-        "64bit": {
-            "url": "https://updates.signal.org/desktop/signal-desktop-win-x64-8.29.0.exe#/dl.7z",
-            "hash": "sha512:16b6dc62bafa82844b8ebd1866db7242ef73210003fa7f29293168f26e8d4ba22b7e36811a6f6d8b63fb9d2d5030d18fbd9be869bca940b8638ba0947fa8986f",
-            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
-        },
-        "arm64": {
-            "url": "https://updates.signal.org/desktop/signal-desktop-win-arm64-8.29.0.exe#/dl.7z",
-            "hash": "sha512:0c8863640f04078ca4664e3a2c50b7c828bc3676ee19918ed0f76c57eda15efe907dcf11c4ce09a5f386cd26b2f156e04096aa7e2634c81346c8ded8e5f052c0",
-            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\""
-        }
+      "64bit": {
+        "url": "https://updates.signal.org/desktop/signal-desktop-win-x64-$version.exe#/dl.7z"
+      },
+      "arm64": {
+        "url": "https://updates.signal.org/desktop/signal-desktop-win-arm64-$version.exe#/dl.7z"
+      }
     },
-    "post_install": [
-        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*.exe\" -Recurse -Force",
-        "$appDataPath = \"$env:APPDATA\\Signal\"",
-        "$persistPath = \"$persist_dir\\Roaming\"",
-        "function Test-PersistJunction($item, $target) {",
-        "    if (-not $item) { return $false }",
-        "    $linkTarget = if ($item.PSObject.Properties['LinkTarget'] -and $item.LinkTarget) { $item.LinkTarget } else { $item.Target }",
-        "    if ($linkTarget -is [array]) { $linkTarget = $linkTarget[0] }",
-        "    if (-not $linkTarget) { return $false }",
-        "    return $linkTarget.ToString().TrimEnd('\\', '/') -ieq $target.TrimEnd('\\', '/')",
-        "}",
-        "function Remove-PersistTarget($path) {",
-        "    $item = Get-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue",
-        "    if ($item) {",
-        "        Remove-Item -LiteralPath $path -Force -Recurse -ErrorAction Stop",
-        "    }",
-        "}",
-        "$appData = Get-Item -LiteralPath $appDataPath -Force -ErrorAction SilentlyContinue",
-        "$isJunction = [bool]($appData -and ($appData.Attributes -band [System.IO.FileAttributes]::ReparsePoint))",
-        "if (-not ($isJunction -and (Test-PersistJunction $appData $persistPath))) {",
-        "    $persistHasData = (Test-Path -LiteralPath $persistPath) -and (Get-ChildItem -LiteralPath $persistPath -Force -ErrorAction SilentlyContinue | Select-Object -First 1)",
-        "    if (-not $persistHasData) {",
-        "        New-Item -ItemType Directory -Path (Split-Path -Path $persistPath -Parent) -Force -ErrorAction Stop | Out-Null",
-        "        Remove-PersistTarget $persistPath",
-        "        if ($appData -and -not $isJunction) {",
-        "            Move-Item -LiteralPath $appDataPath -Destination $persistPath -Force -ErrorAction Stop",
-        "            $appData = $null",
-        "        } else {",
-        "            New-Item -Path $persistPath -ItemType Directory -Force -ErrorAction Stop | Out-Null",
-        "        }",
-        "    }",
-        "    if ($appData -and -not $isJunction) {",
-        "        $bakName = \"Signal.bak_$(Get-Date -Format 'yyyyMMddHHmmss')\"",
-        "        Rename-Item -LiteralPath $appDataPath -NewName $bakName -Force -ErrorAction Stop",
-        "        Write-Host \"Existing Signal user data has been backed up to: $bakName\" -ForegroundColor Yellow",
-        "    }",
-        "    if ($isJunction) {",
-        "        [System.IO.Directory]::Delete($appDataPath)",
-        "    }",
-        "    New-Item -ItemType Junction -Path $appDataPath -Target $persistPath -ErrorAction Stop | Out-Null",
-        "}"
-    ],
-    "shortcuts": [
-        [
-            "Signal.exe",
-            "Signal"
-        ]
-    ],
-    "checkver": {
-        "url": "https://updates.signal.org/desktop/latest.yml",
-        "regex": "version:\\s([\\d.]+)"
-    },
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://updates.signal.org/desktop/signal-desktop-win-x64-$version.exe#/dl.7z"
-            },
-            "arm64": {
-                "url": "https://updates.signal.org/desktop/signal-desktop-win-arm64-$version.exe#/dl.7z"
-            }
-        },
-        "hash": {
-            "url": "$baseurl/latest.yml",
-            "regex": "$basename\\s+sha512:\\s$base64"
-        }
-    },
-    "notes": "You are suggested to disable \"Automatically download upates\" in Signal->Settings->General and use scoop to manage updates."
+    "hash": {
+      "url": "$baseurl/latest.yml",
+      "regex": "$basename\\s+sha512:\\s$base64"
+    }
+  },
+  "notes": "You are suggested to disable \"Automatically download upates\" in Signal->Settings->General and use scoop to manage updates."
 }

@@ -1,22 +1,35 @@
 {
-    "version": "1.22.0",
+    "version": "1.23.2",
     "description": "Zed Editor (Localized / 汉化版)",
     "homepage": "https://github.com/x6nux/zed-globalization",
     "license": "GPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/x6nux/zed-globalization/releases/download/v1.22.0/zedg-zh-cn-windows-x86_64-v1.22.0.zip",
-            "hash": "7a1aa1f0850d7e508ccbdf3e2da2126949e3e3a72158900d0a6558e14f574c08"
+            "url": "https://github.com/x6nux/zed-globalization/releases/download/v1.23.2/zedg-zh-cn-windows-x86_64-v1.23.2.zip",
+            "hash": "17e1aaec3a363e501c420fd8793dd24ac6bd2e44ab6ee898bd1c475491fb22f7"
         },
         "arm64": {
-            "url": "https://github.com/x6nux/zed-globalization/releases/download/v1.22.0/zedg-zh-cn-windows-aarch64-v1.22.0.zip",
-            "hash": "c51d82c305e4508f1a81d95fab8e4e525605056b89d789d108e9497a75c275f9"
+            "url": "https://github.com/x6nux/zed-globalization/releases/download/v1.23.2/zedg-zh-cn-windows-aarch64-v1.23.2.zip",
+            "hash": "1a1a216ca74c713e040d8691bd8b695afe92ed63125dd4bed31fddb1a217b444"
         }
     },
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+        "New-PersistDirectory \"$env:APPDATA\\Zed\" \"$persist_dir\\AppData\" -Migrate",
+        "New-PersistDirectory \"$env:LOCALAPPDATA\\Zed\" \"$persist_dir\\LocalAppData\" -Migrate",
+        "if (!(Test-Path \"$persist_dir\\AppData\\settings.json\") -or !(Get-Item \"$persist_dir\\AppData\\settings.json\").Length) {",
+        "    New-Item \"$persist_dir\\AppData\\settings.json\" -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null",
+        "    Set-Content -Path \"$persist_dir\\AppData\\settings.json\" -Value '{\"auto_update\":false,\"telemetry\":{\"diagnostics\":false,\"metrics\":false}}'",
+        "}"
+    ],
     "bin": [
         [
             "bin\\ZedG.exe",
             "zedg"
+        ],
+        [
+            "bin\\ZedG.exe",
+            "zed"
         ]
     ],
     "shortcuts": [
@@ -25,17 +38,11 @@
             "ZedG"
         ]
     ],
-    "post_install": [
-        "$desktop = [Environment]::GetFolderPath(\"Desktop\")",
-        "$ws = New-Object -ComObject WScript.Shell",
-        "$lnk = $ws.CreateShortcut(\"$desktop\\ZedG.lnk\")",
-        "$lnk.TargetPath = \"$dir\\ZedG.exe\"",
-        "$lnk.WorkingDirectory = \"$dir\"",
-        "$lnk.Save()"
-    ],
     "pre_uninstall": [
-        "$desktop = [Environment]::GetFolderPath(\"Desktop\")",
-        "Remove-Item \"$desktop\\ZedG.lnk\" -ErrorAction SilentlyContinue"
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+        "Remove-Junction \"$env:APPDATA\\Zed\"",
+        "Remove-Junction \"$env:LOCALAPPDATA\\Zed\""
     ],
     "checkver": {
         "github": "https://github.com/x6nux/zed-globalization"

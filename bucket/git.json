@@ -1,11 +1,10 @@
 {
-    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
     "version": "2.56.0",
-    "description": "The Windows port of Git, a free and open source distributed version control system.",
-    "homepage": "https://gitforwindows.org/",
+    "description": "A free and open source distributed version control system.",
+    "homepage": "https://gitforwindows.org",
     "license": {
         "identifier": "GPL-2.0-only",
-        "url": "https://github.com/git-for-windows/git/blob/main/COPYING"
+        "url": "https://github.com/git-for-windows/git/blob/HEAD/COPYING"
     },
     "architecture": {
         "64bit": {
@@ -17,16 +16,70 @@
             "hash": "edd9bd32aefa5d2bd4b938c38c18ceca306a7f6b29a6951cd6a4bb16d9d28d8f"
         }
     },
-    "post_install": "& \"$dir\\bin\\bash.exe\" -c 'cmd //c /post-install.bat' *>$null",
-    "env_add_path": "bin",
-    "persist": [
-        "etc\\fstab",
-        "etc\\gitconfig"
+    "pre_install": [
+        "# Hardlinks cannot work properly here, as this app would create a new file instead of writing the existing config file.",
+        "$config_path = Join-Path -Path $dir -ChildPath 'etc\\gitconfig'",
+        "$config_path_persisted = Join-Path -Path $persist_dir -ChildPath 'etc\\gitconfig'",
+        "if (Test-Path -LiteralPath $config_path_persisted -PathType Leaf) {",
+        "    info \"Restoring system-level config from $config_path_persisted...\"",
+        "    Copy-Item -Path $config_path_persisted -Destination $config_path -Force",
+        "    info \"Adjusting paths in $config_path...\"",
+        "    (Get-Content -Path $config_path -Encoding UTF8) -replace '(?<=git/)[\\d.]+(?=/)', $version | Set-Content -Path $config_path -Encoding UTF8",
+        "}"
     ],
+    "env_add_path": "cmd",
+    "env_set": {
+        "GIT_INSTALL_ROOT": "$dir"
+    },
+    "bin": [
+        "bin\\sh.exe",
+        "bin\\git.exe",
+        "git-bash.exe",
+        "usr\\bin\\gpg.exe",
+        "usr\\bin\\gpg-agent.exe",
+        "usr\\bin\\gpgconf.exe",
+        "usr\\bin\\gpg-connect-agent.exe",
+        "usr\\bin\\pinentry.exe"
+    ],
+    "shortcuts": [
+        [
+            "git-bash.exe",
+            "Git\\Git Bash",
+            "--cd-to-home"
+        ],
+        [
+            "git-cmd.exe",
+            "Git\\Git CMD",
+            "--cd-to-home"
+        ],
+        [
+            "cmd\\git-gui.exe",
+            "Git\\Git GUI"
+        ]
+    ],
+    "pre_uninstall": [
+        "while (get-process -name keyboxd -ea 0) {stop-process -name keyboxd -force -ea 0; wait-process -name keyboxd -ea 0; start-sleep 0.5}",
+        "while (get-process -name git -ea 0) {stop-process -name git -force -ea 0; wait-process -name git -ea 0; start-sleep 0.5}",
+        "# Hardlinks cannot work properly here, as this app would create a new file instead of writing the existing config file.",
+        "$config_path = Join-Path -Path $dir -ChildPath 'etc\\gitconfig'",
+        "$config_path_persisted = Join-Path -Path $persist_dir -ChildPath 'etc\\gitconfig'",
+        "if (Test-Path -LiteralPath $config_path -PathType Leaf) {",
+        "    ensure (Split-Path -Path $config_path_persisted -Parent) | Out-Null",
+        "    info \"Saving system-level config to $config_path_persisted...\"",
+        "    Copy-Item -Path $config_path -Destination $config_path_persisted -Force",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -ne 'uninstall') {return}",
+            "reg import \"$dir\\uninstall-context.reg\" *> $null",
+            "reg import \"$dir\\uninstall-associations.reg\" *> $null"
+        ]
+    },
     "checkver": {
-        "url": "https://api.github.com/repos/git-for-windows/git/releases/latest",
-        "jsonpath": "$.tag_name",
-        "regex": "(?<tag>v([\\d.]+)\\.windows\\.\\d)"
+        "github": "https://github.com/git-for-windows/git",
+        "jsonpath": "$.assets[?(@.name =~ /Portable/i)].browser_download_url",
+        "regex": "(?i)download/(?<tag>v?[\\d.]+windows[\\d.]+)/PortableGit-([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
