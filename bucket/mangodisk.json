@@ -1,39 +1,51 @@
 {
     "version": "1.1.7",
-    "description": "A safety-first disk cleaner and disk space analyzer.",
+    "description": "Safety-first disk cleaner and disk space analyzer for macOS and Windows, with duplicate file finder, large file cleanup, app uninstaller, and startup manager",
     "homepage": "https://mangodisk.app/",
-    "license": "GPL-3.0-only",
+    "license": {
+        "identifier": "GPL-3.0 license",
+        "url": "https://github.com/harry0703/MangoDisk#GPL-3.0-1-ov-file"
+    },
     "architecture": {
         "64bit": {
-            "url": [
-                "https://github.com/harry0703/MangoDisk/releases/download/v1.1.7/MangoDisk-1.1.7-windows.exe#/dl.7z",
-                "https://github.com/harry0703/MangoDisk/releases/download/v1.1.7/MangoDisk-1.1.7-windows-cli.exe#/mangodisk-cli.exe"
-            ],
-            "hash": [
-                "27cfee9c525f1a9128f6f9d9c9575938763137015fb38dc9c49d26cd7926d0a8",
-                "dde39cdaa51a0d5c4ce650b83680da424283c4a0a0844b47eecdf670c459fc72"
-            ]
+            "url": "https://github.com/harry0703/MangoDisk/releases/download/v1.1.7/MangoDisk-1.1.7-windows.exe#/dl.7z",
+            "hash": "27cfee9c525f1a9128f6f9d9c9575938763137015fb38dc9c49d26cd7926d0a8",
+            "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\uninst*\" -Force -Recurse"
         }
     },
-    "bin": "mangodisk-cli.exe",
+    "installer": {
+        "script": [
+            "# handle runtime cache",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:LOCALAPPDATA\\app.mangodisk.desktop\"",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\userdata\" -Target \"$env:APPDATA\\app.mangodisk.desktop\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:LOCALAPPDATA\\app.mangodisk.desktop\"",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\app.mangodisk.desktop\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "bin": "MangoDisk.exe",
     "shortcuts": [
         [
             "MangoDisk.exe",
             "MangoDisk"
         ]
     ],
-    "post_install": "Remove-Item \"$dir\\uninstall*\", \"$dir\\`$*\" -Force -Recurse -ErrorAction SilentlyContinue",
-    "post_uninstall": "if ($purge) { Remove-Item \"$env:LOCALAPPDATA\\app.mangodisk.desktop\" -Force -Recurse -ErrorAction SilentlyContinue }",
     "checkver": {
-        "github": "https://github.com/harry0703/MangoDisk"
+        "github": "https://api.github.com/repos/harry0703/MangoDisk/releases",
+        "jp": "$[0].tag_name",
+        "regex": "v([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": [
-                    "https://github.com/harry0703/MangoDisk/releases/download/v$version/MangoDisk-$version-windows.exe#/dl.7z",
-                    "https://github.com/harry0703/MangoDisk/releases/download/v$version/MangoDisk-$version-windows-cli.exe#/mangodisk-cli.exe"
-                ]
+                "url": "https://github.com/harry0703/MangoDisk/releases/download/v$version/MangoDisk-$version-windows.exe#/dl.7z"
             }
         }
     }

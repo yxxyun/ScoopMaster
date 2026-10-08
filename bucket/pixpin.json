@@ -1,11 +1,28 @@
 {
-    "homepage": "https://pixpinapp.com/",
-    "description": "功能强大、简单易用的截图与贴图工具，帮你提高效率",
     "version": "3.5.5.1",
+    "description": "All-in-one screenshot tool with annotation, pinning, OCR and recording features",
+    "homepage": "https://pixpinapp.com/",
     "license": "Freeware",
-    "url": "https://down.pixpin.cn/PixPin_win_3.5.5.1.exe",
-    "hash": "5b88ce37a7c3dd244e2e48e0728f7fb03f108e770bf864ca68197a24e9a687e2",
-    "innosetup": true,
+    "url": "https://download.pixpinapp.com/PixPin_win_3.5.5.1.zip",
+    "hash": "1c6d81e7cc9791862553cceab5123e84d700b59efa2943aa17503fc81088106a",
+    "extract_dir": "PixPin",
+    "pre_install": [
+        "$config = \"$persist_dir\\Config\\PixPinConfig.json\"",
+        "if (!(Test-Path $config) -or !(Get-Item $config).Length) {",
+        "    ensure (Split-Path $config) | Out-Null",
+        "    $time = [int][DateTimeOffset]::UtcNow.ToUnixTimeSeconds()",
+        "    $content = [ordered]@{",
+        "        'System.Crash feedback.UploadCrashInformation' = @{ 't' = $time; 'v' = $false }",
+        "        'System.Update.UpgradeMode#s.win'              = @{ 't' = $time; 'v' = 0 }",
+        "    } | ConvertTo-Json -Compress",
+        "    [System.IO.File]::WriteAllText($config, $content, (New-Object System.Text.UTF8Encoding $false))",
+        "}",
+        "$storage = \"$dir\\LocalStorage.data\"",
+        "if (!(Test-Path $storage) -or !(Get-Item $storage).Length) {",
+        "    $content = \"[General]`nIsFirstRun=false`ndevID=$((New-Guid).Guid)\"",
+        "    [System.IO.File]::WriteAllText($storage, $content, (New-Object System.Text.UTF8Encoding $false))",
+        "}"
+    ],
     "shortcuts": [
         [
             "PixPin.exe",
@@ -18,10 +35,13 @@
         "History"
     ],
     "checkver": {
-        "url": "https://pixpin.cn/download/",
-        "regex": "down\\.pixpin\\.cn/PixPin_win_([\\d.]+)\\.exe"
+        "url": "https://upgrade.pixpin.cn/api/check/0/3.4.0.0/windows/x64/intl/zh-cn/.zip",
+        "jsonpath": "$[0].version"
     },
     "autoupdate": {
-        "url": "https://down.pixpin.cn/PixPin_win_$version.exe"
+        "url": "https://download.pixpinapp.com/PixPin_win_$version.zip",
+        "hash": {
+            "mode": "download"
+        }
     }
 }
