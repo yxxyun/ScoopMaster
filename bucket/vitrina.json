@@ -1,0 +1,62 @@
+{
+    "version": "1.1.0",
+    "description": "Vitrina: Min-style Firefox Developer Edition setup with a dedicated profile and shortcut. Requires firefox-developer.",
+    "homepage": "https://github.com/hrkcz001/vitrina",
+    "license": "MIT",
+    "notes": [
+        "Dedicated profile: persist\\vitrina\\profile.",
+        "First install copies (does not move) an existing firefox-developer profile.",
+        "Launch with the separate 'Firefox Dev (Vitrina)' Start Menu shortcut.",
+        "Uninstall keeps profile data; delete persist\\vitrina manually to remove it."
+    ],
+    "depends": "firefox-developer",
+    "url": "https://github.com/hrkcz001/vitrina/releases/download/v1.1.0-vitrina/vitrina.xpi",
+    "hash": "sha256:b9e0407ff6b3ca2752036b85079e1989e37df1a5cbf5594a739003c73e069224",
+    "pre_install": [
+        "$script:PersistProfile = \"$persist_dir\\profile\"",
+        "$script:SourceProfile = \"$appsdir\\..\\persist\\firefox-developer\\profile\"",
+        "if (!(Test-Path $script:PersistProfile)) {",
+        "    if (Test-Path \"$script:SourceProfile\\prefs.js\") {",
+        "        info 'Migrating (copying) profile from firefox-developer...'",
+        "        New-Item -ItemType Directory -Force -Path $script:PersistProfile | Out-Null",
+        "        robocopy $script:SourceProfile $script:PersistProfile /E /XF parent.lock /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "        Remove-Item (Join-Path $script:PersistProfile 'parent.lock') -Force -ErrorAction SilentlyContinue",
+        "    } else {",
+        "        New-Item -ItemType Directory -Force -Path $script:PersistProfile | Out-Null",
+        "    }",
+        "}"
+    ],
+    "installer": {
+        "script": [
+            "$ffExe = \"$appsdir\\firefox-developer\\current\\firefox.exe\"",
+            "if (!(Test-Path $ffExe)) { error 'firefox-developer not found.'; abort }",
+            "$extDir = Join-Path $script:PersistProfile 'extensions'",
+            "New-Item -ItemType Directory -Force -Path $extDir | Out-Null",
+            "Copy-Item \"$dir\\vitrina.xpi\" (Join-Path $extDir 'vitrina@local.xpi') -Force",
+            "$userJs = Join-Path $script:PersistProfile 'user.js'",
+            "if (!(Test-Path $userJs) -or !(Select-String -Path $userJs -Pattern 'xpinstall.signatures.required' -Quiet -ErrorAction SilentlyContinue)) {",
+            "    Add-Content $userJs 'user_pref(\"xpinstall.signatures.required\", false);' -Encoding ASCII",
+            "}",
+            "$lnkDir = Join-Path $env:APPDATA 'Microsoft\\Windows\\Start Menu\\Programs\\Scoop Apps'",
+            "New-Item -ItemType Directory -Force -Path $lnkDir | Out-Null",
+            "$ws = New-Object -ComObject WScript.Shell",
+            "$lnk = $ws.CreateShortcut((Join-Path $lnkDir 'Firefox Dev (Vitrina).lnk'))",
+            "$lnk.TargetPath = $ffExe",
+            "$lnk.Arguments = \"-profile `\"$script:PersistProfile`\"\"",
+            "$lnk.IconLocation = \"$ffExe,0\"",
+            "$lnk.WorkingDirectory = Split-Path $ffExe",
+            "$lnk.Save()"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$lnk = Join-Path $env:APPDATA 'Microsoft\\Windows\\Start Menu\\Programs\\Scoop Apps\\Firefox Dev (Vitrina).lnk'",
+            "if (Test-Path $lnk) { Remove-Item $lnk -Force }",
+            "$xpi = Join-Path $persist_dir 'profile\\extensions\\vitrina@local.xpi'",
+            "if (Test-Path $xpi) { Remove-Item $xpi -Force }",
+            "warn 'Profile data kept in persist\\vitrina\\profile.'"
+        ]
+    },
+    "checkver": { "github": "https://github.com/hrkcz001/vitrina" },
+    "autoupdate": { "url": "https://github.com/hrkcz001/vitrina/releases/download/v$version-vitrina/vitrina.xpi" }
+}
