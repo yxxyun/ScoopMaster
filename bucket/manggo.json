@@ -1,31 +1,43 @@
 {
-    "version": "1.0.2",
-    "description": "A translation assistant for academic literature reading and fast cross-language communication. | 面向学术文献阅读与跨语言快捷交流的翻译助手",
-    "homepage": "https://manggo.pylogmon.cn/",
-    "license": "Proprietary",
-    "architecture": {
-        "64bit": {
-            "url": "https://gitcode.com/Pylogmon/Manggo/releases/download/1.0.2/Manggo-1.0.2-Windows-AMD64.exe#/dl.7z",
-            "hash": "f85947229a3a48c953a703b08d5d84deef62bfe387d3af541aac9500560fae55"
-        }
-    },
-    "shortcuts": [
-        [
-            "bin\\Manggo.exe",
-            "Manggo"
-        ]
-    ],
-    "post_install": "Remove-Item \"$dir\\uninstall*\", \"$dir\\`$*\" -Force -Recurse -ErrorAction SilentlyContinue",
-    "notes": "Manggo is NOT portable.",
-    "checkver": {
-        "url": "https://manggo-update.pylogmon.cn",
-        "jsonpath": "$.version"
-    },
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://gitcode.com/Pylogmon/Manggo/releases/download/$version/Manggo-$version-Windows-AMD64.exe#/dl.7z"
-            }
-        }
-    }
+  "version": "1.0.2",
+  "description": "A desktop translation and screenshot OCR assistant for academic reading, web browsing, and cross-language communication.",
+  "homepage": "https://manggo.pylogmon.com/",
+  "license": "Proprietary",
+  "url": "https://gitcode.com/Pylogmon/Manggo/releases/download/1.0.2/Manggo-1.0.2-Windows-AMD64.exe#/dl.7z",
+  "hash": "f85947229a3a48c953a703b08d5d84deef62bfe387d3af541aac9500560fae55",
+  "post_install": [
+    "Remove-Item -Path \"$dir\\`$PLUGINSDIR\", \"$dir\\uninstall.exe\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "# 数据迁移",
+    "$link = \"$env:LocalAppData\\Manggo\\Manggo\"",
+    "$target = ensure \"$persist_dir\\Manggo\"",
+    "if (!(Get-Item $link -Force -ErrorAction SilentlyContinue).LinkType) {",
+    "    if ((Test-Path $link) -and (Get-ChildItem $target -Force -ErrorAction SilentlyContinue)) {",
+    "        Remove-Item -Path \"$link.original\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "        Move-Item -Force $link \"$link.original\"",
+    "    } elseif (Test-Path $link) {",
+    "        Remove-Item -Path $target -Force -Recurse -ErrorAction SilentlyContinue",
+    "        Move-Item -Path $link -Destination $target -Force",
+    "    }",
+    "    New-DirectoryJunction $link $target | Out-Null",
+    "}"
+  ],
+  "shortcuts": [
+    [
+      "bin\\Manggo.exe",
+      "Manggo"
+    ]
+  ],
+  "persist": "Manggo",
+  "post_uninstall": [
+    "# 删除数据软连接",
+    "$link = \"$env:LocalAppData\\Manggo\\Manggo\"",
+    "Remove-Item -Path $link -Force -Recurse -ErrorAction SilentlyContinue"
+  ],
+  "checkver": {
+    "url": "https://api.gitcode.com/api/v5/repos/Pylogmon/Manggo/releases/latest",
+    "jsonpath": "$.tag_name"
+  },
+  "autoupdate": {
+    "url": "https://gitcode.com/Pylogmon/Manggo/releases/download/$version/Manggo-$version-Windows-AMD64.exe#/dl.7z"
+  }
 }
