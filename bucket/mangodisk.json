@@ -1,39 +1,52 @@
 {
     "version": "1.1.7",
-    "description": "Disk cleanup, storage analysis, and system optimization for Windows.",
-    "homepage": "https://github.com/harry0703/MangoDisk",
-    "license": "GPL-3.0-only",
+    "description": "Safety-first disk cleaner and disk space analyzer for macOS and Windows, with duplicate file finder, large file cleanup, app uninstaller, and startup manager",
+    "homepage": "https://mangodisk.app/",
+    "license": {
+        "identifier": "GPL-3.0 license",
+        "url": "https://github.com/harry0703/MangoDisk#GPL-3.0-1-ov-file"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/harry0703/MangoDisk/releases/download/v1.1.7/MangoDisk-1.1.7-windows-portable.exe",
-            "hash": "cf794b8c08e95cd6e7af69b93bc21b425a0661aecd3e671298981dcf85e5a1b7"
+            "url": "https://github.com/harry0703/MangoDisk/releases/download/v1.1.7/MangoDisk-1.1.7-windows.exe#/dl.7z",
+            "hash": "27cfee9c525f1a9128f6f9d9c9575938763137015fb38dc9c49d26cd7926d0a8",
+            "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\uninst*\" -Force -Recurse"
         }
     },
-    "bin": "MangoDisk-1.1.7-windows-portable.exe",
+    "installer": {
+        "script": [
+            "# handle runtime cache",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:LOCALAPPDATA\\app.mangodisk.desktop\"",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\userdata\" -Target \"$env:APPDATA\\app.mangodisk.desktop\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:LOCALAPPDATA\\app.mangodisk.desktop\"",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\app.mangodisk.desktop\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "bin": "MangoDisk.exe",
     "shortcuts": [
         [
-            "MangoDisk-1.1.7-windows-portable.exe",
+            "MangoDisk.exe",
             "MangoDisk"
         ]
     ],
-    "checkver": "github",
+    "checkver": {
+        "github": "https://api.github.com/repos/harry0703/MangoDisk/releases",
+        "jp": "$[0].tag_name",
+        "regex": "v([\\d.]+)"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/harry0703/MangoDisk/releases/download/v$version/MangoDisk-$version-windows-portable.exe",
-                "hash": {
-                    "mode": "json",
-                    "url": "https://api.github.com/repos/harry0703/MangoDisk/releases/tags/v$version",
-                    "jp": "$.assets[?(@.name == '$basename')].digest"
-                }
+                "url": "https://github.com/harry0703/MangoDisk/releases/download/v$version/MangoDisk-$version-windows.exe#/dl.7z"
             }
-        },
-        "bin": "MangoDisk-$version-windows-portable.exe",
-        "shortcuts": [
-            [
-                "MangoDisk-$version-windows-portable.exe",
-                "MangoDisk"
-            ]
-        ]
+        }
     }
 }
