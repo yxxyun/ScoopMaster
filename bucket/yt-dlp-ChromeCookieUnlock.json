@@ -7,27 +7,45 @@
     "hash": "sha256:3AD12DDC69B10B411287990FB3D4541417C2B3EFA7C72511F06F84E4C36DCFF3",
     "installer": {
         "script": [
-            "$pluginRoot = \"$env:APPDATA\\yt-dlp\\plugins\\yt-dlp-ChromeCookieUnlock\"",
+            "$pluginRoot = \"$env:USERPROFILE\\.config\\yt-dlp\\plugins\\yt-dlp-ChromeCookieUnlock\"",
             "New-Item -ItemType Directory -Force -Path \"$pluginRoot\" | Out-Null",
-            "Copy-Item \"$dir\\*\" \"$pluginRoot\" -Recurse -Force"
+            "Copy-Item \"$dir\\*\" \"$pluginRoot\" -Recurse -Force",
+            "",
+            "$configDir = \"$env:USERPROFILE\\.config\\yt-dlp\"",
+            "$configFile = \"$configDir\\config\"",
+            "New-Item -ItemType Directory -Force -Path \"$configDir\" | Out-Null",
+            "$configContent = \"--impersonate chrome`n--cookies-from-browser chrome\"",
+            "Set-Content -Path \"$configFile\" -Value $configContent -Encoding UTF8 -Force",
+            "",
+            "$altConfig1 = \"$env:USERPROFILE\\yt-dlp.conf\"",
+            "$altConfig2 = \"$env:APPDATA\\yt-dlp\\config\"",
+            "if (Test-Path $altConfig1) { Write-Host \"WARNING: Existing config found at $altConfig1 (will be ignored)\" -ForegroundColor Red }",
+            "if (Test-Path $altConfig2) { Write-Host \"WARNING: Existing config found at $altConfig2 (will be ignored)\" -ForegroundColor Red }"
         ]
     },
     "uninstaller": {
         "script": [
-            "Remove-Item \"$env:APPDATA\\yt-dlp\\plugins\\yt-dlp-ChromeCookieUnlock\" -Recurse -Force -ErrorAction SilentlyContinue"
+            "Remove-Item \"$env:USERPROFILE\\.config\\yt-dlp\\plugins\\yt-dlp-ChromeCookieUnlock\" -Recurse -Force -ErrorAction SilentlyContinue",
+            "Remove-Item \"$env:USERPROFILE\\.config\\yt-dlp\\config\" -Force -ErrorAction SilentlyContinue"
         ]
     },
     "notes": [
-        "食用方法：yt-dlp --cookies-from-browser chrome，",
-        "其他基于 yt-dlp 的 GUI 工具同样有效，",
-        "本清单定义的安装过程与官方推荐方式一致 https://github.com/yt-dlp/yt-dlp#installing-plugins，",
-        "更多信息参考官网 https://github.com/seproDev/yt-dlp-ChromeCookieUnlock。",
-        "# 编辑 Profile",
-        "notepad $PROFILE",
-        "# 添加以下函数",
-        "function yt-dlp {",
-        "    yt-dlp --cookies-from-browser chrome $args",
-        "}"
+        "本清单会自动安装插件并创建配置文件 ~/.config/yt-dlp/config，内容：",
+        "--impersonate chrome",
+        "--cookies-from-browser chrome",
+        "",
+        "yt-dlp 在 Windows 上按优先级查找配置文件：",
+        "1. 便携式配置（exe 旁边的 yt-dlp.conf）",
+        "2. ~/.config/yt-dlp/config ← 本清单使用此位置",
+        "3. ~/yt-dlp.conf ← 将忽略此配置",
+        "4. %APPDATA%/yt-dlp/config ← 将忽略此配置",
+        "",
+        "由于本清单使用优先级 #2，后续的配置文件（#3、#4）将不会被读取。",
+        "如果安装时检测到已存在的配置文件，会显示警告提示，请检查并合并配置。",
+        "",
+        "更多信息：",
+        "插件安装位置：~\\.config\\yt-dlp\\plugins\\yt-dlp-ChromeCookieUnlock",
+        "插件项目地址：https://github.com/seproDev/yt-dlp-ChromeCookieUnlock"
     ],
     "checkver": "v([\\d.]+)",
     "autoupdate": {
