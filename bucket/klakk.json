@@ -1,0 +1,69 @@
+{
+    "version": "1.4.1",
+    "description": "Keyboard sound playback while typing in other Windows apps; 14 sound packs and a three-day trial.",
+    "homepage": "https://tryklakk.com/en/windows/",
+    "license": {
+        "identifier": "Shareware",
+        "url": "https://tryklakk.com/en/terms/"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://downloads.tryklakk.com/Klakk-1.4.1-Windows-Setup.exe",
+            "hash": "7a598cc3d3ea7236f377d7281a68a25a799c4f1772de9ce2a857d4c7658df454"
+        },
+        "arm64": {
+            "url": "https://downloads.tryklakk.com/Klakk-1.4.1-Windows-Setup.exe",
+            "hash": "7a598cc3d3ea7236f377d7281a68a25a799c4f1772de9ce2a857d4c7658df454"
+        }
+    },
+    "pre_install": [
+        "if ($global) { throw 'Klakk supports per-user Scoop installation only. Omit --global.' }",
+        "$native = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }",
+        "$expected = if ($architecture -eq 'arm64') { 'ARM64' } else { 'AMD64' }",
+        "if ($native -ne $expected) { throw 'Use the native architecture. Do not override Scoop architecture for this universal installer.' }",
+        "$os = Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'",
+        "if ($os.CurrentMajorVersionNumber -lt 10) { throw 'Klakk requires Windows 10 or later.' }",
+        "$keys = @('HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{398236E7-8E2E-4998-934F-5E54AFA110E1}_is1', 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{398236E7-8E2E-4998-934F-5E54AFA110E1}_is1', 'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{398236E7-8E2E-4998-934F-5E54AFA110E1}_is1')",
+        "if (@($keys | Where-Object { Test-Path -LiteralPath $_ }).Count) { throw 'Another Klakk installation is registered. Uninstall it through its existing installation method before installing with Scoop.' }",
+        "Write-Warning 'The official Klakk 1.4.1 installer is unsigned. SHA-256 verifies the release file; it does not provide publisher signing.'"
+    ],
+    "installer": {
+        "args": [
+            "/VERYSILENT",
+            "/SUPPRESSMSGBOXES",
+            "/NORESTART",
+            "/SP-",
+            "/NOICONS",
+            "/DIR=\"$dir\""
+        ]
+    },
+    "shortcuts": [
+        ["Klakk.Windows.exe", "Klakk (Scoop)"]
+    ],
+    "pre_uninstall": [
+        "$key = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{398236E7-8E2E-4998-934F-5E54AFA110E1}_is1'",
+        "if (Test-Path -LiteralPath $key) {",
+        "    $entry = Get-ItemProperty -LiteralPath $key",
+        "    $expected = [IO.Path]::GetFullPath((Join-Path $dir 'unins000.exe'))",
+        "    if ($entry.UninstallString.Trim('\"') -ne $expected) { throw 'The registered Klakk belongs to another installation. Scoop will not uninstall it. Resolve the other installation first.' }",
+        "} elseif (Test-Path -LiteralPath (Join-Path $dir 'unins000.exe')) {",
+        "    throw 'Klakk registration is missing. Scoop will not invoke an uninstaller with unknown ownership.'",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "$exe = Join-Path $dir 'unins000.exe'",
+            "if (Test-Path -LiteralPath $exe) {",
+            "    $process = Start-Process -FilePath $exe -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru",
+            "    if ($process.ExitCode -ne 0) { throw \"Klakk uninstall failed: $($process.ExitCode)\" }",
+            "}"
+        ]
+    },
+    "notes": [
+        "Publisher-maintained Scoop bucket; not a Scoop main/Extras catalog entry.",
+        "Website Windows edition 1.4.1: native x64 or ARM64, Windows 10/11.",
+        "The trial starts at first launch and lasts three days. Continued use is US$4.49 once for Windows plus applicable tax.",
+        "Mac website and Mac App Store purchases are separate. Settings and license data in LocalAppData\\Klakk are retained on uninstall.",
+        "Launch Klakk (Scoop) from Start. Exit Klakk before Scoop update or uninstall, and use one installation method at a time."
+    ]
+}

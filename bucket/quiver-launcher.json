@@ -1,48 +1,28 @@
 {
     "version": "3.5.0",
-    "description": "A modern launcher for downloading, installing, and running apps from GitHub and GitLab releases, with a personal library, community catalog subscriptions, and mod management support.",
-    "homepage": "https://github.com/tgeorgiadis/quiver-launcher",
+    "description": "A modern launcher for downloading, installing, and running apps from GitHub and GitLab releases.",
+    "homepage": "https://quiverlauncher.com/",
     "license": "MIT",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/tgeorgiadis/quiver-launcher/releases/download/v3.5.0/QuiverLauncher-win-Portable.zip",
-            "hash": "e4e21d1fd356a4db3b65f554278989384339bb57e331bda1a40b97b12170baa3"
-        }
-    },
+    "url": "https://github.com/tgeorgiadis/quiver-launcher/releases/download/v3.5.0/QuiverLauncher-win-Portable.zip",
+    "hash": "e4e21d1fd356a4db3b65f554278989384339bb57e331bda1a40b97b12170baa3",
     "pre_install": [
-        "# Scoop's persist step creates a FOLDER for any persisted path that doesn't already",
-        "# exist as a file in the extracted app, which crashes Quiver Launcher on first run.",
-        "# Stub these out as empty files first so persist_data treats them as files.",
-        "foreach ($f in @('apps.json', 'settings.json', 'announcement.json')) {",
-        "    $p = \"$dir\\$f\"",
-        "    if (!(Test-Path $p)) {",
-        "        '{}' | Out-File -FilePath $p -Encoding utf8 -NoNewline",
-        "    }",
-        "}"
+        "ensure \"$persist_dir\" | Out-Null",
+        "Get-ChildItem \"$persist_dir\\*\" -Include 'apps.json', 'settings.json' | Copy-Item -Destination \"$dir\" -ErrorAction SilentlyContinue"
     ],
-    "persist": [
-        "apps.json",
-        "settings.json",
-        "announcement.json",
-        "Apps",
-        "Cache",
-        "Backups"
-    ],
-    "bin": "QuiverLauncher.exe",
     "shortcuts": [
         [
             "QuiverLauncher.exe",
             "Quiver Launcher"
         ]
     ],
+    "persist": "Apps",
+    "pre_uninstall": "Get-ChildItem \"$dir\\*\" -Include 'apps.json', 'settings.json' | Copy-Item -Destination \"$persist_dir\" -ErrorAction SilentlyContinue -Force",
     "checkver": {
-        "github": "https://github.com/tgeorgiadis/quiver-launcher"
+        "github": "https://api.github.com/repos/tgeorgiadis/quiver-launcher/releases",
+        "jsonpath": "$[0].tag_name",
+        "regex": "v(.*)"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/tgeorgiadis/quiver-launcher/releases/download/v$version/QuiverLauncher-win-Portable.zip"
-            }
-        }
+        "url": "https://github.com/tgeorgiadis/quiver-launcher/releases/download/v$version/QuiverLauncher-win-Portable.zip"
     }
 }

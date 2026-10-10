@@ -1,37 +1,47 @@
 {
     "version": "3.5.5.1",
-    "description": "功能强大使用简单的截图/贴图工具，帮助你提高效率",
+    "description": "All-in-one screenshot tool with annotation, pinning, OCR and recording features",
     "homepage": "https://pixpinapp.com/",
     "license": "Freeware",
-    "architecture": {
-        "64bit": {
-            "url": "https://download.pixpin.cn/PixPin_win_3.5.5.1.zip",
-            "hash": "1c6d81e7cc9791862553cceab5123e84d700b59efa2943aa17503fc81088106a"
-        }
-    },
+    "url": "https://download.pixpinapp.com/PixPin_win_3.5.5.1.zip",
+    "hash": "1c6d81e7cc9791862553cceab5123e84d700b59efa2943aa17503fc81088106a",
     "extract_dir": "PixPin",
+    "pre_install": [
+        "$config = \"$persist_dir\\Config\\PixPinConfig.json\"",
+        "if (!(Test-Path $config) -or !(Get-Item $config).Length) {",
+        "    ensure (Split-Path $config) | Out-Null",
+        "    $time = [int][DateTimeOffset]::UtcNow.ToUnixTimeSeconds()",
+        "    $content = [ordered]@{",
+        "        'System.Crash feedback.UploadCrashInformation' = @{ 't' = $time; 'v' = $false }",
+        "        'System.Update.UpgradeMode#s.win'              = @{ 't' = $time; 'v' = 0 }",
+        "    } | ConvertTo-Json -Compress",
+        "    [System.IO.File]::WriteAllText($config, $content, (New-Object System.Text.UTF8Encoding $false))",
+        "}",
+        "$storage = \"$dir\\LocalStorage.data\"",
+        "if (!(Test-Path $storage) -or !(Get-Item $storage).Length) {",
+        "    $content = \"[General]`nIsFirstRun=false`ndevID=$((New-Guid).Guid)\"",
+        "    [System.IO.File]::WriteAllText($storage, $content, (New-Object System.Text.UTF8Encoding $false))",
+        "}"
+    ],
     "shortcuts": [
         [
             "PixPin.exe",
             "PixPin"
         ]
     ],
-    "post_install": "if (!(Test-Path \"$dir\\Config\\config.json\")) { Set-Content -Encoding ASCII -Path \"$dir\\Config\\config.json\" -Value '{\"System.Update.AutoCheckUpdate\":{\"subConf\":{\"checkBeta\":false},\"value\":false}}' }",
     "persist": [
-        "History",
-        "Data",
         "Config",
-        "OcrModel"
+        "Data",
+        "History"
     ],
     "checkver": {
-        "url": "https://upgrade.pixpin.cn/api/check/0/3.2.3.1/windows/x64/intl/zh-cn/.zip",
-        "jsonpath": "$.[0].version"
+        "url": "https://upgrade.pixpin.cn/api/check/0/3.4.0.0/windows/x64/intl/zh-cn/.zip",
+        "jsonpath": "$[0].version"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://download.pixpin.cn/PixPin_win_$version.zip"
-            }
+        "url": "https://download.pixpinapp.com/PixPin_win_$version.zip",
+        "hash": {
+            "mode": "download"
         }
     }
 }
