@@ -1,61 +1,21 @@
 {
+    "homepage": "https://www.ntwind.com/software/visual-subst.html",
+    "license": "freeware",
     "version": "6.1",
-    "description": "Mount folders as virtual drives",
-    "homepage": "https://www.ntwind.com/software/vsubst.html",
-    "license": "Proprietary",
-    "url": "https://www.ntwind.com/download/VSubst_6.1-setup.exe",
+    "url": "https://www.ntwind.com/download/VSubst_6.1-setup.exe#dl.7z",
     "hash": "34a1b4ad8f04d55a1de6c9e1ea75f50b9820c16336a0c7bf57bcf5aaa889a83a",
-    "depends": "main/7zip",
-    "installer": {
-        "script": [
-            "7z x \"$dir\\$fname\" -o\"$dir\" -aou -y | Out-Null",
-            "Remove-Item \"$dir\\$fname\"",
-            "Remove-Item \"$dir\\*PLUGINSDIR\" -Recurse -Force -ErrorAction SilentlyContinue",
-            "Remove-Item \"$dir\\*.nsis\" -ErrorAction SilentlyContinue",
-            "Remove-Item \"$dir\\uninst.exe\" -ErrorAction SilentlyContinue",
-            "$machine = @{}",
-            "@(\"VSubst.exe\", \"VSubst_1.exe\") | Where-Object { Test-Path \"$dir\\$_\" } | ForEach-Object { $fs = [IO.File]::OpenRead(\"$dir\\$_\"); $br = New-Object IO.BinaryReader($fs); $fs.Position = 0x3C; $peOffset = $br.ReadInt32(); $fs.Position = $peOffset + 4; $machine[$_] = $br.ReadUInt16(); $br.Close(); $fs.Close() }",
-            "$x64exe = ($machine.GetEnumerator() | Where-Object { $_.Value -eq 0x8664 }).Name",
-            "$x86exe = ($machine.GetEnumerator() | Where-Object { $_.Value -eq 0x014c }).Name",
-            "Rename-Item \"$dir\\$x64exe\" \"VSubst64.exe\"",
-            "Rename-Item \"$dir\\$x86exe\" \"VSubst32.exe\""
+    "pre_install": "if (!(Test-Path \"$persist_dir\\VSubst.ini\")) { New-Item \"$dir\\VSubst.ini\" -ItemType File | Out-Null }",
+    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$TEMP\", \"$dir\\`$2.nsis\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "bin": "VSubst.exe",
+    "shortcuts": [
+        [
+            "VSubst.exe",
+            "VSubst"
         ]
-    },
-    "architecture": {
-        "64bit": {
-            "bin": [
-                [
-                    "VSubst64.exe",
-                    "vsubst"
-                ]
-            ],
-            "shortcuts": [
-                [
-                    "VSubst64.exe",
-                    "Visual Subst"
-                ]
-            ]
-        },
-        "32bit": {
-            "bin": [
-                [
-                    "VSubst32.exe",
-                    "vsubst"
-                ]
-            ],
-            "shortcuts": [
-                [
-                    "VSubst32.exe",
-                    "Visual Subst"
-                ]
-            ]
-        }
-    },
-    "checkver": {
-        "url": "https://www.ntwind.com/download-all.html",
-        "regex": "VSubst_([\\d.]+)-setup\\.exe"
-    },
+    ],
+    "persist": "VSubst.ini",
+    "checkver": "VSubst_([\\d.]+)-setup.exe",
     "autoupdate": {
-        "url": "https://www.ntwind.com/download/VSubst_$version-setup.exe"
+        "url": "https://www.ntwind.com/download/VSubst_$version-setup.exe#dl.7z"
     }
 }
