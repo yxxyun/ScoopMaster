@@ -1,0 +1,35 @@
+{
+    "version": "1.19.0",
+    "description": "Locally installed LLM frontend for chatting with AI models (with local CLIP Skip = 0 patch)",
+    "homepage": "https://github.com/SillyTavern/SillyTavern",
+    "license": "AGPL-3.0-only",
+    "depends": "nodejs-lts",
+    "url": "https://github.com/SillyTavern/SillyTavern/archive/refs/tags/1.19.0.zip",
+    "hash": "19f34009d55d4e2dd394ce9d6dd6e5d1b0e5b9e5d57df8b5aa325a44c18969be",
+    "extract_dir": "SillyTavern-1.19.0",
+    "pre_install": [
+        "New-Item -ItemType Directory -Force \"$persist_dir\" | Out-Null",
+        "Set-Content \"$dir\\sillytavern.cmd\" -Encoding Ascii -Value @('@echo off', 'set NODE_ENV=production', ('node \"%~dp0server.js\" --configPath \"{0}\\config.yaml\" --dataRoot \"{0}\\data\" %*' -f $persist_dir))",
+        "# --- local patch: allow CLIP Skip = 0 (0 = do not send clip_skip) ---",
+        "$f = \"$dir\\public\\scripts\\extensions\\stable-diffusion\\index.js\"",
+        "$t = [IO.File]::ReadAllText($f)",
+        "$edits = @(@('clip_skip_min: 1,','clip_skip_min: 0,'),@('clip_skip: extension_settings.sd.clip_skip,','clip_skip: extension_settings.sd.clip_skip || undefined,'),@('CLIP_stop_at_last_layers: extension_settings.sd.clip_skip,','CLIP_stop_at_last_layers: extension_settings.sd.clip_skip || undefined,'),@('if (Number.isFinite(extension_settings.sd.clip_skip)) {','if (Number.isFinite(extension_settings.sd.clip_skip) && extension_settings.sd.clip_skip > 0) {'),@('isNaN(extension_settings.sd.clip_skip) ? -1 : -extension_settings.sd.clip_skip;','(isNaN(extension_settings.sd.clip_skip) || extension_settings.sd.clip_skip < 1) ? -1 : -extension_settings.sd.clip_skip;'))",
+        "foreach ($e in $edits) { if ($t.Contains($e[0])) { $t = $t.Replace($e[0], $e[1]) } else { Write-Warning \"clip-skip patch: pattern not found (SillyTavern code changed?): $($e[0])\" } }",
+        "[IO.File]::WriteAllText($f, $t, (New-Object Text.UTF8Encoding($false)))",
+        "Push-Location $dir",
+        "$env:NODE_ENV = 'production'",
+        "npm install --no-save --no-audit --no-fund --loglevel=error --no-progress --omit=dev --ignore-scripts",
+        "if ($LASTEXITCODE -ne 0) { throw 'npm install failed' }",
+        "Pop-Location"
+    ],
+    "bin": "sillytavern.cmd",
+    "persist": [
+        "plugins",
+        "public\\scripts\\extensions\\third-party"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/SillyTavern/SillyTavern/archive/refs/tags/$version.zip",
+        "extract_dir": "SillyTavern-$version"
+    }
+}
