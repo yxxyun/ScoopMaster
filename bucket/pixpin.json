@@ -1,28 +1,18 @@
 {
     "version": "3.5.5.1",
-    "description": "All-in-one screenshot tool with annotation, pinning, OCR and recording features",
-    "homepage": "https://pixpinapp.com/",
-    "license": "Freeware",
-    "url": "https://download.pixpinapp.com/PixPin_win_3.5.5.1.zip",
-    "hash": "1c6d81e7cc9791862553cceab5123e84d700b59efa2943aa17503fc81088106a",
+    "description": "Screenshots, screen recording, OCR tool.",
+    "homepage": "https://pixpin.cn/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://pixpin.cn/docs/policy/tos_zh_CN"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://down.pixpin.cn/PixPin_win_3.5.5.1.zip#/dl.zip",
+            "hash": "1c6d81e7cc9791862553cceab5123e84d700b59efa2943aa17503fc81088106a"
+        }
+    },
     "extract_dir": "PixPin",
-    "pre_install": [
-        "$config = \"$persist_dir\\Config\\PixPinConfig.json\"",
-        "if (!(Test-Path $config) -or !(Get-Item $config).Length) {",
-        "    ensure (Split-Path $config) | Out-Null",
-        "    $time = [int][DateTimeOffset]::UtcNow.ToUnixTimeSeconds()",
-        "    $content = [ordered]@{",
-        "        'System.Crash feedback.UploadCrashInformation' = @{ 't' = $time; 'v' = $false }",
-        "        'System.Update.UpgradeMode#s.win'              = @{ 't' = $time; 'v' = 0 }",
-        "    } | ConvertTo-Json -Compress",
-        "    [System.IO.File]::WriteAllText($config, $content, (New-Object System.Text.UTF8Encoding $false))",
-        "}",
-        "$storage = \"$dir\\LocalStorage.data\"",
-        "if (!(Test-Path $storage) -or !(Get-Item $storage).Length) {",
-        "    $content = \"[General]`nIsFirstRun=false`ndevID=$((New-Guid).Guid)\"",
-        "    [System.IO.File]::WriteAllText($storage, $content, (New-Object System.Text.UTF8Encoding $false))",
-        "}"
-    ],
     "shortcuts": [
         [
             "PixPin.exe",
@@ -32,16 +22,27 @@
     "persist": [
         "Config",
         "Data",
-        "History"
+        "History",
+        "OcrModel"
+    ],
+    "post_install": [
+        "$configPath = \"$persist_dir\\Config\\PixPinConfig.json\"",
+        "if (Test-Path $configPath) {",
+        "    return",
+        "}",
+        "$timestamp = [DateTimeOffset]::Now.ToUnixTimeSeconds()",
+        "$content = '{\"System.Update.UpgradeMode#s.win\":{\"t\":' + $timestamp + ',\"v\":0}}'",
+        "$content | Set-Content -Path $configPath -Encoding UTF8"
     ],
     "checkver": {
-        "url": "https://upgrade.pixpin.cn/api/check/0/3.4.0.0/windows/x64/intl/zh-cn/.zip",
-        "jsonpath": "$[0].version"
+        "url": "https://pixpin.cn/download/",
+        "regex": "PixPin_win_(\\d+(?:\\.\\d+)*)"
     },
     "autoupdate": {
-        "url": "https://download.pixpinapp.com/PixPin_win_$version.zip",
-        "hash": {
-            "mode": "download"
+        "architecture": {
+            "64bit": {
+                "url": "https://down.pixpin.cn/PixPin_win_$version.zip#/dl.zip"
+            }
         }
     }
 }
