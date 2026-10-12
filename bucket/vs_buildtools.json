@@ -1,32 +1,97 @@
 {
-    "version": "17.13.6",
-    "description": "Microsoft Visual Studio Build Tools 2022.",
-    "homepage": "https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022",
-    "license": "https://visualstudio.microsoft.com/license-terms/mlt031519/",
-    "url": "https://aka.ms/vs/17/release/vs_BuildTools.exe",
-    "hash": "662cfafc84e8b026c2a0c57850d7e0ba3e736d5d774520401a63f55b9fdd7ff9",
+    "##": "首次安装显式指定 VS 2026 Stable 通道，产品/缓存/共享目录都在 persist\\vs_buildtools 下；已存在实例走 update；卸载按 --installPath 只针对本实例。",
+    "version": "18.10.3",
+    "description": "Visual Studio Build Tools enable a streamlined build-lab experience for getting the required Visual C++ tools without the additional overhead of installing the Visual Studio IDE",
+    "homepage": "https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2026",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://visualstudio.microsoft.com/license-terms/"
+    },
+    "notes": [
+        "本清单把 Visual Studio Build Tools 2026 安装到 Scoop 持久化目录 $persist_dir\\VS：升级清单、卸载（不带 -p）都不会删除它，重装直接复用。",
+        "产品跟随 VS 2026 Stable 通道更新：清单记录的是固定版本引导程序，scoop update 会调用安装程序的 update 就地升级，实际版本可能比 scoop 显示的更新。",
+        "安装、更新和卸载都需要管理员权限（会弹出 UAC）。安装完成后建议重启系统。",
+        "安装/缓存/共享目录都在 $persist_dir 下；但 Windows 11 SDK 组件按微软设计仍装到 C:\\Program Files (x86)\\Windows Kits\\10（不受 --path shared 影响，约数 GB）。",
+        "PowerShell 中用 vcvarsall 导入 MSVC 编译环境（如 vcvarsall x64）；cmd 中可用 call VsDevCmd.bat 或 call vcvarsall.bat，三者都已在 PATH 中。",
+        "卸载通过 Visual Studio 安装程序只卸载本实例（--installPath 指向 $persist_dir\\VS），不影响机器上其他 Visual Studio 安装；persist 下的 VS/cache/shared 目录卸载后保留，如需一并删除用 scoop uninstall vs_buildtools -p。"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://download.visualstudio.microsoft.com/download/pr/e5f740e0-92f9-49d7-ab3b-5d17b84108fd/283d526008bf3ac56ec2c6aeb3102b8ca68b9af75643c8f5d0ee58060a1886bb/vs_BuildTools.exe",
+            "hash": "283d526008bf3ac56ec2c6aeb3102b8ca68b9af75643c8f5d0ee58060a1886bb"
+        }
+    },
+    "persist": "VS",
+    "pre_install": [
+        "$lines = @(",
+        "    'param(',",
+        "    '    [ValidateSet(\"x86\", \"x64\", \"x86_x64\", \"x64_x86\", \"arm64\", \"x64_arm64\", \"arm64_x64\")]',",
+        "    '    [string]$ArchSpec = \"x64\"',",
+        "    ')',",
+        "    '',",
+        "    '$vcvarsall = Join-Path $PSScriptRoot \"VS\\VC\\Auxiliary\\Build\\vcvarsall.bat\"',",
+        "    'if (-not (Test-Path $vcvarsall)) {',",
+        "    '    Write-Error \"Visual Studio Build Tools are not installed ($vcvarsall is missing). Run scoop install vs_buildtools first.\"',",
+        "    '    exit 1',",
+        "    '}',",
+        "    '$envLines = & $env:ComSpec /c \"`\"$vcvarsall`\" $ArchSpec >nul 2>&1 && set\"',",
+        "    'foreach ($line in $envLines) {',",
+        "    '    if ($line -match \"^([^=]+)=(.*)$\") {',",
+        "    '        Set-Item -Path \"Env:$($matches[1])\" -Value $matches[2]',",
+        "    '    }',",
+        "    '}',",
+        "    'Write-Host \"Visual Studio Build Tools environment variables set for $ArchSpec.\" -ForegroundColor Green'",
+        ")",
+        "Set-Content -Path \"$dir\\vcvarsall.ps1\" -Value $lines -Encoding Ascii"
+    ],
     "installer": {
-        "script": "Invoke-ExternalCommand -FilePath \"$dir\\vs_buildtools.exe\" -Args @('--installPath', \"$dir\\vs\\\", '--quiet', '--norestart', '--wait', '--add', 'Microsoft.VisualStudio.Workload.VCTools', '--add', 'Microsoft.VisualStudio.Component.VC.ATL', '--add', 'Microsoft.VisualStudio.Workload.MSBuildTools', '--includeRecommended') -RunAs | Out-Null"
+        "script": [
+            "$bootstrapper = \"$dir\\vs_BuildTools.exe\"",
+            "if (!(Test-Path $bootstrapper -PathType Leaf)) { abort \"Visual Studio bootstrapper not found at $bootstrapper\" }",
+            "$installPath = \"$persist_dir\\VS\"",
+            "if ((Test-Path \"$installPath\\Common7\\Tools\") -or (Test-Path \"$installPath\\MSBuild\\Current\")) {",
+            "    # 该实例已存在：update 就地更新（跟随安装时设定的 VS 2026 Stable 通道，不会降级）",
+            "    $arguments = @('update', '--installPath', $installPath, '--quiet', '--wait', '--norestart')",
+            "} else {",
+            "    # 首次安装：显式指定 Stable 通道；安装/缓存/共享目录都放 persist 下，不占用系统盘",
+            "    $arguments = @('--channelId', 'VisualStudio.18.Release', '--channelUri', 'https://aka.ms/vs/stable/channel',",
+            "        '--path', \"install=$installPath\", '--path', \"cache=$persist_dir\\cache\", '--path', \"shared=$persist_dir\\shared\",",
+            "        '--quiet', '--wait', '--norestart',",
+            "        '--add', 'Microsoft.VisualStudio.Workload.VCTools', '--add', 'Microsoft.VisualStudio.Component.VC.Tools.x86.x64', '--add', 'Microsoft.VisualStudio.Component.Windows11SDK.26100')",
+            "}",
+            "if (!(Invoke-ExternalCommand -FilePath $bootstrapper -ArgumentList $arguments -Activity 'Running Visual Studio Build Tools installer...' -RunAs -ContinueExitCodes @{ 1641 = 'A restart was initiated to complete the installation.'; 3010 = 'A restart is required to complete the installation.' })) {",
+            "    abort 'Visual Studio Build Tools installation failed.'",
+            "}"
+        ]
     },
-    "env_add_path": [
-        "vs\\Common7\\Tools",
-        "vs\\Common7\\IDE",
-        "vs\\MSBuild\\Current\\bin"
-    ],
-    "bin": [
-        "vs\\Common7\\Tools\\LaunchDevCmd.bat",
-        "vs\\Common7\\Tools\\VsDevCmd.bat",
-        "vs\\Common7\\Tools\\VsMSBuildCmd.bat",
-        "vs\\Common7\\Tools\\Launch-VsDevShell.ps1"
-    ],
     "uninstaller": {
-        "script": "Invoke-ExternalCommand -FilePath \"$dir\\vs_buildtools.exe\" -Args @('uninstall', '--installPath', \"$dir\\vs\\\", '--quiet', '--norestart', '--wait') -RunAs | Out-Null"
+        "script": [
+            "$bootstrapper = \"$dir\\vs_BuildTools.exe\"",
+            "$installPath = \"$persist_dir\\VS\"",
+            "if (!((Test-Path \"$installPath\\Common7\\Tools\") -or (Test-Path \"$installPath\\MSBuild\\Current\"))) {",
+            "    warn \"No Visual Studio Build Tools instance found at $installPath; skipping uninstall.\"",
+            "} elseif (!(Test-Path $bootstrapper -PathType Leaf)) {",
+            "    warn \"Visual Studio bootstrapper not found at $bootstrapper; uninstall 'Visual Studio Build Tools 2026' manually from Apps & features.\"",
+            "} elseif (!(Invoke-ExternalCommand -FilePath $bootstrapper -ArgumentList @('uninstall', '--installPath', $installPath, '--quiet', '--wait', '--norestart') -Activity 'Uninstalling Visual Studio Build Tools...' -RunAs -ContinueExitCodes @{ 1641 = 'A restart was initiated to complete the uninstallation.'; 3010 = 'A restart is required to complete the uninstallation.' })) {",
+            "    abort 'Visual Studio Build Tools uninstallation failed.'",
+            "}"
+        ]
     },
+    "bin": "vcvarsall.ps1",
+    "env_add_path": [
+        "VS\\Common7\\Tools",
+        "VS\\MSBuild\\Current\\Bin",
+        "VS\\VC\\Auxiliary\\Build"
+    ],
     "checkver": {
-        "url": "https://learn.microsoft.com/en-us/visualstudio/releases/2022/release-notes",
-        "regex": ">Version ([\\d.]+)<"
+        "url": "https://learn.microsoft.com/en-us/visualstudio/releases/2026/release-history?accept=text/markdown",
+        "regex": "(?s)\\|\\s+Stable\\s*\\|\\s*(?<version>\\d+(?:\\.\\d+)+)\\s*\\|.*?\\[Build Tools\\]\\(https://download\\.visualstudio\\.microsoft\\.com/download/pr/(?<pr>[0-9a-fA-F-]+)/(?<sha>[0-9a-fA-F]{64})/vs_BuildTools\\.exe\\)"
     },
     "autoupdate": {
-        "url": "https://aka.ms/vs/17/release/vs_BuildTools.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://download.visualstudio.microsoft.com/download/pr/$matchPr/$matchSha/vs_BuildTools.exe"
+            }
+        }
     }
 }
