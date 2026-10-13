@@ -1,0 +1,144 @@
+{
+    "version": "0.50.2",
+    "description": "Backup mirror of mVolt+, the NVIDIA GPU tuning and monitoring tool with voltage, clock, power and fan control, V/F curves, live telemetry and saved profiles.",
+    "homepage": "https://github.com/b00nz/mVolt",
+    "license": "Freeware",
+    "notes": [
+        "Same files as 'mvolt', downloaded from the AmirulAndalib/mvolt-scoop backup mirror instead of the upstream release. Install mvolt or mvolt-mirror, not both.",
+        "Tuning needs administrator rights. Profiles and settings live in %LOCALAPPDATA%\\mVolt+ and are kept on update and uninstall.",
+        "If you opened mVolt+ from its Scoop shortcut, exit it from the tray before updating. A copy started by Start with Windows is updated for you after one administrator prompt."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/AmirulAndalib/mvolt-scoop/releases/download/v0.50.2/mVolt+.exe",
+            "hash": "d54c92501606ada232caaa74e1ca0c622776fe26ecdf15be94f745cceec08ec1"
+        }
+    },
+    "bin": [
+        [
+            "mVolt+.exe",
+            "mvolt"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "mVolt+.exe",
+            "mVolt+ (mirror)"
+        ]
+    ],
+    "post_install": [
+        "$sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value",
+        "$root = Join-Path (Join-Path $env:ProgramFiles 'mVolt+') $sid",
+        "$new = Join-Path $dir 'mVolt+.exe'",
+        "$copies = @(Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue | ForEach-Object { Join-Path $_.FullName 'mVolt+.exe' } | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf })",
+        "# Compare against the FileVersion inside the new exe, not the manifest version, so a tag that",
+        "# differs from the embedded version can never cause a prompt on every install.",
+        "$target = $version",
+        "try { $target = [string]([version](Get-Item -LiteralPath $new).VersionInfo.FileVersion) } catch { }",
+        "$stale = @($copies | Where-Object { try { [version](Get-Item -LiteralPath $_).VersionInfo.FileVersion -lt [version]$target } catch { $false } })",
+        "if ($stale.Count -gt 0) {",
+        "$helper = @'",
+        "param([string]$Source, [string]$Hash, [string]$Root, [string]$Version, [string]$Log)",
+        "# Runs elevated. Embedded into post_install by Update-Manifests.ps1 and passed with",
+        "# -EncodedCommand, so there is no script file a non-admin process could change.",
+        "$ErrorActionPreference = 'Stop'",
+        "function Out-Log([string]$Line) { Add-Content -LiteralPath $Log -Value $Line -Encoding UTF8 }",
+        "try {",
+        "    $copies = @(Get-ChildItem -LiteralPath $Root -Directory -ErrorAction SilentlyContinue | ForEach-Object { Join-Path $_.FullName 'mVolt+.exe' } | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf })",
+        "    foreach ($copy in $copies) {",
+        "        $old = (Get-Item -LiteralPath $copy).VersionInfo.FileVersion",
+        "        try { if ([version]$old -ge [version]$Version) { continue } } catch { continue }",
+        "        # Stage the new exe inside the admin-only folder and check it there, so a file swapped",
+        "        # in the user-writable Scoop folder can never end up as the startup copy.",
+        "        $staged = \"$copy.new\"",
+        "        Copy-Item -LiteralPath $Source -Destination $staged -Force",
+        "        if ((Get-FileHash -LiteralPath $staged -Algorithm SHA256).Hash -ne $Hash) {",
+        "            Remove-Item -LiteralPath $staged -Force -ErrorAction SilentlyContinue",
+        "            Out-Log \"WARN|The new mVolt+ exe did not match the expected hash. The Start with Windows copy ($old) was left as it is.\"",
+        "            continue",
+        "        }",
+        "        $running = @(Get-Process -Name 'mVolt+' -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $copy })",
+        "        foreach ($p in $running) { Stop-Process -Id $p.Id -Force; $null = $p.WaitForExit(10000) }",
+        "        try {",
+        "            Move-Item -LiteralPath $staged -Destination $copy -Force",
+        "            Out-Log \"OK|Updated the Start with Windows copy of mVolt+ from $old to $Version.\"",
+        "        } catch {",
+        "            Remove-Item -LiteralPath $staged -Force -ErrorAction SilentlyContinue",
+        "            Out-Log \"WARN|Could not update the Start with Windows copy of mVolt+ ($old): $($_.Exception.Message)\"",
+        "        }",
+        "        if ($running.Count -gt 0) {",
+        "            $tasks = @(Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object { @($_.Actions | ForEach-Object { $_.Execute }) -contains $copy })",
+        "            if ($tasks.Count -gt 0) {",
+        "                $tasks | Start-ScheduledTask",
+        "                Out-Log 'OK|Restarted mVolt+ from its Start with Windows task.'",
+        "            } else {",
+        "                Out-Log 'WARN|mVolt+ was stopped to update it, but its Start with Windows task was not found. Start mVolt+ again.'",
+        "            }",
+        "        }",
+        "    }",
+        "} catch {",
+        "    Out-Log \"WARN|Start with Windows refresh failed: $($_.Exception.Message)\"",
+        "}",
+        "'@",
+        "    $work = Join-Path ([IO.Path]::GetTempPath()) (\"mvolt-refresh-\" + [guid]::NewGuid().ToString('N'))",
+        "    New-Item -ItemType Directory -Force -Path $work | Out-Null",
+        "    $log = Join-Path $work 'result.log'",
+        "    $expected = $null",
+        "    try { $expected = [string]$manifest.architecture.'64bit'.hash } catch { }",
+        "    if ($expected -notmatch '^[0-9a-fA-F]{64}$') { $expected = (Get-FileHash -LiteralPath $new -Algorithm SHA256).Hash }",
+        "    $hostExe = (Get-Process -Id $PID).Path",
+        "    $quote = { param($s) \"'\" + ($s -replace \"'\", \"''\") + \"'\" }",
+        "    $command = \"& {`n$helper`n} -Source $(& $quote $new) -Hash $(& $quote $expected) -Root $(& $quote $root) -Version $(& $quote $target) -Log $(& $quote $log)\"",
+        "    $helperArgs = '-NoProfile -ExecutionPolicy Bypass -EncodedCommand ' + [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($command))",
+        "    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+        "    if ($isAdmin) {",
+        "        Start-Process -FilePath $hostExe -ArgumentList $helperArgs -WindowStyle Hidden -Wait",
+        "    } elseif (-not [Environment]::UserInteractive) {",
+        "        warn \"Your Start with Windows copy of mVolt+ is out of date. Open mVolt+ as administrator once to update it to $version.\"",
+        "    } else {",
+        "        Write-Host 'Your Start with Windows copy of mVolt+ is out of date. Approve the administrator prompt to update it.'",
+        "        $job = Start-Job -ScriptBlock { param($exe, $a) try { $p = Start-Process -FilePath $exe -ArgumentList $a -Verb RunAs -WindowStyle Hidden -PassThru -ErrorAction Stop; $p.WaitForExit(); 'ran' } catch { 'declined' } } -ArgumentList $hostExe, $helperArgs",
+        "        $finished = Wait-Job -Job $job -Timeout 180",
+        "        $state = if ($finished) { Receive-Job -Job $job } else { 'timeout' }",
+        "        Remove-Job -Job $job -Force",
+        "        if ($state -ne 'ran') { warn \"The administrator prompt was not approved ($state). Your Start with Windows copy of mVolt+ was left as it is. Open mVolt+ as administrator once to update it to $version.\" }",
+        "    }",
+        "    if (Test-Path -LiteralPath $log) {",
+        "        foreach ($line in Get-Content -LiteralPath $log) {",
+        "            $kind, $text = $line -split '\\|', 2",
+        "            if ($kind -eq 'OK') { Write-Host $text } else { warn $text }",
+        "        }",
+        "    }",
+        "    Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$exe = Join-Path $dir 'mVolt+.exe'",
+        "$busy = $false",
+        "if (Test-Path -LiteralPath $exe -PathType Leaf) {",
+        "    foreach ($attempt in 1..3) {",
+        "        try { $stream = [IO.File]::Open($exe, 'Open', 'ReadWrite', 'None'); $stream.Dispose(); $busy = $false; break }",
+        "        catch { $hr = if ($_.Exception.InnerException) { $_.Exception.InnerException.HResult } else { $_.Exception.HResult }; $busy = $hr -in @(-2147024864, -2147024863); if (-not $busy) { break }; Start-Sleep -Milliseconds 700 }",
+        "    }",
+        "}",
+        "if ($busy) { throw 'mVolt+ is still running from this Scoop install. It may be running as administrator, which Scoop cannot detect. Exit it from the tray icon, then run the command again.' }",
+        "$sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value",
+        "if (Test-Path -LiteralPath (Join-Path (Join-Path $env:ProgramFiles 'mVolt+') $sid)) {",
+        "    warn 'mVolt+ Start with Windows is set up for this user. It runs its own copy from %ProgramFiles%\\mVolt+ and keeps starting at logon after this uninstall. Turn Start with Windows off in mVolt+ if you no longer want it.'",
+        "}"
+    ],
+    "checkver": {
+        "github": "https://github.com/AmirulAndalib/mvolt-scoop"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/AmirulAndalib/mvolt-scoop/releases/download/v$version/mVolt+.exe"
+            }
+        },
+        "hash": {
+            "url": "https://api.github.com/repos/AmirulAndalib/mvolt-scoop/releases/tags/v$version",
+            "jsonpath": "$.assets[?(@.name == 'mVolt+.exe')].digest"
+        }
+    }
+}
