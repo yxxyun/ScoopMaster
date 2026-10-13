@@ -1,0 +1,43 @@
+{
+    "version": "0.126.0",
+    "description": "A lightweight, fast and customizable open-source Chinese input method (IME), designed for Wubi and code-table schemes, with Quanpin/Shuangpin support.",
+    "homepage": "https://windinput.com",
+    "license": "MIT",
+    "notes": [
+        "WindInput is installed system-wide by its own installer (an input method has to register with the system).",
+        "'scoop uninstall' keeps your user dictionaries and settings; use 'Settings > Apps' to remove them as well."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://dl.windinput.com/WindInput-Setup-0.126.0.exe",
+            "hash": "b4e9f6080d8d09a575ae9bf8f405d8ff2ea3743b1d0b5f2400f0d13f9a81e494"
+        }
+    },
+    "installer": {
+        "script": [
+            "if (!(Invoke-ExternalCommand \"$dir\\$fname\" -ArgumentList '--silent' -RunAs -Activity 'Running WindInput installer...' -ContinueExitCodes @{ 3010 = 'Installed. Restart Windows to finish cleaning up files that were in use.' })) { abort 'WindInput installer failed.' }",
+            "Remove-Item -LiteralPath \"$dir\\$fname\" -Force -ErrorAction SilentlyContinue"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'update') { return }",
+            "$arp = Get-ItemProperty -LiteralPath 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\清风输入法' -ErrorAction SilentlyContinue",
+            "if (!$arp -or !$arp.InstallLocation) { warn 'WindInput is not registered in Apps & Features, nothing to uninstall.'; return }",
+            "if (!(Invoke-ExternalCommand (Join-Path $arp.InstallLocation 'uninstall.exe') -ArgumentList @('--silent', '--keep-user-data') -RunAs -Activity 'Running WindInput uninstaller...' -ContinueExitCodes @{ 3010 = 'Uninstalled. Restart Windows to finish cleaning up files that were in use.' })) { abort 'WindInput uninstaller failed.' }"
+        ]
+    },
+    "checkver": {
+        "github": "https://github.com/huanfeng/WindInput"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://dl.windinput.com/WindInput-Setup-$version.exe"
+            }
+        },
+        "hash": {
+            "url": "$url.sha256"
+        }
+    }
+}
