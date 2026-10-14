@@ -1,0 +1,51 @@
+{
+    "version": "6.0.2",
+    "description": "MuMuPlayer international online installer for installing its available Android engines",
+    "homepage": "https://www.mumuplayer.com/",
+    "license": "Freeware",
+    "architecture": {
+        "64bit": {
+            "url": "https://a11.gdl.easebar.com/MuMu_6.0.2_gw-overseas12_all_1786519314.exe",
+            "hash": "552d4729428664d76dbd2aa2bce64db9ad9a923ac4be3209f3c76064e5aac095"
+        }
+    },
+    "pre_install": [
+        "if (!(is_admin)) { \"$app requires admin rights to $cmd\"; break }",
+        "Start-Process \"$dir\\$fname\" -ArgumentList @('/S', '/auto_start=false', \"/D=$dir\") -Wait -Verb RunAs"
+    ],
+    "post_install": "Remove-Item \"$dir\\$fname\", \"$dir\\uninstall.exe\"",
+    "shortcuts": [
+        [
+            "nx_main\\MuMuNxMain.exe",
+            "MuMuPlayer"
+        ]
+    ],
+    "persist": [
+        "configs",
+        "vms"
+    ],
+    "post_uninstall": [
+        "Remove-Item \"$env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs\\MuMuPlayer\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item \"$env:USERPROFILE\\Desktop\\MuMuPlayer.lnk\" -ErrorAction SilentlyContinue"
+    ],
+    "checkver": {
+        "script": [
+            "$releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/LOVECHEN/mumu-release/releases?per_page=100' -Headers @{ 'Accept' = 'application/vnd.github+json'; 'User-Agent' = 'Scoop-KiroBucket' }",
+            "$asset = $null",
+            "foreach ($release in $releases) {",
+            "    $asset = $release.assets | Where-Object { $_.name -match '^MuMu_[\\d.]+_gw-overseas12_all_[\\d]+\\.exe$' } | Select-Object -First 1",
+            "    if ($asset) { break }",
+            "}",
+            "if (-not $asset) { throw 'No MuMuPlayer international online installer was found.' }",
+            "Write-Output $asset.name"
+        ],
+        "regex": "^MuMu_(?<version>[\\d.]+)_gw-overseas12_all_(?<build>[\\d]+)\\.exe$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://a11.gdl.easebar.com/MuMu_$matchVersion_gw-overseas12_all_$matchBuild.exe"
+            }
+        }
+    }
+}

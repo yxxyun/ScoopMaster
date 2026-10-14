@@ -1,0 +1,53 @@
+{
+    "version": "0.6.5",
+    "description": "QQ 宠物单机复刻版，支持桌面宠物、农场、社区和 AI 互动。",
+    "homepage": "https://github.com/AnkioTomas/qqpet",
+    "license": "GPL-3.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/AnkioTomas/qqpet/releases/download/v0.6.5/QQPet.Setup.0.6.5.exe#/dl.7z",
+            "hash": "20c9d8f6c3ca2bfeb2529a261ceebd6c60ba583a7ed67a68c584dc2829828cc4"
+        }
+    },
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\" -Force -Recurse -ErrorAction SilentlyContinue",
+        "$configDir = Join-Path $env:APPDATA 'QQPet'",
+        "$persistConfigDir = Join-Path $persist_dir 'QQPet'",
+        "ensure $persistConfigDir | Out-Null",
+        "if (Test-Path $configDir) {",
+        "    $configItem = Get-Item $configDir -Force",
+        "    if (-not ($configItem.Attributes -band [IO.FileAttributes]::ReparsePoint)) {",
+        "        Get-ChildItem $configDir -Force | Move-Item -Destination $persistConfigDir -Force",
+        "        Remove-Item $configDir -Force -Recurse",
+        "        New-Item -ItemType Junction -Path $configDir -Target $persistConfigDir | Out-Null",
+        "    }",
+        "} else {",
+        "    New-Item -ItemType Junction -Path $configDir -Target $persistConfigDir | Out-Null",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$configDir = Join-Path $env:APPDATA 'QQPet'",
+        "if (Test-Path $configDir) {",
+        "    $configItem = Get-Item $configDir -Force",
+        "    if ($configItem.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Remove-Item $configDir -Force",
+        "    }",
+        "}"
+    ],
+    "shortcuts": [
+        [
+            "QQPet.exe",
+            "QQPet"
+        ]
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/AnkioTomas/qqpet/releases/download/v$version/QQPet.Setup.$version.exe#/dl.7z"
+            }
+        }
+    },
+    "notes": "QQPet 将配置和存档保存到 $persist_dir\\QQPet，并通过目录联接映射到 %APPDATA%\\QQPet；升级时不会丢失配置。卸载不会删除持久化数据，若需删除请使用 scoop uninstall qqpet --purge。"
+}

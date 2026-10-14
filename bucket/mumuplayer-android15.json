@@ -1,0 +1,56 @@
+{
+    "version": "15.8.5.5750",
+    "description": "Android 15 (MUMU15) engine add-on for MuMuPlayer; requires the NX-main base manifest",
+    "homepage": "https://www.mumuplayer.com/",
+    "license": "Freeware",
+    "depends": [
+        "mumuplayer"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://a11.gdl.easebar.com/MuMu-setup-mumu15-V15.8.5.5750-overseas-1013104801.exe",
+            "hash": "cc21f4f886e5a5edcc8ab311cdee80f41fba30d6dfc3d0c28db3885cd455aaec"
+        }
+    },
+    "pre_install": [
+        "if (!(is_admin)) { \"$app requires admin rights to $cmd\"; break }",
+        "$baseDir = Join-Path $env:SCOOP 'apps\\mumuplayer\\current'",
+        "if (-not (Test-Path (Join-Path $baseDir 'nx_main\\MuMuNxMain.exe'))) { throw 'The MuMuPlayer NX-main base installation was not found.' }",
+        "$versionParts = $version -split '\\.'",
+        "if ($versionParts.Count -lt 3) { throw 'Cannot derive the MuMuPlayer product version from the MUMU15 engine version.' }",
+        "$productVersion = \"6.$($versionParts[1]).$($versionParts[2]).0\"",
+        "$installerPath = Join-Path $dir $fname",
+        "$baseArguments = @('/from_orchestrator=1', '/txn_id=00000000-0000-0000-0000-000000000000', '/silent=1', \"/product_version=$productVersion\", '/auto_start=false', '/fchannel=gw-overseas12', '/auto_run=false', \"/D=$baseDir\")",
+        "$prepareArguments = @('/action=install_prepare') + $baseArguments",
+        "$prepare = Start-Process $installerPath -ArgumentList $prepareArguments -Wait -Verb RunAs -PassThru",
+        "if ($prepare.ExitCode -ne 0) { throw \"MUMU15 install_prepare failed with exit code $($prepare.ExitCode).\" }",
+        "$commitArguments = @('/action=commit') + $baseArguments",
+        "$commit = Start-Process $installerPath -ArgumentList $commitArguments -Wait -Verb RunAs -PassThru",
+        "if ($commit.ExitCode -ne 0) { throw \"MUMU15 commit failed with exit code $($commit.ExitCode).\" }"
+    ],
+    "post_install": "Remove-Item \"$dir\\$fname\" -Force -ErrorAction SilentlyContinue",
+    "pre_uninstall": [
+        "$baseDir = Join-Path $env:SCOOP 'apps\\mumuplayer\\current'",
+        "$engineUninstaller = Join-Path $baseDir 'temp\\engine_uninstall_mumu15.exe'",
+        "if (Test-Path $engineUninstaller) { Start-Process $engineUninstaller -Wait -Verb RunAs }"
+    ],
+    "checkver": {
+        "script": [
+            "$releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/LOVECHEN/mumu-release/releases?per_page=100' -Headers @{ 'Accept' = 'application/vnd.github+json'; 'User-Agent' = 'Scoop-KiroBucket' }",
+            "$release = $releases | Where-Object { $_.tag_name -like 'win-global-offline-*' } | Select-Object -First 1",
+            "if (-not $release) { throw 'No MuMuPlayer international global release was found.' }",
+            "$asset = $release.assets | Where-Object { $_.name -match '^MuMu-setup-mumu15-V[\\d.]+-overseas-[\\d]+\\.exe$' } | Select-Object -First 1",
+            "if (-not $asset) { throw 'No MUMU15 Android 15 installer asset was found in the latest international global release.' }",
+            "Write-Output $asset.name"
+        ],
+        "regex": "mumu15-V(?<version>[\\d.]+)-overseas-(?<build>[\\d]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://a11.gdl.easebar.com/MuMu-setup-mumu15-V$matchVersion-overseas-$matchBuild.exe"
+            }
+        }
+    },
+    "notes": "This add-on installs the Android 15 engine into the shared directory managed by mumuplayer. If mumuplayer is reinstalled or updated and the Android 15 engine disappears, reinstall this manifest."
+}
