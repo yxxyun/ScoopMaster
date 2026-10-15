@@ -1,6 +1,6 @@
 {
     "version": "1.4.0",
-    "description": "Windows system diagnostics and monitoring application with a local AI assistant.",
+    "description": "Read-only Windows diagnostics with Event Log, System Health, inventory, reports and a local AI assistant; requires PulseService.",
     "homepage": "https://github.com/Regncreative/Pulse",
     "license": "MIT",
     "url": "https://github.com/Regncreative/Pulse/releases/download/v1.4.0/Pulse-1.4.0-windows-x64.zip",
@@ -17,5 +17,61 @@
     },
     "autoupdate": {
         "url": "https://github.com/Regncreative/Pulse/releases/download/v$version/Pulse-$version-windows-x64.zip"
-    }
+    },
+    "pre_install": [
+        "if (Get-Process -Name 'Pulse' -ErrorAction SilentlyContinue) { throw 'Close Pulse before installing or updating it through Scoop.' }",
+        "$service = Get-CimInstance -ClassName Win32_Service -Filter \"Name='PulseService'\" -ErrorAction SilentlyContinue",
+        "if ($service) {",
+        "    $pathMatch = [regex]::Match([string]$service.PathName, '^\\s*\"(?<path>[^\"]+\\.exe)\"', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)",
+        "    if (-not $pathMatch.Success) { $pathMatch = [regex]::Match([string]$service.PathName, '^\\s*(?<path>.+?\\.exe)(?:\\s|$)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase) }",
+        "    if (-not $pathMatch.Success) { throw 'PulseService is registered, but its executable path could not be identified. Refusing to overwrite an unknown service installation.' }",
+        "    $registeredExe = [IO.Path]::GetFullPath($pathMatch.Groups['path'].Value)",
+        "    $appRoot = [IO.Path]::GetFullPath((Split-Path -Parent $dir)).TrimEnd([char]92) + [char]92",
+        "    if (-not $registeredExe.StartsWith($appRoot, [StringComparison]::OrdinalIgnoreCase)) { throw ('PulseService is already registered outside this Scoop-managed installation: {0}. Uninstall that Pulse copy before using the Scoop package.' -f $registeredExe) }",
+        "}"
+    ],
+    "post_install": [
+        "$serviceExe = Join-Path $dir 'service\\PulseService.exe'",
+        "if (-not (Test-Path -LiteralPath $serviceExe -PathType Leaf)) { throw 'PulseService.exe is missing from the Pulse payload.' }",
+        "$service = Get-CimInstance -ClassName Win32_Service -Filter \"Name='PulseService'\" -ErrorAction SilentlyContinue",
+        "if ($service) {",
+        "    $serviceLiteral = \"'\" + $serviceExe.Replace(\"'\", \"''\") + \"'\"",
+        "    $command = @(",
+        "        '$ErrorActionPreference = ''Stop''',",
+        "        'Set-Location -LiteralPath (Split-Path -Parent __SERVICE_PATH__)',",
+        "        '& __SERVICE_PATH__ --stop',",
+        "        '$stopCode = $LASTEXITCODE',",
+        "        'if ($stopCode -ne 0) { exit $stopCode }',",
+        "        '& __SERVICE_PATH__ --install-start',",
+        "        'exit $LASTEXITCODE'",
+        "    ) -join [Environment]::NewLine",
+        "    $command = $command.Replace('__SERVICE_PATH__', $serviceLiteral)",
+        "    $encodedCommand = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($command))",
+        "    $powerShell = (Get-Command powershell.exe -ErrorAction Stop).Source",
+        "    $process = Start-Process -FilePath $powerShell -ArgumentList @('-NoProfile', '-EncodedCommand', $encodedCommand) -Verb RunAs -Wait -PassThru",
+        "    if ($process.ExitCode -ne 0) { throw ('PulseService refresh failed with exit code {0}.' -f $process.ExitCode) }",
+        "}",
+        "Remove-Item -LiteralPath (Join-Path $dir 'redist') -Recurse -Force -ErrorAction SilentlyContinue"
+    ],
+    "pre_uninstall": [
+        "if (Get-Process -Name 'Pulse' -ErrorAction SilentlyContinue) { throw 'Close Pulse before uninstalling it through Scoop; the service has not been removed.' }",
+        "$service = Get-CimInstance -ClassName Win32_Service -Filter \"Name='PulseService'\" -ErrorAction SilentlyContinue",
+        "if ($service) {",
+        "    $pathMatch = [regex]::Match([string]$service.PathName, '^\\s*\"(?<path>[^\"]+\\.exe)\"', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)",
+        "    if (-not $pathMatch.Success) { $pathMatch = [regex]::Match([string]$service.PathName, '^\\s*(?<path>.+?\\.exe)(?:\\s|$)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase) }",
+        "    if (-not $pathMatch.Success) { throw 'PulseService is registered, but its executable path could not be identified. Refusing to remove an unknown service installation.' }",
+        "    $registeredExe = [IO.Path]::GetFullPath($pathMatch.Groups['path'].Value)",
+        "    $appRoot = [IO.Path]::GetFullPath((Split-Path -Parent $dir)).TrimEnd([char]92) + [char]92",
+        "    if ($registeredExe.StartsWith($appRoot, [StringComparison]::OrdinalIgnoreCase)) {",
+        "        $serviceExe = Join-Path $dir 'service\\PulseService.exe'",
+        "        if (-not (Test-Path -LiteralPath $serviceExe -PathType Leaf)) { $serviceExe = $registeredExe }",
+        "        if (-not (Test-Path -LiteralPath $serviceExe -PathType Leaf)) { throw 'Could not find PulseService.exe to remove the Scoop-managed service.' }",
+        "        $process = Start-Process -FilePath $serviceExe -ArgumentList '--uninstall' -WorkingDirectory (Split-Path -Parent $serviceExe) -Verb RunAs -Wait -PassThru",
+        "        if ($process.ExitCode -ne 0) { throw ('PulseService removal failed with exit code {0}.' -f $process.ExitCode) }",
+        "    } else {",
+        "        Write-Warning 'PulseService is registered outside this Scoop installation; leaving that service untouched.'",
+        "    }",
+        "}"
+    ],
+    "notes": "The release ZIP is a payload, not a true portable edition. A fresh Scoop install does not register or start PulseService; use Pulse's in-app Repair / Install service action and approve UAC. During Scoop updates, the service is refreshed only if it was already registered for this Scoop installation. Scoop does not install Visual C++ Runtime automatically. If PulseService fails to start because the runtime is missing, install the Microsoft Visual C++ Redistributable x64 manually: https://aka.ms/vc14/vc_redist.x64.exe. Scoop uninstall removes the service only when its registered executable belongs to this Scoop installation. Close Pulse before installing, updating or uninstalling through Scoop. User settings and logs remain under %LOCALAPPDATA%\\Pulse."
 }
