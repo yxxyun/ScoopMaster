@@ -1,0 +1,59 @@
+{
+    "version": "2.1.0.0",
+    "description": "Open-source interoperability tool for extending local Wand client configurations.",
+    "homepage": "https://github.com/k1tbyte/Wand-Enhancer",
+    "license": {
+        "identifier": "Apache-2.0",
+        "url": "https://github.com/k1tbyte/Wand-Enhancer/blob/master/LICENSE.md"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/k1tbyte/Wand-Enhancer/archive/refs/tags/2.1.0.0.zip",
+            "hash": "6d547a520661ae834575cd860c607ff5143bbed3e3926ec2e35d1fba566abad1",
+            "extract_dir": "Wand-Enhancer-2.1.0.0"
+        }
+    },
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\apeiraco\\bin\\build-utils.ps1\"",
+            "Write-Warning 'Wand Enhancer does not publish official prebuilt executables. Scoop will build an unsigned executable locally from the tagged upstream source.'",
+            "Write-Warning 'mise from PATH will provision Node.js, pnpm, and CMake for this build. The build also restores declared pnpm/NuGet dependencies from the network.'",
+            "$miseTools = @('node@22', 'pnpm@10.17.0', 'cmake@4')",
+            "$vsComponents = @('Microsoft.Component.MSBuild', 'Microsoft.VisualStudio.Component.VC.Tools.x86.x64', 'Microsoft.Net.Component.4.8.TargetingPack')",
+            "try {",
+            "    Invoke-WindowsSourceBuild -MiseTools $miseTools -VisualStudioComponents $vsComponents -ScriptPath \"$dir\\build.ps1\" -ScriptArguments @('-Configuration', 'Release') -WorkingDirectory $dir",
+            "    $artifact = \"$dir\\WandEnhancer\\bin\\Release\\WandEnhancer.exe\"",
+            "    if (!(Test-Path $artifact)) { throw \"Expected build artifact was not created: $artifact\" }",
+            "    Copy-Item $artifact \"$dir\\WandEnhancer.exe\" -Force",
+            "} catch {",
+            "    Write-Warning ('Wand Enhancer local build failed: ' + $_.Exception.Message)",
+            "    Write-Warning 'Review the build output above and verify mise network access plus the required Visual Studio C++ tools, MSBuild, and .NET Framework 4.8 targeting pack. No third-party binary will be used as a fallback.'",
+            "    throw",
+            "}"
+        ]
+    },
+    "bin": "WandEnhancer.exe",
+    "shortcuts": [
+        [
+            "WandEnhancer.exe",
+            "Wand Enhancer"
+        ]
+    ],
+    "notes": [
+        "WARNING: Upstream intentionally publishes no prebuilt executable. This package builds WandEnhancer.exe locally from the tagged source during installation.",
+        "Required tools: mise on PATH (installed by Scoop, WinGet, or as a standalone binary) and Visual Studio/Build Tools with MSBuild, Desktop development with C++, and the .NET Framework 4.8 targeting pack.",
+        "mise provisions compatible Node.js, pnpm, and CMake versions without using project configuration. The local build also restores dependencies from the pnpm and NuGet registries and may take several minutes.",
+        "The resulting executable is unsigned. Windows Defender or SmartScreen may warn; review the upstream source and build output before running it."
+    ],
+    "checkver": {
+        "github": "https://github.com/k1tbyte/Wand-Enhancer"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/k1tbyte/Wand-Enhancer/archive/refs/tags/$version.zip",
+                "extract_dir": "Wand-Enhancer-$version"
+            }
+        }
+    }
+}
