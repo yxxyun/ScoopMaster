@@ -1,0 +1,87 @@
+{
+    "version": "2.19.59",
+    "description": "Windows course video and courseware downloader for authorized offline learning.",
+    "homepage": "https://www.xuewuzhi.cn/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://github.com/Xue-Wu-Zhi/xuewuzhi-downloader/blob/main/NOTICE.md"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Xue-Wu-Zhi/xuewuzhi-downloader/releases/download/v2.19.59/xuewuzhi-downloader-2.19.59-windows.exe#/dl.rar",
+            "hash": "5fd42abe6ddcdb198a2afcd66af5443344d609f87b6e492420db9e596b02f62b"
+        },
+        "32bit": {
+            "url": "https://github.com/Xue-Wu-Zhi/xuewuzhi-downloader/releases/download/v2.19.59/xuewuzhi-downloader-2.19.59-windows.exe#/dl.rar",
+            "hash": "5fd42abe6ddcdb198a2afcd66af5443344d609f87b6e492420db9e596b02f62b"
+        }
+    },
+    "extract_dir": "LEL-Downloader",
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'LEL-Downloader'",
+        "$target = Join-Path $persist_dir 'user-data'",
+        "$item = Get-Item -LiteralPath $source -Force -ErrorAction SilentlyContinue",
+        "if ($item -and $item.LinkType -eq 'Junction' -and @($item.Target)[0] -eq $target) { return }",
+        "if ($item) {",
+        "    if (-not $item.PSIsContainer -or $item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        throw \"Cannot migrate data path: $source\"",
+        "    }",
+        "    $backup = \"$source.pre-scoop\"",
+        "    if (Test-Path -LiteralPath $backup) { throw \"Data backup already exists: $backup\" }",
+        "    if (-not (Get-ChildItem -LiteralPath $target -Force)) {",
+        "        & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "        if ($LASTEXITCODE -gt 7) { throw 'Failed to copy existing Xuewuzhi data.' }",
+        "    }",
+        "    Move-Item -LiteralPath $source -Destination $backup -ErrorAction Stop",
+        "    info \"Original data backed up to $backup\"",
+        "}",
+        "New-Item -Path $source -ItemType Junction -Value $target -ErrorAction Stop | Out-Null"
+    ],
+    "pre_uninstall": [
+        "$source = Join-Path $env:APPDATA 'LEL-Downloader'",
+        "$target = Join-Path $persist_dir 'user-data'",
+        "$item = Get-Item -LiteralPath $source -Force -ErrorAction SilentlyContinue",
+        "if ($purge -and $item.LinkType -eq 'Junction' -and @($item.Target)[0] -eq $target) {",
+        "    & $env:COMSPEC /c \"rmdir `\"$source`\"\"",
+        "}"
+    ],
+    "bin": [
+        [
+            "LEL-downloader.exe",
+            "xuewuzhi"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "LEL-downloader.exe",
+            "Xuewuzhi"
+        ]
+    ],
+    "persist": [
+        "user-data",
+        "Download"
+    ],
+    "notes": [
+        "配置和设备数据：%APPDATA%\\LEL-Downloader -> persist\\xuewuzhi\\user-data；各启动入口共用同一份数据。",
+        "首次接管已有配置时保留 .pre-scoop 备份；卸载不加 -p 可保留配置及默认 Download 目录。",
+        "官方客户端要求管理员权限：启动时请允许 UAC 提升，或在管理员终端运行 xuewuzhi。清单不修改程序签名或权限声明。",
+        "首页输入 A 选择平台，输入 M 进入菜单；仅下载有权访问和保存的课程。请通过 Scoop 更新程序。"
+    ],
+    "checkver": {
+        "github": "https://github.com/Xue-Wu-Zhi/xuewuzhi-downloader"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Xue-Wu-Zhi/xuewuzhi-downloader/releases/download/v$version/xuewuzhi-downloader-$version-windows.exe#/dl.rar"
+            },
+            "32bit": {
+                "url": "https://github.com/Xue-Wu-Zhi/xuewuzhi-downloader/releases/download/v$version/xuewuzhi-downloader-$version-windows.exe#/dl.rar"
+            }
+        },
+        "hash": {
+            "url": "$baseurl/SHA256SUMS.txt",
+            "find": "([a-fA-F0-9]{64})\\s+xuewuzhi-downloader-$version-windows\\.exe"
+        }
+    }
+}

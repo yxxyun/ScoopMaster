@@ -1,0 +1,89 @@
+{
+    "version": "1.4.2",
+    "description": "Turn a private Telegram channel into your personal cloud drive: file manager and media player, folders/favorites/trash, multiple drives on one account, streaming previews, resumable transfer queue and optional AES-256-GCM end-to-end encryption (Windows desktop build).",
+    "homepage": "https://mahmud0808.github.io/TeleDrive/",
+    "license": "Apache-2.0",
+    "notes": [
+        "安装的是官方 Windows 安装包（TeleDrive-<版本>.msi）。上游是 WiX 制作、按用户安装（INSTALLDIR=%LOCALAPPDATA%\\TeleDrive，不弹 UAC）的 MSI，本清单没有运行 msiexec /i 去注册安装，而是用 scoop 的 Expand-MsiArchive（msiexec /a 管理安装镜像）把它整包展开到 apps\\teledrive\\current：TeleDrive.exe、app\\（112 个 jar + 自带 libVLC）和 runtime\\（内置 JBR，不需要额外装 Java）。因此系统「应用和功能」里不会出现第二个 TeleDrive，卸载、升级全由 scoop 管。",
+        "用户数据固定在 %APPDATA%\\TeleDrive（程序里 DesktopStoragePaths 读环境变量 APPDATA，没有便携模式开关），本清单在安装时把该目录接到 persist\\teledrive\\userdata（目录 junction）：Room 数据库 teledrive.db、TDLib 会话与缓存 files\\tdlib、本地索引与密钥 files\\keys、设置 files\\datastore、笔记与导入 files\\notes、files\\import，以及缩略图缓存 cache 实际都落在 persist 里 —— scoop update 和 scoop uninstall（不带 -p）都不会丢，scoop uninstall -p 才会连数据一起删。",
+        "开始菜单快捷方式、teledrive shim、直接运行 apps\\teledrive\\current\\TeleDrive.exe、从任何终端启动，读的都是同一份数据：靠的是上面那个 junction，与安装目录和进程环境都无关，不存在某个入口另起一套数据的情况。要清空数据删 persist\\teledrive\\userdata 即可；%APPDATA%\\TeleDrive 只是链接，删掉它等于断开链接（程序下次启动会另建一份真实目录），要保留数据就别动它。",
+        "首次安装时如果 %APPDATA%\\TeleDrive 已存在真实数据（官网 MSI 或 winget 装的版本留下的），安装脚本会把整份目录搬进 persist\\teledrive\\userdata 再用链接接上，登录状态和已上传的索引都还在；如果 persist 里已经先有数据，旧目录会被改名为 %APPDATA%\\TeleDrive.old-<时间戳> 保留，由你决定是否合并。",
+        "官网 MSI 装出来的程序文件在 %LOCALAPPDATA%\\TeleDrive，那份副本 scoop 不管理；本清单装的是独立一份，两者共用上面同一份 %APPDATA% 数据，不会互相清空。装完请用 scoop update teledrive 升级。",
+        "首次使用需要在设置里填自己的 Telegram API 凭据（my.telegram.org 免费申请），再登录自己的账号；文件上传下载走你自己的 Telegram 账号，不经过任何第三方服务器。下载目录默认是系统「下载」文件夹（可在设置中修改），这些文件由程序直接写在那里，Scoop 不管理。"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Mahmud0808/TeleDrive/releases/download/v1.4.2/TeleDrive-1.4.2.msi",
+            "hash": "70d29b145867092cca8ec0b5938a6113477b018b39b239059a0feb01b3f9f9ac"
+        }
+    },
+    "extract_dir": "TeleDrive",
+    "post_install": [
+        "$ErrorActionPreference = 'Stop'",
+        "# 程序把用户数据固定在 %APPDATA%\\TeleDrive（DesktopStoragePaths 读 %APPDATA%，无便携开关），这里把该目录接到 persist\\teledrive\\userdata：",
+        "# 链路与安装目录、终端环境都无关，所以快捷方式、shim、直接运行 exe 三种入口始终读同一份数据；每次升级重跑本脚本，已接好则跳过",
+        "$target = \"$persist_dir\\userdata\"",
+        "$link = \"$env:APPDATA\\TeleDrive\"",
+        "if (-not (Test-Path $target)) { New-Item $target -ItemType Directory -Force | Out-Null }",
+        "$item = Get-Item $link -Force -ErrorAction SilentlyContinue",
+        "$linked = $null",
+        "if ($item.LinkType) { $linked = (Resolve-Path -Path @($item.Target)[0] -ErrorAction SilentlyContinue).Path }",
+        "if ($linked -eq (Resolve-Path -Path $target).Path) {",
+        "    info '[Link]: %APPDATA%\\TeleDrive 已接到 persist\\teledrive\\userdata，跳过'",
+        "} elseif ($linked) {",
+        "    warn \"[Link]: %APPDATA%\\TeleDrive 已是指向 $linked 的链接，保持不动（数据不落在 persist，本清单的持久化对它不生效）\"",
+        "} else {",
+        "    if ($item.LinkType) {",
+        "        # 断链：链接本身不是数据，摘掉重建",
+        "        Remove-Item -Path $link -Recurse -Force",
+        "    } elseif ($item) {",
+        "        # 真实的旧数据目录（官网 MSI 或 winget 安装版留下的）",
+        "        if (Get-ChildItem $target -Force) {",
+        "            Move-Item -Path $link -Destination \"$link.old-$(Get-Date -Format yyyyMMddHHmmss)\" -Force",
+        "            warn '[Link]: %APPDATA%\\TeleDrive 里有旧数据而 persist 中已有数据，旧目录已改名保留，需要的话请手工合并'",
+        "        } else {",
+        "            Remove-Item -Path $target -Recurse -Force",
+        "            Move-Item -Path $link -Destination $target -Force",
+        "        }",
+        "    }",
+        "    New-Item -Path $link -ItemType Junction -Value $target | Out-Null",
+        "    info \"[Link]: %APPDATA%\\TeleDrive -> $target\"",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "# 只摘掉指向本清单 persist 的链接（数据本身留在 persist\\teledrive\\userdata，重装会重新接上）；指向别处的链接不动",
+            "$link = \"$env:APPDATA\\TeleDrive\"",
+            "$target = \"$persist_dir\\userdata\"",
+            "$expected = if (Test-Path $target) { (Resolve-Path -Path $target).Path } else { $target }",
+            "$item = Get-Item $link -Force -ErrorAction SilentlyContinue",
+            "$linked = $null",
+            "if ($item.LinkType) {",
+            "    $linked = (Resolve-Path -Path @($item.Target)[0] -ErrorAction SilentlyContinue).Path",
+            "    if (-not $linked) { $linked = @($item.Target)[0] }",
+            "}",
+            "if ($linked -eq $expected) {",
+            "    Remove-Item -Path $link -Recurse -Force",
+            "    info '[Link]: 已摘除 %APPDATA%\\TeleDrive 链接，数据仍在 persist\\teledrive\\userdata'",
+            "}"
+        ]
+    },
+    "bin": "TeleDrive.exe",
+    "shortcuts": [
+        [
+            "TeleDrive.exe",
+            "TeleDrive"
+        ]
+    ],
+    "persist": "userdata",
+    "checkver": {
+        "github": "https://github.com/Mahmud0808/TeleDrive"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Mahmud0808/TeleDrive/releases/download/v$version/TeleDrive-$version.msi"
+            }
+        }
+    }
+}

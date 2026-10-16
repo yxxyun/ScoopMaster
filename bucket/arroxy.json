@@ -1,0 +1,86 @@
+{
+    "version": "0.4.27",
+    "description": "Free open-source YouTube (and 2000+ other sites) downloader GUI built on yt-dlp: 4K/1080p60/HDR video, MP3 audio, playlists, channels and subtitles, with no ads or tracking.",
+    "homepage": "https://orionus.dev/arroxy",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/antonio-orionus/Arroxy/releases/download/v0.4.27/Arroxy-win-x64-Portable.exe#/dl.7z",
+            "hash": "f4d57f1aee838f1db238b6e23f1634f87c823cc882dd6d01c711990202db1e18"
+        }
+    },
+    "pre_install": [
+        "# 上游 win-x64-Portable.exe 是 NSIS 自解压包，内层是完整便携目录 app-64.7z；展开它，免得便携版每次启动都解压 166 MB 到 %TEMP%",
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse -ErrorAction SilentlyContinue"
+    ],
+    "post_install": [
+        "$ErrorActionPreference = 'Stop'",
+        "# 程序把用户数据固定在 %APPDATA%\\arroxy（Electron userData，不认 portable.txt 之类的标记），这里把该目录接到 persist\\arroxy\\userdata：",
+        "# 链路与安装目录、终端环境都无关，所以快捷方式、shim、直接运行 exe 三种入口始终读同一份数据；每次升级重跑本脚本，已接好则跳过",
+        "$target = \"$persist_dir\\userdata\"",
+        "$link = \"$env:APPDATA\\arroxy\"",
+        "if (-not (Test-Path $target)) { New-Item $target -ItemType Directory -Force | Out-Null }",
+        "$item = Get-Item $link -Force -ErrorAction SilentlyContinue",
+        "$linked = $null",
+        "if ($item.LinkType) { $linked = (Resolve-Path -Path @($item.Target)[0] -ErrorAction SilentlyContinue).Path }",
+        "if ($linked -eq (Resolve-Path -Path $target).Path) {",
+        "    info '[Link]: %APPDATA%\\arroxy 已接到 persist\\arroxy\\userdata，跳过'",
+        "} elseif ($linked) {",
+        "    warn \"[Link]: %APPDATA%\\arroxy 已是指向 $linked 的链接，保持不动（数据不落在 persist，本清单的持久化对它不生效）\"",
+        "} else {",
+        "    if ($item.LinkType) {",
+        "        # 断链：链接本身不是数据，摘掉重建",
+        "        Remove-Item -Path $link -Recurse -Force",
+        "    } elseif ($item) {",
+        "        # 真实的旧数据目录（官网/winget 安装版或旧版便携程序留下的）",
+        "        if (Get-ChildItem $target -Force) {",
+        "            Move-Item -Path $link -Destination \"$link.old-$(Get-Date -Format yyyyMMddHHmmss)\" -Force",
+        "            warn '[Link]: %APPDATA%\\arroxy 里有旧数据而 persist 中已有数据，旧目录已改名保留，需要的话请手工合并'",
+        "        } else {",
+        "            Remove-Item -Path $target -Recurse -Force",
+        "            Move-Item -Path $link -Destination $target -Force",
+        "        }",
+        "    }",
+        "    New-Item -Path $link -ItemType Junction -Value $target | Out-Null",
+        "    info \"[Link]: %APPDATA%\\arroxy -> $target\"",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "# 只摘掉指向本清单 persist 的链接（数据本身留在 persist\\arroxy\\userdata，重装会重新接上）；指向别处的链接不动",
+            "$link = \"$env:APPDATA\\arroxy\"",
+            "$item = Get-Item $link -Force -ErrorAction SilentlyContinue",
+            "$linked = $null",
+            "if ($item.LinkType) { $linked = (Resolve-Path -Path @($item.Target)[0] -ErrorAction SilentlyContinue).Path }",
+            "if ($linked -eq \"$persist_dir\\userdata\") {",
+            "    Remove-Item -Path $link -Recurse -Force",
+            "    info '[Link]: 已摘除 %APPDATA%\\arroxy 链接，数据仍在 persist\\arroxy\\userdata'",
+            "}"
+        ]
+    },
+    "bin": "Arroxy.exe",
+    "shortcuts": [
+        [
+            "Arroxy.exe",
+            "Arroxy"
+        ]
+    ],
+    "persist": "userdata",
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/antonio-orionus/Arroxy/releases/download/v$version/Arroxy-win-x64-Portable.exe#/dl.7z"
+            }
+        }
+    },
+    "notes": [
+        "安装的是官方 Windows 便携版（Arroxy-win-x64-Portable.exe，NSIS 自解压包）：装的时候把内层 app-64.7z 展开到安装目录，得到与官方安装版同一份程序文件（Arroxy.exe 在根目录，自带 ffmpeg/ffprobe，约 540 MB），启动时不会像便携版那样每次把自己解压到 %TEMP%。",
+        "用户数据固定写 %APPDATA%\\arroxy（程序写死的 Electron userData 路径），本清单在安装时把该目录接到 persist\\arroxy\\userdata（目录 junction），所以 settings.json、下载队列 queue.json、任务历史、播放列表清单、日志 logs\\main.log、Chromium 的缓存与会话数据（Cache、Local Storage、Partitions）、以及程序自行下载的 yt-dlp 内核（runtime-cache）实际都落在 persist 里：scoop update 和 scoop uninstall（不带 -p）都不会丢，scoop uninstall -p 才会连数据一起删。",
+        "开始菜单快捷方式、arroxy shim、直接运行 apps\\arroxy\\current\\Arroxy.exe、以及从任何终端启动，读的都是同一份数据 —— 靠的是上面那个 junction，与安装目录和环境变量都无关，不存在某个入口另起一套数据的情况。要清空数据删 persist\\arroxy\\userdata 即可；%APPDATA%\\arroxy 只是链接，删掉它等于断开链接（程序下次启动会另建一份真实目录），要保留数据就别动它。",
+        "首次安装时如果 %APPDATA%\\arroxy 已存在真实数据（官网/winget 安装版留下的），安装脚本会把整份目录搬进 persist\\arroxy\\userdata 再用链接接上；如果 persist 里已经先有数据，旧目录会被改名为 %APPDATA%\\arroxy.old-<时间戳> 保留，由你决定是否合并。",
+        "下载目录默认是系统「下载」文件夹（可在设置中修改），视频文件由 yt-dlp 直接写在那里，Scoop 不管理。",
+        "应用内「检查更新」：程序按可执行文件路径里是否含 \\scoop\\apps\\ 判断安装渠道（区分大小写）。Scoop 装在默认位置（%USERPROFILE%\\scoop）时会被识别为 scoop，界面只提示运行 scoop update arroxy，不会自行安装；如果 Scoop 目录名不是小写 scoop（例如把 SCOOP 自定义到别的盘），会被判为 direct，此时应用内的「安装更新」会下载官方 NSIS 安装包并在 %LOCALAPPDATA%\\Programs\\Arroxy 装出第二份副本 —— 请始终用 scoop update arroxy 升级。"
+    ]
+}
