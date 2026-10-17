@@ -5,52 +5,56 @@
     "license": "Apache-2.0",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v2.1.6/Cherry-Studio-2.1.6-win-x64-setup.exe#/dl.7z",
+            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v2.1.6/Cherry-Studio-2.1.6-x64-setup.exe#/dl.7z",
             "hash": "sha512:ec6f79bb2f859cacfaaaa442dbb6c33f07978be9a5e24a0c82833dcf48b96619e10487d07cb348170ffb0bfa4d0f4fe40143fb66b54325be41fabafc059bdd80",
             "pre_install": [
                 "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse -ErrorAction SilentlyContinue",
-                "Set-Content -Path \"$dir\\Cherry Studio.cmd\" -Value '@echo off', 'set \"PORTABLE_EXECUTABLE_DIR=%~dp0\"', 'start \"\" \"%~dp0Cherry Studio.exe\"' -Encoding ASCII"
+                "Remove-Item \"$dir\\`$*\", \"$dir\\Unintall*\" -Recurse"
             ]
         },
         "arm64": {
-            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v2.1.6/Cherry-Studio-2.1.6-win-arm64-setup.exe#/dl.7z",
+            "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v2.1.6/Cherry-Studio-2.1.6-arm64-setup.exe#/dl.7z",
             "hash": "sha512:28586593f80f8b40719fc5c660798c1d01f8e4adb916cd43801548b73c072a415f2149a7f18ad5c2e7f9e71fa8cd7bdeae1461028f57351a869f867e2bc2f03c",
             "pre_install": [
                 "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Recurse -ErrorAction SilentlyContinue",
-                "Set-Content -Path \"$dir\\Cherry Studio.cmd\" -Value '@echo off', 'set \"PORTABLE_EXECUTABLE_DIR=%~dp0\"', 'start \"\" \"%~dp0Cherry Studio.exe\"' -Encoding ASCII"
+                "Remove-Item \"$dir\\`$*\", \"$dir\\Unintall*\" -Recurse"
             ]
         }
     },
-    "post_install": [
-        "if (-not (Get-ChildItem \"$persist_dir\\data\" -Force -ErrorAction SilentlyContinue) -and (Test-Path \"$env:APPDATA\\CherryStudio\")) {",
-        "    info '[Portable Mode] Copying user data...'",
-        "    Move-Item \"$env:APPDATA\\CherryStudio\\*\" \"$persist_dir\\data\"",
-        "    Remove-Item \"$env:APPDATA\\CherryStudio\" -Recurse -Force",
-        "}"
-    ],
     "shortcuts": [
         [
-            "Cherry Studio.cmd",
+            "Cherry Studio.exe",
             "Cherry Studio"
         ]
     ],
-    "persist": "data",
+    "installer": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name muggle) scripts/DoradoUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\data\" -Target \"$env:APPDATA\\CherryStudio\"",
+            "Remove-Module -Name DoradoUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name muggle) scripts/DoradoUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\CherryStudio\"",
+            "Remove-Module -Name DoradoUtils"
+        ]
+    },
     "checkver": {
         "github": "https://github.com/CherryHQ/cherry-studio"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-win-x64-setup.exe#/dl.7z",
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-x64-setup.exe#/dl.7z",
                 "hash": {
                     "url": "$baseurl/latest.yml",
                     "regex": "x64-setup.exe\\s+sha512:\\s+$base64"
                 }
             },
             "arm64": {
-                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-win-arm64-setup.exe#/dl.7z",
+                "url": "https://github.com/CherryHQ/cherry-studio/releases/download/v$version/Cherry-Studio-$version-arm64-setup.exe#/dl.7z",
                 "hash": {
                     "url": "$baseurl/latest.yml",
                     "regex": "arm64-setup.exe\\s+sha512:\\s+$base64"

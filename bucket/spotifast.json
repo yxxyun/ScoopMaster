@@ -9,48 +9,62 @@
     "url": "https://github.com/crmne/spotifast/releases/download/v0.13.3/spotifast-v0.13.3-x86_64-pc-windows-msvc.zip",
     "hash": "a71f7e157fd845836feb964f627c2f7069fa75a0366cede55f37eb211e4bf9b8",
     "extract_dir": "spotifast-v0.13.3-x86_64-pc-windows-msvc",
-    "post_install": [
-        "# Spotifast stores its data under AppData (Local: data/cache, Roaming: config).",
-        "# Move any existing data into the persist dir and redirect the app via junctions.",
-        "$localParent = \"$env:LOCALAPPDATA\\paolino\"",
-        "$roamingParent = \"$env:APPDATA\\paolino\"",
-        "$localAppData = \"$localParent\\spotifast\"",
-        "$roamingAppData = \"$roamingParent\\spotifast\"",
+    "pre_install": [
+        "# The portable marker enables the in-app self-updater; updates are handled by Scoop.",
+        "Remove-Item -Path \"$dir\\spotifast-portable.txt\" -Force -ErrorAction Ignore",
         "",
-        "function Merge-Into-Persist($source, $name) {",
-        "    $dest = \"$persist_dir\\$name\"",
-        "    if (!(Test-Path $dest)) {",
-        "        New-Item -ItemType Directory -Path $persist_dir -Force | Out-Null",
-        "        Move-Item -Path $source -Destination $dest -Force",
-        "    } else {",
-        "        Copy-Item -Path \"$source\\*\" -Destination $dest -Force -Recurse",
-        "        Remove-Item -Path $source -Force -Recurse",
-        "    }",
+        "# Please keep the folder list the same in both pre_install and uninstaller scripts.",
+        "$folders = @{",
+        "    'config' = \"$env:APPDATA\\paolino\\spotifast\"",
+        "    'data' = \"$env:LOCALAPPDATA\\paolino\\spotifast\"",
+        "    'cache' = \"$env:LOCALAPPDATA\\paolino\\spotifast\"",
         "}",
-        "",
-        "if (Test-Path $localAppData) {",
-        "    Get-ChildItem -Path $localAppData -Force | ForEach-Object {",
-        "        if ($_.Name -eq 'data' -or $_.Name -eq 'cache') {",
-        "            Merge-Into-Persist $_ $_.Name",
+        "# Older versions of this manifest linked the whole app folders to the persist root.",
+        "foreach ($parent in ($folders.Values | Select-Object -Unique)) {",
+        "    $item = Get-Item -Path $parent -Force -ErrorAction Ignore",
+        "    if ($item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) { [IO.Directory]::Delete($parent) }",
+        "}",
+        "foreach ($name in $folders.Keys) {",
+        "    $link = \"$($folders[$name])\\$name\"",
+        "    $target = \"$persist_dir\\$name\"",
+        "    $item = Get-Item -Path $link -Force -ErrorAction Ignore",
+        "    if ($item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {",
+        "        [IO.Directory]::Delete($link)",
+        "    } elseif ($item) {",
+        "        if (!(Test-Path \"$target\")) {",
+        "            Write-Host \"Migrating '$link' to persist directory...\" -ForegroundColor Yellow",
+        "            New-Item \"$persist_dir\" -ItemType Directory -Force | Out-Null",
+        "            Copy-Item -Path $link -Destination $target -Recurse -Force",
+        "            Remove-Item -Path $link -Recurse -Force",
+        "        } else {",
+        "            $backup = \"$name.bak-$(Get-Date -Format 'yyyyMMddHHmmss')\"",
+        "            Write-Host \"Persist data already exists, '$link' renamed to '$backup'.\" -ForegroundColor Yellow",
+        "            Rename-Item -Path $link -NewName $backup",
         "        }",
         "    }",
-        "}",
-        "",
-        "if (Test-Path $roamingAppData) {",
-        "    Get-ChildItem -Path $roamingAppData -Force | ForEach-Object {",
-        "        if ($_.Name -eq 'config') {",
-        "            Merge-Into-Persist $_ $_.Name",
-        "        }",
-        "    }",
-        "}",
-        "",
-        "if (!(Test-Path $localParent)) { New-Item -ItemType Directory -Path $localParent -Force | Out-Null }",
-        "if (!(Test-Path $roamingParent)) { New-Item -ItemType Directory -Path $roamingParent -Force | Out-Null }",
-        "if (!(Test-Path $localAppData)) { New-Item -ItemType Junction -Path $localAppData -Target $persist_dir | Out-Null }",
-        "if (!(Test-Path $roamingAppData)) { New-Item -ItemType Junction -Path $roamingAppData -Target $persist_dir | Out-Null }"
+        "    if (!(Test-Path \"$target\")) { New-Item \"$target\" -ItemType Directory -Force | Out-Null }",
+        "    if (!(Test-Path \"$($folders[$name])\")) { New-Item \"$($folders[$name])\" -ItemType Directory -Force | Out-Null }",
+        "    New-Item -Path $link -ItemType Junction -Value $target | Out-Null",
+        "}"
     ],
     "uninstaller": {
-        "script": "Remove-Item $env:LOCALAPPDATA\\paolino\\spotifast, $env:APPDATA\\paolino\\spotifast -Force -Recurse -ErrorAction Ignore"
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    # Please keep the folder list the same in both pre_install and uninstaller scripts.",
+            "    $folders = @{",
+            "        'config' = \"$env:APPDATA\\paolino\\spotifast\"",
+            "        'data' = \"$env:LOCALAPPDATA\\paolino\\spotifast\"",
+            "        'cache' = \"$env:LOCALAPPDATA\\paolino\\spotifast\"",
+            "    }",
+            "    foreach ($name in $folders.Keys) {",
+            "        $link = \"$($folders[$name])\\$name\"",
+            "        $item = Get-Item -Path $link -Force -ErrorAction Ignore",
+            "        if ($item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) { [IO.Directory]::Delete($link) }",
+            "    }",
+            "    # The 'paolino' folders only hold Spotifast; remove them once the junctions are gone.",
+            "    Remove-Item -Path \"$env:APPDATA\\paolino\", \"$env:LOCALAPPDATA\\paolino\" -Recurse -Force -ErrorAction Ignore",
+            "}"
+        ]
     },
     "bin": "spotifast.exe",
     "shortcuts": [
@@ -60,17 +74,19 @@
         ]
     ],
     "persist": [
+        "config",
         "data",
-        "cache",
-        "config"
+        "cache"
     ],
     "checkver": {
-        "url": "https://api.github.com/repos/crmne/spotifast/releases",
-        "jsonpath": "$[0].tag_name",
-        "regex": "v?([\\d.]+)"
+        "github": "https://github.com/crmne/spotifast"
     },
     "autoupdate": {
         "url": "https://github.com/crmne/spotifast/releases/download/v$version/spotifast-v$version-x86_64-pc-windows-msvc.zip",
+        "hash": {
+            "url": "https://api.github.com/repos/crmne/spotifast/releases/tags/v$version",
+            "jsonpath": "$.assets[?(@.name == '$basename')].digest"
+        },
         "extract_dir": "spotifast-v$version-x86_64-pc-windows-msvc"
     }
 }
