@@ -1,0 +1,67 @@
+{
+    "version": "1.0.0",
+    "description": "Desktop GUI for yt-dlp with video downloads, playlists, subtitles, thumbnails, and live-chat archiving.",
+    "homepage": "https://github.com/imsyy/yt-dlp-gui",
+    "license": "MIT",
+    "url": "https://github.com/imsyy/yt-dlp-gui/releases/download/v1.0.0/YDL.GUI_1.0.0_x64_en-US.msi#/dl.msi",
+    "hash": "68525730ca59c59a5dcb7425600859a5e7709bc0461023fed186780829a166ed",
+    "bin": "yt-dlp-gui.exe",
+    "shortcuts": [
+        [
+            "yt-dlp-gui.exe",
+            "YDL GUI"
+        ]
+    ],
+    "persist": "data",
+    "pre_install": [
+        "$exe = Get-ChildItem -LiteralPath $dir -Filter 'yt-dlp-gui.exe' -File -Recurse | Select-Object -First 1",
+        "if ($null -eq $exe) { throw 'yt-dlp-gui.exe was not found in the extracted MSI payload.' }",
+        "if ($exe.DirectoryName -ne $dir) { Get-ChildItem -LiteralPath $exe.DirectoryName -Force | ForEach-Object { Move-Item -LiteralPath $_.FullName -Destination $dir -Force } }"
+    ],
+    "post_install": [
+        "$appData = Join-Path $env:APPDATA 'com.imsyy.yt-dlp-gui'",
+        "$persistData = Join-Path $persist_dir 'data'",
+        "New-Item -ItemType Directory -Path (Split-Path $appData) -Force | Out-Null",
+        "if (Test-Path -LiteralPath $appData) {",
+        "  $appDataItem = Get-Item -LiteralPath $appData",
+        "  if (($appDataItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {",
+        "    if (-not ($appDataItem.Target -and ([string]$appDataItem.Target -ieq $persistData))) { throw 'The YDL GUI AppData path is already a junction or symlink to a different target; refusing to replace it.' }",
+        "  } else {",
+        "    $persistItems = @(Get-ChildItem -LiteralPath $persistData -Force -ErrorAction SilentlyContinue)",
+        "    $sourceItems = @(Get-ChildItem -LiteralPath $appData -Force -ErrorAction SilentlyContinue)",
+        "    if ($persistItems.Count -eq 0) { Remove-Item -LiteralPath $persistData -Force; Move-Item -LiteralPath $appData -Destination $persistData } elseif ($sourceItems.Count -eq 0) { Remove-Item -LiteralPath $appData -Recurse -Force } else { throw 'Both AppData and Scoop persistent data already contain files. They were left untouched; reconcile them before reinstalling YDL GUI.' }",
+        "  }",
+        "}",
+        "if (-not (Test-Path -LiteralPath $appData)) { New-Item -ItemType Junction -Path $appData -Target $persistData | Out-Null }",
+        "$schemeKey = 'HKCU:\\Software\\Classes\\ytdlp-gui'",
+        "$exePath = Join-Path $dir 'yt-dlp-gui.exe'",
+        "$commandKey = Join-Path $schemeKey 'shell\\open\\command'",
+        "$existingProtocol = Get-Item -LiteralPath $commandKey -ErrorAction SilentlyContinue",
+        "$existingCommand = if ($null -ne $existingProtocol) { [string]$existingProtocol.GetValue('') } else { '' }",
+        "if ($existingCommand -and $existingCommand.IndexOf('\\apps\\yt-dlp-gui\\', [StringComparison]::OrdinalIgnoreCase) -lt 0) { Write-Warning 'The ytdlp-gui:// protocol is already registered by another installation; leaving its registration unchanged.' } else {",
+        "  New-Item -Path $schemeKey -Force | Out-Null",
+        "  Set-Item -Path $schemeKey -Value 'URL:YDL GUI Protocol'",
+        "  New-ItemProperty -Path $schemeKey -Name 'URL Protocol' -Value '' -PropertyType String -Force | Out-Null",
+        "  New-Item -Path (Join-Path $schemeKey 'DefaultIcon') -Force | Out-Null",
+        "  Set-Item -Path (Join-Path $schemeKey 'DefaultIcon') -Value (([char]34) + $exePath + ([char]34) + ',0')",
+        "  New-Item -Path $commandKey -Force | Out-Null",
+        "  Set-Item -Path $commandKey -Value (([char]34) + $exePath + ([char]34) + ' ' + ([char]34) + '%1' + ([char]34))",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$appData = Join-Path $env:APPDATA 'com.imsyy.yt-dlp-gui'",
+        "$persistData = Join-Path $persist_dir 'data'",
+        "$appDataItem = Get-Item -LiteralPath $appData -ErrorAction SilentlyContinue",
+        "if ($null -ne $appDataItem -and (($appDataItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) -and ([string]$appDataItem.Target -ieq $persistData)) { Remove-Item -LiteralPath $appData -Force }",
+        "$schemeKey = 'HKCU:\\Software\\Classes\\ytdlp-gui'",
+        "$commandKey = Join-Path $schemeKey 'shell\\open\\command'",
+        "$registeredKey = Get-Item -LiteralPath $commandKey -ErrorAction SilentlyContinue",
+        "if ($null -ne $registeredKey) { $registeredCommand = [string]$registeredKey.GetValue(''); if ($registeredCommand.IndexOf('\\apps\\yt-dlp-gui\\', [StringComparison]::OrdinalIgnoreCase) -ge 0) { Remove-Item -LiteralPath $schemeKey -Recurse -Force } }"
+    ],
+    "checkver": {
+        "github": "https://github.com/imsyy/yt-dlp-gui"
+    },
+    "autoupdate": {
+        "url": "https://github.com/imsyy/yt-dlp-gui/releases/download/v$version/YDL.GUI_$version_x64_en-US.msi#/dl.msi"
+    }
+}

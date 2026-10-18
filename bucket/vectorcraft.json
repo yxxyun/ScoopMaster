@@ -1,25 +1,70 @@
 {
-    "version": "0.12.0",
-    "description": "Vector illustration; an open-source, clean-room reimplementation of Adobe Illustrator, rebuilt in pure Rust",
-    "homepage": "https://getartcraft.com/apps/vectorcraft",
-    "license": "MIT|Apache-2.0",
+    "version": "0.13.1",
+    "description": "Open-source vector illustration rebuilt in pure Rust: pen and booleans, live blends and effects, gradient mesh, perspective grids and image tracing",
+    "homepage": "https://github.com/storytold/vectorcraft",
+    "license": "MIT OR Apache-2.0",
+    "notes": [
+        "VectorCraft's data directory (settings, autosave, logs) is redirected to '$persist_dir\\config' through the VECTORCRAFT_CONFIG_DIR environment variable, so it lives in Scoop's persist store and survives 'scoop update'.",
+        "VECTORCRAFT_CONFIG_DIR is a USER-level environment variable, so any other VectorCraft installation (the MSI build, for example) uses this directory too.",
+        "The first install copies an existing %APPDATA%\\VectorCraft into the persist folder. 'scoop uninstall' removes the variable and VectorCraft falls back to %APPDATA%\\VectorCraft, so the pre-uninstall hook mirrors the state back there first; that also runs on 'scoop update'.",
+        "'vectorcraft-cli.exe' is exposed as the 'vectorcraft-cli' shim.",
+        "The portable zip does not register the file associations that the MSI installer adds.",
+        "The app has no built-in updater; use 'scoop update vectorcraft' so the install and this manifest stay in sync."
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/storytold/vectorcraft/releases/download/v0.12.0/vectorcraft-0.12.0-windows-x64-portable.zip",
-            "hash": "fde42c30d14aadbb565cf0551f72f251321f8c9f875a24811b98e522aea6fe88",
-            "extract_dir": "vectorcraft-0.12.0-windows-x64-portable"
-        },
-        "32bit": {
-            "url": "https://github.com/storytold/vectorcraft/releases/download/v0.12.0/vectorcraft-0.12.0-windows-x86-portable.zip",
-            "hash": "4430c2501d49671403af43dc2eb63d4551941ce136a64e3470a3f11ae755d94c",
-            "extract_dir": "vectorcraft-0.12.0-windows-x86-portable"
+            "url": "https://github.com/storytold/vectorcraft/releases/download/v0.13.1/vectorcraft-0.13.1-windows-x64-portable.zip",
+            "hash": "6c46505e20dfd637b37ff8e1ead9aa69758acdc877ae46cc8b3338463e078b51",
+            "installer": {
+                "script": [
+                    "$stage = \"$dir\\vectorcraft-$version-windows-x64-portable\"",
+                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
+                    "Remove-Item $stage -ErrorAction Stop"
+                ]
+            }
         },
         "arm64": {
-            "url": "https://github.com/storytold/vectorcraft/releases/download/v0.12.0/vectorcraft-0.12.0-windows-arm64-portable.zip",
-            "hash": "dbf0c6f39db99f1676169b8af9ad543ebc0561e3d68686b9d040dd907f98357d",
-            "extract_dir": "vectorcraft-0.12.0-windows-arm64-portable"
+            "url": "https://github.com/storytold/vectorcraft/releases/download/v0.13.1/vectorcraft-0.13.1-windows-arm64-portable.zip",
+            "hash": "cdc5c27d1105afa66ec955f8a9e846a9bd3a33b1f195f6e5bc9b85f4949fc36c",
+            "installer": {
+                "script": [
+                    "$stage = \"$dir\\vectorcraft-$version-windows-arm64-portable\"",
+                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
+                    "Remove-Item $stage -ErrorAction Stop"
+                ]
+            }
         }
     },
+    "pre_install": [
+        "$target = \"$persist_dir\\config\"",
+        "$legacy = \"$env:APPDATA\\VectorCraft\"",
+        "if (!(Test-Path $target) -and (Test-Path $legacy)) {",
+        "    if (Get-Process -Name 'vectorcraft*' -ErrorAction SilentlyContinue) {",
+        "        abort 'VectorCraft is running, so %APPDATA%\\VectorCraft cannot be copied into Scoop persist safely. Quit VectorCraft, then run the install again.'",
+        "    }",
+        "    $previous = $ErrorActionPreference",
+        "    $ErrorActionPreference = 'Continue'",
+        "    $null = robocopy $legacy $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
+        "    $code = $LASTEXITCODE",
+        "    $ErrorActionPreference = $previous",
+        "    if ($code -ge 8) { warn \"robocopy exit $code while copying '$legacy' to '$target'; compare the two directories before relying on the new location.\" } else { info \"Copied '$legacy' to '$target'.\" }",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$legacy = \"$env:APPDATA\\VectorCraft\"",
+        "$data = \"$persist_dir\\config\"",
+        "if (!(Test-Path $data) -or @(Get-ChildItem $data -Force).Count -eq 0) { return }",
+        "if (Get-Process -Name 'vectorcraft*' -ErrorAction SilentlyContinue) {",
+        "    warn 'VectorCraft is running, so the state was not mirrored back to %APPDATA%\\VectorCraft. Quit it and uninstall again if you want that safety copy.'",
+        "    return",
+        "}",
+        "$previous = $ErrorActionPreference",
+        "$ErrorActionPreference = 'Continue'",
+        "$null = robocopy $data $legacy /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
+        "$code = $LASTEXITCODE",
+        "$ErrorActionPreference = $previous",
+        "if ($code -ge 8) { warn \"robocopy exit $code while mirroring '$data' back to '$legacy'.\" } else { info \"Mirrored '$data' back to '$legacy': scoop removes VECTORCRAFT_CONFIG_DIR on uninstall and VectorCraft falls back to that path.\" }"
+    ],
     "bin": "vectorcraft-cli.exe",
     "shortcuts": [
         [
@@ -27,26 +72,19 @@
             "VectorCraft"
         ]
     ],
-    "checkver": {
-        "github": "https://github.com/storytold/vectorcraft"
+    "persist": "config",
+    "env_set": {
+        "VECTORCRAFT_CONFIG_DIR": "$persist_dir\\config"
     },
+    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/storytold/vectorcraft/releases/download/v$version/vectorcraft-$version-windows-x64-portable.zip",
-                "extract_dir": "vectorcraft-$version-windows-x64-portable"
-            },
-            "32bit": {
-                "url": "https://github.com/storytold/vectorcraft/releases/download/v$version/vectorcraft-$version-windows-x86-portable.zip",
-                "extract_dir": "vectorcraft-$version-windows-x86-portable"
+                "url": "https://github.com/storytold/vectorcraft/releases/download/v$version/vectorcraft-$version-windows-x64-portable.zip"
             },
             "arm64": {
-                "url": "https://github.com/storytold/vectorcraft/releases/download/v$version/vectorcraft-$version-windows-arm64-portable.zip",
-                "extract_dir": "vectorcraft-$version-windows-arm64-portable"
+                "url": "https://github.com/storytold/vectorcraft/releases/download/v$version/vectorcraft-$version-windows-arm64-portable.zip"
             }
-        },
-        "hash": {
-            "url": "$baseurl/SHA256SUMS.txt"
         }
     }
 }

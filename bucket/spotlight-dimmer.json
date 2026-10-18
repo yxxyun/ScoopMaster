@@ -1,0 +1,70 @@
+{
+    "version": "0.9.1",
+    "description": "Windows utility that dims inactive displays or regions to spotlight the active window.",
+    "homepage": "https://github.com/thomazmoura/spotlight-dimmer",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/thomazmoura/spotlight-dimmer/releases/download/v0.9.1-windows/spotlight-dimmer-windows-x64.zip",
+            "hash": "d1bc040c260bd0a074e5c6802d896151857893f90a7a019701e54ad63860e769"
+        },
+        "arm64": {
+            "url": "https://github.com/thomazmoura/spotlight-dimmer/releases/download/v0.9.1-windows/spotlight-dimmer-windows-arm64.zip",
+            "hash": "0125b22784ed10fdea5e9fc04c137a8b9beb7c118955834ec28010d8eb1104a3"
+        }
+    },
+    "bin": "SpotlightDimmer.exe",
+    "shortcuts": [
+        [
+            "SpotlightDimmer.exe",
+            "Spotlight Dimmer"
+        ],
+        [
+            "SpotlightDimmer.Config.exe",
+            "Spotlight Dimmer Config"
+        ]
+    ],
+    "persist": "config",
+    "post_install": [
+        "$appData = Join-Path $env:APPDATA 'SpotlightDimmer'",
+        "$persistConfig = Join-Path $persist_dir 'config'",
+        "New-Item -ItemType Directory -Path $persistConfig -Force | Out-Null",
+        "if (Test-Path -LiteralPath $appData) {",
+        "  $item = Get-Item -LiteralPath $appData",
+        "  if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {",
+        "    if (-not ($item.Target -and ([string]$item.Target -ieq $persistConfig))) { throw 'SpotlightDimmer AppData path is already a link to a different target; leaving it unchanged.' }",
+        "  } else {",
+        "    $sourceItems = @(Get-ChildItem -LiteralPath $appData -Force)",
+        "    $targetItems = @(Get-ChildItem -LiteralPath $persistConfig -Force)",
+        "    if ($targetItems.Count -eq 0) {",
+        "      foreach ($entry in $sourceItems) { Move-Item -LiteralPath $entry.FullName -Destination $persistConfig }",
+        "      Remove-Item -LiteralPath $appData -Force",
+        "    } elseif ($sourceItems.Count -eq 0) {",
+        "      Remove-Item -LiteralPath $appData -Force",
+        "    } else { throw 'Both SpotlightDimmer config locations contain files; neither was overwritten.' }",
+        "  }",
+        "}",
+        "if (-not (Test-Path -LiteralPath $appData)) { New-Item -ItemType Junction -Path $appData -Target $persistConfig | Out-Null }"
+    ],
+    "pre_uninstall": [
+        "$appData = Join-Path $env:APPDATA 'SpotlightDimmer'",
+        "$persistConfig = Join-Path $persist_dir 'config'",
+        "$item = Get-Item -LiteralPath $appData -ErrorAction SilentlyContinue",
+        "if ($null -ne $item -and (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) -and ([string]$item.Target -ieq $persistConfig)) { Remove-Item -LiteralPath $appData -Force }"
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/thomazmoura/spotlight-dimmer/releases?per_page=100",
+        "regex": "\"tag_name\"\\s*:\\s*\"v(?<version>[\\d.]+)-windows\""
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/thomazmoura/spotlight-dimmer/releases/download/v$version-windows/spotlight-dimmer-windows-x64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/thomazmoura/spotlight-dimmer/releases/download/v$version-windows/spotlight-dimmer-windows-arm64.zip"
+            }
+        }
+    },
+    "notes": "Settings at %APPDATA%\\SpotlightDimmer\\config.json are persisted in Scoop's persistent directory."
+}
