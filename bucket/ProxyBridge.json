@@ -1,15 +1,39 @@
 {
-    "version": "4.1.1",
+    "version": "4.2.0",
     "description": "A Proxifier alternative to redirect any TCP and UDP traffic to HTTP/SOCKS5 proxy.",
     "homepage": "https://interceptsuite.com",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/InterceptSuite/ProxyBridge/releases/download/v4.1.1/ProxyBridge-Setup-4.1.1.exe#/dl.7z",
-            "hash": "754f45fb31f3953b9b81005090f9a479f89827adb628cf2c76bc4139f673a152"
+            "url": "https://github.com/InterceptSuite/ProxyBridge/releases/download/v4.2.0_Windows/ProxyBridge-Setup-4.2.0.exe#/dl.7z",
+            "hash": "d5c15de7d8f0daae785580d48e5787eadf060facf069dac722802dff3ffa2904"
         }
     },
     "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "installer": {
+        "script": [
+            "ensure \"$persist_dir\" | Out-Null",
+            "$targetPath = \"$env:APPDATA\\ProxyBridge\"",
+            "$linkType = (Get-Item -Path $targetPath -ErrorAction SilentlyContinue).LinkType",
+            "if (Test-Path $targetPath) {",
+            "    if ($linkType -eq 'Junction') {",
+            "        Remove-Item -Path $targetPath -Force",
+            "    } else {",
+            "        Get-ChildItem -Path $targetPath -Force | Move-Item -Destination $persist_dir -Force",
+            "        Remove-Item -Path $targetPath -Force -Recurse",
+            "    }",
+            "}",
+            "New-Item -Path $targetPath -ItemType Junction -Target \"$persist_dir\" | Out-Null"
+        ]
+    },
+    "pre_uninstall": [
+        "if (!(is_admin)) { error \"$app requires admin rights to uninstall (to stop windivert driver). Run 'sudo scoop uninstall $app' or from an admin shell.\"; break }",
+        "Stop-Service 'windivert' -ErrorAction SilentlyContinue",
+        "Start-Sleep -Seconds 2"
+    ],
+    "uninstaller": {
+        "script": "Remove-Item \"$env:APPDATA\\ProxyBridge\" -Recurse -Force -ErrorAction SilentlyContinue"
+    },
     "bin": [
         [
             "ProxyBridge_CLI.exe",
