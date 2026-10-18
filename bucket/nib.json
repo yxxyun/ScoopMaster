@@ -1,17 +1,17 @@
 {
-    "version": "0.15.0",
+    "version": "0.16.0",
     "description": "Orden, formerly nibeditor: a simple, lightweight markdown editor offering all the features you could ever need.",
     "homepage": "https://orden.so",
     "license": "AGPL-3.0-only",
     "notes": "Themes and note history live in '%APPDATA%\\ch.emilvinu.nib', which is junctioned into Scoop's persist directory, so they survive updates and uninstalls.",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/lxorb/orden/releases/download/v0.15.0/Orden-0.15.0-windows-x64-setup.exe#/dl.7z",
-            "hash": "e6d3d483df42f1e8b9f44dcc9f9109c39b03bfc094702de2066312005c4d9463"
+            "url": "https://github.com/lxorb/orden/releases/download/v0.16.0/Orden-0.16.0-windows-x64-setup.exe#/dl.7z",
+            "hash": "7ec0f74cebe3e9075bf6188bc6d69e9550008e76f63741e8c6b111534dd37efc"
         },
         "arm64": {
-            "url": "https://github.com/lxorb/orden/releases/download/v0.15.0/Orden-0.15.0-windows-arm64-setup.exe#/dl.7z",
-            "hash": "aadf2f8d21ade842b36f5581b1010b7bd480369586b00f4a3d8be77964332da6"
+            "url": "https://github.com/lxorb/orden/releases/download/v0.16.0/Orden-0.16.0-windows-arm64-setup.exe#/dl.7z",
+            "hash": "15184c3a349ccc6d0bf9f9613b204bf10c079b6bbb7c74ea3b1c63403dd4e1ce"
         }
     },
     "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\uninstall.exe\" -Force -Recurse -ErrorAction 'Ignore'",
@@ -20,8 +20,10 @@
             "ensure \"$persist_dir\" | Out-Null",
             "$appdata = \"$env:APPDATA\\ch.emilvinu.nib\"",
             "if (Test-Path $appdata) {",
-            "    if ((Get-Item -LiteralPath $appdata -Force).LinkType -eq 'Junction') {",
-            "        Remove-Item -LiteralPath $appdata -Force",
+            "    $item = Get-Item -LiteralPath $appdata -Force",
+            "    if ($item.LinkType -eq 'Junction') {",
+            "        # The link alone: Windows PowerShell's Remove-Item follows a junction into what it points at.",
+            "        $item.Delete()",
             "    } else {",
             "        Get-ChildItem -LiteralPath $appdata -Force | Move-Item -Destination \"$persist_dir\" -Force",
             "        Remove-Item -LiteralPath $appdata -Recurse -Force",
@@ -38,7 +40,11 @@
         ]
     ],
     "uninstaller": {
-        "script": "Remove-Item \"$env:APPDATA\\ch.emilvinu.nib\" -Force -Recurse -ErrorAction 'Ignore'"
+        "script": [
+            "$appdata = Get-Item -LiteralPath \"$env:APPDATA\\ch.emilvinu.nib\" -Force -ErrorAction 'Ignore'",
+            "# The link alone, so what it points at - the persist folder, kept until --purge - stays.",
+            "if ($appdata.LinkType -eq 'Junction') { $appdata.Delete() } elseif ($appdata) { Remove-Item -LiteralPath $appdata.FullName -Force -Recurse }"
+        ]
     },
     "checkver": {
         "github": "https://github.com/lxorb/orden"
