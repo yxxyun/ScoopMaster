@@ -1,0 +1,44 @@
+{
+    "version": "2.1.0",
+    "description": "跨品牌电竞外设电量管理与硬件调度引擎, 支持雷蛇、罗技、雷柏、NuPhy 及主流国产电竞外设",
+    "homepage": "https://github.com/Ferris-echo/FerrisPulse",
+    "license": "GPL-3.0-only",
+    "notes": "安装和更新时会关闭程序内置的自动更新, 请用 scoop update ferris-pulse 升级。更新或卸载前请先退出程序。",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Ferris-echo/FerrisPulse/releases/download/v2.1.0/FerrisPulse_v2.1.0_Portable.zip",
+            "hash": "714c99e0f9c1b61e44101f8885b6df7c0b6538628274a25a7ef6fd70831802b5"
+        }
+    },
+    "post_install": [
+        "foreach ($reg in @('config.reg', 'legacy.reg', 'aumid.reg', 'notifications.reg')) { $file = Join-Path \"$persist_dir\" $reg; if (Test-Path $file) { reg import $file | Out-Null } }",
+        "if (Test-Path \"$persist_dir\\autostart\") { New-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'FerrisPulse' -Value ('\"{0}\" --autostart' -f \"$dir\\FerrisPulse.exe\") -PropertyType String -Force | Out-Null }",
+        "if (Test-Path \"$persist_dir\\autostart-approved\") { $approvedKey = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run'; if (!(Test-Path $approvedKey)) { New-Item $approvedKey | Out-Null }; New-ItemProperty $approvedKey -Name 'FerrisPulse' -Value ([byte[]]@((Get-Content \"$persist_dir\\autostart-approved\" -Raw) -split ',')) -PropertyType Binary -Force | Out-Null }",
+        "if (!(Test-Path 'HKCU:\\Software\\FerrisPulse')) { New-Item 'HKCU:\\Software\\FerrisPulse' | Out-Null }",
+        "New-ItemProperty 'HKCU:\\Software\\FerrisPulse' -Name 'AutoCheckUpdate' -Value 0 -PropertyType DWord -Force | Out-Null"
+    ],
+    "post_uninstall": [
+        "$backup = ensure $persist_dir",
+        "$exports = @{ 'config.reg' = 'HKCU\\Software\\FerrisPulse'; 'legacy.reg' = 'HKCU\\Software\\RazerBatteryTray'; 'aumid.reg' = 'HKCU\\Software\\Classes\\AppUserModelId\\FerrisPulse.App'; 'notifications.reg' = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings\\FerrisPulse.App' }",
+        "foreach ($reg in $exports.Keys) { $key = $exports[$reg]; if (Test-Path ($key -replace '^HKCU', 'HKCU:')) { reg export $key (Join-Path $backup $reg) /y | Out-Null } }",
+        "if (Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'FerrisPulse' -ErrorAction SilentlyContinue) { Set-Content \"$backup\\autostart\" '1' } else { Remove-Item \"$backup\\autostart\" -Force -ErrorAction SilentlyContinue }",
+        "if ($value = Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run' -Name 'FerrisPulse' -ErrorAction SilentlyContinue) { Set-Content \"$backup\\autostart-approved\" ($value.FerrisPulse -join ',') } else { Remove-Item \"$backup\\autostart-approved\" -Force -ErrorAction SilentlyContinue }",
+        "@('HKCU:\\Software\\FerrisPulse', 'HKCU:\\Software\\RazerBatteryTray', 'HKCU:\\Software\\Classes\\AppUserModelId\\FerrisPulse.App', 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings\\FerrisPulse.App') | ForEach-Object { Remove-Item $_ -Recurse -Force -ErrorAction SilentlyContinue }",
+        "Remove-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'FerrisPulse' -ErrorAction SilentlyContinue",
+        "Remove-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run' -Name 'FerrisPulse' -ErrorAction SilentlyContinue"
+    ],
+    "shortcuts": [
+        [
+            "FerrisPulse.exe",
+            "FerrisPulse"
+        ]
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Ferris-echo/FerrisPulse/releases/download/v$version/FerrisPulse_v$version_Portable.zip"
+            }
+        }
+    }
+}
