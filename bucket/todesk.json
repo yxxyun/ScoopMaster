@@ -1,36 +1,51 @@
 {
     "version": "5.2.2.0",
-    "description": "ToDesk Windows客户端",
+    "description": "A unlimited speed multifunctional remote control software",
     "homepage": "https://www.todesk.com/",
     "license": {
-        "identifier": "Unknown",
-        "url": "https://www.todesk.com/pricing.html"
+        "identifier": "Proprietary",
+        "url": "https://www.todesk.com/licence.html"
     },
-    "url": "https://update.todesk.com/windows/ToDesk_Setup.exe#/dl.7z",
-    "hash": "2e8573c9eb4dd0a934de8cfe6f5df9b8d007c2ef29de725d96a704d268b5b2fa",
+    "architecture": {
+        "64bit": {
+            "url": "https://update.todesk.com/irrigation/ToDesk_Setup_5.2.2.0_x64.exe#/dl.7z",
+            "hash": "8bd51bd7e1e35120af96e20d5e3f3fc3063dce19e52b456dc44df4543ebb6280",
+            "installer": {
+                "script": "Expand-7ZipArchive \"$dir\\app64.7z\" \"$dir\" -Removal"
+            }
+        }
+    },
     "pre_install": [
-        "Expand-7ZipArchive \"$dir\\app64.7z\" \"$dir\"",
-        "Remove-Item -R -Path \"$dir\\`$PLUGINSDIR\"",
-        "New-Item -ItemType File \"$dir\\config.ini\" -Force | Out-Null"
+        "if (!(Test-Path \"$persist_dir\\config.ini\")) {",
+        "    New-Item -Force -Path \"$persist_dir\\config.ini\" -ItemType File -Value \"[ConfigInfo]`nautoStart=0\" | Out-Null",
+        "}"
     ],
+    "post_install": "Remove-Item -Path \"$dir\\`$PLUGINSDIR\",\"$dir\\app*.7z\",\"$dir\\uninst.exe\" -Force -Recurse",
     "shortcuts": [
         [
             "ToDesk.exe",
-            "To Desk"
+            "ToDesk"
         ]
     ],
     "persist": [
-        "record",
+        "Logs",
         "config.ini"
     ],
+    "pre_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    # -RunAs 在已经提权时不会再弹 UAC",
+        "    Invoke-ExternalCommand -FilePath sc.exe -ArgumentList @('delete', 'ToDesk_Service') -Quiet -RunAs",
+        "}"
+    ],
     "checkver": {
-        "url": "https://update.todesk.com/windows/uplog.html",
-        "regex": ">([\\d.]+)</div>"
+        "url": "https://www.todesk.com/download.html",
+        "regex": "win_link_gray:\"[^\"]*ToDesk_([\\d.]+)\\.exe\""
     },
     "autoupdate": {
-        "url": "https://update.todesk.com/windows/ToDesk_Setup.exe#/dl.7z",
-        "hash": {
-            "mode": "download"
+        "architecture": {
+            "64bit": {
+                "url": "https://update.todesk.com/irrigation/ToDesk_Setup_$version_x64.exe#/dl.7z"
+            }
         }
     }
 }

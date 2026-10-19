@@ -16,29 +16,40 @@
             "Trayce"
         ]
     ],
-    "post_install": [
-        "$junctionPath = \"$env:LOCALAPPDATA\\unieditdept\\trayce\"",
-        "$exists = Test-Path $junctionPath",
-        "$isJunction = $exists -and ((Get-Item $junctionPath -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)",
-        "if (!$isJunction) {",
-        "    New-Item $persist_dir -ItemType Directory -Force | Out-Null",
-        "    if ($exists) {",
-        "        Move-Item \"$junctionPath\\*\" $persist_dir -Force",
-        "        Remove-Item $junctionPath -Recurse -Force",
+    "pre_install": [
+        "$localAppDataDir = \"$env:LOCALAPPDATA\\unieditdept\\trayce\"",
+        "New-Item -Path $persist_dir -ItemType Directory -Force -ErrorAction Stop | Out-Null",
+        "$existingItem = Get-Item -LiteralPath $localAppDataDir -Force -ErrorAction SilentlyContinue",
+        "if ($existingItem -and ($existingItem.Attributes -band [IO.FileAttributes]::ReparsePoint)) {",
+        "    if ($existingItem.LinkType -eq 'Junction' -and $existingItem.Target -eq $persist_dir) {",
+        "        return",
         "    }",
-        "    New-Item $junctionPath -ItemType Junction -Value $persist_dir | Out-Null",
-        "}"
+        "    throw \"Cannot persist Trayce data: '$localAppDataDir' is an unsupported link or points to another directory.\"",
+        "}",
+        "if ($existingItem -and !$existingItem.PSIsContainer) {",
+        "    throw \"Cannot persist Trayce data: '$localAppDataDir' is not a directory.\"",
+        "}",
+        "if ($existingItem) {",
+        "    info \"Moving Trayce data from '$localAppDataDir' to '$persist_dir'...\"",
+        "    Get-ChildItem -LiteralPath $localAppDataDir -Force -ErrorAction Stop | Move-Item -Destination $persist_dir -ErrorAction Stop",
+        "    [IO.Directory]::Delete($localAppDataDir)",
+        "}",
+        "New-Item -Path (Split-Path -Parent $localAppDataDir) -ItemType Directory -Force -ErrorAction Stop | Out-Null",
+        "info \"Creating Trayce data junction from '$localAppDataDir' to '$persist_dir'...\"",
+        "New-Item -Path $localAppDataDir -ItemType Junction -Target $persist_dir -ErrorAction Stop | Out-Null"
     ],
     "uninstaller": {
         "script": [
             "if ($cmd -eq 'uninstall') {",
-            "    $junctionPath = \"$env:LOCALAPPDATA\\unieditdept\\trayce\"",
-            "    $webviewCache = \"$env:APPDATA\\unieditdept\\trayce\"",
-            "    $isJunction = (Test-Path $junctionPath) -and ((Get-Item $junctionPath -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)",
-            "    if ($isJunction) {",
-            "        [IO.Directory]::Delete($junctionPath)",
+            "    $localAppDataDir = \"$env:LOCALAPPDATA\\unieditdept\\trayce\"",
+            "    $existingItem = Get-Item -LiteralPath $localAppDataDir -Force -ErrorAction SilentlyContinue",
+            "    if ($existingItem -and $existingItem.LinkType -eq 'Junction' -and $existingItem.Target -eq $persist_dir) {",
+            "        info \"Removing Trayce data junction at '$localAppDataDir'...\"",
+            "        [IO.Directory]::Delete($localAppDataDir)",
             "    }",
-            "    Remove-Item $webviewCache -Recurse -Force -ErrorAction SilentlyContinue",
+            "    $appDataDir = \"$env:APPDATA\\unieditdept\\trayce\"",
+            "    info \"Removing Trayce application data at '$appDataDir'...\"",
+            "    Remove-Item $appDataDir -Recurse -Force -ErrorAction SilentlyContinue",
             "}"
         ]
     },
