@@ -1,0 +1,46 @@
+{
+    "version": "3.1.0",
+    "description": "Agent2API 多提供商本地网关：把 WorkBuddy / 小浣熊 / CatPaw / AutoClaw 等桌面客户端的登录态包装成本地 OpenAI 兼容接口（http://127.0.0.1:3065/v1），附带账号管理、出网代理与请求报表，托盘常驻。",
+    "homepage": "https://github.com/Agent2API/agent2api",
+    "license": {
+        "identifier": "MIT-with-additional-restrictions",
+        "url": "https://github.com/Agent2API/agent2api/blob/main/LICENSE"
+    },
+    "url": "https://github.com/Agent2API/agent2api/releases/download/v3.1.0/Agent2API_3.1.0_x64-setup.exe#/dl.7z",
+    "hash": "3a779110e2cb7acdf24f47be8a891ec4b1b14e1b9d98ba381a3eb2077eda13a3",
+    "pre_install": [
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item \"$dir\\uninstall.exe\" -Force -ErrorAction SilentlyContinue"
+    ],
+    "bin": "agent2api.exe",
+    "shortcuts": [
+        [
+            "agent2api.exe",
+            "Agent2API"
+        ]
+    ],
+    "persist": "data",
+    "env_set": {
+        "AGENT2API_PROXY_HOME": "$persist_dir\\data"
+    },
+    "post_install": [
+        "$ErrorActionPreference = 'Stop'",
+        "# 幂等：仅当 persist 数据目录为空、且用户主目录存在旧数据时拷贝一次（copy 而非 move，源保留）",
+        "$legacy = Join-Path $env:USERPROFILE '.agent2api'",
+        "if ((Test-Path -LiteralPath $legacy) -and -not (Get-ChildItem -LiteralPath \"$persist_dir\\data\" -Force -ErrorAction SilentlyContinue)) {",
+        "    Copy-Item -Path \"$legacy\\*\" -Destination \"$persist_dir\\data\" -Recurse -Force",
+        "    info \"Copied existing Agent2API data from $legacy to persist (source kept)\"",
+        "}"
+    ],
+    "notes": [
+        "桌面端 Tauri NSIS 安装包在本清单中按便携方式解压安装（#/dl.7z），不需要管理员权限，也不会注册卸载项或写 Program Files。",
+        "数据目录：安装时设置用户环境变量 AGENT2API_PROXY_HOME = persist\\agent2api\\data（即 apps\\agent2api\\current\\data 的 junction 目标），SQLite 库、account.key、日志都在这里；升级与 scoop uninstall（不带 -p）都不会丢。首次安装若 %USERPROFILE%\\.agent2api 已有旧数据，post_install 会在 persist 为空时拷贝一次（源目录保留）。",
+        "网关与面板：http://127.0.0.1:3065/ ；OpenAI 客户端的 base_url 填 http://127.0.0.1:3065/v1，api_key 随便填（如 sk-local）。关闭窗口默认最小化到托盘，彻底退出在托盘右键选「退出」。",
+        "开机自启在应用设置页开启；登记的是 apps\\agent2api\\current\\agent2api.exe（scoop shim 与开始菜单快捷方式都指向 current 链接），升级后路径不变。若把应用目录手动移动过，需在设置页重新开关一次自启。",
+        "需要 WebView2 运行时（Windows 11 / 新版 Windows 10 自带）；本清单不调用 NSIS 安装器的 WebView2 引导安装。"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/Agent2API/agent2api/releases/download/v$version/Agent2API_$version_x64-setup.exe#/dl.7z"
+    }
+}
