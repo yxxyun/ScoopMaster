@@ -3,6 +3,7 @@
     "description": "风灵月影 / FLiNG Trainer 下载整合",
     "homepage": "https://github.com/Sqhh99/FLiNG-Downloader",
     "license": "GPL-3.0-or-later",
+    "notes": "安装和更新时会关闭程序内置的自动更新检查, 请用 scoop update fling-downloader 升级。用户设置、下载库与封面缓存保存在 Scoop 的 persist 目录, 默认下载目录为其中的 download 文件夹。更新或卸载前请先退出程序。",
     "architecture": {
         "64bit": {
             "url": "https://github.com/Sqhh99/FLiNG-Downloader/releases/download/v1.2.1/FLiNG-Downloader-v1.2.1-win-x64-portable.zip",
@@ -10,8 +11,27 @@
         }
     },
     "extract_dir": "FLiNG Downloader",
-    "shortcuts": [["FLiNG Downloader.exe", "FLiNG Downloader"]],
-    "persist": ["resources", "models"],
+    "shortcuts": [
+        [
+            "FLiNG Downloader.exe",
+            "FLiNG Downloader"
+        ]
+    ],
+    "persist": [
+        "resources",
+        "models"
+    ],
+    "persist_link": "$env:AppData\\FLiNG Downloader",
+    "post_install": [
+        "$dl = Join-Path $persist_dir 'download'",
+        "$null = New-Item $dl -ItemType Directory -Force",
+        "$ini = Join-Path $persist_dir 'config\\settings.ini'",
+        "$text = if (Test-Path $ini) { [IO.File]::ReadAllText($ini) } else { '' }",
+        "if ($text -notmatch '(?m)^downloadDirectory=') { $line = 'downloadDirectory=' + ($dl -replace '\\\\', '/'); $text = if ($text -match '(?m)^\\[General\\]') { $text -replace '(?m)^\\[General\\]', \"[General]`r`n$line\" } else { \"[General]`r`n$line`r`n$text\" } }",
+        "$text = if ($text -match '(?m)^autoCheckUpdates=') { $text -replace '(?m)^autoCheckUpdates=[^\\r\\n]*', 'autoCheckUpdates=false' } elseif ($text -match '(?m)^\\[General\\]') { $text -replace '(?m)^\\[General\\]', \"[General]`r`nautoCheckUpdates=false\" } else { \"[General]`r`nautoCheckUpdates=false`r`n$text\" }",
+        "$null = New-Item (Join-Path $persist_dir 'config') -ItemType Directory -Force",
+        "[IO.File]::WriteAllText($ini, $text)"
+    ],
     "checkver": "github",
     "autoupdate": {
         "architecture": {
