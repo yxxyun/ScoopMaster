@@ -1,8 +1,15 @@
 {
     "version": "2.0.1",
-    "description": "VacuumTube is an unofficial wrapper of YouTube Leanback (the console and Smart TV version of YouTube) for the desktop, with a built-in adblocker and minor enhancements.",
+    "description": "Unofficial desktop wrapper for YouTube Leanback (the console/Smart TV version of YouTube), with a built-in ad blocker, SponsorBlock, DeArrow and other enhancements.",
     "homepage": "https://github.com/shy1132/VacuumTube",
     "license": "MIT",
+    "notes": [
+        "便携模式：安装时会写入安装目录的 portable.txt，程序据此把所有用户数据（config.json、登录/会话、flags.txt、userstyles）放在 data\\ 下，而 data 是指向 persist\\vacuumtube\\data 的 junction。升级、卸载（不带 -p）都不会丢数据。",
+        "三种启动入口（开始菜单快捷方式、vacuumtube shim、直接运行 VacuumTube.exe）都读同一份数据；Electron 启动时会在 %APPDATA%\\VacuumTube 留一个空目录，但不写入任何数据（实测条目数 0），不存在第二份数据。",
+        "data\\ 下另有 flags.txt（追加 Chromium 参数）与 userstyles 目录；应用内 Ctrl+O 打开设置，Ctrl+Shift+I 打开开发者工具。",
+        "应用内“检查更新”对便携版只给出手动下载链接（官方 Portable ZIP），不会自行覆盖 Scoop 安装；请用 scoop update vacuumtube 升级。",
+        "支持 deeplink：vacuumtube --deeplink \"https://youtu.be/xxxx\"，也接受简写 vacuumtube \"v=xxxx\"。"
+    ],
     "architecture": {
         "64bit": {
             "url": "https://github.com/shy1132/VacuumTube/releases/download/v2.0.1/VacuumTube-x64-Portable.zip",
@@ -13,22 +20,23 @@
             "hash": "3c4a8078a0add9a93d0b6bd4b8643e9c9ad80ec3c6d7e41fe30bbf9a2d9d612e"
         }
     },
-    "pre_install": "New-Item \"$dir\\portable.txt\" -ItemType File -ErrorAction SilentlyContinue | Out-Null",
-    "persist": [
-        "data",
-        "portable.txt"
-    ],
+    "bin": "VacuumTube.exe",
     "shortcuts": [
         [
             "VacuumTube.exe",
             "VacuumTube"
         ]
     ],
-    "checkver": {
-        "url": "https://api.github.com/repos/shy1132/VacuumTube/releases",
-        "jsonpath": "$.[0].tag_name",
-        "regex": "v([\\d.]+)"
-    },
+    "persist": "data",
+    "post_install": [
+        "$ErrorActionPreference = 'Stop'",
+        "# 便携模式标记：程序据此把 userData 指到 $dir\\data（junction 到 persist\\vacuumtube\\data），此处幂等重跑",
+        "if (-not (Test-Path \"$dir\\portable.txt\")) {",
+        "    New-Item -ItemType File -Path \"$dir\\portable.txt\" -Force | Out-Null",
+        "    info '[Portable Mode]: Created portable.txt, user data lives in persist\\vacuumtube\\data'",
+        "}"
+    ],
+    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
