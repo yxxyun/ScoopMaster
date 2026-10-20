@@ -1,0 +1,45 @@
+{
+    "version": "0.3.1",
+    "description": "YouTube and YouTube Music in a single app, no ads",
+    "homepage": "https://github.com/nonbili/NouTube-Desktop",
+    "license": "AGPL-3.0-only",
+    "url": "https://github.com/nonbili/NouTube-Desktop/releases/download/v0.3.1/NouTube-0.3.1-setup.exe#/dl.7z",
+    "hash": "5e19ed6ece2df1f18d917a4792f8102242b700fb9acfedfeaa60f4932e4aade4",
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item -LiteralPath \"$dir\\[NSIS].nsi\" -Force -ErrorAction SilentlyContinue",
+        "# Remove the electron-updater config so the built-in auto-update/silent install is disabled (Scoop owns the version)",
+        "Remove-Item \"$dir\\resources\\app-update.yml\" -Force -ErrorAction SilentlyContinue"
+    ],
+    "post_install": [
+        "# The app stores login state, caches and the downloaded yt-dlp.exe in %APPDATA%\\NouTube, so junction it into the persist dir",
+        "$targetPath = \"$persist_dir\\NouTube\"",
+        "$configPath = \"$env:APPDATA\\NouTube\"",
+        "ensure $targetPath | Out-Null",
+        "$linkType = (Get-Item -Path $configPath -ErrorAction SilentlyContinue).LinkType",
+        "if (Test-Path $configPath) {",
+        "    if ($linkType -eq 'Junction') {",
+        "        Remove-Item -Path $configPath -Force -Recurse",
+        "    } else {",
+        "        Get-ChildItem -Path $configPath -Force | Move-Item -Destination $targetPath -Force",
+        "        Remove-Item -Path $configPath -Force -Recurse",
+        "    }",
+        "}",
+        "New-Item $configPath -ItemType Junction -Target $targetPath | Out-Null"
+    ],
+    "notes": [
+        "The built-in auto-update is disabled, upgrade with 'scoop update noutube'",
+        "Downloaded video/audio files are saved to the system Downloads folder and are not managed by Scoop"
+    ],
+    "shortcuts": [
+        [
+            "noutube.exe",
+            "NouTube"
+        ]
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/nonbili/NouTube-Desktop/releases/download/v$version/NouTube-$version-setup.exe#/dl.7z"
+    }
+}

@@ -36,11 +36,15 @@
     ],
     "checkver": {
         "script": [
-            "$releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/LOVECHEN/mumu-release/releases?per_page=100' -Headers @{ 'Accept' = 'application/vnd.github+json'; 'User-Agent' = 'Scoop-KiroBucket' }",
-            "$release = $releases | Where-Object { $_.tag_name -like 'win-global-offline-*' } | Select-Object -First 1",
-            "if (-not $release) { throw 'No MuMuPlayer international global release was found.' }",
-            "$asset = $release.assets | Where-Object { $_.name -match '^MuMu-setup-mumu15-V[\\d.]+-overseas-[\\d]+\\.exe$' } | Select-Object -First 1",
-            "if (-not $asset) { throw 'No MUMU15 Android 15 installer asset was found in the latest international global release.' }",
+            "$headers = @{ 'Accept' = 'application/vnd.github+json'; 'User-Agent' = 'Scoop-KiroBucket' }",
+            "if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) { $headers['Authorization'] = \"Bearer $env:GITHUB_TOKEN\" }",
+            "$releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/LOVECHEN/mumu-release/releases?per_page=100' -Headers $headers",
+            "$asset = $null",
+            "foreach ($release in $releases) {",
+            "    $asset = $release.assets | Where-Object { $_.name -match '^MuMu-setup-mumu15-V[\\d.]+-overseas-[\\d]+\\.exe$' } | Select-Object -First 1",
+            "    if ($asset) { break }",
+            "}",
+            "if (-not $asset) { throw 'No MuMuPlayer international Android 15 installer asset was found in the GitHub releases API response.' }",
             "Write-Output $asset.name"
         ],
         "regex": "mumu15-V(?<version>[\\d.]+)-overseas-(?<build>[\\d]+)"

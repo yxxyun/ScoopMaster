@@ -20,8 +20,15 @@
         "The installer registers the Fluent Store MSIX package and may install the required .NET runtime."
     ],
     "checkver": {
-        "github": "https://github.com/yoshiask/FluentStore",
-        "regex": "v([0-9]+\\.[0-9]+\\.[0-9]+-beta)"
+        "script": [
+            "$headers = @{ 'Accept' = 'application/vnd.github+json'; 'User-Agent' = 'Scoop-KiroBucket' }",
+            "if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) { $headers['Authorization'] = \"Bearer $env:GITHUB_TOKEN\" }",
+            "$releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/yoshiask/FluentStore/releases?per_page=100' -Headers $headers",
+            "$release = $releases | Where-Object { $_.tag_name -match '^v[\\d.]+-beta$' -and ($_.assets | Where-Object { $_.name -eq 'FluentStoreBeta_Installer_x64.exe' } | Select-Object -First 1) } | Select-Object -First 1",
+            "if (-not $release) { throw 'No FluentStore beta release containing the x64 installer was found.' }",
+            "Write-Output $release.tag_name"
+        ],
+        "regex": "^v(?<version>[\\d.]+-beta)$"
     },
     "autoupdate": {
         "architecture": {
