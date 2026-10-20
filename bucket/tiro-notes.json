@@ -16,8 +16,15 @@
         ]
     ],
     "checkver": {
-        "url": "https://api.github.com/repos/dotgreg/tiro-notes/releases?per_page=100",
-        "regex": "\"tag_name\"\\s*:\\s*\"(?<version>[0-9.]+)\"[\\s\\S]*?\"name\"\\s*:\\s*\"tiro-notes-win-x64\\.zip\""
+        "script": [
+            "$headers = @{ 'Accept' = 'application/vnd.github+json'; 'User-Agent' = 'Scoop-KiroBucket' }",
+            "if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) { $headers['Authorization'] = \"Bearer $env:GITHUB_TOKEN\" }",
+            "$releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/dotgreg/tiro-notes/releases?per_page=100' -Headers $headers",
+            "$release = $releases | Where-Object { $_.tag_name -match '^[0-9]+(?:\\.[0-9]+)+$' -and ($_.assets | Where-Object { $_.name -eq 'tiro-notes-win-x64.zip' } | Select-Object -First 1) } | Select-Object -First 1",
+            "if (-not $release) { throw 'No numbered Tiro Notes release containing tiro-notes-win-x64.zip was found.' }",
+            "Write-Output $release.tag_name"
+        ],
+        "regex": "^(?<version>[\\d.]+)$"
     },
     "autoupdate": {
         "url": "https://github.com/dotgreg/tiro-notes/releases/download/$version/tiro-notes-win-x64.zip"

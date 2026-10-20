@@ -1,45 +1,63 @@
 {
     "version": "26.10.5.0",
-    "description": "Sucrose Wallpaper Engine (nightly build)",
+    "description": "Sucrose Wallpaper Engine for Windows (nightly/pre-release channel; official per-user Bundle installer).",
     "homepage": "https://github.com/Taiizor/Sucrose",
     "license": "GPL-3.0",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/Taiizor/Sucrose/releases/download/v26.10.5.0/Sucrose_Bundle_.NET_Framework_4.8_x64_26.10.5.0.7z",
-            "hash": "748d9bc97b99bea5dd17386e140778df7bed5e7f40b5cdaeddf54c947f78cf4b"
+            "url": "https://github.com/Taiizor/Sucrose/releases/download/v26.10.5.0/Sucrose_Bundle_.NET_Framework_4.8_x64_26.10.5.0.exe",
+            "hash": "c7069f3ef980515882c5c0178d8448fce2aeedd4a50cce0c010c88a00d6f942f",
+            "installer": {
+                "script": "Start-Process \"$dir\\Sucrose_Bundle_.NET_Framework_4.8_x64_$version.exe\" -ArgumentList '/s' -Wait"
+            }
         },
         "32bit": {
-            "url": "https://github.com/Taiizor/Sucrose/releases/download/v26.10.5.0/Sucrose_Bundle_.NET_Framework_4.8_x86_26.10.5.0.7z",
-            "hash": "e1858bbea732ebe01e5844bd90963c44ef1785c81e79f9598f4c41a39a89ac5a"
+            "url": "https://github.com/Taiizor/Sucrose/releases/download/v26.10.5.0/Sucrose_Bundle_.NET_Framework_4.8_x86_26.10.5.0.exe",
+            "hash": "f3cd1345f61884a535d3e264c58286f01d80430bbeb1fce91885812e19bbf9af",
+            "installer": {
+                "script": "Start-Process \"$dir\\Sucrose_Bundle_.NET_Framework_4.8_x86_$version.exe\" -ArgumentList '/s' -Wait"
+            }
         },
         "arm64": {
-            "url": "https://github.com/Taiizor/Sucrose/releases/download/v26.10.5.0/Sucrose_Bundle_.NET_Framework_4.8_ARM64_26.10.5.0.7z",
-            "hash": "d3d78ff078952052decdd5baadbdaa6cdd58f59840662063ed84f599a58a3f65"
+            "url": "https://github.com/Taiizor/Sucrose/releases/download/v26.10.5.0/Sucrose_Bundle_.NET_Framework_4.8_ARM64_26.10.5.0.exe",
+            "hash": "0c83c5ed9117e6a7818cf751c0100b1323322b18a39707b355197f8241ca75d7",
+            "installer": {
+                "script": "Start-Process \"$dir\\Sucrose_Bundle_.NET_Framework_4.8_ARM64_$version.exe\" -ArgumentList '/s' -Wait"
+            }
         }
     },
-    "bin": "Sucrose.Launcher/Sucrose.Launcher.exe",
-    "shortcuts": [
-        [
-            "Sucrose.Launcher/Sucrose.Launcher.exe",
-            "Sucrose Nightly"
-        ]
-    ],
     "checkver": {
-        "url": "https://api.github.com/repos/Taiizor/Sucrose/releases?per_page=100",
-        "jsonpath": "$[?(@.prerelease==true)].tag_name",
-        "regex": "v([0-9.]+)"
+        "script": [
+            "$headers = @{ 'Accept' = 'application/vnd.github+json'; 'User-Agent' = 'Scoop-KiroBucket' }",
+            "if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) { $headers['Authorization'] = \"Bearer $env:GITHUB_TOKEN\" }",
+            "$releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/Taiizor/Sucrose/releases?per_page=100' -Headers $headers",
+            "$release = $null",
+            "foreach ($candidate in $releases) {",
+            "    if ($candidate.prerelease -ne $true -or $candidate.tag_name -notmatch '^v[\\d.]+$') { continue }",
+            "    $candidateVersion = $candidate.tag_name.Substring(1)",
+            "    $asset = $candidate.assets | Where-Object { $_.name -eq \"Sucrose_Bundle_.NET_Framework_4.8_x64_$candidateVersion.exe\" } | Select-Object -First 1",
+            "    if ($asset) { $release = $candidate; break }",
+            "}",
+            "if (-not $release) { throw 'No Sucrose pre-release with a numbered version and the x64 Bundle installer was found.' }",
+            "Write-Output $release.tag_name"
+        ],
+        "regex": "^v(?<version>[\\d.]+)$"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/Taiizor/Sucrose/releases/download/v$version/Sucrose_Bundle_.NET_Framework_4.8_x64_$version.7z"
+                "url": "https://github.com/Taiizor/Sucrose/releases/download/v$version/Sucrose_Bundle_.NET_Framework_4.8_x64_$version.exe"
             },
             "32bit": {
-                "url": "https://github.com/Taiizor/Sucrose/releases/download/v$version/Sucrose_Bundle_.NET_Framework_4.8_x86_$version.7z"
+                "url": "https://github.com/Taiizor/Sucrose/releases/download/v$version/Sucrose_Bundle_.NET_Framework_4.8_x86_$version.exe"
             },
             "arm64": {
-                "url": "https://github.com/Taiizor/Sucrose/releases/download/v$version/Sucrose_Bundle_.NET_Framework_4.8_ARM64_$version.7z"
+                "url": "https://github.com/Taiizor/Sucrose/releases/download/v$version/Sucrose_Bundle_.NET_Framework_4.8_ARM64_$version.exe"
             }
         }
-    }
+    },
+    "uninstaller": {
+        "script": "Start-Process (Get-ItemProperty HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Sucrose).UninstallString -Wait"
+    },
+    "notes": "Official per-user Bundle installer, not a portable archive. It installs to %LOCALAPPDATA%\\Sucrose and creates its own shortcuts. The stable and nightly manifests use the same per-user installation location and should not be expected to coexist side by side."
 }

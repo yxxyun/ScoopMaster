@@ -53,8 +53,15 @@
         "if ($null -ne $item -and (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) -and ([string]$item.Target -ieq $persistConfig)) { Remove-Item -LiteralPath $appData -Force }"
     ],
     "checkver": {
-        "url": "https://api.github.com/repos/thomazmoura/spotlight-dimmer/releases?per_page=100",
-        "regex": "\"tag_name\"\\s*:\\s*\"v(?<version>[\\d.]+)-windows\""
+        "script": [
+            "$headers = @{ 'Accept' = 'application/vnd.github+json'; 'User-Agent' = 'Scoop-KiroBucket' }",
+            "if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) { $headers['Authorization'] = \"Bearer $env:GITHUB_TOKEN\" }",
+            "$releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/thomazmoura/spotlight-dimmer/releases?per_page=100' -Headers $headers",
+            "$release = $releases | Where-Object { $_.tag_name -match '^v[\\d.]+-windows$' -and ($_.assets | Where-Object { $_.name -eq 'spotlight-dimmer-windows-x64.zip' } | Select-Object -First 1) } | Select-Object -First 1",
+            "if (-not $release) { throw 'No numbered Spotlight Dimmer Windows release with the x64 ZIP was found.' }",
+            "Write-Output $release.tag_name"
+        ],
+        "regex": "^v(?<version>[\\d.]+)-windows$"
     },
     "autoupdate": {
         "architecture": {

@@ -1,28 +1,42 @@
 {
-    "version": "9.59",
+    "version": "9.59-5.12",
     "license": "custom",
     "homepage": "https://hide.maruo.co.jp/software/hidemaru.html",
     "checkver": {
-        "url": "https://hide.maruo.co.jp/software/hidemaruhist.html",
-        "regex": "2[\\d]{3}/[\\d]{2}/[\\d]{2} Ver(?<version>[\\d.]+[\\d])"
+        "script": [
+            "function Get-Latest($page, $pattern) {",
+            "    $content = (Invoke-WebRequest \"https://hide.maruo.co.jp/software/$page\" -UseBasicParsing -UserAgent (Get-UserAgent) -TimeoutSec 30).Content",
+            "    [regex]::Matches($content, $pattern) | ForEach-Object { [int]$_.Groups[1].Value } | Sort-Object -Descending | Select-Object -First 1",
+            "}",
+            "$hm = \"$(Get-Latest 'hidemaru.html' 'hm(\\d+)_x64_signed\\.exe')\"",
+            "$pv = \"$(Get-Latest 'hmpv.html' 'hmpv(\\d+)_signed\\.exe')\"",
+            "\"$($hm.Insert($hm.Length - 2, '.'))-$($pv.Insert($pv.Length - 2, '.')) hm$hm hmpv$pv\""
+        ],
+        "regex": "(?<version>[\\d.]+-[\\d.]+) hm(?<hm>\\d+) hmpv(?<pv>\\d+)"
     },
-    "##": "秀丸パブリッシャー hmpv*.exe は 32bit/64bit 共通",
+    "##": [
+        "秀丸パブリッシャー hmpv*.exe は 32bit/64bit 共通",
+        "version は「エディタの版」と「パブリッシャーの版」をハイフンで連結し、どちらの更新も検知できるようにした値"
+    ],
     "architecture": {
         "64bit": {
             "url": [
                 "https://hide.maruo.co.jp/software/bin/hm959_x64_signed.exe#dl.zip",
-                "https://hide.maruo.co.jp/software/bin/hmpv510_signed.exe#dl-2.zip"
+                "https://hide.maruo.co.jp/software/bin/hmpv512_signed.exe#dl-2.zip"
             ],
             "hash": [
                 "4c8fa1e5842559b72e270f85912b0837d717094cd285c95ffafa10fb7a6d043b",
-                ""
+                "2d0e3f3fa4f551510d9e115e12dedaaea27d6420cb5e321c446dbcb1a76df40b"
             ]
         }
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://hide.maruo.co.jp/software/bin/hm$cleanVersion_x64_signed.exe#dl.zip"
+                "url": [
+                    "https://hide.maruo.co.jp/software/bin/hm$matchHm_x64_signed.exe#dl.zip",
+                    "https://hide.maruo.co.jp/software/bin/hmpv$matchPv_signed.exe#dl-2.zip"
+                ]
             }
         }
     },
