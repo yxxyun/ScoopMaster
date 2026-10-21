@@ -1,0 +1,49 @@
+{
+    "version": "0.4.5",
+    "description": "Calendario con Google para escritorios Linux y Windows.",
+    "homepage": "https://github.com/Anemone3/ko-calendar",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Anemone3/ko-calendar/releases/download/v0.4.5/ko-calendar-windows-x64.zip",
+            "hash": "a3a477c2de7f8ad9fab9af45d03855cc2c752f5bcc79dcef737375db500899cf"
+        }
+    },
+    "bin": "ko-calendar.exe",
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Anemone3/ko-calendar/releases/download/v$version/ko-calendar-windows-x64.zip"
+            }
+        },
+        "hash": {
+            "url": "$baseurl/SHA256SUMS"
+        }
+    },
+    "uninstaller": {
+        "script": [
+            "$taskInstallRoot = [IO.Path]::GetFullPath((Split-Path -Parent $dir)).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar",
+            "$taskOwnedRegistration = $false",
+            "$taskShell = New-Object -ComObject WScript.Shell",
+            "foreach ($taskName in @('ko-calendar.lnk', 'Kokonut Calendar.lnk')) {",
+            "    $taskShortcut = Join-Path ([Environment]::GetFolderPath('Programs')) $taskName",
+            "    if (Test-Path -LiteralPath $taskShortcut) {",
+            "        $taskTarget = $taskShell.CreateShortcut($taskShortcut).TargetPath",
+            "        if ($taskTarget -and [IO.Path]::GetFullPath($taskTarget).StartsWith($taskInstallRoot, [StringComparison]::OrdinalIgnoreCase)) {",
+            "            Remove-Item -LiteralPath $taskShortcut -Force",
+            "            $taskOwnedRegistration = $true",
+            "        }",
+            "    }",
+            "}",
+            "$taskIdentityPath = 'HKCU:\\Software\\Classes\\AppUserModelId\\Kokonut.Calendar'",
+            "if (Test-Path -LiteralPath $taskIdentityPath) {",
+            "    $taskIdentity = Get-ItemProperty -LiteralPath $taskIdentityPath",
+            "    if ($taskIdentity.ExecutablePath) {",
+            "        $taskOwnedRegistration = [IO.Path]::GetFullPath($taskIdentity.ExecutablePath).StartsWith($taskInstallRoot, [StringComparison]::OrdinalIgnoreCase)",
+            "    }",
+            "    if ($taskOwnedRegistration) { Remove-Item -LiteralPath $taskIdentityPath -Force }",
+            "}"
+        ]
+    }
+}
