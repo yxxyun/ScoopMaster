@@ -1,0 +1,71 @@
+{
+    "version": "2.19.7",
+    "description": "Self-hosted web app for aggregated search and playback of free online video sources (Next.js standalone build).",
+    "homepage": "https://libretv.is-an.org/",
+    "license": "AGPL-3.0-or-later",
+    "depends": "nodejs-lts",
+    "url": "https://github.com/LibreSpark/LibreTV/archive/refs/tags/v2.19.7.zip",
+    "hash": "a7b4cc1111f65c8e6dcb856463ac170ab2c845c86e4febd907370e8c9e183763",
+    "notes": [
+        "首次启动前编辑 persist\\libretv\\.env 里的 PASSWORD（默认 change-me），然后运行 libretv 或开始菜单里的 LibreTV 快捷方式。",
+        "安装时会用 npm ci + next build 现场构建，需要联网拉取 npm 依赖，耗时约 2 分钟、磁盘峰值约 700 MB，装完约 60 MB。",
+        "默认监听 127.0.0.1:8080，可用 PORT / HOSTNAME 环境变量覆盖；浏览器访问 http://127.0.0.1:8080/。"
+    ],
+    "persist": ".env",
+    "installer": {
+        "script": [
+            "$ErrorActionPreference = 'Stop'",
+            "$src = Get-ChildItem $dir -Directory -Filter 'LibreTV-*' | Select-Object -First 1",
+            "if (!$src) { abort 'LibreTV source folder not found' }",
+            "Push-Location $src.FullName",
+            "try {",
+            "    $env:DOCKER_BUILD = '1'",
+            "    $env:NEXT_TELEMETRY_DISABLED = '1'",
+            "    npm ci --no-audit --no-fund",
+            "    if ($LASTEXITCODE -ne 0) { abort 'npm ci failed' }",
+            "    npm run build",
+            "    if ($LASTEXITCODE -ne 0) { abort 'npm run build failed' }",
+            "    $app = Join-Path $dir 'app'",
+            "    New-Item $app -ItemType Directory -Force | Out-Null",
+            "    Copy-Item '.next\\standalone\\*' $app -Recurse -Force",
+            "    New-Item (Join-Path $app '.next\\static') -ItemType Directory -Force | Out-Null",
+            "    Copy-Item '.next\\static\\*' (Join-Path $app '.next\\static') -Recurse -Force",
+            "    New-Item (Join-Path $app 'public') -ItemType Directory -Force | Out-Null",
+            "    Copy-Item 'public\\*' (Join-Path $app 'public') -Recurse -Force",
+            "} finally {",
+            "    Pop-Location",
+            "    Remove-Item Env:DOCKER_BUILD -ErrorAction SilentlyContinue",
+            "}",
+            "if (!(Test-Path (Join-Path $dir 'app\\server.js'))) { abort 'LibreTV build incomplete: app\\server.js is missing' }",
+            "Remove-Item $src.FullName -Recurse -Force",
+            "[IO.File]::WriteAllText((Join-Path $dir '.env'), \"# LibreTV: set PASSWORD, then restart libretv`r`nPASSWORD=change-me`r`n\", [Text.UTF8Encoding]::new($false))",
+            "$launcher = @(",
+            "    '@echo off',",
+            "    'setlocal',",
+            "    'if not defined PORT set \"PORT=8080\"',",
+            "    'if not defined HOSTNAME set \"HOSTNAME=127.0.0.1\"',",
+            "    'set \"NODE_ENV=production\"',",
+            "    'start \"\" \"http://%HOSTNAME%:%PORT%/\"',",
+            "    ('node --env-file=\"{0}\\.env\" \"%~dp0app\\server.js\"' -f $persist_dir)",
+            ")",
+            "[IO.File]::WriteAllText((Join-Path $dir 'libretv.cmd'), ($launcher -join \"`r`n\") + \"`r`n\", [Text.UTF8Encoding]::new($false))",
+            "Write-Host \"LibreTV built. Edit $(Join-Path $persist_dir '.env') to set PASSWORD, then run 'libretv'.\""
+        ]
+    },
+    "bin": [
+        [
+            "libretv.cmd",
+            "libretv"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "libretv.cmd",
+            "LibreTV"
+        ]
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/LibreSpark/LibreTV/archive/refs/tags/v$version.zip"
+    }
+}
