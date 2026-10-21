@@ -1,0 +1,39 @@
+{
+    "version": "617.42",
+    "description": "NVIDIA display driver (DCH)",
+    "homepage": "https://www.nvidia.com/Download/index.aspx",
+    "license": "Freeware",
+    "architecture": {
+        "64bit": {
+            "url": "https://us.download.nvidia.com/Windows/617.42/617.42-notebook-win10-win11-64bit-international-dch-whql.exe#/dl.7z",
+            "hash": "f115c92760f1d677ae88f7ee114be20c10ef28a9e725736821a08218054867ca"
+        }
+    },
+    "extract_to": "setup",
+    "installer": {
+        "script": [
+            "if(!(is_admin)) { error 'This package requires admin rights to install'; break }",
+            "if ([environment]::OSVersion.Version.Major -lt 10) { error 'This package requires Windows 10/11 to install'; break }",
+            "Start-Process -Wait \"$dir\\setup\\setup.exe\" \"-s -noreboot\" -Verb RunAs"
+        ]
+    },
+    "checkver": {
+        "script": [
+            "$resp = Invoke-WebRequest -Uri 'https://gfwsl.geforce.com/services_toolkit/services/com/nvidia/services/AjaxDriverService.php?func=DriverManualLookup&psid=129&pfid=1004&osID=135&languageCode=1033&beta=0&isWHQL=0&dltype=-1&dch=1&upCRD=0&qnf=0&sort1=1&numberOfResults=1'",
+            "$json = $resp.Content | ConvertFrom-Json",
+            "$version = $json.IDS[0].downloadInfo.Version",
+            "$url = $json.IDS[0].downloadInfo.DownloadURL",
+            "$uri = New-Object System.Uri($url)",
+            "$path = $uri.PathAndQuery.TrimStart('/')",
+            "Write-Output \"$version $path\""
+        ],
+        "regex": "(?<version>.+)\\s(?<path>.+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://us.download.nvidia.com/$matchPath#/dl.7z"
+            }
+        }
+    }
+}

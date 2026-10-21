@@ -1,0 +1,27 @@
+{
+    "version": "9.29.1974.1",
+    "description": "The Microsoft DirectX End-User Runtime installs a number of runtime libraries from the legacy DirectX SDK for some games.",
+    "homepage": "https://www.microsoft.com/en-us/download/details.aspx?id=8109",
+    "license": "Proprietary",
+    "notes": "You can now remove this installer with \"scoop uninstall directx-np\"",
+    "url": "https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe#/dl.7z",
+    "hash": "053f76dcbb28802e23341b6a787e3b0791c0fa5c8d4d011b1044172dbf89c73b",
+    "installer": {
+        "file": "DXSETUP.exe",
+        "args": "/silent"
+    },
+    "pre_install": "if (-not (is_admin)) { error \"Administrator rights are required to install $app.\"; return }",
+    "checkver": {
+        "script": [
+            "$resp = Invoke-WebRequest -Uri 'https://www.microsoft.com/en-us/download/details.aspx?id=8109'",
+            "$json = $resp.Content -split '(<script>)|(</script>)' -match '__DLCDetails__' -replace 'window.__DLCDetails__=','' | ConvertFrom-Json",
+            "$version = $json.dlcDetailsView.downloadFile[0].version",
+            "$path = $json.dlcDetailsView.downloadFile[0].url -replace 'https://download.microsoft.com/download',''",
+            "Write-Output \"$version $path\""
+        ],
+        "regex": "(?<version>.+)\\s(?<path>.+)"
+    },
+    "autoupdate": {
+        "url": "https://download.microsoft.com/download$matchPath#/dl.7z"
+    }
+}

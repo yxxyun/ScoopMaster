@@ -1,0 +1,54 @@
+{
+    "version": "16.0.20430.20146",
+    "description": "Family of client software, server software and services developed by Microsoft. This package only includes Excel, PowerPoint and Word.",
+    "homepage": "https://www.office.com/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.microsoft.com/licensing/terms/productoffering/OfficeDesktopApplicationsWindows/MCA"
+    },
+    "url": [
+        "https://download.microsoft.com/download/6c1eeb25-cf8b-41d9-8d0d-cc1dbc032140/officedeploymenttool_20430-20146.exe#/dl.7z_",
+        "https://raw.githubusercontent.com/echizenryoma/Scoop/master/assets/office-365-app-apps/install-office-365-apps-home.xml",
+        "https://raw.githubusercontent.com/echizenryoma/Scoop/master/assets/office-365-app-apps/uninstall-office-365-apps.xml"
+    ],
+    "hash": [
+        "af1594121ab610cd8abc3dd6ff0a504e0cbc6ce54372e5c3813926352d1179c6",
+        "2a52d79e4dfac3143ceb23f2ebb3aedfed4f7843e5e2a84cd3336f97d05ad431",
+        "8c20cfcbfc474d5159dc59f71fb35abeb2135879f767336631a47b0b0c0982e1"
+    ],
+    "pre_install": [
+        "Start-Process -Wait \"7z.exe\" -ArgumentList @('x', \"$dir\\dl.7z_\", \"-o$dir\", '-y') -ErrorAction SilentlyContinue",
+        "Remove-Item -Path \"$dir\\dl.7z_\" -Force"
+    ],
+    "installer": {
+        "script": [
+            "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+            "Start-Process -Wait \"$dir\\setup.exe\" -ArgumentList @('/configure', \"$dir\\install-office-365-apps-home.xml\")"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "   if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+            "   Start-Process -Wait \"$dir\\setup.exe\" -ArgumentList @('/configure', \"$dir\\uninstall-office-365-apps.xml\")",
+            "}"
+        ]
+    },
+    "checkver": {
+        "script": [
+            "$resp = Invoke-WebRequest -Uri 'https://www.microsoft.com/en-us/download/details.aspx?id=49117'",
+            "$json = $resp.Content -split '(<script>)|(</script>)' -match '__DLCDetails__' -replace 'window.__DLCDetails__=','' | ConvertFrom-Json",
+            "$version = $json.dlcDetailsView.downloadFile[0].version",
+            "$path = $json.dlcDetailsView.downloadFile[0].url -replace 'https://download.microsoft.com/download',''",
+            "Write-Output \"$version $path\""
+        ],
+        "regex": "(?<version>.+)\\s(?<path>.+)"
+    },
+    "autoupdate": {
+        "url": [
+            "https://download.microsoft.com/download$matchPath#/dl.7z_",
+            "https://raw.githubusercontent.com/echizenryoma/Scoop/master/assets/office-365-app-apps/install-office-365-apps-home.xml",
+            "https://raw.githubusercontent.com/echizenryoma/Scoop/master/assets/office-365-app-apps/uninstall-office-365-apps.xml"
+        ]
+    }
+}

@@ -1,31 +1,43 @@
 {
-    "version": "v25.06.0-Release.8a87a79b",
-    "description": "A feature-rich dictionary lookup program",
-    "homepage": "https://github.com/xiaoyifang/goldendict-ng",
-    "license": "GPL-3.0-only",
+    "version": "v26.8.0",
+    "description": "A feature-rich dictionary lookup program, supporting multiple dictionary formats (StarDict/Babylon/Lingvo/Dictd/AARD/MDict/SDict) and online dictionaries, featuring perfect article rendering with the complete markup, illustrations and other content retained, and allowing you to type in words without any accents or correct case.",
+    "license": "GPL-3.0-or-later",
+    "homepage": "https://github.com/xiaoyifang/goldendict",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/xiaoyifang/goldendict-ng/releases/download/v25.06.0-Release.8a87a79b/GoldenDict-ng-25.06.0-Qt6.7.2-Windows-installer.7z"
+            "url": "https://github.com/xiaoyifang/goldendict-ng/releases/download/v26.8.0/GoldenDict-ng-26.8.0-Qt6.8.3-Windows.7z",
+            "hash": "7e297333edda6f9a209c88766ace131b6d1985f9ba270ba9dd45c01e7c916042",
+            "shortcuts": [
+                [
+                    "GoldenDict.exe",
+                    "GoldenDict"
+                ]
+            ]
         }
     },
-    "extract_dir": "GoldenDict-ng-25.06.0-Qt6.7.2",
-    "bin": "GoldenDict.exe",
-    "shortcuts": [
-        [
-            "GoldenDict.exe",
-            "GoldenDict"
-        ]
-    ],
     "persist": [
-        "portable",
-        "content"
+        "content",
+        "portable"
     ],
-    "checkver": "github",
+    "pre_install": [
+        "$unzip_dir = (Get-ChildItem -Path $original_dir -Directory)[0].FullName",
+        "Move-Item -Path \"${unzip_dir}\\*\" -Destination \"$original_dir\" -Force",
+        "Remove-Item –Path $unzip_dir -Recurse -Force"
+    ],
+    "checkver": {
+        "script": [
+            "$resp = Invoke-WebRequest -Uri 'https://api.github.com/repos/xiaoyifang/goldendict/releases/latest'",
+            "$json = $resp.Content | ConvertFrom-Json",
+            "$name = ($json.assets | Where-Object name -Match '.*Windows.*.7z$')[-1].name",
+            "$version = $json.tag_name",
+            "Write-Output \"$version $name\""
+        ],
+        "regex": "(?<version>.+)\\s(?<name>.+)"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/xiaoyifang/goldendict-ng/releases/download/$version/GoldenDict-ng-$matchHead-Qt6.7.2-Windows-installer.7z",
-                "extract_dir": "GoldenDict-ng-$matchHead-Qt6.7.2"
+                "url": "https://github.com/xiaoyifang/goldendict-ng/releases/download/$version/$matchName"
             }
         }
     }

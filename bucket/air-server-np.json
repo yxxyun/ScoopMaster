@@ -1,0 +1,47 @@
+{
+    "version": "5.7.2",
+    "description": "AirServer is the most advanced screen mirroring receiver for Mac and PC.",
+    "license": "Proprietary",
+    "homepage": "https://www.airserver.com",
+    "architecture": {
+        "64bit": {
+            "url": "https://dl.airserver.com/pc32/AirServer-5.7.2-x64.msi#/setup.msi_",
+            "hash": "173685e9c546993d9956030587ee296b61947e8944878538abd5a598b91a9bfc"
+        },
+        "32bit": {
+            "url": "https://dl.airserver.com/pc32/AirServer-5.7.2-x86.msi#/setup.msi_",
+            "hash": "6a0990ca4c8b637479233ca149714aff9ebe3fa5487133a499ca9a5fb04799d5"
+        }
+    },
+    "installer": {
+        "script": [
+            "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+            "Start-Process msiexec -ArgumentList @('/i', \"`\"$dir\\setup.msi_`\"\", '/qn', '/norestart') -Wait -Verb RunAs | Out-Null"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+            "Start-Process msiexec -ArgumentList @('/x', \"`\"$dir\\setup.msi_`\"\", '/qn', '/norestart') -Wait -Verb RunAs | Out-Null"
+        ]
+    },
+    "checkver": {
+        "script": [
+            "$resp = Invoke-WebRequest -Uri 'https://www.airserver.com/download/windows/classic/x64' -MaximumRedirection 0 -SkipHttpErrorCheck -ErrorAction Ignore",
+            "$url = $resp.Headers.Location",
+            "$version = $url -split '/|-' -match '\\d+(\\.\\d+)+$'",
+            "Write-Output \"$version\""
+        ],
+        "regex": "(?<version>.+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://dl.airserver.com/pc32/AirServer-$version-x64.msi#/setup.msi_"
+            },
+            "32bit": {
+                "url": "https://dl.airserver.com/pc32/AirServer-$version-x86.msi#/setup.msi_"
+            }
+        }
+    }
+}
