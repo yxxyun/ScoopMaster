@@ -11,7 +11,7 @@
         }
     },
     "post_install": [
-        "foreach ($reg in @('config.reg', 'legacy.reg', 'aumid.reg', 'notifications.reg')) { $file = Join-Path \"$persist_dir\" $reg; if (Test-Path $file) { reg import $file | Out-Null } }",
+        "Restore-AppRegistry -Map @{ 'config.reg' = 'HKCU\\Software\\FerrisPulse'; 'legacy.reg' = 'HKCU\\Software\\RazerBatteryTray'; 'aumid.reg' = 'HKCU\\Software\\Classes\\AppUserModelId\\FerrisPulse.App'; 'notifications.reg' = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings\\FerrisPulse.App' }",
         "if (Test-Path \"$persist_dir\\autostart\") { New-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'FerrisPulse' -Value ('\"{0}\" --autostart' -f \"$dir\\FerrisPulse.exe\") -PropertyType String -Force | Out-Null }",
         "if (Test-Path \"$persist_dir\\autostart-approved\") { $approvedKey = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run'; if (!(Test-Path $approvedKey)) { New-Item $approvedKey | Out-Null }; New-ItemProperty $approvedKey -Name 'FerrisPulse' -Value ([byte[]]@((Get-Content \"$persist_dir\\autostart-approved\" -Raw) -split ',')) -PropertyType Binary -Force | Out-Null }",
         "if (!(Test-Path 'HKCU:\\Software\\FerrisPulse')) { New-Item 'HKCU:\\Software\\FerrisPulse' | Out-Null }",
@@ -19,11 +19,9 @@
     ],
     "post_uninstall": [
         "$backup = ensure $persist_dir",
-        "$exports = @{ 'config.reg' = 'HKCU\\Software\\FerrisPulse'; 'legacy.reg' = 'HKCU\\Software\\RazerBatteryTray'; 'aumid.reg' = 'HKCU\\Software\\Classes\\AppUserModelId\\FerrisPulse.App'; 'notifications.reg' = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings\\FerrisPulse.App' }",
-        "foreach ($reg in $exports.Keys) { $key = $exports[$reg]; if (Test-Path ($key -replace '^HKCU', 'HKCU:')) { reg export $key (Join-Path $backup $reg) /y | Out-Null } }",
+        "Save-AppRegistry -To $backup -Map @{ 'config.reg' = 'HKCU\\Software\\FerrisPulse'; 'legacy.reg' = 'HKCU\\Software\\RazerBatteryTray'; 'aumid.reg' = 'HKCU\\Software\\Classes\\AppUserModelId\\FerrisPulse.App'; 'notifications.reg' = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings\\FerrisPulse.App' } -Delete",
         "if (Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'FerrisPulse' -ErrorAction SilentlyContinue) { Set-Content \"$backup\\autostart\" '1' } else { Remove-Item \"$backup\\autostart\" -Force -ErrorAction SilentlyContinue }",
         "if ($value = Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run' -Name 'FerrisPulse' -ErrorAction SilentlyContinue) { Set-Content \"$backup\\autostart-approved\" ($value.FerrisPulse -join ',') } else { Remove-Item \"$backup\\autostart-approved\" -Force -ErrorAction SilentlyContinue }",
-        "@('HKCU:\\Software\\FerrisPulse', 'HKCU:\\Software\\RazerBatteryTray', 'HKCU:\\Software\\Classes\\AppUserModelId\\FerrisPulse.App', 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings\\FerrisPulse.App') | ForEach-Object { Remove-Item $_ -Recurse -Force -ErrorAction SilentlyContinue }",
         "Remove-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'FerrisPulse' -ErrorAction SilentlyContinue",
         "Remove-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run' -Name 'FerrisPulse' -ErrorAction SilentlyContinue"
     ],
