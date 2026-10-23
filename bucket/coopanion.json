@@ -1,0 +1,59 @@
+{
+    "version": "0.2.8",
+    "description": "Coopanion 是一个桌宠, 桌宠 Coo 待在屏幕底边, 可以用气泡和你聊天、听你说话、在底边走动, 经你同意后还能操作电脑, 支持 Windows、macOS 和 Linux",
+    "homepage": "https://coo.palailab.org",
+    "license": "AGPL-3.0-or-later",
+    "notes": "数据保存在 Scoop 的 persist 目录。开机启动项在卸载时移除, 重装或更新后按新路径恢复。更新或卸载前请先退出程序。",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Pal-AI-Lab/Coopanion/releases/download/v0.2.8/Coopanion-0.2.8-win-x64-portable.zip",
+            "hash": "69ac394df418bfd34a8c260caa83d201aae1976ce4e4d890c2c4e518d5449d5b"
+        }
+    },
+    "persist": "data",
+    "post_install": [
+        "$run = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "$approved = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run'",
+        "$mark = \"$persist_dir\\autostart\"",
+        "if (Test-Path $mark) {",
+        "    $name = \"Coopanion $dir\"",
+        "    New-ItemProperty $run -Name $name -Value ('\"{0}\" --background' -f \"$dir\\Coopanion.exe\") -PropertyType String -Force | Out-Null",
+        "    if (Test-Path \"$mark-approved\") {",
+        "        if (!(Test-Path $approved)) { New-Item $approved | Out-Null }",
+        "        $bytes = [byte[]]@((Get-Content \"$mark-approved\" -Raw).Trim() -split ',')",
+        "        New-ItemProperty $approved -Name $name -Value $bytes -PropertyType Binary -Force | Out-Null",
+        "    }",
+        "    Remove-Item $mark, \"$mark-approved\" -Force -ErrorAction SilentlyContinue",
+        "}"
+    ],
+    "post_uninstall": [
+        "$run = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "$approved = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run'",
+        "$appDir = Split-Path $dir -Parent",
+        "$name = (Get-ItemProperty $run -ErrorAction SilentlyContinue).PSObject.Properties | Where-Object { ([string]$_.Value).Contains($appDir) } | Select-Object -First 1 -ExpandProperty Name",
+        "if ($name) {",
+        "    Remove-Item \"$persist_dir\\autostart*\" -Force -ErrorAction SilentlyContinue",
+        "    Set-Content \"$persist_dir\\autostart\" '1' -NoNewline",
+        "    $saved = (Get-ItemProperty $approved -Name $name -ErrorAction SilentlyContinue).$name",
+        "    if ($saved) { Set-Content \"$persist_dir\\autostart-approved\" ($saved -join ',') -NoNewline }",
+        "    Remove-ItemProperty $run -Name $name -ErrorAction SilentlyContinue",
+        "    Remove-ItemProperty $approved -Name $name -ErrorAction SilentlyContinue",
+        "}"
+    ],
+    "shortcuts": [
+        [
+            "Coopanion.exe",
+            "Coopanion"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/Pal-AI-Lab/Coopanion"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Pal-AI-Lab/Coopanion/releases/download/v$version/Coopanion-$version-win-x64-portable.zip"
+            }
+        }
+    }
+}
