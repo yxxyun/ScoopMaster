@@ -1,0 +1,57 @@
+{
+    "version": "0.2.1",
+    "description": "Turns an IR remote into a Windows PC controller: keyboard emulation, smart mouse, safe shutdown, system tray app",
+    "homepage": "https://github.com/Rocaccel/ir-comp-control",
+    "license": "0BSD",
+    "notes": "Set your COM port in config.toml (created next to the exe on first launch). Close the Arduino IDE Serial Monitor before starting.",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Rocaccel/ir-comp-control/releases/download/v0.2.1/ir-comp-control_v0.2.1-win64.exe",
+            "hash": "9738ffa2cceeda00b16447fb23b8aca5ee4651c0157a999a65923f0fc357ec09"
+        }
+    },
+    "bin": [
+        [
+            "ir-comp-control_v0.2.1-win64.exe",
+            "ir-comp-control"
+        ]
+    ],
+    "persist": "config.toml",
+    "pre_install": [
+        "$persistDir = \"$(Split-Path (Split-Path $dir))\\persist\\ir-comp-control\"",
+        "$persistFile = \"$persistDir\\config.toml\"",
+        "if (-not (Test-Path $persistFile)) {",
+        "    foreach ($v in (Get-ChildItem (Split-Path $dir) -Directory | Where-Object { $_.FullName -ne $dir } | Sort-Object Name -Descending)) {",
+        "        $c = Join-Path $v.FullName 'config.toml'",
+        "        if ((Test-Path $c -PathType Leaf) -and -not ((Get-Item $c -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {",
+        "            New-Item -ItemType Directory -Path $persistDir -Force | Out-Null",
+        "            Copy-Item $c $persistFile -Force",
+        "            break",
+        "        }",
+        "    }",
+        "}"
+    ],
+    "post_install": [
+        "$cfg = \"$dir\\config.toml\"",
+        "if (Test-Path $cfg -PathType Container) {",
+        "    (Get-Item $cfg -Force).Attributes = 'Directory, ReparsePoint'",
+        "    cmd /c rmdir \"$cfg\"",
+        "    $pd = \"$(Split-Path (Split-Path $dir))\\persist\\ir-comp-control\"",
+        "    if (Test-Path $pd) { Remove-Item $pd -Recurse -Force -ErrorAction SilentlyContinue }",
+        "}"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Rocaccel/ir-comp-control/releases/download/v$version/ir-comp-control_v$version-win64.exe"
+            }
+        },
+        "bin": [
+            [
+                "ir-comp-control_v$version-win64.exe",
+                "ir-comp-control"
+            ]
+        ]
+    }
+}

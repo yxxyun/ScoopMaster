@@ -1,5 +1,5 @@
 {
-    "version": "2.0.1",
+    "version": "2.1.1",
     "description": "Cool Again Shell: a Bash-language shell for Windows, with its Unix tools built in",
     "homepage": "https://github.com/tomcoolpxl/cash",
     "license": {
@@ -8,7 +8,8 @@
     },
     "notes": [
         "If Scoop listed a running cash above, that is this window: it keeps the old version until you close it. New tabs start the new one.",
-        "Windows Terminal has a \"cash\" profile. cash doctor checks the install."
+        "Windows Terminal has a \"cash\" profile, and the Start menu a cash entry. cash doctor checks the install.",
+        "To add \"Open cash here\" to Explorer's menu of a directory: cash --explorer-menu"
     ],
     "suggest": {
         "carapace": "extras/carapace-bin",
@@ -16,8 +17,8 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/tomcoolpxl/cash/releases/download/v2.0.1/cash-v2.0.1-x86_64-pc-windows-msvc.zip",
-            "hash": "25fed2e69c5b76a81fa1659cd91e86acf9c671f059e61a22a865a4bb2d57bc36"
+            "url": "https://github.com/tomcoolpxl/cash/releases/download/v2.1.1/cash-v2.1.1-x86_64-pc-windows-msvc.zip",
+            "hash": "6906f115a54b933fedb9fd39c16b52385761ee23e01f3b9d51c2af03a90d71c0"
         }
     },
     "bin": "cash.exe",
@@ -26,12 +27,21 @@
         "$cash = \"$(Split-Path $dir)\\current\\cash.exe\"",
         "& $cash --terminal-profile *> $null",
         "if (Test-Path \"$persist_dir\\bin\\.cash-links\") { & $cash --link-tools *> $null }",
-        "& $cash --init-rc --once *> $null"
+        "& $cash --init-rc --once *> $null",
+        "$lnk = \"$([Environment]::GetFolderPath('StartMenu'))\\Programs\\Scoop Apps\\cash.lnk\"",
+        "$wt = \"$env:LOCALAPPDATA\\Microsoft\\WindowsApps\\wt.exe\"",
+        "New-Item -ItemType Directory -Force (Split-Path $lnk) | Out-Null",
+        "$link = (New-Object -ComObject WScript.Shell).CreateShortcut($lnk)",
+        "if (Test-Path $wt) { $link.TargetPath = $wt; $link.Arguments = '-p cash' } else { $link.TargetPath = $cash; $link.WorkingDirectory = $env:USERPROFILE }",
+        "$link.IconLocation = \"$cash,0\"",
+        "$link.Save()"
     ],
     "pre_uninstall": [
         "if ($cmd -eq 'uninstall') {",
         "    if (Test-Path \"$persist_dir\\bin\\.cash-links\") { & \"$dir\\cash.exe\" --unlink-tools *> $null }",
         "    & \"$dir\\cash.exe\" --remove-terminal-profile *> $null",
+        "    & \"$dir\\cash.exe\" --remove-explorer-menu *> $null",
+        "    Remove-Item -LiteralPath \"$([Environment]::GetFolderPath('StartMenu'))\\Programs\\Scoop Apps\\cash.lnk\" -ErrorAction SilentlyContinue",
         "}"
     ],
     "checkver": "github",
