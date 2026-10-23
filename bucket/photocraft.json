@@ -1,25 +1,70 @@
 {
-    "version": "0.12.0",
-    "description": "Image editing; an open-source, clean-room reimplementation of Adobe Photoshop, rebuilt in pure Rust",
-    "homepage": "https://getartcraft.com/apps/photocraft",
-    "license": "MIT|Apache-2.0",
+    "version": "0.13.0",
+    "description": "Open-source, clean-room reimplementation of Adobe Photoshop in pure Rust: layers, masks, adjustment layers, type, vectors, brushes and real PSD files",
+    "homepage": "https://github.com/storytold/photocraft",
+    "license": "MIT OR Apache-2.0",
+    "notes": [
+        "The portable build ships 'portable.txt' beside photocraft.exe, which switches on PhotoCraft's portable mode: preferences, brush presets, crash-recovery autosaves, the GPU startup marker and logs all live in a 'PhotoCraftData' folder next to the executable. Scoop junctions that folder to '$persist_dir\\PhotoCraftData', so the data survives 'scoop update'.",
+        "With the PHOTOCRAFT_CONFIG_DIR environment variable set to a non-empty path, PhotoCraft uses that directory instead and this persist location is bypassed; while it is unset, nothing is written to %APPDATA%\\Photocraft.",
+        "The first install copies an existing %APPDATA%\\Photocraft (left by the MSI or by a plain portable copy) into the persist folder, and the pre-uninstall hook mirrors it back as a safety copy.",
+        "'photocraft-cli.exe' is exposed as the 'photocraft-cli' shim.",
+        "The portable zip does not register the '.pcraft' file association or the PSD/PSB 'Open with' entries that the MSI installer adds.",
+        "PhotoCraft has no built-in updater; use 'scoop update photocraft' so the install and this manifest stay in sync."
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/storytold/photocraft/releases/download/v0.12.0/photocraft-0.12.0-windows-x64-portable.zip",
-            "hash": "fdc8da51cba975e52ddc4dfb4833b4001c10ea7e067423b1304569a67a41aaff",
-            "extract_dir": "photocraft-0.12.0-windows-x64-portable"
-        },
-        "32bit": {
-            "url": "https://github.com/storytold/photocraft/releases/download/v0.12.0/photocraft-0.12.0-windows-x86-portable.zip",
-            "hash": "93343784400db226a306b9f5ddc71363ad7b0a0492bfa746ac20abbdb4e332b7",
-            "extract_dir": "photocraft-0.12.0-windows-x86-portable"
+            "url": "https://github.com/storytold/photocraft/releases/download/v0.13.0/photocraft-0.13.0-windows-x64-portable.zip",
+            "hash": "c766bbab26665937f6f3340b4d4e09e19dfece5b8fd64cf6e580d6dd44303655",
+            "installer": {
+                "script": [
+                    "$stage = \"$dir\\photocraft-$version-windows-x64-portable\"",
+                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
+                    "Remove-Item $stage -ErrorAction Stop"
+                ]
+            }
         },
         "arm64": {
-            "url": "https://github.com/storytold/photocraft/releases/download/v0.12.0/photocraft-0.12.0-windows-arm64-portable.zip",
-            "hash": "c187af98e40bc51ab3353159f0aad39ffa508f34d3b0ce7aabfa95ecc5320f02",
-            "extract_dir": "photocraft-0.12.0-windows-arm64-portable"
+            "url": "https://github.com/storytold/photocraft/releases/download/v0.13.0/photocraft-0.13.0-windows-arm64-portable.zip",
+            "hash": "238e45effcf1506925ce0c2e8197d36ea139b1f37759f223b4b7912dec5766f3",
+            "installer": {
+                "script": [
+                    "$stage = \"$dir\\photocraft-$version-windows-arm64-portable\"",
+                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
+                    "Remove-Item $stage -ErrorAction Stop"
+                ]
+            }
         }
     },
+    "pre_install": [
+        "$target = \"$persist_dir\\PhotoCraftData\"",
+        "$legacy = \"$env:APPDATA\\Photocraft\"",
+        "if (!(Test-Path $target) -and (Test-Path $legacy)) {",
+        "    if (Get-Process -Name 'photocraft' -ErrorAction SilentlyContinue) {",
+        "        abort 'PhotoCraft is running, so %APPDATA%\\Photocraft cannot be copied into Scoop persist safely. Quit PhotoCraft, then run the install again.'",
+        "    }",
+        "    $previous = $ErrorActionPreference",
+        "    $ErrorActionPreference = 'Continue'",
+        "    $null = robocopy $legacy $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
+        "    $code = $LASTEXITCODE",
+        "    $ErrorActionPreference = $previous",
+        "    if ($code -ge 8) { warn \"robocopy exit $code while copying '$legacy' to '$target'; compare the two directories before relying on the new location.\" } else { info \"Copied '$legacy' to '$target'.\" }",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$legacy = \"$env:APPDATA\\Photocraft\"",
+        "$data = \"$persist_dir\\PhotoCraftData\"",
+        "if (!(Test-Path $data) -or @(Get-ChildItem $data -Force).Count -eq 0) { return }",
+        "if (Get-Process -Name 'photocraft' -ErrorAction SilentlyContinue) {",
+        "    warn 'PhotoCraft is running, so the state was not mirrored back to %APPDATA%\\Photocraft. Quit it and uninstall again if you want that safety copy.'",
+        "    return",
+        "}",
+        "$previous = $ErrorActionPreference",
+        "$ErrorActionPreference = 'Continue'",
+        "$null = robocopy $data $legacy /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
+        "$code = $LASTEXITCODE",
+        "$ErrorActionPreference = $previous",
+        "if ($code -ge 8) { warn \"robocopy exit $code while mirroring '$data' back to '$legacy'.\" } else { info \"Mirrored '$data' back to '$legacy': a plain portable copy or the MSI installer reads that path, while this Scoop install uses the portable marker.\" }"
+    ],
     "bin": "photocraft-cli.exe",
     "shortcuts": [
         [
@@ -28,26 +73,15 @@
         ]
     ],
     "persist": "PhotoCraftData",
-    "checkver": {
-        "github": "https://github.com/storytold/photocraft"
-    },
+    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/storytold/photocraft/releases/download/v$version/photocraft-$version-windows-x64-portable.zip",
-                "extract_dir": "photocraft-$version-windows-x64-portable"
-            },
-            "32bit": {
-                "url": "https://github.com/storytold/photocraft/releases/download/v$version/photocraft-$version-windows-x86-portable.zip",
-                "extract_dir": "photocraft-$version-windows-x86-portable"
+                "url": "https://github.com/storytold/photocraft/releases/download/v$version/photocraft-$version-windows-x64-portable.zip"
             },
             "arm64": {
-                "url": "https://github.com/storytold/photocraft/releases/download/v$version/photocraft-$version-windows-arm64-portable.zip",
-                "extract_dir": "photocraft-$version-windows-arm64-portable"
+                "url": "https://github.com/storytold/photocraft/releases/download/v$version/photocraft-$version-windows-arm64-portable.zip"
             }
-        },
-        "hash": {
-            "url": "$baseurl/SHA256SUMS.txt"
         }
     }
 }
