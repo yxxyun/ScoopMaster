@@ -1,0 +1,67 @@
+{
+    "version": "1.3.0",
+    "description": "Japanese input helper for Windows that types Japanese and English without toggling the input mode",
+    "homepage": "https://github.com/yksr-melt/Meltype",
+    "license": "GPL-3.0-or-later",
+    "notes": [
+        "Meltype は常駐アプリです。インストール後は、一度アプリを起動してください。起動していない場合、Win + Space で Meltype を選択しても変換されません。",
+        "変換ボックス方式（カーソルの下に変換候補を表示する方式）は、そのまま使用できます。",
+        "IME 方式（入力欄に直接変換結果を入力する方式）を使う場合は、初回のみ登録が必要です。PowerShell で以下のコマンドを実行してください。管理者権限の確認が表示された場合は「はい」を選択してください。",
+        "cd \"$dir\\app\"; . .\\meltype-ime.ps1; Install-MeltypeIme -Source \"$PWD\\tip\" -Ask | Out-Null",
+        "登録が完了すると、次回の起動から自動で IME 方式が使用されます。",
+        "Windows へのサインイン時に Meltype を起動するには、トレイメニューの「Windows の起動時に起動」をオンにしてください。更新後は起動先のパスが変わるため、一度オフにしてから再度オンにしてください。",
+        "トレイメニューで変更した設定（有効/無効、モード、判定の強さ、プロファイル）は %LOCALAPPDATA%\\Meltype に保存されます。Scoop の更新では変更されません。",
+        "アプリ内の自動更新機能は使用できません。「今すぐ更新を確認」を選んでも更新の確認に失敗します。更新には scoop update meltype を使用してください。",
+        "更新後は IME の登録コマンドを再実行してください。新しいバージョンのファイルを参照するために必要です。同じビルドが登録済みの場合は変更されません。",
+        "scoop uninstall meltype を実行すると、アプリ本体に加えて、自動起動タスク、IME の登録、%LOCALAPPDATA%\\Meltype 内の設定・学習データも削除されます。必要なデータは事前にバックアップしてください。",
+        "同梱の Install.cmd は使用しないでください。実行すると Scoop の管理外に別の Meltype がインストールされてしまいます。"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/yksr-melt/Meltype/releases/download/v1.3.0/Meltype-1.3.0-windows.zip",
+            "hash": "0f3710767333bf11852483c2180ebe73cfc8e9f6727e50e6fca74119f8c6744f"
+        }
+    },
+    "post_install": "Remove-Item -LiteralPath (Join-Path $dir 'app\\update.ps1') -Force -ErrorAction SilentlyContinue",
+    "shortcuts": [
+        [
+            "app\\Meltype.exe",
+            "Meltype"
+        ]
+    ],
+    "pre_uninstall": [
+        "$exe = Join-Path $dir 'app\\Meltype.exe'",
+        "$ime = Join-Path $dir 'app\\meltype-ime.ps1'",
+        "if (Test-Path -LiteralPath $exe) { Start-Process -FilePath $exe -ArgumentList '--exit' -ErrorAction SilentlyContinue | Out-Null; Start-Sleep -Milliseconds 800 }",
+        "Get-Process Meltype, meltype_mozc_helper, AutoIME -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue",
+        "Start-Sleep -Milliseconds 300",
+        "$isUpdate = ($cmd -eq 'update') -or (Test-Path variable:old_version)",
+        "if (-not $isUpdate -and $version) { $isUpdate = (\"$(versiondir $app $version $global)\") -ne \"$dir\" }",
+        "if ($isUpdate) { Write-Host 'Updating Meltype: keeping the IME registration and the user data.'; return }",
+        "if (Test-Path -LiteralPath $ime) { . $ime; if (-not (Uninstall-MeltypeIme)) { Write-Host 'Meltype IME is still registered. Run C:\\Program Files\\Meltype\\tip\\Register-Tip.ps1 -Unregister as administrator.' } }",
+        "Remove-ItemProperty -LiteralPath 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'Meltype', 'AutoIME' -ErrorAction SilentlyContinue",
+        "& \"$env:SystemRoot\\System32\\schtasks.exe\" /Delete /TN Meltype /F 2>$null | Out-Null",
+        "foreach ($lnk in 'Meltype.lnk', 'AutoIME.lnk') { Remove-Item -LiteralPath (Join-Path ([Environment]::GetFolderPath('Startup')) $lnk) -Force -ErrorAction SilentlyContinue }",
+        "Remove-Item -LiteralPath (Join-Path ([Environment]::GetFolderPath('Programs')) 'Meltype.lnk') -Force -ErrorAction SilentlyContinue",
+        "foreach ($name in 'Meltype', 'AutoIME') { $data = Join-Path $env:LOCALAPPDATA $name; if (Test-Path -LiteralPath $data) { Remove-Item -LiteralPath $data -Recurse -Force -ErrorAction SilentlyContinue } }",
+        "$programFiles = [Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine', 'Registry64').OpenSubKey('SOFTWARE\\Microsoft\\Windows\\CurrentVersion').GetValue('ProgramFilesDir')",
+        "$leftover = Join-Path $programFiles 'Meltype'",
+        "if (Test-Path -LiteralPath $leftover) { Start-Process -FilePath (Join-Path $env:SystemRoot 'System32\\WindowsPowerShell\\v1.0\\powershell.exe') -Verb RunAs -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', \"Remove-Item -LiteralPath '$leftover' -Recurse -Force -ErrorAction SilentlyContinue\" -Wait -ErrorAction SilentlyContinue }",
+        "if (Test-Path -LiteralPath $leftover) { Write-Host \"Could not remove $leftover. Delete it as administrator.\" }",
+        "$separate = Join-Path $env:LOCALAPPDATA 'Programs\\Meltype'; if (Test-Path -LiteralPath $separate) { Write-Host \"A Meltype copy installed outside Scoop is left in place: $separate\" }"
+    ],
+    "checkver": {
+        "github": "https://github.com/yksr-melt/Meltype"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/yksr-melt/Meltype/releases/download/v$version/Meltype-$version-windows.zip",
+                "hash": {
+                    "url": "https://api.github.com/repos/yksr-melt/Meltype/releases/tags/v$version",
+                    "jsonpath": "$.assets[?(@.name == 'Meltype-$version-windows.zip')].digest"
+                }
+            }
+        }
+    }
+}
