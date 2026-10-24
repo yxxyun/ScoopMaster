@@ -9,15 +9,25 @@
     "pre_install": [
         "git clone --recurse-submodules https://github.com/DoubleYouC/Bethini-Pie-Performance-INI-Editor \"$dir\\repo\"",
         "Move-Item \"$dir\\repo\\*\" \"$dir\" ",
-        "Move-Item \"$dir\\repo\\.git\" \"$dir\" ",
-        "uv --directory \"$dir\" init",
-        "uv --directory \"$dir\" add -r requirements.txt",
-        "uv --directory \"$dir\" sync"
+        "Move-Item \"$dir\\repo\\.git\" \"$dir\" "
     ],
     "installer": {
         "script": [
-	    "Copy-Item -Path (Join-Path $bucketsdir $bucket 'scripts\\command-wrapper\\command-wrapper.vbs') -Destination (Join-Path $dir 'command-wrapper.vbs')"
-	]
+            "Copy-Item -Path (Join-Path $bucketsdir $bucket 'scripts\\env-wrapper\\env-wrapper.vbs') -Destination (Join-Path $dir 'env-wrapper.vbs')",
+            "Set-Content (Join-Path $dir 'app-env.cmd') @(",
+            "    'set \"UV_PYTHON_INSTALL_DIR=%~dp0py\"',",
+            "    'set \"UV_PYTHON_BIN_DIR=%~dp0py\\bin\"',",
+            "    'set \"UV_CACHE_DIR=%~dp0uv-cache\"',",
+            "    'set \"UV_PYTHON_PREFERENCE=only-managed\"'",
+            ")",
+            "$env:UV_PYTHON_INSTALL_DIR = Join-Path $dir 'py'",
+            "$env:UV_PYTHON_BIN_DIR = Join-Path $dir 'py\\bin'",
+            "$env:UV_CACHE_DIR = Join-Path $dir 'uv-cache'",
+            "$env:UV_PYTHON_PREFERENCE = 'only-managed'",
+            "uv --directory \"$dir\" init",
+            "uv --directory \"$dir\" add -r requirements.txt",
+            "uv --directory \"$dir\" sync"
+        ]
     },
-    "shortcuts": [["command-wrapper.vbs", "Bethini Pie", "uv run Bethini.pyw", "Icon.ico"]]
+    "shortcuts": [["env-wrapper.vbs", "Bethini Pie", "uv run Bethini.pyw", "Icon.ico"]]
 }
