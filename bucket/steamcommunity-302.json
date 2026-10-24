@@ -16,29 +16,54 @@
     "extract_dir": "Steamcommunity_302",
     "shortcuts": [
         [
-            "steamcommunity_302.exe",
+            "Steamcommunity_302.exe",
             "SteamCommunity 302"
         ]
     ],
+    "pre_install": [
+        "$programDataDir = \"$env:ProgramData\\Steamcommunity_302\"",
+        "New-Item -Path $persist_dir -ItemType Directory -Force -ErrorAction Stop | Out-Null",
+        "$existingItem = Get-Item -LiteralPath $programDataDir -Force -ErrorAction SilentlyContinue",
+        "if ($existingItem) {",
+        "    if ($existingItem.LinkType -eq 'Junction' -and $existingItem.Target -eq $persist_dir) {",
+        "        return",
+        "    }",
+        "    if (!$existingItem.PSIsContainer -or ($existingItem.Attributes -band [IO.FileAttributes]::ReparsePoint)) {",
+        "        throw \"Cannot persist Steamcommunity 302 data: '$programDataDir' is not a regular directory.\"",
+        "    }",
+        "    info \"Moving Steamcommunity 302 data from '$programDataDir' to '$persist_dir'...\"",
+        "    Get-ChildItem -LiteralPath $programDataDir -Force -ErrorAction Stop | Move-Item -Destination $persist_dir -ErrorAction Stop",
+        "    [IO.Directory]::Delete($programDataDir)",
+        "}",
+        "info \"Creating Steamcommunity 302 data junction from '$programDataDir' to '$persist_dir'...\"",
+        "New-Item -Path $programDataDir -ItemType Junction -Target $persist_dir -ErrorAction Stop | Out-Null"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    $programDataDir = \"$env:ProgramData\\Steamcommunity_302\"",
+            "    $existingItem = Get-Item -LiteralPath $programDataDir -Force -ErrorAction SilentlyContinue",
+            "    if ($existingItem -and $existingItem.LinkType -eq 'Junction' -and $existingItem.Target -eq $persist_dir) {",
+            "        info \"Removing Steamcommunity 302 data junction at '$programDataDir'...\"",
+            "        [IO.Directory]::Delete($programDataDir)",
+            "    }",
+            "    $appDataDir = \"$env:APPDATA\\Steamcommunity_302.exe\"",
+            "    info \"Removing Steamcommunity 302 WebView2 data at '$appDataDir'...\"",
+            "    Remove-Item -LiteralPath $appDataDir -Recurse -Force -ErrorAction SilentlyContinue",
+            "}"
+        ]
+    },
     "checkver": {
         "url": "https://www.dogfight360.com/blog/18682/",
-        "regex": "Steamcommunity_302_([\\d.]+)_Windows_x64\\.zip"
+        "regex": "Usbeam/(?<vdir>V\\d+)/Steamcommunity_302_(\\d+\\.\\d+\\.\\d+)_Windows_x64\\.zip"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://www.dogfight360.com/Usbeam/V$majorVersion/Steamcommunity_302_$version_Windows_x64.zip",
-                "hash": {
-                    "url": "https://www.dogfight360.com/blog/18682/",
-                    "find": "Steamcommunity_302_$version_Windows_x64\\.zip\\s+([a-fA-F0-9]{64})"
-                }
+                "url": "https://www.dogfight360.com/Usbeam/$matchVdir/Steamcommunity_302_$version_Windows_x64.zip"
             },
             "arm64": {
-                "url": "https://www.dogfight360.com/Usbeam/V$majorVersion/Steamcommunity_302_$version_Windows_arm64.zip",
-                "hash": {
-                    "url": "https://www.dogfight360.com/blog/18682/",
-                    "find": "Steamcommunity_302_$version_Windows_arm64\\.zip\\s+([a-fA-F0-9]{64})"
-                }
+                "url": "https://www.dogfight360.com/Usbeam/$matchVdir/Steamcommunity_302_$version_Windows_arm64.zip"
             }
         }
     }
