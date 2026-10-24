@@ -1,41 +1,63 @@
 {
-    "version": "2.46.2",
+    "version": "2.46.3",
     "description": "Tool for customizing the Spotify client.",
-    "homepage": "https://spicetify.app/",
-    "license": "LGPL-2.1-only",
-    "notes": "Make sure to set 'spotify_path' to the directory of your Spotify installation in the Spicetify config",
+    "homepage": "https://github.com/khanhas/spicetify-cli",
+    "license": "GPL-3.0-only",
     "suggest": {
-        "Spotify": "extras/spotify"
+        "Spotify": [
+            "spotify-latest",
+            "spotify-with-blockthespot"
+        ]
     },
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/spicetify/cli/releases/download/v2.46.2/spicetify-2.46.2-windows-x64.zip",
-            "hash": "9c579fc0020b692d98d4a90b9ddc7ecbbce667a12d6990c57eebbeb361538ceb"
-        },
-        "32bit": {
-            "url": "https://github.com/spicetify/cli/releases/download/v2.46.2/spicetify-2.46.2-windows-x32.zip",
-            "hash": "05d43c5e552311a44912a6b23b40f9202ac03db7f4e5816ea7e7b1c96207f731"
-        },
-        "arm64": {
-            "url": "https://github.com/spicetify/cli/releases/download/v2.46.2/spicetify-2.46.2-windows-arm64.zip",
-            "hash": "b821d53dae52359d2b232f63b3d18f5a358e55e9a4a3d9bd81e87052eb5321e6"
-        }
+    "url": "https://github.com/khanhas/spicetify-cli/releases/download/v2.46.3/spicetify-2.46.3-windows-x64.zip",
+    "hash": "07ea07bbbfbcb8d333d28e245d560e37b366a62bb8a784a8846bae81fc981dcf",
+    "notes": [
+        "Run `spicetify-apply` instead of `spicetify apply` to ensure changes are applied correctly, especially if `blockthespot` is also installed.",
+        "For similar reasons, `spicetify-enable-devtool` and `spicetify-disable-devtool` should be run instead of `spicetify enable-devtool` and `spicetify disable-devtool`.",
+        "--purge should be used to fully uninstall this package."
+    ],
+    "installer": {
+        "script": [
+            "if ($global) {",
+            "    Write-Host \"$app cannot be installed globally.\" -Foreground Red",
+            "    exit 1",
+            "}",
+            "",
+            "$null, $bucket = find_manifest($app)",
+            "$bucketdir = Find-BucketDirectory($bucket)",
+            "'get-spotify-path', 'init-spicetify-config', 'init-spicetify-config-and-apply', 'spicetify-apply', 'spicetify-disable-devtool', 'spicetify-enable-devtool' | ForEach-Object { Copy-Item \"$bucketdir\\..\\scripts\\$_.ps1\" -Destination $dir }",
+            "",
+            "if (-not (Test-Path (& \"$dir\\get-spotify-path.ps1\"))) {",
+            "    Write-Host \"Spotify must be installed to install $app.\" -Foreground Red",
+            "    exit 1",
+            "}",
+            "",
+            "& \"$dir\\init-spicetify-config-and-apply.ps1\""
+        ]
     },
-    "bin": "spicetify.exe",
+    "uninstaller": {
+        "script": [
+            "$spotify_running = Get-Process -ErrorAction Ignore -Name Spotify",
+            "Stop-Process -ErrorAction Ignore -Name Spotify",
+            "spicetify restore --quiet --no-restart",
+            "if (installed blockthespot) { blockthespot }",
+            "if ($spotify_running) { Start-Process \"$(scoop which Spotify)\" }",
+            "if ($purge) { Remove-Item -ErrorAction Ignore -Recurse \"$env:USERPROFILE\\.spicetify\" }"
+        ]
+    },
+    "bin": [
+        "get-spotify-path.ps1",
+        "init-spicetify-config.ps1",
+        "init-spicetify-config-and-apply.ps1",
+        "spicetify.exe",
+        "spicetify-apply.ps1",
+        "spicetify-disable-devtool.ps1",
+        "spicetify-enable-devtool.ps1"
+    ],
     "checkver": {
-        "github": "https://github.com/spicetify/cli"
+        "github": "https://github.com/khanhas/spicetify-cli"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/spicetify/cli/releases/download/v$version/spicetify-$version-windows-x64.zip"
-            },
-            "32bit": {
-                "url": "https://github.com/spicetify/cli/releases/download/v$version/spicetify-$version-windows-x32.zip"
-            },
-            "arm64": {
-                "url": "https://github.com/spicetify/cli/releases/download/v$version/spicetify-$version-windows-arm64.zip"
-            }
-        }
+        "url": "https://github.com/khanhas/spicetify-cli/releases/download/v$version/spicetify-$version-windows-x64.zip"
     }
 }
