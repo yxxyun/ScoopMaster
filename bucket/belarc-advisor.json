@@ -1,0 +1,59 @@
+{
+    "version": "13.1.0.0",
+    "description": "Generate a local browser-based report of Windows hardware, installed software, network inventory, and security status.",
+    "homepage": "https://www.belarc.com/products/belarc-advisor",
+    "license": "Proprietary",
+    "url": "https://downloads.belarc.com/advisor/advisorinstaller.exe",
+    "hash": "47EA898493F64ED818EDF9B76B0B0E047D753C3E1EBCFB70E251563D4212E56F",
+    "checkver": {
+        "url": "https://www.belarc.com/products/belarc-advisor",
+        "script": [
+            "$installerPath = Join-Path $env:TEMP 'belarc-advisor-checkver.exe'",
+            "try {",
+            "    Invoke-WebRequest -Uri 'https://downloads.belarc.com/advisor/advisorinstaller.exe' -OutFile $installerPath -UseBasicParsing",
+            "    $fileInfo = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($installerPath)",
+            "    $detectedVersion = if ($fileInfo.ProductVersion) { $fileInfo.ProductVersion.Trim() } else { $fileInfo.FileVersion.Trim() }",
+            "    if ($detectedVersion -notmatch '^\\d+(?:\\.\\d+){1,3}$') { throw \"Could not parse Belarc Advisor version from installer: $detectedVersion\" }",
+            "    $detectedVersion",
+            "} finally { Remove-Item -LiteralPath $installerPath -Force -ErrorAction SilentlyContinue }"
+        ],
+        "regex": "(\\d+(?:\\.\\d+){1,3})"
+    },
+    "installer": {
+        "args": [
+            "/S",
+            "/D=$dir"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$registryPaths = @('HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*')",
+            "$entry = Get-ItemProperty -Path $registryPaths -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq 'Belarc Advisor' -and $_.UninstallString } | Select-Object -First 1",
+            "if ($entry) {",
+            "    $normalizeVersion = { param([string]$value) $match = [regex]::Match($value, '\\d+(?:\\.\\d+){1,3}'); if (-not $match.Success) { return $value }; $parts = @($match.Value.Split('.')); while ($parts.Count -lt 4) { $parts += '0' }; return ($parts -join '.') }",
+            "    $expectedVersion = & $normalizeVersion ([string]$manifest.version)",
+            "    $installedVersion = & $normalizeVersion ([string]$entry.DisplayVersion)",
+            "    if ($entry.DisplayVersion -and $expectedVersion -and $installedVersion -ne $expectedVersion) { Write-Host \"Belarc Advisor $installedVersion is a different version from this Scoop instance ($expectedVersion); skipping external uninstall.\"; return }",
+            "    $command = if ($entry.QuietUninstallString) { [string]$entry.QuietUninstallString } else { [string]$entry.UninstallString }",
+            "    if ($command -match '^\\s*\"(?<exe>[^\"]+)\"\\s*(?<args>.*)$') { $uninstallerPath = $Matches.exe; $uninstallerArgs = $Matches.args } elseif ($command -match '^\\s*(?<exe>.+?\\.exe)\\s*(?<args>.*)$') { $uninstallerPath = $Matches.exe; $uninstallerArgs = $Matches.args } else { throw \"Could not parse Belarc Advisor uninstall command: $command\" }",
+            "    if ($uninstallerArgs -notmatch '(?i)(^|\\s)/S(?:\\s|$)') { $uninstallerArgs = ($uninstallerArgs + ' /S').Trim() }",
+            "    $process = Start-Process -FilePath $uninstallerPath -ArgumentList $uninstallerArgs -Wait -PassThru -Verb RunAs",
+            "    if ($process.ExitCode -notin @(0, 1, 1641, 3010)) { throw \"Belarc Advisor uninstaller exited with code $($process.ExitCode).\" }",
+            "}"
+        ]
+    },
+    "autoupdate": {
+        "url": "https://downloads.belarc.com/advisor/advisorinstaller.exe",
+        "hash": {
+            "mode": "download"
+        }
+    },
+    "notes": [
+        "The installer is configured to use Scoop's version directory via /D=$dir, rather than the vendor's default Program Files path.",
+        "Belarc Advisor is licensed for personal use only; commercial and government use is not permitted under the standard license.",
+        "The post-install check verifies that BelarcAdvisor.exe was actually placed inside the Scoop app directory. The installer is vendor-managed and its /D directory override has not been independently confirmed on a live Windows installation."
+    ],
+    "post_install": [
+        "if (-not (Test-Path -LiteralPath (Join-Path $dir 'BelarcAdvisor.exe') -PathType Leaf)) { throw 'Belarc Advisor did not install into the Scoop app directory. The installer may not support /D=$dir on this release; inspect the vendor installation before retrying.' }"
+    ]
+}

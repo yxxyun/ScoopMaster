@@ -1,62 +1,35 @@
 {
     "version": "5.6.0",
-    "description": "Modern YouTube downloader with a clean PySide6 interface built on yt-dlp: pick any video quality, extract audio, fetch subtitles, skip sponsor segments, and preview metadata before downloading.",
+    "description": "Modern YouTube downloader with a clean PySide6 interface. Download videos in any quality, extract audio, fetch subtitles, sponsorBlock, and view video metadata. Built with yt-dlp for reliable performance.",
     "homepage": "https://github.com/oop7/YTSage",
-    "license": "MIT",
+    "license": {
+        "identifier": "MIT license",
+        "url": "https://github.com/oop7/YTSage#MIT-1-ov-file"
+    },
+    "suggest": {
+        "ffmpeg": "ffmpeg"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/oop7/YTSage/releases/download/v5.6.0/YTSage-v5.6.0-portable.zip",
-            "hash": "d19abc911611586a7c4d166b19d49eb45044536862194a08f87a88b102f16d45"
+            "url": "https://github.com/oop7/YTSage/releases/download/v5.6.0/YTSage-v5.6.0-Setup.exe",
+            "hash": "0dc3aa70499201d13efaa87093a11489f5afc1ae790679179b54b77df53cf08b"
         }
     },
-    "pre_install": [
-        "# 上游便携包根目录里是带版本号的 YTSage-v<版本>.exe，重命名成固定名，shim/快捷方式/autoupdate 才不用跟着版本改",
-        "$exe = Get-ChildItem -Path $dir -Filter 'YTSage-v*.exe' -File -ErrorAction SilentlyContinue | Select-Object -First 1",
-        "if ($exe) { Rename-Item -Path $exe.FullName -NewName 'YTSage.exe' }"
-    ],
-    "post_install": [
-        "$ErrorActionPreference = 'Stop'",
-        "# 程序把用户数据固定在 %LOCALAPPDATA%\\YTSage（写死的路径，Windows 分支不读任何环境变量，也没有便携模式），persist 字段管不到 %LOCALAPPDATA%，所以这里把该目录接到 persist\\ytsage\\appdata：",
-        "# 链路只跟 LOCALAPPDATA 和 persist 有关，与安装目录、终端环境无关，所以快捷方式、ytsage shim、直接运行 exe 三种入口始终读写同一份数据；每次升级重跑本脚本，已接好则跳过",
-        "$target = \"$persist_dir\\appdata\"",
-        "$link = \"$env:LOCALAPPDATA\\YTSage\"",
-        "if (-not (Test-Path $target)) { New-Item $target -ItemType Directory -Force | Out-Null }",
-        "$item = Get-Item $link -Force -ErrorAction SilentlyContinue",
-        "$linked = $null",
-        "if ($item.LinkType) { $linked = (Resolve-Path -Path @($item.Target)[0] -ErrorAction SilentlyContinue).Path }",
-        "if ($linked -eq (Resolve-Path -Path $target).Path) {",
-        "    info '[Link]: %LOCALAPPDATA%\\YTSage 已接到 persist\\ytsage\\appdata，跳过'",
-        "} elseif ($linked) {",
-        "    warn \"[Link]: %LOCALAPPDATA%\\YTSage 已是指向 $linked 的链接，保持不动（数据不落在 persist，本清单的持久化对它不生效）\"",
-        "} else {",
-        "    if ($item.LinkType) {",
-        "        # 断链：链接本身不是数据，摘掉重建",
-        "        Remove-Item -Path $link -Recurse -Force",
-        "    } elseif ($item) {",
-        "        # 真实的旧数据目录（官网安装版或以前手动装过的便携版留下的）",
-        "        if (Get-ChildItem $target -Force) {",
-        "            Move-Item -Path $link -Destination \"$link.old-$(Get-Date -Format yyyyMMddHHmmss)\" -Force",
-        "            warn '[Link]: %LOCALAPPDATA%\\YTSage 里有旧数据而 persist 中已有数据，旧目录已改名保留，需要的话请手工合并'",
-        "        } else {",
-        "            Remove-Item -Path $target -Recurse -Force",
-        "            Move-Item -Path $link -Destination $target -Force",
-        "        }",
-        "    }",
-        "    New-Item -Path $link -ItemType Junction -Value $target | Out-Null",
-        "    info \"[Link]: %LOCALAPPDATA%\\YTSage -> $target\"",
-        "}"
-    ],
+    "innosetup": true,
+    "pre_install": "Get-ChildItem \"$dir\\YTSage*.exe\" | Rename-Item -NewName 'YTSage.exe'",
+    "installer": {
+        "script": [
+            "# handle runtime cache",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:LOCALAPPDATA\\YTSage\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
     "uninstaller": {
         "script": [
-            "# 只摘掉指向本清单 persist 的链接（数据本身留在 persist\\ytsage\\appdata，重装会重新接上）；指向别处的链接不动",
-            "$link = \"$env:LOCALAPPDATA\\YTSage\"",
-            "$item = Get-Item $link -Force -ErrorAction SilentlyContinue",
-            "$linked = $null",
-            "if ($item.LinkType) { $linked = (Resolve-Path -Path @($item.Target)[0] -ErrorAction SilentlyContinue).Path }",
-            "if ($linked -eq \"$persist_dir\\appdata\") {",
-            "    Remove-Item -Path $link -Recurse -Force",
-            "    info '[Link]: 已摘除 %LOCALAPPDATA%\\YTSage 链接，数据仍在 persist\\ytsage\\appdata'",
-            "}"
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:LOCALAPPDATA\\YTSage\"",
+            "Remove-Module -Name AppsUtils"
         ]
     },
     "bin": "YTSage.exe",
@@ -66,26 +39,16 @@
             "YTSage"
         ]
     ],
-    "persist": "appdata",
-    "suggest": {
-        "ffmpeg": "ffmpeg"
+    "checkver": {
+        "github": "https://api.github.com/repos/oop7/YTSage/releases",
+        "jp": "$[*].assets[*].browser_download_url",
+        "regex": "/releases/download/v([\\w.]+)/YTSage-v([\\w.]+)-Setup"
     },
-    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/oop7/YTSage/releases/download/v$version/YTSage-v$version-portable.zip"
+                "url": "https://github.com/oop7/YTSage/releases/download/v$version/YTSage-v$version-Setup.exe"
             }
         }
-    },
-    "notes": [
-        "装的是官方 Windows 便携版（YTSage-v5.6.0-portable.zip）：解压后程序在安装目录根下（已把 YTSage-v5.6.0.exe 重命名为 YTSage.exe，其余为 lib\\、python3*.dll），与官方安装版是同一份 cx_Freeze 构建。",
-        "用户数据固定写 %LOCALAPPDATA%\\YTSage（程序写死的路径，Windows 下不认任何环境变量覆盖，也没有便携模式），本清单在安装时把该目录接到 persist\\ytsage\\appdata（目录 junction）。因此：设置与语言配置 data\\ytsage_config.json、下载历史 data\\ytsage_history.json、下载队列 data\\ytsage_download_queue.json、缩略图 data\\thumbnails、日志 logs\\ytsage.log 与 logs\\ytsage_error.log，以及程序自己下载的 yt-dlp.exe / deno.exe（bin\\）实际都落在 persist 里 —— scoop update 和 scoop uninstall（不带 -p）都不会丢，scoop uninstall -p 才会连数据一起删。",
-        "开始菜单快捷方式、ytsage shim、直接运行 apps\\ytsage\\current\\YTSage.exe、以及从任何终端启动，读的都是同一份数据 —— 靠的是上面那个 junction，与安装目录和环境变量都无关，不存在某个入口另起一套数据的情况。要清空数据删 persist\\ytsage\\appdata 即可；%LOCALAPPDATA%\\YTSage 只是链接，删掉它等于断开链接（程序下次启动会另建一份真实目录），要保留数据就别动它。",
-        "首次安装时如果 %LOCALAPPDATA%\\YTSage 已存在真实数据（官网安装版留下的），安装脚本会把整份目录搬进 persist\\ytsage\\appdata 再用链接接上；如果 persist 里已经先有数据，旧目录会被改名为 %LOCALAPPDATA%\\YTSage.old-<时间戳> 保留，由你决定是否合并。",
-        "ffmpeg 需要出现在 PATH 里（程序用 where ffmpeg 找），否则首次启动会弹窗让你在应用内安装：它会把 gyan.dev 的 essentials 构建下到 %LOCALAPPDATA%\\ffmpeg，并用 setx PATH 永久改写你的用户 PATH（还会把 PATH 截断到 1024 字符）。本仓库已提供 ffmpeg，建议 scoop install ffmpeg 而不是用应用内安装；装完记得重开终端让 PATH 生效。",
-        "yt-dlp 与 deno 只认 %LOCALAPPDATA%\\YTSage\\bin\\yt-dlp.exe 和 ...\\deno.exe（程序明确忽略系统 PATH），首次启动会在应用内下载到那里；这两个目录在 persist 覆盖范围内，升级不会重下。另外单独 scoop install yt-dlp / deno 对 YTSage 没有作用，它不会用系统里的那份。",
-        "应用内「检查更新」只会在浏览器里打开 release 页面，不会自行覆盖安装；请用 scoop update ytsage 升级。",
-        "视频/音频的下载目录在应用内选择，文件由 yt-dlp 直接写到那里，Scoop 不管理。"
-    ]
+    }
 }
