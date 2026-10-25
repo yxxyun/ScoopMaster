@@ -1,0 +1,32 @@
+{
+    "version": "2022.02.13",
+    "description": "GRC InControl: Controls Windows 10/11 feature updates while allowing monthly security updates.",
+    "homepage": "https://www.grc.com/incontrol.htm",
+    "license": "Freeware",
+    "url": "https://www.grc.com/files/incontrol.exe",
+    "bin": "incontrol.exe",
+    "shortcuts": [
+        [
+            "incontrol.exe",
+            "GRC InControl"
+        ]
+    ],
+    "notes": [
+        "GRC does not publish a static SHA-256 checksum for this download. The manifest omits hash rather than inventing a value.",
+        "This program changes Windows Update targeting settings. Read the official documentation before applying control or release commands."
+    ],
+    "checkver": {
+        "script": [
+            "$html = (Invoke-WebRequest -Uri 'https://www.grc.com/incontrol.htm' -UseBasicParsing).Content",
+            "$text = [System.Net.WebUtility]::HtmlDecode([regex]::Replace($html, '<[^>]+>', ' '))",
+            "$text = [regex]::Replace($text, '\\s+', ' ')",
+            "$match = [regex]::Match($text, '(?is)File stats for:\\s*InControl.{0,1800}?Last\\s+Updated:\\s*Size:\\s*[\\d.,]+\\s*[kKmM]?\\s+(?<date>[A-Za-z]{3}\\s+\\d{1,2},\\s+\\d{4})\\s+at\\b')",
+            "if (-not $match.Success) { throw 'Unable to read the published Last Updated date for InControl.' }",
+            "[DateTime]::ParseExact($match.Groups['date'].Value, 'MMM d, yyyy', [Globalization.CultureInfo]::InvariantCulture).ToString('yyyy.MM.dd')"
+        ],
+        "regex": "(?<version>\\d{4}\\.\\d{2}\\.\\d{2})"
+    },
+    "autoupdate": {
+        "url": "https://www.grc.com/files/incontrol.exe"
+    }
+}

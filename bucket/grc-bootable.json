@@ -1,0 +1,31 @@
+{
+    "version": "2024.04.21",
+    "description": "GRC BootAble: Creates bootable FreeDOS media to check whether a PC can boot a BIOS/legacy environment.",
+    "homepage": "https://www.grc.com/bootable.htm",
+    "license": "Freeware",
+    "url": "https://www.grc.com/files/bootable.zip",
+    "shortcuts": [
+        [
+            "bootable.exe",
+            "GRC BootAble"
+        ]
+    ],
+    "notes": [
+        "GRC does not publish a static SHA-256 checksum for this download. The manifest omits hash rather than inventing a value.",
+        "Creating bootable media writes to the target drive. Secure Boot may need to be disabled and legacy/CSM boot enabled; GRC warns that disabling Secure Boot while BitLocker is active can trigger recovery-key requirements. Verify BitLocker status and back up recovery keys before changing firmware settings."
+    ],
+    "checkver": {
+        "script": [
+            "$html = (Invoke-WebRequest -Uri 'https://www.grc.com/bootable.htm' -UseBasicParsing).Content",
+            "$text = [System.Net.WebUtility]::HtmlDecode([regex]::Replace($html, '<[^>]+>', ' '))",
+            "$text = [regex]::Replace($text, '\\s+', ' ')",
+            "$match = [regex]::Match($text, '(?is)File stats for:\\s*BootAble.{0,1800}?Last\\s+Updated:\\s*Size:\\s*[\\d.,]+\\s*[kKmM]?\\s+(?<date>[A-Za-z]{3}\\s+\\d{1,2},\\s+\\d{4})\\s+at\\b')",
+            "if (-not $match.Success) { throw 'Unable to read the published Last Updated date for BootAble.' }",
+            "[DateTime]::ParseExact($match.Groups['date'].Value, 'MMM d, yyyy', [Globalization.CultureInfo]::InvariantCulture).ToString('yyyy.MM.dd')"
+        ],
+        "regex": "(?<version>\\d{4}\\.\\d{2}\\.\\d{2})"
+    },
+    "autoupdate": {
+        "url": "https://www.grc.com/files/bootable.zip"
+    }
+}

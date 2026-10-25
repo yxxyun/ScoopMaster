@@ -1,0 +1,31 @@
+{
+    "version": "2026.10.01",
+    "description": "GRC IsBootSecure: Checks whether Windows booted in UEFI mode, whether Secure Boot is enabled, and whether the firmware Platform Key is known to be unsafe.",
+    "homepage": "https://www.grc.com/isbootsecure.htm",
+    "license": "Freeware",
+    "url": "https://www.grc.com/files/isbootsecure.exe",
+    "shortcuts": [
+        [
+            "isbootsecure.exe",
+            "GRC IsBootSecure"
+        ]
+    ],
+    "notes": [
+        "GRC does not publish a static SHA-256 checksum for this download. The manifest omits hash rather than inventing a value.",
+        "Recent utility; review its report and your OEM firmware updates if an unsafe Secure Boot key is detected."
+    ],
+    "checkver": {
+        "script": [
+            "$html = (Invoke-WebRequest -Uri 'https://www.grc.com/isbootsecure.htm' -UseBasicParsing).Content",
+            "$text = [System.Net.WebUtility]::HtmlDecode([regex]::Replace($html, '<[^>]+>', ' '))",
+            "$text = [regex]::Replace($text, '\\s+', ' ')",
+            "$match = [regex]::Match($text, '(?is)File stats for:\\s*IsBootSecure.{0,1800}?Last\\s+Updated:\\s*Size:\\s*[\\d.,]+\\s*[kKmM]?\\s+(?<date>[A-Za-z]{3}\\s+\\d{1,2},\\s+\\d{4})\\s+at\\b')",
+            "if (-not $match.Success) { throw 'Unable to read the published Last Updated date for IsBootSecure.' }",
+            "[DateTime]::ParseExact($match.Groups['date'].Value, 'MMM d, yyyy', [Globalization.CultureInfo]::InvariantCulture).ToString('yyyy.MM.dd')"
+        ],
+        "regex": "(?<version>\\d{4}\\.\\d{2}\\.\\d{2})"
+    },
+    "autoupdate": {
+        "url": "https://www.grc.com/files/isbootsecure.exe"
+    }
+}

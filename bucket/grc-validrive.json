@@ -1,0 +1,31 @@
+{
+    "version": "2023.10.06",
+    "description": "GRC ValiDrive: Spot-checks USB mass-storage drives to detect fraudulent capacity and failed read/write storage.",
+    "homepage": "https://www.grc.com/validrive.htm",
+    "license": "Freeware",
+    "url": "https://www.grc.com/files/validrive.exe",
+    "shortcuts": [
+        [
+            "validrive.exe",
+            "GRC ValiDrive"
+        ]
+    ],
+    "notes": [
+        "GRC does not publish a static SHA-256 checksum for this download. The manifest omits hash rather than inventing a value.",
+        "The official page identifies the application as ValiDrive 1.0.1."
+    ],
+    "checkver": {
+        "script": [
+            "$html = (Invoke-WebRequest -Uri 'https://www.grc.com/validrive.htm' -UseBasicParsing).Content",
+            "$text = [System.Net.WebUtility]::HtmlDecode([regex]::Replace($html, '<[^>]+>', ' '))",
+            "$text = [regex]::Replace($text, '\\s+', ' ')",
+            "$match = [regex]::Match($text, '(?is)File stats for:\\s*ValiDrive.{0,1800}?Last\\s+Updated:\\s*Size:\\s*[\\d.,]+\\s*[kKmM]?\\s+(?<date>[A-Za-z]{3}\\s+\\d{1,2},\\s+\\d{4})\\s+at\\b')",
+            "if (-not $match.Success) { throw 'Unable to read the published Last Updated date for ValiDrive.' }",
+            "[DateTime]::ParseExact($match.Groups['date'].Value, 'MMM d, yyyy', [Globalization.CultureInfo]::InvariantCulture).ToString('yyyy.MM.dd')"
+        ],
+        "regex": "(?<version>\\d{4}\\.\\d{2}\\.\\d{2})"
+    },
+    "autoupdate": {
+        "url": "https://www.grc.com/files/validrive.exe"
+    }
+}

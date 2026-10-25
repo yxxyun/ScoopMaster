@@ -1,0 +1,31 @@
+{
+    "version": "2006.01.19",
+    "description": "GRC MouseTrap: Reports whether a Windows system or Wine environment is vulnerable to the historical WMF/MICE metafile execution issue.",
+    "homepage": "https://www.grc.com/wmf/wmf.htm",
+    "license": "Freeware",
+    "url": "https://www.grc.com/files/mousetrap.exe",
+    "shortcuts": [
+        [
+            "mousetrap.exe",
+            "GRC MouseTrap"
+        ]
+    ],
+    "notes": [
+        "GRC does not publish a static SHA-256 checksum for this download. The manifest omits hash rather than inventing a value.",
+        "Legacy vulnerability diagnostic from 2006. Modern Windows should be assessed using current patch and security tools."
+    ],
+    "checkver": {
+        "script": [
+            "$html = (Invoke-WebRequest -Uri 'https://www.grc.com/wmf/wmf.htm' -UseBasicParsing).Content",
+            "$text = [System.Net.WebUtility]::HtmlDecode([regex]::Replace($html, '<[^>]+>', ' '))",
+            "$text = [regex]::Replace($text, '\\s+', ' ')",
+            "$match = [regex]::Match($text, '(?is)File stats for:\\s*MouseTrap.{0,1800}?Last\\s+Updated:\\s*Size:\\s*[\\d.,]+\\s*[kKmM]?\\s+(?<date>[A-Za-z]{3}\\s+\\d{1,2},\\s+\\d{4})\\s+at\\b')",
+            "if (-not $match.Success) { throw 'Unable to read the published Last Updated date for MouseTrap.' }",
+            "[DateTime]::ParseExact($match.Groups['date'].Value, 'MMM d, yyyy', [Globalization.CultureInfo]::InvariantCulture).ToString('yyyy.MM.dd')"
+        ],
+        "regex": "(?<version>\\d{4}\\.\\d{2}\\.\\d{2})"
+    },
+    "autoupdate": {
+        "url": "https://www.grc.com/files/mousetrap.exe"
+    }
+}
