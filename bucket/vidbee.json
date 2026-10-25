@@ -1,57 +1,53 @@
 {
     "version": "2.2.4",
-    "description": "Download videos from almost any website worldwide",
+    "description": "免费开源的视频下载器：从 YouTube、Bilibili、TikTok 等 1000+ 网站下载视频、音频与字幕，可在本机生成带说话人和时间戳的可搜索文稿，再用 AI 做摘要、翻译或问答。",
     "homepage": "https://vidbee.org/",
-    "license": {
-        "identifier": "MIT license",
-        "url": "https://github.com/nexmoe/VidBee#MIT-1-ov-file"
-    },
+    "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/nexmoe/VidBee/releases/download/v2.2.4/vidbee-2.2.4-setup.exe#/dl.7z",
-            "hash": "43710ce8b6a8c0b25d6d7910cf94fd98f3da11935fd27fac4eb76e8963e1f052"
+            "url": "https://github.com/nexmoe/VidBee/releases/download/v2.2.4/vidbee-2.2.4-windows-portable.zip",
+            "hash": "65ab81dcd687d11877ce635259b7e2fb75b0fe60be4acc22b5bab1b38fcda3be"
         }
     },
+    "extract_dir": "VidBee-portable",
     "pre_install": [
-        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-        "Remove-Item \"$dir\\`$*\" -Force -Recurse"
+        "# 解出的是上游 Windows 便携版目录：应用在 Scoop 下不使用便携布局，清掉空的 Data/Downloads/Temp",
+        "Remove-Item \"$dir\\Data\", \"$dir\\Downloads\", \"$dir\\Temp\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "# 便携启动器会把 APPDATA/HOME/TEMP 重定向进安装目录（读不到浏览器 Cookie、且不再注册 vidbee:// 协议），一并清除",
+        "Remove-Item \"$dir\\README-portable.txt\", \"$dir\\Start-VidBee-Portable.ps1\", \"$dir\\Start-VidBee-Portable.vbs\", \"$dir\\VidBee Portable.lnk\" -Force -ErrorAction SilentlyContinue",
+        "# 上游自动更新是强制的（autoDownload/autoInstallOnAppQuit 为 true 且无开关），会在 Scoop 之外静默装出第二份副本，去掉更新配置",
+        "Remove-Item \"$dir\\app\\resources\\app-update.yml\" -Force -ErrorAction SilentlyContinue"
     ],
-    "installer": {
-        "script": [
-            "# handle runtime cache",
-            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name kt-devhub_extra) scripts/AppsUtils.psm1)",
-            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:APPDATA\\vidbee\"",
-            "Remove-Module -Name AppsUtils"
-        ]
-    },
-    "uninstaller": {
-        "script": [
-            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name kt-devhub_extra) scripts/AppsUtils.psm1)",
-            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\vidbee\"",
-            "Remove-Module -Name AppsUtils"
-        ]
-    },
-    "bin": "vidbee.exe",
     "shortcuts": [
         [
-            "vidbee.exe",
+            "app\\vidbee.exe",
             "VidBee"
         ]
     ],
+    "uninstaller": {
+        "script": [
+            "# 只清理指向本 Scoop 安装的协议注册，其他安装（例如官网安装版）注册的不动",
+            "foreach ($p in 'vidbee', 'com.vidbee') {",
+            "    $key = \"HKCU:\\Software\\Classes\\$p\\shell\\open\\command\"",
+            "    $cmd = (Get-ItemProperty -Path $key -Name '(default)' -ErrorAction SilentlyContinue).'(default)'",
+            "    if ($cmd -like '*\\apps\\vidbee\\*') { Remove-Item -Path \"HKCU:\\Software\\Classes\\$p\" -Recurse -Force }",
+            "}"
+        ]
+    },
     "checkver": {
-        "url": "https://api.github.com/repos/nexmoe/VidBee/releases",
-        "jp": "$[0].assets[*].browser_download_url",
-        "regex": "/releases/download/v([\\d.]+)"
+        "github": "https://github.com/nexmoe/VidBee"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/nexmoe/VidBee/releases/download/v$version/vidbee-$version-setup.exe#/dl.7z"
+                "url": "https://github.com/nexmoe/VidBee/releases/download/v$version/vidbee-$version-windows-portable.zip"
             }
-        },
-        "hash": {
-            "url": "$baseurl/latest.yml",
-            "regex": "$basename\\s+$sha256"
         }
-    }
+    },
+    "notes": [
+        "用户数据不在安装目录：设置与数据库（vidbee.db）写在 %APPDATA%\\vidbee，默认下载目录为 %USERPROFILE%\\Downloads\\VidBee（可在设置中修改），转写模型下载到 %APPDATA%\\vidbee\\models，yt-dlp 内核下载到 %APPDATA%\\vidbee\\kernels。Scoop 升级与卸载（不带 -p）都不会动这些目录，所以本清单不使用 persist；要彻底重置，删除 %APPDATA%\\vidbee 即可。",
+        "解压的是官方 Windows 便携版 zip 里的 win-unpacked，与安装版是同一份程序文件，自带 yt-dlp、ffmpeg/ffprobe 与 Node，安装后约 1.4 GB。",
+        "上游的强制自动更新已通过删除 app\\resources\\app-update.yml 关闭（否则该版本会在 Scoop 之外静默下载安装包并装出第二份副本），请用 scoop update vidbee 升级；代价是每次启动日志里会有一行 app-update.yml 相关的 error，应用内「检查更新」也会报错，均属预期，不影响使用。",
+        "首次运行会把 vidbee:// 与 com.vidbee:// 协议处理程序注册到当前用户，指向 apps\\vidbee\\current\\app\\vidbee.exe（current 链接，升级后依然有效），用于媒体导入与登录回调。"
+    ]
 }
