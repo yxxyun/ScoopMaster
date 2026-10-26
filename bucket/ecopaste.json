@@ -1,12 +1,46 @@
 {
     "version": "1.1.0",
-    "description": "A powerful open-source clipboard manager.",
-    "homepage": "https://github.com/ayangweb/EcoPaste/",
+    "description": "Open-source clipboard manager for Windows and macOS.",
+    "homepage": "https://github.com/EcoPasteHub/EcoPaste",
     "license": "Apache-2.0",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/EcoPasteHub/EcoPaste/releases/download/v1.1.0/EcoPaste_1.1.0_x64-setup.exe#/dl.7z",
+            "url": "https://github.com/EcoPasteHub/EcoPaste/releases/download/v1.1.0/EcoPaste_1.1.0_x64-setup.exe",
             "hash": "8a437d9f2cd960184942e0b1a2d1063566501928ead07cf82bc0959da534b5bf"
+        },
+        "arm64": {
+            "url": "https://github.com/EcoPasteHub/EcoPaste/releases/download/v1.1.0/EcoPaste_1.1.0_arm64-setup.exe",
+            "hash": "94a8efaf4fbb5b2be13f705da6da49a826d8e7efd2ff8f74fb88a12184d36f14"
+        }
+    },
+    "installer": {
+        "script": [
+            "$setup = Get-ChildItem -LiteralPath $dir -Filter 'EcoPaste_*_*-setup.exe' -File | Select-Object -First 1",
+            "if ($null -eq $setup) { throw 'EcoPaste setup executable was not found in the app directory.' }",
+            "$process = Start-Process -FilePath $setup.FullName -ArgumentList \"/S /UPDATE /NS /D=$dir\" -Wait -PassThru",
+            "if ($process.ExitCode -ne 0) { throw \"EcoPaste installer failed with exit code $($process.ExitCode).\" }",
+            "if (!(Test-Path -LiteralPath (Join-Path $dir 'EcoPaste.exe') -PathType Leaf)) { throw 'EcoPaste.exe was not found after installation.' }",
+            "if (!(Test-Path -LiteralPath (Join-Path $dir 'uninstall.exe') -PathType Leaf)) { throw 'EcoPaste uninstaller was not found after installation.' }",
+            "Remove-Item -LiteralPath $setup.FullName -Force -ErrorAction Stop"
+        ]
+    },
+    "checkver": {
+        "github": "https://github.com/EcoPasteHub/EcoPaste"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/EcoPasteHub/EcoPaste/releases/download/v$version/EcoPaste_$version_x64-setup.exe",
+                "hash": {
+                    "mode": "github"
+                }
+            },
+            "arm64": {
+                "url": "https://github.com/EcoPasteHub/EcoPaste/releases/download/v$version/EcoPaste_$version_arm64-setup.exe",
+                "hash": {
+                    "mode": "github"
+                }
+            }
         }
     },
     "shortcuts": [
@@ -15,14 +49,13 @@
             "EcoPaste"
         ]
     ],
-    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\uninst*\"  -Force -Recurse",
-    "notes": "EcoPaste is NOT portable.",
-    "checkver": "github",
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/EcoPasteHub/EcoPaste/releases/download/v$version/EcoPaste_$version_x64-setup.exe#/dl.7z"
-            }
-        }
+    "uninstaller": {
+        "script": [
+            "$uninstaller = Join-Path $dir 'uninstall.exe'",
+            "if (Test-Path -LiteralPath $uninstaller -PathType Leaf) {",
+            "    $process = Start-Process -FilePath $uninstaller -ArgumentList '/S' -Wait -PassThru",
+            "    if ($process.ExitCode -ne 0) { throw \"EcoPaste uninstaller failed with exit code $($process.ExitCode).\" }",
+            "}"
+        ]
     }
 }

@@ -1,0 +1,63 @@
+{
+    "version": "1.0.0-beta.4",
+    "description": "QcClip 是一款使用纯 Rust、基于 GPUI 框架原生渲染的高性能剪贴板工具",
+    "homepage": "https://github.com/mosheng1/QcClip",
+    "license": "Apache-2.0",
+    "notes": "便携模式的数据保存在 Scoop 的 persist 目录。安装和更新时会关闭程序内置的自动下载并停用定时检查, 请用 scoop update qcclip 升级。程序内手动检查更新仍会提示新版本, 手动安装会覆盖当前版本目录, 建议改用 Scoop 升级。更新或卸载前请先退出程序。",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/mosheng1/QcClip/releases/download/v1.0.0-beta.4/QcClip_1.0.0-beta.4_x64-portable.zip",
+            "hash": "48cf9a778253bffffafc1d2725bb925c9341906f7dc9b33af58fa3ff28b4e8bc"
+        },
+        "arm64": {
+            "url": "https://github.com/mosheng1/QcClip/releases/download/v1.0.0-beta.4/QcClip_1.0.0-beta.4_arm64-portable.zip",
+            "hash": "ac1e13380767fbf781aff55dd33435fe48b25915ae1a2bd7a3e384c5dc7882a7"
+        }
+    },
+    "extract_dir": "QcClip",
+    "persist": "QcClipData",
+    "post_install": [
+        "$run = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "$approved = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run'",
+        "if (Test-Path \"$persist_dir\\autostart\") { New-ItemProperty $run -Name 'QcClip' -Value ('\"{0}\"' -f \"$dir\\QcClip.exe\") -PropertyType String -Force | Out-Null }",
+        "if (Test-Path \"$persist_dir\\autostart-approved\") {",
+        "    if (!(Test-Path $approved)) { New-Item $approved | Out-Null }",
+        "    $bytes = [byte[]]@((Get-Content \"$persist_dir\\autostart-approved\" -Raw).Trim() -split ',')",
+        "    New-ItemProperty $approved -Name 'QcClip' -Value $bytes -PropertyType Binary -Force | Out-Null",
+        "}",
+        "Remove-Item \"$persist_dir\\autostart*\" -Force -ErrorAction SilentlyContinue",
+        "Set-Value 'QcClipData\\config.json' 'updates', 'autoDownload' $false",
+        "Set-Value 'QcClipData\\config.json' 'updates', 'frequency' 'never'"
+    ],
+    "post_uninstall": [
+        "$run = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "$approved = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run'",
+        "$backup = ensure $persist_dir",
+        "Remove-Item \"$backup\\autostart*\" -Force -ErrorAction SilentlyContinue",
+        "if (Get-ItemProperty $run -Name 'QcClip' -ErrorAction SilentlyContinue) { Set-Content \"$backup\\autostart\" '1' }",
+        "if ($value = Get-ItemProperty $approved -Name 'QcClip' -ErrorAction SilentlyContinue) { Set-Content \"$backup\\autostart-approved\" ($value.QcClip -join ',') }",
+        "Remove-ItemProperty $run -Name 'QcClip' -ErrorAction SilentlyContinue",
+        "Remove-ItemProperty $approved -Name 'QcClip' -ErrorAction SilentlyContinue"
+    ],
+    "shortcuts": [
+        [
+            "QcClip.exe",
+            "QcClip"
+        ]
+    ],
+    "checkver": {
+        "github": "https://api.github.com/repos/mosheng1/QcClip/releases",
+        "jsonpath": "$[*].tag_name",
+        "regex": "\"v([\\d][\\w.-]+)\""
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/mosheng1/QcClip/releases/download/v$version/QcClip_$version_x64-portable.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/mosheng1/QcClip/releases/download/v$version/QcClip_$version_arm64-portable.zip"
+            }
+        }
+    }
+}
