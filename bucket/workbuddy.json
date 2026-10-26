@@ -1,37 +1,77 @@
 {
-    "version": "5.8.4.41366630",
-    "description": "A full-scenario AI workbench from Tencent.",
-    "homepage": "https://www.workbuddy.ai",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://www.workbuddy.ai/document/term"
-    },
+    "version": "5.9.2.42136757",
+    "description": "腾讯云代码助手推出的 AI Agent 办公工具，可自主规划并交付多模态复杂任务结果。",
+    "homepage": "https://www.codebuddy.cn/work/",
+    "license": "Proprietary",
     "architecture": {
         "64bit": {
-            "url": "https://codebuddy-1328495429.cos.accelerate.myqcloud.com/workbuddy/saas/win32-x64-user/WorkBuddy-win32-x64-user-5.8.4.41366630-73952edb.exe#/dl.7z",
-            "hash": "1ca65684338e8b803afb246a0c4b7d49c90dcefcc30c296a1424bbfb9c80b843"
+            "url": "https://download.codebuddy.cn/workbuddy/saas/win32-x64-user/WorkBuddy-win32-x64-user-5.9.2.42136757-0b5051be.exe#/dl.7z",
+            "hash": "1a94726ecc9c5e065a18cb50cab4305c7d9629d154446cb7fa643cf09b7f7022",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+                "Remove-Item -Path \"$dir\\`$*\" -Recurse"
+            ]
         }
     },
-    "installer": {
-        "script": [
-            "Get-Item \"$dir\\`$PLUGINSDIR\\app*.7z\" | Select-Object -First 1 | Expand-7zipArchive -DestinationPath $dir",
-            "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Force -Recurse -ErrorAction Ignore"
-        ]
-    },
+    "post_install": [
+        "# 数据迁移：AppData\\WorkBuddy",
+        "$link = \"$env:AppData\\WorkBuddy\"",
+        "$target = ensure \"$persist_dir\\WorkBuddy\"",
+        "if (!(Get-Item $link -Force -ErrorAction SilentlyContinue).LinkType) {",
+        "    if ((Test-Path $link) -and (Get-ChildItem $target -Force -ErrorAction SilentlyContinue)) {",
+        "        Remove-Item -Path \"$link.original\" -Force -Recurse -ErrorAction SilentlyContinue",
+        "        Move-Item -Force $link \"$link.original\"",
+        "    } elseif (Test-Path $link) {",
+        "        Remove-Item -Path $target -Force -Recurse -ErrorAction SilentlyContinue",
+        "        Move-Item -Path $link -Destination $target -Force",
+        "    }",
+        "    New-DirectoryJunction $link $target | Out-Null",
+        "}",
+        "# 数据迁移：USERPROFILE\\.workbuddy",
+        "$link = \"$env:USERPROFILE\\.workbuddy\"",
+        "$target = ensure \"$persist_dir\\.workBuddy\"",
+        "if (!(Get-Item $link -Force -ErrorAction SilentlyContinue).LinkType) {",
+        "    if ((Test-Path $link) -and (Get-ChildItem $target -Force -ErrorAction SilentlyContinue)) {",
+        "        Remove-Item -Path \"$link.original\" -Force -Recurse -ErrorAction SilentlyContinue",
+        "        Move-Item -Force $link \"$link.original\"",
+        "    } elseif (Test-Path $link) {",
+        "        Remove-Item -Path $target -Force -Recurse -ErrorAction SilentlyContinue",
+        "        Move-Item -Path $link -Destination $target -Force",
+        "    }",
+        "    New-DirectoryJunction $link $target | Out-Null",
+        "}"
+    ],
     "shortcuts": [
         [
-            "WorkBuddyAI.exe",
-            "WorkBuddyAI"
+            "WorkBuddy.exe",
+            "WorkBuddy",
+            "--force-device-scale-factor=1.5"
         ]
     ],
+    "post_uninstall": [
+        "# 删除数据软连接",
+        "$link = @(\"$env:AppData\\WorkBuddy\", \"$env:USERPROFILE\\.workbuddy\")",
+        "Remove-Item -Path $link -Force -Recurse -ErrorAction SilentlyContinue"
+    ],
     "checkver": {
-        "url": "https://www.workbuddy.ai/v2/update?platform=workbuddy-win32-x64-user",
-        "regex": "WorkBuddy-win32-x64-user-(?<version>\\d+(?:\\.\\d+)+)-(?<sha>[0-9a-f]+).exe"
+        "script": [
+            "$prefix = 'https://raw.githubusercontent.com/SpecterShell/Dumplings/main/Tasks/Tencent.WorkBuddy'",
+            "$stateYamlUrl = $prefix + '/State.yaml'",
+            "$stateContent = (Invoke-WebRequest -Uri $stateYamlUrl -UseBasicParsing).Content",
+            "$logFileUrl = \"$prefix/$stateContent\"",
+            "$logContent = Invoke-RestMethod -Uri $logFileUrl -UseBasicParsing",
+            "Write-Output $logContent"
+        ],
+        "regex": "Version:\\s*(?<version>\\S+)[\\s\\S]+?InstallerUrl:\\s*\\S+/(?<name>[^/\\s]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://codebuddy-1328495429.cos.accelerate.myqcloud.com/workbuddy/saas/win32-x64-user/WorkBuddy-win32-x64-user-$version-$matchSha.exe#/dl.7z"
+                "url": "https://download.codebuddy.cn/workbuddy/saas/win32-x64-user/$matchName#/dl.7z",
+                "hash": {
+                    "url": "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests/t/Tencent/WorkBuddy/$majorVersion.$minorVersion.$patchVersion/Tencent.WorkBuddy.installer.yaml",
+                    "regex": "InstallerSha256:\\s+([a-fA-F0-9]{64})"
+                }
             }
         }
     }

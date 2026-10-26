@@ -3,11 +3,34 @@
     "description": "MultiGo - 围棋棋谱查看与编辑器，支持 SGF/BDX/NGF/GOS/GIB/UGF 等格式，可浏览分支、添加标记与注释，并支持与 GNU Go 对弈。",
     "homepage": "https://www.ruijiang.com/multigo/",
     "license": "Freeware",
+    "notes": "MultiGo 把棋盘、棋子、音效、模板等资源路径以相对安装目录的形式保存在 HKCU 选项中；Scoop 解包安装没有安装器的 HKLM 路径记录，因此本清单在安装时把这些路径改写为绝对路径，避免找不到音效和棋盘文件。命令行可用 'multigo <棋谱文件>' 打开棋谱。",
     "url": "https://www.ruijiang.com/multigo/multigo.zip",
     "hash": "1d1badf9a4a99e3909530075307aeec4240ebb096173096d3cc8b1e22a355bf6",
     "installer": {
         "script": "Expand-InnoArchive -Path \"$dir\\MultiGoSetup.exe\" -DestinationPath \"$dir\" -Removal"
     },
+    "post_install": [
+        "$cfg = 'HKCU:\\Software\\Rui Jiang\\MultiGo4\\Option'",
+        "if (!(Test-Path $cfg)) { New-Item -Path $cfg -Force | Out-Null }",
+        "$appDir = Split-Path $dir -Parent",
+        "$files = [ordered]@{",
+        "    boardBitmapPath = 'board\\board-default.bmp'",
+        "    stoneBitmapB = 'stones\\glass\\black.png'",
+        "    stoneBitmapW = 'stones\\glass\\white.png'",
+        "    MoveSoundFile = 'sound\\move.wav'",
+        "    deadStoneSoundFile3 = 'sound\\deadstoneless.wav'",
+        "    deadStoneSoundFile5 = 'sound\\deadstonemore.wav'",
+        "    templatePath = 'template\\default.sgf'",
+        "    gnuExePath = 'gnugo.exe'",
+        "}",
+        "foreach ($name in $files.Keys) {",
+        "    $old = (Get-ItemProperty -Path $cfg -Name $name -ErrorAction SilentlyContinue).$name",
+        "    if ([string]::IsNullOrEmpty($old) -or $old.StartsWith($appDir, [StringComparison]::OrdinalIgnoreCase) -or $old.StartsWith('\\')) {",
+        "        New-ItemProperty -Path $cfg -Name $name -Value (Join-Path $dir $files[$name]) -PropertyType String -Force | Out-Null",
+        "    }",
+        "}"
+    ],
+    "bin": "MultiGo.exe",
     "shortcuts": [
         [
             "MultiGo.exe",

@@ -1,18 +1,10 @@
 {
-    "homepage": "https://www.npackd.org/",
-    "license": "GPL-3.0-or-later",
-    "version": "1.26.9",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/npackd/npackd-cpp/releases/download/version_1.26.9/Npackd64-1.26.9.zip",
-            "hash": "89a1432c4324bb7d238a7eba0d86440d6ae82607a312d85b96db18e57a10759b"
-        },
-        "32bit": {
-            "url": "https://github.com/npackd/npackd-cpp/releases/download/version_1.26.9/Npackd32-1.26.9.zip",
-            "hash": "28079f414c5fcc8a6023d31f0f418bf1b166b919afdbe2445fbf9898b8e87385"
-        }
-    },
-    "bin": "npackdg.exe",
+    "version": "1.27.1",
+    "description": "Windows package manager for finding, installing, updating, and uninstalling software.",
+    "homepage": "https://www.npackd.org",
+    "license": "GPL-3.0",
+    "url": "https://github.com/npackd/npackd-cpp/releases/download/version_1.27.1/Npackd-1.27.1.0.zip",
+    "hash": "e392e33db321794270c935597feb85d93b6403c6dccf5a1a0838fa2dd5388f45",
     "shortcuts": [
         [
             "npackdg.exe",
@@ -20,17 +12,31 @@
         ]
     ],
     "checkver": {
-        "url": "https://github.com/npackd/npackd-cpp/releases",
-        "regex": "/npackd/npackd-cpp/releases/tag/version_([\\d.]+)"
+        "script": [
+            "$headers = @{ 'Accept' = 'application/vnd.github+json'; 'User-Agent' = 'Scoop-KiroBucket' }",
+            "if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) { $headers['Authorization'] = \"Bearer $env:GITHUB_TOKEN\" }",
+            "$releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/npackd/npackd-cpp/releases?per_page=100' -Headers $headers",
+            "$release = $null",
+            "foreach ($candidate in $releases) {",
+            "  if ($candidate.tag_name -match '^version_(?<version>\\d+\\.\\d+\\.\\d+)$') {",
+            "    $assetName = 'Npackd-' + $Matches.version + '.0.zip'",
+            "    if (@($candidate.assets | Where-Object { $_.name -eq $assetName }).Count -gt 0) { $release = $candidate; break }",
+            "  }",
+            "}",
+            "if (-not $release) { throw 'No Npackd GUI ZIP release with a numbered version tag was found.' }",
+            "Write-Output $release.tag_name"
+        ],
+        "regex": "^version_(?<version>[\\d.]+)$"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/npackd/npackd-cpp/releases/download/version_$version/Npackd64-$version.zip"
-            },
-            "32bit": {
-                "url": "https://github.com/npackd/npackd-cpp/releases/download/version_$version/Npackd32-$version.zip"
-            }
+        "url": "https://github.com/npackd/npackd-cpp/releases/download/version_$version/Npackd-$version.0.zip",
+        "hash": {
+            "url": "https://api.github.com/repos/npackd/npackd-cpp/releases/tags/version_$version",
+            "regex": "\"name\"\\s*:\\s*\"Npackd-$version\\.0\\.zip\"[\\s\\S]*?\"digest\"\\s*:\\s*\"sha256:([a-f0-9]{64})\""
         }
-    }
+    },
+    "notes": [
+        "Uses the official GUI ZIP archive rather than the MSI installer. The current upstream release 1.27.1 is marked as a prerelease.",
+        "Npackd manages packages independently of Scoop. Its cache and package database are stored under Windows application data; this manifest does not relocate them to D:."
+    ]
 }

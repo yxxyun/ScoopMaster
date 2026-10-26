@@ -1,5 +1,5 @@
 {
-    "version": "3.15.1",
+    "version": "3.15.2",
     "description": "A programming language that lets you work quickly and integrate systems more effectively.",
     "homepage": "https://www.python.org/",
     "license": "Python-2.0",
@@ -9,16 +9,16 @@
     ],
     "architecture": {
         "64bit": {
-            "url": "https://www.python.org/ftp/python/3.15.1/python-3.15.1-amd64.exe#/setup.exe",
-            "hash": "8b23839c6b2f3076fdff44c78d219a5393c7205f666cd95bd0c9a562bf8ea5db"
+            "url": "https://www.python.org/ftp/python/3.15.2/python-3.15.2-amd64.exe#/setup.exe",
+            "hash": "06e225a228191b0f4d1dcf6905fbb21bf9f6970d13a2ec63137ab9bee76f15aa"
         },
         "32bit": {
-            "url": "https://www.python.org/ftp/python/3.15.1/python-3.15.1.exe#/setup.exe",
-            "hash": "477dbb986b66a1ffd3e4f3bdab08f5f3d5855bb5c72f20a4adde767801cfd533"
+            "url": "https://www.python.org/ftp/python/3.15.2/python-3.15.2.exe#/setup.exe",
+            "hash": "a1040151c8af7a31dcfa3d4da2648040806dfe86050622166cbebc7747f23027"
         },
         "arm64": {
-            "url": "https://www.python.org/ftp/python/3.15.1/python-3.15.1-arm64.exe#/setup.exe",
-            "hash": "f335b7fabe85d9c1fa0fa9c591a3e5aaaf9bba818a0f15f1fad0c7d813ee6003"
+            "url": "https://www.python.org/ftp/python/3.15.2/python-3.15.2-arm64.exe#/setup.exe",
+            "hash": "a3957667a6305f0fa4c5ce6c73def927ddcad36190b9e27eb4a04e1a9a153c93"
         }
     },
     "pre_install": [
@@ -48,14 +48,10 @@
     "installer": {
         "script": [
             "Expand-DarkArchive \"$dir\\setup.exe\" \"$dir\\_tmp\"",
-            "@('path.msi', 'pip.msi') | ForEach-Object {",
+            "@('path.msi', 'pip.msi', 'appendpath.msi') | ForEach-Object {",
             "    Remove-Item \"$dir\\_tmp\\AttachedContainer\\$_\"",
             "}",
-            "(Get-ChildItem \"$dir\\_tmp\\AttachedContainer\\*.msi\").FullName | ForEach-Object {",
-            "    # appendpath.msi does not contain any file, which causes 'msiexec /a' to fail",
-            "    if($((Get-Item $_).Basename) -eq 'appendpath') { return }",
-            "    Expand-MsiArchive $_ \"$dir\" ",
-            "}",
+            "(Get-ChildItem \"$dir\\_tmp\\AttachedContainer\\*.msi\").FullName | ForEach-Object { Expand-MsiArchive $_ \"$dir\" }",
             "Remove-Item \"$dir\\_tmp\", \"$dir\\setup.exe\" -Force -Recurse",
             "if ($global) {",
             "    $pathext = (Get-EnvVar -Name PATHEXT -Global) -replace ';.PYW?', ''",
@@ -64,8 +60,6 @@
         ]
     },
     "post_install": [
-        "# pip moves the whole Scripts dir when upgrading itself if every file in it is pip's own, which breaks the persist junction",
-        "New-Item \"$persist_dir\\Scripts\\.keep\" -ItemType File -Force | Out-Null",
         "python -E -s -m ensurepip -U --default-pip | Out-Null",
         "Write-Output \"$([char]0x1b)[0m\" # Reset ansi to prevent color leak from installer"
     ],
@@ -92,10 +86,6 @@
         "Scripts",
         "."
     ],
-    "persist": [
-        "Scripts",
-        "Lib\\site-packages"
-    ],
     "checkver": {
         "url": "https://www.python.org/downloads/windows/",
         "regex": "Latest Python 3 Release - Python ([\\d.]+)"
@@ -113,8 +103,8 @@
             }
         },
         "hash": {
-            "url": "$url.spdx.json",
-            "jsonpath": "$.packages[?(@.downloadLocation == '$url')].checksums[?(@.algorithm == 'SHA256')].checksumValue"
+            "url": "https://www.python.org/downloads/release/python-$cleanVersion/",
+            "regex": "(?sm)$basename.*?$sha256"
         }
     }
 }
