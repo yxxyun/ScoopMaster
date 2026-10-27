@@ -1,0 +1,91 @@
+{
+    "version": "2.3.1",
+    "description": "A Prism Launcher fork aimed to provide a free way to play Minecraft.",
+    "homepage": "https://freesmlauncher.org/",
+    "license": "GPL-3.0-only",
+    "suggest": {
+        "Microsoft Visual C++ Redistributables": "extras/vcredist2022"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/FreesmTeam/FreesmLauncher/releases/download/2.3.1/FreesmLauncher-Windows-MSVC-Portable-2.3.1.zip",
+            "hash": "5144071af96199f79a83539960797f832937ea74eba6e8568c7d96e922cc3682"
+        },
+        "arm64": {
+            "url": "https://github.com/FreesmTeam/FreesmLauncher/releases/download/2.3.1/FreesmLauncher-Windows-MSVC-arm64-Portable-2.3.1.zip",
+            "hash": "89582159861aa1fc0feca9beda438cf49c0ac4aa4c2706a679ac46ebfb518970"
+        }
+    },
+    "pre_install": [
+        "$migration = $true",
+        "$visibleUserAccounts = Get-LocalUser | Where-Object { $_.Enabled -eq $true }",
+        "if ($global -and $visibleUserAccounts.Count -gt 1) { $migration = $false }",
+        "",
+        "$appdataPath = \"$HOME\\AppData\\Roaming\\FreesmLauncher\"",
+        "if ((Test-Path -Path $appdataPath\\*) -and (!(Test-Path -Path $persist_dir\\*)) -and $migration) {",
+        "    Write-Warning \"Migrating data from $appdataPath to $persist_dir (this may take a while)\"",
+        "    New-Item -Type Directory -Path $persist_dir | Out-Null",
+        "    Copy-Item -Recurse -Force $appdataPath\\* $persist_dir\\",
+        "} elseif (!($migration)) {",
+        "    Write-Warning \"A global Scoop installation was detected with multiple user accounts. Please see the notes at the end of the install process.\"",
+        "}",
+        "# Hardlinks cannot work properly here, as this app would create a new file instead of writing directly.",
+        "# Please keep the file list the same in both pre_install and pre_uninstall scripts.",
+        "$contents = @{",
+        "    'metacache' = '{}'",
+        "}",
+        "'accounts.json', 'metacache', 'freesmlauncher.cfg' | ForEach-Object {",
+        "    if (Test-Path \"$persist_dir\\$_\") {",
+        "        Copy-Item \"$persist_dir\\$_\" \"$dir\\$_\" -Force",
+        "    } else {",
+        "        Set-Content -Path \"$dir\\$_\" -Value $contents[$_]",
+        "    }",
+        "}",
+        "Remove-Item -Path \"$dir\\freesmlauncher_updater.exe\" -Force -ErrorAction Ignore"
+    ],
+    "bin": "freesmlauncher.exe",
+    "shortcuts": [
+        [
+            "freesmlauncher.exe",
+            "Freesm Launcher"
+        ]
+    ],
+    "persist": [
+        "assets",
+        "cache",
+        "catpacks",
+        "icons",
+        "iconthemes",
+        "instances",
+        "java",
+        "libraries",
+        "logs",
+        "meta",
+        "mods",
+        "skins",
+        "themes",
+        "translations"
+    ],
+    "pre_uninstall": [
+        "# Hardlinks cannot work properly here, as this app would create a new file instead of writing directly.",
+        "# Please keep the file list the same in both pre_install and pre_uninstall scripts.",
+        "'accounts.json', 'metacache', 'freesmlauncher.cfg' | ForEach-Object {",
+        "    if (Test-Path -Path \"$dir\\$_\") {",
+        "        Copy-Item -Path \"$dir\\$_\" -Destination \"$persist_dir\\$_\" -Force",
+        "    }",
+        "}"
+    ],
+    "checkver": {
+        "github": "https://github.com/FreesmTeam/FreesmLauncher"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/FreesmTeam/FreesmLauncher/releases/download/$version/FreesmLauncher-Windows-MSVC-Portable-$version.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/FreesmTeam/FreesmLauncher/releases/download/$version/FreesmLauncher-Windows-MSVC-arm64-Portable-$version.zip"
+            }
+        }
+    }
+}
