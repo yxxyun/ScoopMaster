@@ -1,50 +1,79 @@
 {
     "version": "2.1.4",
-    "description": "The open source AI coding agent. (v2)",
-    "homepage": "https://opencode.ai/v2",
-    "license": "MIT",
-    "notes": [
-        "The v2 configuration is incompatible with v1. Uninstall 'opencode' first, then install this version.",
-        "See https://opencode.ai/v2/docs/migrate-v1/ for migration steps."
-    ],
-    "architecture": {
-        "64bit": {
-            "url": "https://registry.npmjs.org/@opencode/cli-windows-x64/-/cli-windows-x64-2.1.4.tgz",
-            "hash": "sha512:f61d0d6ffde0e87c67158ea56b04aa3520b17a4d0adf350f8ce028176d29c8f05a2ccabae6c5df58b5708324bfdb500cd0dad4c3bed2f4278fd2d3ccf97adb19"
-        },
-        "arm64": {
-            "url": "https://registry.npmjs.org/@opencode/cli-windows-arm64/-/cli-windows-arm64-2.1.4.tgz",
-            "hash": "sha512:643286fb6ae10986f69e097507f1fc2f1da597d36334b860863d74fd66abf5e2b9012632b16bd1fb6ebe05dbfefc9dbd7997737975622673b07f7b5905d31a90"
-        }
+    "description": "The open source AI coding agent. V2",
+    "homepage": "https://opencode.ai/",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/anomalyco/opencode/blob/dev/LICENSE"
     },
+    "url": "https://registry.npmjs.org/@opencode/cli-windows-x64/-/cli-windows-x64-2.1.4.tgz",
+    "hash": "sha512:f61d0d6ffde0e87c67158ea56b04aa3520b17a4d0adf350f8ce028176d29c8f05a2ccabae6c5df58b5708324bfdb500cd0dad4c3bed2f4278fd2d3ccf97adb19",
     "extract_dir": "package\\bin",
-    "bin": [
-        "opencode.exe",
-        [
-            "opencode.exe",
-            "opencode2"
-        ]
+    "pre_install": [
+        "# Please keep the folder list the same in both pre_install and uninstaller scripts.",
+        "$folders = @{",
+        "    'config' = if ($env:XDG_CONFIG_HOME) { $env:XDG_CONFIG_HOME } else { \"$env:USERPROFILE\\.config\" }",
+        "    'cache' = if ($env:XDG_CACHE_HOME) { $env:XDG_CACHE_HOME } else { \"$env:USERPROFILE\\.cache\" }",
+        "    'data' = if ($env:XDG_DATA_HOME) { $env:XDG_DATA_HOME } else { \"$env:USERPROFILE\\.local\\share\" }",
+        "    'state' = if ($env:XDG_STATE_HOME) { $env:XDG_STATE_HOME } else { \"$env:USERPROFILE\\.local\\state\" }",
+        "}",
+        "foreach ($name in $folders.Keys) {",
+        "    $link = \"$($folders[$name])\\opencode\"",
+        "    $target = \"$persist_dir\\$name\"",
+        "    $item = Get-Item -Path $link -Force -ErrorAction Ignore",
+        "    if ($item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {",
+        "        [IO.Directory]::Delete($link)",
+        "    } elseif ($item) {",
+        "        if (!(Test-Path \"$target\")) {",
+        "            Write-Host \"Migrating '$link' to persist directory...\" -ForegroundColor Yellow",
+        "            New-Item \"$persist_dir\" -ItemType Directory -Force | Out-Null",
+        "            Copy-Item -Path $link -Destination $target -Recurse -Force",
+        "            Remove-Item -Path $link -Recurse -Force",
+        "        } else {",
+        "            $backup = \"opencode.bak-$(Get-Date -Format 'yyyyMMddHHmmss')\"",
+        "            Write-Host \"Persist data already exists, '$link' renamed to '$backup'.\" -ForegroundColor Yellow",
+        "            Rename-Item -Path $link -NewName $backup",
+        "        }",
+        "    }",
+        "    if (!(Test-Path \"$target\")) { New-Item \"$target\" -ItemType Directory -Force | Out-Null }",
+        "    if (!(Test-Path \"$($folders[$name])\")) { New-Item \"$($folders[$name])\" -ItemType Directory -Force | Out-Null }",
+        "    New-Item -Path $link -ItemType Junction -Value $target | Out-Null",
+        "}"
     ],
+    "bin": "opencode.exe",
+    "persist": [
+        "config",
+        "cache",
+        "data",
+        "state"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    # Please keep the folder list the same in both pre_install and uninstaller scripts.",
+            "    $folders = @{",
+            "        'config' = if ($env:XDG_CONFIG_HOME) { $env:XDG_CONFIG_HOME } else { \"$env:USERPROFILE\\.config\" }",
+            "        'cache' = if ($env:XDG_CACHE_HOME) { $env:XDG_CACHE_HOME } else { \"$env:USERPROFILE\\.cache\" }",
+            "        'data' = if ($env:XDG_DATA_HOME) { $env:XDG_DATA_HOME } else { \"$env:USERPROFILE\\.local\\share\" }",
+            "        'state' = if ($env:XDG_STATE_HOME) { $env:XDG_STATE_HOME } else { \"$env:USERPROFILE\\.local\\state\" }",
+            "    }",
+            "    foreach ($name in $folders.Keys) {",
+            "        $link = \"$($folders[$name])\\opencode\"",
+            "        $item = Get-Item -Path $link -Force -ErrorAction Ignore",
+            "        if ($item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) { [IO.Directory]::Delete($link) }",
+            "    }",
+            "}"
+        ]
+    },
     "checkver": {
-        "url": "https://registry.npmjs.org/@opencode%2fcli/latest",
+        "url": "https://registry.npmjs.org/@opencode/cli/latest",
         "jsonpath": "$.version"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://registry.npmjs.org/@opencode/cli-windows-x64/-/cli-windows-x64-$version.tgz",
-                "hash": {
-                    "url": "https://registry.npmjs.org/@opencode%2fcli-windows-x64",
-                    "regex": "(?s)$url.*?$base64"
-                }
-            },
-            "arm64": {
-                "url": "https://registry.npmjs.org/@opencode/cli-windows-arm64/-/cli-windows-arm64-$version.tgz",
-                "hash": {
-                    "url": "https://registry.npmjs.org/@opencode%2fcli-windows-arm64",
-                    "regex": "(?s)$url.*?$base64"
-                }
-            }
+        "url": "https://registry.npmjs.org/@opencode/cli-windows-x64/-/cli-windows-x64-$version.tgz",
+        "hash": {
+            "url": "https://registry.npmjs.org/@opencode/cli-windows-x64/$version",
+            "regex": "sha512-$base64"
         }
     }
 }
