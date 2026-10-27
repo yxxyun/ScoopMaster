@@ -1,0 +1,72 @@
+{
+    "version": "0.6.1.13",
+    "description": "The fastest browser for AI agents to run browser automation (ego lite)",
+    "homepage": "https://lite.ego.app/",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://cdn.ego.app/setup/windows/x64/egoliteSetup.exe",
+            "hash": "dc1bcf9cb91d304a89ae087454a170ebb7e494e4151ebfe7bedd2022ddf5254d"
+        }
+    },
+    "installer": {
+        "script": [
+            "Write-Host 'Fetching the latest ego lite browser package URL...'",
+            "$body = @{ request = @{ protocol = '4.0'; acceptformat = 'crx3,download,puff,run,xz,zucc'; os = @{ platform = 'win'; arch = 'x64' }; apps = @(@{ appid = '{712B23BF-E734-4038-BE42-D5736B6D9570}'; updatecheck = @{} }) } } | ConvertTo-Json -Depth 5",
+            "$raw = Invoke-RestMethod -Uri 'https://update.citrolabs.ai/service/update2' -Method Post -Body $body -ContentType 'application/json'",
+            "$cleanJson = ($raw -replace '^[^{\\[]+', '') | ConvertFrom-Json",
+            "$downloadUrl = $cleanJson.response.apps[0].updatecheck.pipelines[0].operations[0].urls[0].url",
+            "Write-Host 'Downloading ego lite browser package...' -ForegroundColor Cyan",
+            "$crx3 = \"$dir\\package.crx3\"",
+            "curl.exe -L --retry 3 -s \"$downloadUrl\" -o \"$crx3\"",
+            "$stream = [System.IO.File]::OpenRead($crx3)",
+            "$buf = New-Object byte[] 12",
+            "$stream.Read($buf, 0, 12) | Out-Null",
+            "$headerLen = [System.BitConverter]::ToUInt32($buf, 8)",
+            "$zipOffset = 12 + $headerLen",
+            "$stream.Seek($zipOffset, [System.IO.SeekOrigin]::Begin) | Out-Null",
+            "$zip = \"$dir\\package.zip\"",
+            "$out = [System.IO.File]::Create($zip)",
+            "$stream.CopyTo($out)",
+            "$stream.Close()",
+            "$out.Close()",
+            "Remove-Item $crx3",
+            "& 7z e \"$zip\" 'mini_installer_uncompressed.exe' -o\"$dir\" -y | Out-Null",
+            "Remove-Item \"$zip\"",
+            "& 7z x \"$dir\\mini_installer_uncompressed.exe\" 'Chrome-bin\\*' -o\"$dir\" -y | Out-Null",
+            "Remove-Item \"$dir\\mini_installer_uncompressed.exe\", \"$dir\\egoliteSetup.exe\" -Force -ErrorAction SilentlyContinue",
+            "Move-Item \"$dir\\Chrome-bin\\*\" \"$dir\" -Force",
+            "Remove-Item \"$dir\\Chrome-bin\" -Recurse -Force",
+            "$helper = (Get-ChildItem -Path \"$dir\" -Filter 'ego-browser.exe' -Recurse | Select-Object -First 1)",
+            "if ($helper) { Copy-Item $helper.FullName \"$dir\\ego-browser.exe\" -Force }"
+        ]
+    },
+    "bin": [
+        [
+            "ego.exe",
+            "ego"
+        ],
+        [
+            "ego.exe",
+            "ego-lite"
+        ],
+        "ego-browser.exe"
+    ],
+    "shortcuts": [
+        [
+            "ego.exe",
+            "ego lite"
+        ]
+    ],
+    "checkver": {
+        "script": "(Invoke-WebRequest -Uri 'https://cdn.ego.app/setup/windows/x64/egoliteSetup.exe' -Method Head -UseBasicParsing).Headers['x-amz-meta-omaha-version']",
+        "regex": "([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://cdn.ego.app/setup/windows/x64/egoliteSetup.exe"
+            }
+        }
+    }
+}

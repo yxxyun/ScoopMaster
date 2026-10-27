@@ -1,0 +1,64 @@
+{
+    "version": "2.2.1",
+    "description": "Electron-based workspace browser for organizing web apps and tabs.",
+    "homepage": "https://eatbiscuit.com/",
+    "license": "Proprietary",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/agata/dl.biscuit/releases/download/2.2.1/Biscuit-2.2.1-setup.exe",
+            "hash": "9b8a54a946a84d8fe7894432a53570435612199ccf839d6a3b771ff3210fbac3"
+        }
+    },
+    "pre_install": [
+        "$sourceInstaller = Join-Path $dir $fname",
+        "if (-not (Test-Path -LiteralPath $sourceInstaller -PathType Leaf)) { throw \"Biscuit setup executable was not found: $sourceInstaller\" }",
+        "$scoopRoot = $env:SCOOP",
+        "if ([string]::IsNullOrWhiteSpace($scoopRoot)) { $scoopRoot = Split-Path (Split-Path (Split-Path $dir -Parent) -Parent) -Parent }",
+        "$stagingDir = Join-Path $scoopRoot \"cache\\biscuit-installer-$([guid]::NewGuid().ToString('N'))\"",
+        "try {",
+        "    New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null",
+        "    $installerPath = Join-Path $stagingDir $fname",
+        "    Move-Item -LiteralPath $sourceInstaller -Destination $installerPath -Force",
+        "    $remainingFiles = @(Get-ChildItem -LiteralPath $dir -Force)",
+        "    if ($remainingFiles.Count -gt 0) { throw \"Biscuit target directory must be empty before setup. Unexpected item: $($remainingFiles[0].FullName)\" }",
+        "    $process = Start-Process -FilePath $installerPath -ArgumentList @('/S', \"/D=$dir\") -Wait -PassThru",
+        "    if ($process.ExitCode -ne 0) { throw \"Biscuit silent setup failed with exit code $($process.ExitCode).\" }",
+        "    $mainExe = Join-Path $dir 'Biscuit.exe'",
+        "    if (-not (Test-Path -LiteralPath $mainExe -PathType Leaf)) { throw \"Biscuit setup returned successfully but did not create the expected executable: $mainExe. The installer may not honor the custom /D path.\" }",
+        "} finally {",
+        "    if ($stagingDir -and (Test-Path -LiteralPath $stagingDir)) { Remove-Item -LiteralPath $stagingDir -Recurse -Force -ErrorAction SilentlyContinue }",
+        "}"
+    ],
+    "bin": "Biscuit.exe",
+    "shortcuts": [
+        [
+            "Biscuit.exe",
+            "Biscuit"
+        ]
+    ],
+    "uninstaller": {
+        "script": [
+            "$uninstallerPath = Join-Path $dir 'Uninstall Biscuit.exe'",
+            "if (-not (Test-Path -LiteralPath $uninstallerPath -PathType Leaf)) {",
+            "    $uninstaller = Get-ChildItem -LiteralPath $dir -Filter '*uninstall*.exe' -File -ErrorAction SilentlyContinue | Select-Object -First 1",
+            "    if ($uninstaller) { $uninstallerPath = $uninstaller.FullName }",
+            "}",
+            "if (Test-Path -LiteralPath $uninstallerPath -PathType Leaf) {",
+            "    $process = Start-Process -FilePath $uninstallerPath -ArgumentList '/S' -Wait -PassThru",
+            "    if ($process.ExitCode -ne 0) { throw \"Biscuit silent uninstall failed with exit code $($process.ExitCode).\" }",
+            "}"
+        ]
+    },
+    "checkver": {
+        "github": "https://github.com/agata/dl.biscuit",
+        "regex": "^(?<version>\\d+(?:\\.\\d+){1,3})$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/agata/dl.biscuit/releases/download/$version/Biscuit-$version-setup.exe"
+            }
+        }
+    },
+    "notes": "Uses the official NSIS installer in silent mode with the Scoop version directory as the installation target. Biscuit includes its own Electron updater, so it may update files independently of Scoop."
+}
