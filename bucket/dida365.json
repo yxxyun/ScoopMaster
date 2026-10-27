@@ -1,43 +1,131 @@
 {
-    "version": "8.2.4.0",
-    "description": "让你的 Windows 电脑成为高效办公平台",
-    "license": "Unknown",
+    "version": "8.2.4",
+    "description": "滴答清单（Dida365）：待办事项、日程安排与习惯打卡工具，支持多端同步",
+    "homepage": "https://www.dida365.com/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.dida365.com/tos"
+    },
+    "notes": [
+        "官方安装包是 Inno Setup 6.7.0，Scoop 自带的 innounp 还不支持这个版本，所以清单直接静默安装到 apps\\dida365\\current，而不是解包。",
+        "安装器请求管理员权限（要写 HKLM 卸载项），安装和卸载时可能弹出 UAC。安装器默认添加的「开机自动启动」快捷方式会被删除；需要开机启动请在应用设置里自行开启。",
+        "用户数据在 %APPDATA%\\Tick_Tick（TickTick.db、图片等）。本清单在安装时把这个目录接到 persist\\dida365\\Tick_Tick，所以 scoop update 和 scoop uninstall（不带 -p）都不会丢数据；加 -p 才会连数据一起删。",
+        "首次安装时如果 %APPDATA%\\Tick_Tick 已有真实数据（官网安装版留下的），会整份搬进 persist\\dida365\\Tick_Tick；如果 persist 里已有数据，旧目录会改名为 Tick_Tick.old-<时间戳> 保留，由你决定是否合并。"
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://www.dida365.com/down/getApp/download?type=win64#/dl.exe",
+            "url": "https://www.dida365.com/static/getApp/download?type=win64#/dida_setup.exe",
             "hash": "29481787f61b2893dd6acd5141f0c3348c8bc2d42b02290a6d99c2875c694d23"
         },
         "32bit": {
-            "url": "https://www.dida365.com/down/getApp/download?type=win#/dl.exe",
+            "url": "https://www.dida365.com/static/getApp/download?type=win#/dida_setup.exe",
             "hash": "73865727acd3686da88c7401e953c4fc7fe5f5d389dc8b04af767030c00423af"
+        },
+        "arm64": {
+            "url": "https://www.dida365.com/static/getApp/download?type=win_arm64#/dida_setup.exe",
+            "hash": "5b0a74a839464eb28755df257e36dcb3055e8c11efefeadad0f0f424c5ecdbd5"
         }
     },
-    "innosetup": true,
-    "homepage": "https://www.dida365.com/",
+    "installer": {
+        "args": [
+            "/VERYSILENT",
+            "/SUPPRESSMSGBOXES",
+            "/NORESTART",
+            "/SP-",
+            "/NOICONS",
+            "/DIR=\"$dir\""
+        ],
+        "script": [
+            "# 安装器会写一个指向版本目录的开机启动快捷方式，升级后立刻失效；自启动交给应用内设置管理",
+            "$startup = [Environment]::GetFolderPath('Startup')",
+            "Remove-Item (Join-Path $startup '滴答清单.lnk') -Force -ErrorAction SilentlyContinue",
+            "",
+            "# 把 %APPDATA%\\Tick_Tick 接到 persist；每次安装/升级都会执行，已接好则跳过",
+            "$target = \"$persist_dir\\Tick_Tick\"",
+            "$link = \"$env:APPDATA\\Tick_Tick\"",
+            "if (-not (Test-Path $target)) { New-Item $target -ItemType Directory -Force | Out-Null }",
+            "$item = Get-Item $link -Force -ErrorAction SilentlyContinue",
+            "$linked = $null",
+            "if ($item.LinkType) { $linked = (Resolve-Path -Path @($item.Target)[0] -ErrorAction SilentlyContinue).Path }",
+            "if ($linked -eq (Resolve-Path -Path $target).Path) {",
+            "    info '[Link]: %APPDATA%\\Tick_Tick 已接到 persist\\dida365\\Tick_Tick，跳过'",
+            "} elseif ($linked) {",
+            "    warn \"[Link]: %APPDATA%\\Tick_Tick 已是指向 $linked 的链接，保持不动（数据不落在 persist，本清单的持久化对它不生效）\"",
+            "} else {",
+            "    if ($item.LinkType) {",
+            "        # 断链：链接本身不是数据，只摘链接，绝不递归删除（PowerShell 5.1 会穿过重解析点删掉目标数据）",
+            "        [System.IO.Directory]::Delete($link, $false)",
+            "    } elseif ($item) {",
+            "        # 真实的旧数据目录（官网安装版留下的）",
+            "        if (Get-ChildItem $target -Force) {",
+            "            Move-Item -Path $link -Destination \"$link.old-$(Get-Date -Format yyyyMMddHHmmss)\" -Force",
+            "            warn '[Link]: %APPDATA%\\Tick_Tick 里有旧数据而 persist 中已有数据，旧目录已改名保留，需要的话请手工合并'",
+            "        } else {",
+            "            Remove-Item -Path $target -Recurse -Force",
+            "            Move-Item -Path $link -Destination $target -Force",
+            "        }",
+            "    }",
+            "    New-Item -Path $link -ItemType Junction -Value $target | Out-Null",
+            "    info \"[Link]: %APPDATA%\\Tick_Tick -> $target\"",
+            "}"
+        ]
+    },
+    "uninstaller": {
+        "file": "unins000.exe",
+        "args": [
+            "/VERYSILENT",
+            "/SUPPRESSMSGBOXES",
+            "/NORESTART"
+        ]
+    },
+    "post_uninstall": [
+        "# 应用内开启过开机启动的话会留下快捷方式",
+        "$startup = [Environment]::GetFolderPath('Startup')",
+        "Remove-Item (Join-Path $startup '滴答清单.lnk') -Force -ErrorAction SilentlyContinue",
+        "",
+        "# 只摘掉指向本清单 persist 的链接（数据本身留在 persist\\dida365\\Tick_Tick，重装会重新接上）；指向别处的链接不动",
+        "$link = \"$env:APPDATA\\Tick_Tick\"",
+        "$item = Get-Item $link -Force -ErrorAction SilentlyContinue",
+        "$linked = $null",
+        "if ($item.LinkType) { $linked = (Resolve-Path -Path @($item.Target)[0] -ErrorAction SilentlyContinue).Path }",
+        "if ($linked -eq \"$persist_dir\\Tick_Tick\") {",
+        "    [System.IO.Directory]::Delete($link, $false)",
+        "    info '[Link]: 已摘除 %APPDATA%\\Tick_Tick 链接，数据仍在 persist\\dida365\\Tick_Tick'",
+        "}"
+    ],
+    "bin": [
+        [
+            "TickTick.exe",
+            "dida365"
+        ]
+    ],
     "shortcuts": [
         [
             "TickTick.exe",
-            "Dida365"
+            "滴答清单"
         ]
     ],
     "checkver": {
         "script": [
-            "$dl_url = 'https://www.dida365.com/down/getApp/download?type=win64#/dl.exe'",
-            "$dl = cache_path 'dida365' '64bit' $dl_url",
-            "Invoke-WebRequest $dl_url -OutFile $dl",
-            "$ver = (Get-Item $dl).VersionInfo.ProductVersion",
-            "Move-Item -Force $dl (cache_path 'dida365' $ver $dl_url)",
-            "$ver"
+            "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12",
+            "$file = Join-Path $env:TEMP 'dida365-setup.exe'",
+            "Invoke-WebRequest -Uri 'https://www.dida365.com/static/getApp/download?type=win64' -OutFile $file -UseBasicParsing",
+            "$v = (Get-Item $file).VersionInfo",
+            "'version:' + $v.FileMajorPart + '.' + $v.FileMinorPart + '.' + $v.FileBuildPart",
+            "Remove-Item $file -Force"
         ],
-        "regex": "(\\S+)"
+        "regex": "version:([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://www.dida365.com/down/getApp/download?type=win64#/dl.exe"
+                "url": "https://www.dida365.com/static/getApp/download?type=win64#/dida_setup.exe"
             },
             "32bit": {
-                "url": "https://www.dida365.com/down/getApp/download?type=win#/dl.exe"
+                "url": "https://www.dida365.com/static/getApp/download?type=win#/dida_setup.exe"
+            },
+            "arm64": {
+                "url": "https://www.dida365.com/static/getApp/download?type=win_arm64#/dida_setup.exe"
             }
         }
     }
