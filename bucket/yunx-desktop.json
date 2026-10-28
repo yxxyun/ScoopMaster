@@ -1,52 +1,49 @@
 {
     "version": "1.3.0",
-    "description": "Official Windows desktop client for YunX (云析): browse netdisk share links and video links, preview online, and download at high speed with multi-account support.",
+    "description": "YunX（云析）的官方 windows 桌面端",
     "homepage": "https://github.com/tidain/YunX-Desktop",
-    "license": "AGPL-3.0-only",
+    "license": {
+        "identifier": "AGPL-3.0 license",
+        "url": "https://github.com/tidain/YunX-Desktop#AGPL-3.0-1-ov-file"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/tidain/YunX-Desktop/releases/download/v1.3.0/YunX-Desktop-v1.3.0-win64-portable.zip",
-            "hash": "fa6a43816c55510623fa8bd19597078ca2a75b4ed54196e53cc418235f47824e"
+            "url": "https://github.com/tidain/YunX-Desktop/releases/download/v1.3.0/YunX-Desktop-setup-1.3.0.exe",
+            "hash": "24dc921c0cb8e8515db43e92921c53e1a2c84d18a526fe4edd8b97930697ddf6"
         }
+    },
+    "innosetup": true,
+    "installer": {
+        "script": [
+            "# handle runtime cache",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:USERPROFILE\\.yunx-desktop\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:USERPROFILE\\.yunx-desktop\"",
+            "Remove-Module -Name AppsUtils"
+        ]
     },
     "bin": "YunX-Desktop.exe",
     "shortcuts": [
         [
             "YunX-Desktop.exe",
-            "云析 YunX-Desktop"
+            "YunX-Desktop"
         ]
     ],
-    "persist": "data",
-    "env_set": {
-        "YUNX_DESKTOP_DATA_DIR": "$persist_dir\\data"
-    },
-    "post_install": [
-        "$ErrorActionPreference = 'Stop'",
-        "$dest = Join-Path $persist_dir 'data'",
-        "$legacy = @((Join-Path $env:USERPROFILE '.yunx-desktop'), (Join-Path $env:USERPROFILE '.yunx-pc')) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1",
-        "if ($legacy -and -not (Test-Path -LiteralPath (Join-Path $dest 'yunx.db'))) {",
-        "    New-Item -ItemType Directory -Force -Path $dest | Out-Null",
-        "    foreach ($item in 'yunx.db', 'yunx.db-wal', 'yunx.db-shm', 'credential.key', 'files') {",
-        "        $src = Join-Path $legacy $item",
-        "        if (Test-Path -LiteralPath $src) { Copy-Item -LiteralPath $src -Destination $dest -Recurse -Force }",
-        "    }",
-        "    info \"Copied existing YunX data from $legacy to $dest (source kept)\"",
-        "}"
-    ],
-    "notes": [
-        "便携版直接解压运行，不写注册表安装项；开始菜单快捷方式在 Scoop Apps 下。",
-        "数据目录：用户环境变量 YUNX_DESKTOP_DATA_DIR = persist\\yunx-desktop\\data，账号库（yunx.db + credential.key）、内嵌浏览器缓存与日志都在这里；升级和 scoop uninstall（不带 -p）都不会丢。",
-        "首次安装若 %USERPROFILE%\\.yunx-desktop（或旧版 .yunx-pc）已有数据，会把账号库/密钥/日志复制到 persist（源目录保留）；下载分片与内嵌浏览器缓存不复制，网页版登录态需重新登录。",
-        "升级请用 scoop update yunx-desktop；应用内「检查更新」只下载安装包到下载目录，不要拿它覆盖 Scoop 目录。",
-        "要求 Windows 10/11 x64；应用内「储存目录 → 应用所在目录」预设通过 junction 落在同一个 persist 目录。"
-    ],
     "checkver": {
-        "github": "https://github.com/tidain/YunX-Desktop"
+        "github": "https://api.github.com/repos/tidain/YunX-Desktop/releases",
+        "jp": "$[0].tag_name",
+        "regex": "v([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/tidain/YunX-Desktop/releases/download/v$version/YunX-Desktop-v$version-win64-portable.zip"
+                "url": "https://github.com/tidain/YunX-Desktop/releases/download/v$version/YunX-Desktop-setup-$version.exe"
             }
         }
     }
