@@ -1,0 +1,56 @@
+{
+    "version": "1.1.0Beta",
+    "description": "Windows 平台的百度网盘下载工具，基于 aria2 多线程加速，支持剪贴板链接监听和下载历史记录。",
+    "homepage": "https://github.com/mf-1224/Hyperdown-",
+    "license": "Unknown",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/mf-1224/Hyperdown-/releases/download/v1.1.0Beta/Hyperdown.v1.1.0.zip",
+            "hash": "3e70392e522dc9e6ef83404efa27154b16dd24d7f1e27d405a25c11f7b64fc61"
+        }
+    },
+    "extract_dir": "Hyperdown v1.1.0\\Hyperdown v1.1.0",
+    "bin": "Hyperdown.exe",
+    "shortcuts": [
+        [
+            "Hyperdown.exe",
+            "Hyperdown"
+        ]
+    ],
+    "pre_install": [
+        "$cfg = \"$dir\\Data\\config.yaml\"",
+        "if (Test-Path $cfg) {",
+        "    $content = Get-Content -Path $cfg -Raw",
+        "    if ($content -match '(?m)^download_path:\\s*F:\\\\.*Hyperdown[^\\r\\n]*') {",
+        "        $content = $content -replace '(?m)^download_path:[^\\r\\n]*', ('download_path: ' + (Join-Path $env:USERPROFILE 'Downloads'))",
+        "        [IO.File]::WriteAllText($cfg, $content, (New-Object Text.UTF8Encoding($false)))",
+        "    }",
+        "}"
+    ],
+    "post_install": "Remove-Item -Path \"$dir\\*.apk\", \"$dir\\*.bat\", \"$dir\\*.txt\", \"$dir\\.DS_Store\", \"$dir\\Data\\*.original\" -Force -ErrorAction SilentlyContinue",
+    "persist": [
+        "Data\\config.yaml",
+        "Data\\current_share.db",
+        "Data\\download.db",
+        "Data\\share_history.db"
+    ],
+    "notes": [
+        "Hyperdown 为第三方闭源二进制（未签名），仓库无源码与许可证，请自行评估下载和使用风险。",
+        "安装包内捆绑的安卓 APK、推广 .bat、说明 .txt 及 macOS 垃圾文件已在安装时移除。",
+        "首次安装时会把上游 config.yaml 中指向 F:\\ 盘的 download_path 改为 %USERPROFILE%\\Downloads；之后在程序内修改的路径不会被覆盖。",
+        "配置与下载历史（config.yaml、download.db、share_history.db、current_share.db）持久化在 persist\\hyperdown\\Data，升级或卸载（不带 -p）后保留。",
+        "上游版本命名不规范（tag 为 v1.1.0Beta、资产名为 Hyperdown.v1.1.0.zip、双层目录），autoupdate 已用 $matchHead 适配；若上游改变发布结构可能需手动修复。"
+    ],
+    "checkver": {
+        "github": "https://github.com/mf-1224/Hyperdown-",
+        "regex": "v(?<version>[\\d.]+[A-Za-z]*)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/mf-1224/Hyperdown-/releases/download/v$version/Hyperdown.v$matchHead.zip"
+            }
+        },
+        "extract_dir": "Hyperdown v$matchHead\\Hyperdown v$matchHead"
+    }
+}

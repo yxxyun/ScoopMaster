@@ -1,0 +1,36 @@
+{
+    "version": "2.0.1",
+    "description": "Sunshine fork - stream with the native resolution of your client device",
+    "homepage": "https://github.com/Nonary/Vibepollo",
+    "license": "GPL-3.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Nonary/Vibepollo/releases/download/2.0.1/VibepolloSetup-v2.0.1.exe",
+            "hash": "fae5f3c901f88ecfb92e1d039ec0cd492c1e37dd093128639a0fd9a72f14ff95"
+        }
+    },
+    "installer": {
+        "script": [
+            "Start-Process -FilePath \"$dir\\VibepolloSetup-v2.0.1.exe\" -ArgumentList '/S','/norestart' -PassThru | ForEach-Object { Start-Sleep 12; if (-not $_.HasExited) { $_.Kill() } }",
+            "$msi = Get-ChildItem 'C:\\ProgramData\\Vibepollo\\InstallerCache' -Recurse -Filter 'Vibepollo.msi' | Sort-Object LastWriteTime -Descending | Select-Object -First 1",
+            "if (-not $msi) { throw 'Vibepollo MSI not found in installer cache' }",
+            "$p = Start-Process msiexec -ArgumentList (\"/i `\"\" + $msi.FullName + `\"`\" /qn /norestart INSTALL_ROOT=`\"C:\\Program Files\\Apollo`\" INSTALL_VIRTUAL_DISPLAY_DRIVER=0\") -Wait -PassThru",
+            "if ($p.ExitCode -ne 0) { throw \"MSI install failed with exit code $($p.ExitCode)\" }"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if (Test-Path \"$env:ProgramFiles\\Apollo\\uninstall.exe\") { Start-Process -Wait \"$env:ProgramFiles\\Apollo\\uninstall.exe\" -ArgumentList '/S' }"
+        ]
+    },
+    "checkver": {
+        "github": "https://github.com/Nonary/Vibepollo"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Nonary/Vibepollo/releases/download/$version/VibepolloSetup-v$version.exe"
+            }
+        }
+    }
+}
