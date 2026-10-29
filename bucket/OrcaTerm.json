@@ -1,27 +1,15 @@
 {
     "version": "1.6.7",
-    "description": "OrcaTerm (腾讯云智能终端) - 连接 AI Agent、代码与云服务器的高效易用 AI 终端工具",
+    "description": "AI-powered intelligent terminal by Tencent Cloud",
     "homepage": "https://orcaterm.com/",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://orcaterm.com/doc/service"
-    },
-    "notes": "OrcaTerm 依赖系统 Microsoft Edge WebView2 Runtime（Windows 10/11 通常已内置）。",
+    "license": "Proprietary",
     "architecture": {
         "64bit": {
-            "url": "https://orcaterm-desktop-1258344699.cos.accelerate.myqcloud.com/release/latest/OrcaTerm-latest-win-x64.exe#/dl.7z",
+            "url": "https://orcaterm-desktop-1258344699.cos.ap-guangzhou.myqcloud.com/release/latest/OrcaTerm-latest-win-x64.exe#/dl.7z",
             "hash": "dfe087eb2b0c2339e2f61ae8072c70b42592c7a66dfeb54c7c226e7143cad325"
         }
     },
-    "installer": {
-        "script": "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\uninstall.exe\" -Force -Recurse -ErrorAction SilentlyContinue"
-    },
-    "bin": [
-        [
-            "OrcaTerm.exe",
-            "orcaterm"
-        ]
-    ],
+    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\uninstall.exe\" -Recurse -Force -ErrorAction SilentlyContinue",
     "shortcuts": [
         [
             "OrcaTerm.exe",
@@ -29,13 +17,26 @@
         ]
     ],
     "checkver": {
-        "url": "https://orcaterm.com/cgi/api?action=GetChangelog",
-        "jsonpath": "$.data.Response.list[-1:].version"
+        "script": [
+            "$url = 'https://orcaterm-desktop-1258344699.cos.ap-guangzhou.myqcloud.com/release/latest/OrcaTerm-latest-win-x64.exe'",
+            "$tmp = Join-Path $env:TEMP 'OrcaTerm-version-head.bin'",
+            "$req = [System.Net.HttpWebRequest]::Create($url)",
+            "$req.AddRange(0, 262143)",
+            "$resp = $req.GetResponse()",
+            "$stream = $resp.GetResponseStream()",
+            "$file = [System.IO.File]::Create($tmp)",
+            "$stream.CopyTo($file)",
+            "$file.Close(); $stream.Close(); $resp.Close()",
+            "$text = [System.Text.Encoding]::Unicode.GetString([System.IO.File]::ReadAllBytes($tmp))",
+            "Remove-Item $tmp -Force",
+            "if ($text -match 'ProductVersion[^0-9]*([0-9][0-9A-Za-z.\\-]*)') { $matches[1] } else { throw 'ProductVersion not found in the OrcaTerm installer' }"
+        ],
+        "regex": "^([0-9][0-9A-Za-z.\\-]*)$"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://orcaterm-desktop-1258344699.cos.accelerate.myqcloud.com/release/latest/OrcaTerm-latest-win-x64.exe#/dl.7z"
+                "url": "https://orcaterm-desktop-1258344699.cos.ap-guangzhou.myqcloud.com/release/latest/OrcaTerm-latest-win-x64.exe#/dl.7z"
             }
         }
     }

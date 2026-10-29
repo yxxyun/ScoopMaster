@@ -8,6 +8,24 @@
     "notes": "Run mVolt+ as administrator to tune the GPU. Profiles and preferences stay in %LOCALAPPDATA%\\mVolt+.",
     "url": "https://github.com/b00nz/mVolt/releases/download/v0.50.9/mVolt+.exe",
     "hash": "46c132dd903922e439847c250c38de6703998a4d1c15c5436d34d068c86eec44",
+    "pre_install": [
+        "$ErrorActionPreference = 'Stop'",
+        "$profileDirectory = Join-Path $env:LOCALAPPDATA 'mVolt+\\profiles'",
+        "if (Test-Path -LiteralPath $profileDirectory -PathType Container) {",
+        "    $scoopRoot = $scoopdir",
+        "    if (!$scoopRoot) { $scoopRoot = $env:SCOOP }",
+        "    if (!$scoopRoot) { throw 'Cannot resolve the Scoop root for mVolt+ profile backup.' }",
+        "    $bucketName = [string]$bucket",
+        "    if (!$bucketName) {",
+        "        $installInfo = Join-Path $scoopRoot 'apps\\mvoltplus\\current\\scoop-install.json'",
+        "        if (Test-Path -LiteralPath $installInfo) { $bucketName = (Get-Content -LiteralPath $installInfo -Raw | ConvertFrom-Json).bucket }",
+        "    }",
+        "    if (!$bucketName) { throw 'Cannot identify the bucket alias for mVolt+ profile backup.' }",
+        "    $guard = Join-Path $scoopRoot (Join-Path ('buckets\\' + $bucketName) 'scripts\\mvoltplus-profile-guard.ps1')",
+        "    if (!(Test-Path -LiteralPath $guard -PathType Leaf)) { throw ('mVolt+ profile guard not found: ' + $guard) }",
+        "    & $guard -Mode Backup -SourceDirectory (Join-Path $env:LOCALAPPDATA 'mVolt+') -BackupDirectory (Join-Path $env:LOCALAPPDATA 'mVoltPlus-ProfileBackups')",
+        "}"
+    ],
     "bin": [
         [
             "mVolt+.exe",
