@@ -1,26 +1,40 @@
 {
-    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
-    "version": "1.14.9",
-    "description": "https://github.com/seakee/CPA-Manager-Plus",
+    "version": "1.14.10",
+    "description": "Self-hosted CPA / CLIProxyAPI management panel and AI gateway observability dashboard",
     "homepage": "https://github.com/seakee/CPA-Manager-Plus",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/seakee/CPA-Manager-Plus/releases/download/v1.14.9/cpa-manager-plus_v1.14.9_windows_amd64.zip",
-            "hash": "e4a26df0fb782a1d525f96b39a442e41baff6a7a8adaafa9a954ac1ba6273ec4",
-            "extract_dir": "cpa-manager-plus_v1.14.9_windows_amd64"
+            "url": "https://github.com/seakee/CPA-Manager-Plus/releases/download/v1.14.10/cpa-manager-plus_v1.14.10_windows_amd64.zip",
+            "hash": "23a09a4b3b7a3182ed0885b30a21750aa252c5ba703465e87990ac63161bdb7e",
+            "extract_dir": "cpa-manager-plus_v1.14.10_windows_amd64"
         },
         "arm64": {
-            "url": "https://github.com/seakee/CPA-Manager-Plus/releases/download/v1.14.9/cpa-manager-plus_v1.14.9_windows_arm64.zip",
-            "hash": "46ec81dd15827e70d8e6d7e2f0d3eefa8f1a1c17da8780dda5b9909e9f8d3b23",
-            "extract_dir": "cpa-manager-plus_v1.14.9_windows_arm64"
+            "url": "https://github.com/seakee/CPA-Manager-Plus/releases/download/v1.14.10/cpa-manager-plus_v1.14.10_windows_arm64.zip",
+            "hash": "d208a0aa25fd72609580fc4a2432b8679911b2784caf29d4de2d7088f737adb1",
+            "extract_dir": "cpa-manager-plus_v1.14.10_windows_arm64"
         }
     },
+    "pre_install": [
+        "if (!(Test-Path \"$persist_dir\\config.json\") -and !(Test-Path \"$dir\\config.json\")) {",
+        "    [System.IO.File]::WriteAllText(\"$dir\\config.json\", (@{ httpAddr = '0.0.0.0:18317'; dataDir = \"$persist_dir\\data\" } | ConvertTo-Json))",
+        "}",
+        "@('@echo off', '\"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoProfile -ExecutionPolicy Bypass -File \"%~dp0cpa-manager-plusctl.ps1\" %*') | Set-Content \"$dir\\cpa-manager-plusctl.cmd\" -Encoding Ascii"
+    ],
     "bin": [
         "cpa-manager-plus.exe",
-        "cpa-manager-plusctl.ps1"
+        "cpa-manager-plusctl.cmd"
     ],
-    "persist": "data",
+    "persist": [
+        "config.json",
+        "data"
+    ],
+    "notes": [
+        "Run 'cpa-manager-plus' in the foreground, or 'cpa-manager-plusctl start' in the background.",
+        "Open http://localhost:18317/management.html and use the generated Admin Key from the console or 'cpa-manager-plusctl logs'.",
+        "Requires a separately running CPA / CLIProxyAPI instance and its Management Key.",
+        "Configuration and data are persisted in '$persist_dir'. Stop the server before updating."
+    ],
     "checkver": "github",
     "autoupdate": {
         "architecture": {
@@ -32,6 +46,9 @@
                 "url": "https://github.com/seakee/CPA-Manager-Plus/releases/download/v$version/cpa-manager-plus_v$version_windows_arm64.zip",
                 "extract_dir": "cpa-manager-plus_v$version_windows_arm64"
             }
+        },
+        "hash": {
+            "url": "https://github.com/seakee/CPA-Manager-Plus/releases/download/v$version/checksums.txt"
         }
     }
 }
