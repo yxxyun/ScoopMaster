@@ -15,15 +15,19 @@
     },
     "checkver": {
         "script": [
-            "$resp = Invoke-WebRequest -Uri 'https://api.github.com/repos/openzfsonwindows/openzfs/releases/latest'",
-            "$json = $resp.Content | ConvertFrom-Json",
-            "$tag = $json.tag_name -replace 'zfswin-',''",
-            "$version = ($json.assets | Sort-Object updated_at)[-1].name -replace 'OpenZFSOnWindows-debug-','' -replace '.exe',''",
-            "Write-Output \"$version $tag\""
+            "$headers = @{ 'User-Agent' = 'KiroBucket-ScoopCheckver'; 'Accept' = 'application/vnd.github+json' }",
+            "$release = Invoke-RestMethod -Uri 'https://api.github.com/repos/openzfsonwindows/openzfs/releases/latest' -Headers $headers -TimeoutSec 30",
+            "if ([string]::IsNullOrWhiteSpace([string]$release.tag_name)) { throw 'GitHub did not return the latest OpenZFS release tag.' }",
+            "$assets = @($release.assets | Where-Object { $_.name -match '^OpenZFSOnWindows-debug-.+\\.exe$' } | Sort-Object updated_at)",
+            "if ($assets.Count -eq 0) { throw 'The latest OpenZFS release has no matching Windows debug installer.' }",
+            "$name = $assets[-1].name",
+            "$versionMatch = [regex]::Match($name, '^OpenZFSOnWindows-debug-(?<version>.+)\\.exe$')",
+            "if (-not $versionMatch.Success) { throw 'Could not extract the OpenZFS installer version from the asset name.' }",
+            "Write-Output \"$($versionMatch.Groups['version'].Value) $($release.tag_name)\""
         ],
-        "regex": "(?<version>.+)\\s(?<tag>.+)"
+        "regex": "^(?<version>\\S+)\\s(?<tag>\\S+)$"
     },
     "autoupdate": {
-        "url": "https://github.com/openzfsonwindows/openzfs/releases/download/zfswin-$matchTag/OpenZFSOnWindows-debug-$version.exe#/setup.exe"
+        "url": "https://github.com/openzfsonwindows/openzfs/releases/download/$matchTag/OpenZFSOnWindows-debug-$version.exe#/setup.exe"
     }
 }

@@ -15,8 +15,9 @@
     ],
     "checkver": {
         "script": [
-            "$html = (Invoke-WebRequest -Uri 'https://www.bitreplica.com/download/' -UseBasicParsing).Content",
-            "$text = [System.Net.WebUtility]::HtmlDecode([regex]::Replace($html, '<[^>]+>', ' '))",
+            "$html = & curl.exe --fail --location --silent --show-error --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 45 --user-agent 'Mozilla/5.0' 'https://www.bitreplica.com/download/'",
+            "if ($LASTEXITCODE -ne 0) { throw 'Unable to download the official BitReplica download page.' }",
+            "$text = [System.Net.WebUtility]::HtmlDecode([regex]::Replace(($html -join \"`n\"), '<[^>]+>', ' '))",
             "$text = [regex]::Replace($text, '\\s+', ' ')",
             "$match = [regex]::Match($text, '(?i)Version\\s*:\\s*(?<version>\\d+(?:\\.\\d+){3})')",
             "if (-not $match.Success) { throw 'Unable to detect BitReplica version from the official download page.' }",

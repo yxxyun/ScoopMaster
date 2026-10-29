@@ -26,13 +26,15 @@
     ],
     "checkver": {
         "script": [
-            "$resp = Invoke-WebRequest -Uri 'https://api.github.com/repos/xiaoyifang/goldendict/releases/latest'",
-            "$json = $resp.Content | ConvertFrom-Json",
-            "$name = ($json.assets | Where-Object name -Match '.*Windows.*.7z$')[-1].name",
-            "$version = $json.tag_name",
-            "Write-Output \"$version $name\""
+            "$headers = @{ 'User-Agent' = 'KiroBucket-ScoopCheckver'; 'Accept' = 'application/vnd.github+json' }",
+            "$release = Invoke-RestMethod -Uri 'https://api.github.com/repos/xiaoyifang/goldendict-ng/releases/latest' -Headers $headers -TimeoutSec 30",
+            "if ([string]::IsNullOrWhiteSpace([string]$release.tag_name)) { throw 'GitHub did not return the latest GoldenDict release tag.' }",
+            "$assets = @($release.assets | Where-Object { $_.name -match 'Qt6\\.8\\.3-Windows\\.7z$' })",
+            "if ($assets.Count -eq 0) { throw 'The latest GoldenDict release does not contain the expected Qt 6.8.3 Windows archive.' }",
+            "$name = $assets[0].name",
+            "Write-Output \"$($release.tag_name) $name\""
         ],
-        "regex": "(?<version>.+)\\s(?<name>.+)"
+        "regex": "^(?<version>v\\d+(?:\\.\\d+)+)\\s(?<name>.+Windows\\.7z)$"
     },
     "autoupdate": {
         "architecture": {

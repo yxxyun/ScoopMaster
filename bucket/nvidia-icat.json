@@ -23,11 +23,13 @@
     "extract_to": "tmp",
     "checkver": {
         "script": [
-            "$resp = Invoke-WebRequest -Uri 'https://www.nvidia.com/en-us/geforce/technologies/icat/'",
-            "$url = ($resp.Links.href -match 'ICAT-.*.exe')[0]",
-            "($url -split '-|\\.exe' -match '\\d+(\\.\\d+)+')[0]"
+            "$response = Invoke-WebRequest -Uri 'https://www.nvidia.com/en-us/geforce/technologies/icat/' -UseBasicParsing -TimeoutSec 30",
+            "$html = [System.Net.WebUtility]::HtmlDecode([string]$response.Content)",
+            "$match = [regex]::Match($html, '(?i)ICAT-(?<version>\\d+(?:\\.\\d+)+)\\.exe')",
+            "if (-not $match.Success) { throw 'Could not find an ICAT versioned executable link on the official NVIDIA page.' }",
+            "$match.Groups['version'].Value"
         ],
-        "regex": "(?<version>.*)"
+        "regex": "^(?<version>\\d+(?:\\.\\d+)+)$"
     },
     "autoupdate": {
         "architecture": {

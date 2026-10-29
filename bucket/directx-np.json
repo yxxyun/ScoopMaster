@@ -13,15 +13,16 @@
     "pre_install": "if (-not (is_admin)) { error \"Administrator rights are required to install $app.\"; return }",
     "checkver": {
         "script": [
-            "$resp = Invoke-WebRequest -Uri 'https://www.microsoft.com/en-us/download/details.aspx?id=8109'",
-            "$json = $resp.Content -split '(<script>)|(</script>)' -match '__DLCDetails__' -replace 'window.__DLCDetails__=','' | ConvertFrom-Json",
-            "$version = $json.dlcDetailsView.downloadFile[0].version",
-            "$path = $json.dlcDetailsView.downloadFile[0].url -replace 'https://download.microsoft.com/download',''",
-            "Write-Output \"$version $path\""
+            "$response = Invoke-WebRequest -Uri 'https://www.microsoft.com/en-us/download/details.aspx?id=8109' -UseBasicParsing",
+            "$html = [string]$response.Content",
+            "$text = [System.Net.WebUtility]::HtmlDecode([regex]::Replace($html, '<[^>]+>', ' '))",
+            "$match = [regex]::Match($text, '(?is)Version:\\s*(?<version>\\d+(?:\\.\\d+)+)')",
+            "if (-not $match.Success) { throw 'Could not read the DirectX redist version from Microsoft Download Center.' }",
+            "$match.Groups['version'].Value"
         ],
-        "regex": "(?<version>.+)\\s(?<path>.+)"
+        "regex": "^(?<version>\\d+(?:\\.\\d+)+)$"
     },
     "autoupdate": {
-        "url": "https://download.microsoft.com/download$matchPath#/dl.7z"
+        "url": "https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe#/dl.7z"
     }
 }

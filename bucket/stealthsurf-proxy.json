@@ -1,0 +1,65 @@
+{
+    "version": "1.0.90",
+    "description": "StealthSurf VPN client (portable, proxy mode only)",
+    "homepage": "https://stealthsurf.net/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://stealthsurf.net/"
+    },
+    "notes": [
+        "Requires the Microsoft Edge WebView2 Runtime.",
+        "Account data is kept in $persist_dir\\data between updates; 'scoop uninstall -p' removes it.",
+        "Only one StealthSurf VPN client (installed or portable) can run at a time."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://cdn.stealthsurf.io/app/desktop/1.0.90/StealthSurf-1.0.90-windows-x64-portable-proxy.zip",
+            "hash": "88b1d3825160f7525f0462ab30900e4a0317e4c7c8d9abcdcabd8f68377662a9"
+        },
+        "arm64": {
+            "url": "https://cdn.stealthsurf.io/app/desktop/1.0.90/StealthSurf-1.0.90-windows-arm64-portable-proxy.zip",
+            "hash": "fe53db9fe55491b962113bd573a0aad26c67cf7690f448905641dd7926e68579"
+        }
+    },
+    "post_install": [
+        "$kept = Join-Path $persist_dir 'data'",
+        "$live = Join-Path $original_dir 'data'",
+        "if ((Test-Path -LiteralPath $kept) -and -not (Test-Path -LiteralPath $live)) {",
+        "    Move-Item -LiteralPath $kept -Destination $live",
+        "}",
+        "$link = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path (shortcut_folder $global) 'StealthSurf VPN (proxy).lnk'))",
+        "$link.TargetPath = Join-Path $original_dir 'StealthSurf.exe'",
+        "$link.WorkingDirectory = $original_dir",
+        "$link.Save()"
+    ],
+    "pre_uninstall": [
+        "$live = Join-Path $dir 'data'",
+        "if (Test-Path -LiteralPath $live) {",
+        "    $root = (Resolve-Path -LiteralPath $dir).Path",
+        "    if (Get-Process | Where-Object { $_.Path -like \"$root\\*\" }) {",
+        "        throw 'StealthSurf VPN is still running. Quit it and try again.'",
+        "    }",
+        "    New-Item -ItemType Directory -Force -Path $persist_dir | Out-Null",
+        "    $kept = Join-Path $persist_dir 'data'",
+        "    if (Test-Path -LiteralPath $kept) {",
+        "        Rename-Item -LiteralPath $kept -NewName ('data-' + (Get-Date -Format 'yyyyMMddHHmmss'))",
+        "    }",
+        "    Move-Item -LiteralPath $live -Destination $kept",
+        "}",
+        "Remove-Item -LiteralPath (Join-Path (shortcut_folder $global) 'StealthSurf VPN (proxy).lnk') -ErrorAction SilentlyContinue"
+    ],
+    "checkver": {
+        "url": "https://cdn.stealthsurf.io/app/desktop/latest.json",
+        "jsonpath": "$.version"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://cdn.stealthsurf.io/app/desktop/$version/StealthSurf-$version-windows-x64-portable-proxy.zip"
+            },
+            "arm64": {
+                "url": "https://cdn.stealthsurf.io/app/desktop/$version/StealthSurf-$version-windows-arm64-portable-proxy.zip"
+            }
+        }
+    }
+}

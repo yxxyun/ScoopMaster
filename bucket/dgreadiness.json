@@ -8,16 +8,17 @@
     "extract_dir": "dgreadiness_v3.6",
     "checkver": {
         "script": [
-            "$resp = Invoke-WebRequest -Uri 'https://www.microsoft.com/en-us/download/details.aspx?id=53337'",
-            "$json = $resp.Content -split '(<script>)|(</script>)' -match '__DLCDetails__' -replace 'window.__DLCDetails__=','' | ConvertFrom-Json",
-            "$version = $json.dlcDetailsView.downloadFile[0].version",
-            "$path = $json.dlcDetailsView.downloadFile[0].url -replace 'https://download.microsoft.com/download',''",
-            "Write-Output \"$version $path\""
+            "$response = Invoke-WebRequest -Uri 'https://www.microsoft.com/en-us/download/details.aspx?id=53337' -UseBasicParsing",
+            "$html = [string]$response.Content",
+            "$text = [System.Net.WebUtility]::HtmlDecode([regex]::Replace($html, '<[^>]+>', ' '))",
+            "$match = [regex]::Match($text, '(?is)Version:\\s*(?<version>\\d+(?:\\.\\d+)+)')",
+            "if (-not $match.Success) { throw 'Could not read the Device Guard tool version from Microsoft Download Center.' }",
+            "$match.Groups['version'].Value"
         ],
-        "regex": "(?<version>.+)\\s(?<path>.+)"
+        "regex": "^(?<version>\\d+(?:\\.\\d+)+)$"
     },
     "autoupdate": {
-        "url": "https://download.microsoft.com/download$matchPath#/dl.7z",
+        "url": "https://download.microsoft.com/download/B/D/8/BD821B1F-05F2-4A7E-AA03-DF6C4F687B07/dgreadiness_v$version.zip#/dl.7z",
         "extract_dir": "dgreadiness_v$version"
     }
 }

@@ -36,13 +36,18 @@
     },
     "checkver": {
         "script": [
-            "$resp = Invoke-WebRequest -Uri 'https://www.microsoft.com/en-us/download/details.aspx?id=49117'",
-            "$json = $resp.Content -split '(<script>)|(</script>)' -match '__DLCDetails__' -replace 'window.__DLCDetails__=','' | ConvertFrom-Json",
-            "$version = $json.dlcDetailsView.downloadFile[0].version",
-            "$path = $json.dlcDetailsView.downloadFile[0].url -replace 'https://download.microsoft.com/download',''",
-            "Write-Output \"$version $path\""
+            "$response = Invoke-WebRequest -Uri 'https://www.microsoft.com/en-us/download/details.aspx?id=49117' -UseBasicParsing",
+            "$html = [string]$response.Content",
+            "$text = [System.Net.WebUtility]::HtmlDecode([regex]::Replace($html, '<[^>]+>', ' '))",
+            "$versionMatch = [regex]::Match($text, '(?is)Version:\\s*(?<version>\\d+(?:\\.\\d+){3})')",
+            "if (-not $versionMatch.Success) { throw 'Could not read the Office Deployment Tool version from Microsoft Download Center.' }",
+            "$urlMatch = [regex]::Match($html, '(?i)https://download\\.microsoft\\.com/download/[^\"''\\s<>]+/officedeploymenttool_[^\"''\\s<>]+\\.exe')",
+            "if (-not $urlMatch.Success) { throw 'Could not find the official Office Deployment Tool download URL in the page.' }",
+            "$downloadUri = [uri]$urlMatch.Value",
+            "$path = $downloadUri.AbsolutePath -replace '^/download', ''",
+            "Write-Output \"$($versionMatch.Groups['version'].Value) $path\""
         ],
-        "regex": "(?<version>.+)\\s(?<path>.+)"
+        "regex": "(?<version>\\d+(?:\\.\\d+){3})\\s(?<path>/.*)"
     },
     "autoupdate": {
         "url": [

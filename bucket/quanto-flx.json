@@ -11,16 +11,19 @@
     "depends": "rainmeter",
     "checkver": {
         "script": [
-            "$resp = Invoke-WebRequest -Uri 'https://api.github.com/repos/stevehsudrawing/quantoflx/releases'",
-            "$json = $resp.Content | ConvertFrom-Json",
-            "$obj = $json[0]",
-            "$name = $obj.assets[0].name",
-            "$tag = $obj.tag_name",
-            "$main_version = ($obj.name -split '\\s')[0]",
-            "$version = \"${main_version}.$tag\"",
-            "Write-Output \"$version $tag $name\""
+            "$headers = @{ 'User-Agent' = 'KiroBucket-ScoopCheckver'; 'Accept' = 'application/vnd.github+json' }",
+            "$releases = @(Invoke-RestMethod -Uri 'https://api.github.com/repos/stevehsudrawing/quantoflx/releases?per_page=1' -Headers $headers -TimeoutSec 30)",
+            "if ($releases.Count -eq 0) { throw 'GitHub did not return a Quanto Flx release.' }",
+            "$release = $releases[0]",
+            "$asset = @($release.assets | Where-Object { $_.name -match '\\.rmskin$' } | Select-Object -First 1)",
+            "if ($asset.Count -eq 0) { throw 'The latest Quanto Flx release has no RMSKIN asset.' }",
+            "$tag = [string]$release.tag_name",
+            "$mainVersion = ([string]$release.name -split '\\s+')[0]",
+            "if ([string]::IsNullOrWhiteSpace($tag) -or [string]::IsNullOrWhiteSpace($mainVersion)) { throw 'The Quanto Flx release is missing its version or tag.' }",
+            "$version = \"$mainVersion.$tag\"",
+            "Write-Output \"$version $tag $($asset[0].name)\""
         ],
-        "regex": "(?<version>.+)\\s(?<tag>.+)\\s(?<name>.+)"
+        "regex": "^(?<version>\\S+)\\s(?<tag>\\S+)\\s(?<name>.+\\.rmskin)$"
     },
     "notes": "quanto-flx can be installed by SkinInstaller.exe",
     "autoupdate": {

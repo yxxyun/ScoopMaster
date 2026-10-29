@@ -15,18 +15,22 @@
     "notes": [
         "The upstream EZ Tools page does not publish a KAPE version. Version 0 is a bootstrap placeholder; checkver uses the download's Last-Modified header as a package revision, not as the vendor version.",
         "KAPE is free for government, educational, research, and internal company use. As of January 1, 2026, it is no longer available for commercial third-party engagements.",
-        "The upstream download does not publish a static SHA256 checksum. The manifest omits hash; Scoop may warn until a hash is populated."
+        "The upstream download does not publish a static SHA-256 checksum; this manifest pins the SHA-256 calculated from the current official download. Refresh it if the upstream file changes."
     ],
     "checkver": {
         "script": [
-            "$response = Invoke-WebRequest -Uri 'https://kape.zip' -Method Head -MaximumRedirection 10",
-            "$lastModified = $response.Headers['Last-Modified']",
-            "if ([string]::IsNullOrWhiteSpace($lastModified)) { throw 'The KAPE download did not return a Last-Modified header.' }",
+            "$headers = & curl.exe --silent --show-error --location --head --max-time 45 --dump-header - 'https://kape.zip'",
+            "if ($LASTEXITCODE -ne 0 -or $null -eq $headers) { throw 'Could not read response headers from the official KAPE download.' }",
+            "$headerText = $headers -join \"`n\"",
+            "$matches = [regex]::Matches($headerText, '(?im)^Last-Modified:\\s*(?<date>[^\\r\\n]+)')",
+            "if ($matches.Count -eq 0) { throw 'The official KAPE download did not return a Last-Modified header.' }",
+            "$lastModified = $matches[$matches.Count - 1].Groups['date'].Value.Trim()",
             "[DateTime]::Parse($lastModified).ToUniversalTime().ToString('yyyy.MM.dd.HHmm', [Globalization.CultureInfo]::InvariantCulture)"
         ],
         "regex": "(?<version>\\d{4}\\.\\d{2}\\.\\d{2}\\.\\d{4})"
     },
     "autoupdate": {
         "url": "https://kape.zip"
-    }
+    },
+    "hash": "95db018c3da57f081886511338ea920272fb9a7e64e1f885a3307e692071b674"
 }

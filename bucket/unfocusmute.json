@@ -1,0 +1,66 @@
+{
+    "version": "1.5.0",
+    "description": "A lightweight Windows tray app that automatically mutes selected games and apps in the background, then unmutes them when they regain focus.",
+    "homepage": "https://github.com/ilsd7/UnfocusMute",
+    "license": "Apache-2.0",
+    "notes": "更新或卸载前请先退出程序 (右键托盘图标 - 退出), 否则文件被占用会导致操作失败。更新后自启动项会指向新版本路径; 程序不会自动检查更新, 请用 scoop update unfocusmute 升级。",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/ilsd7/UnfocusMute/releases/download/v1.5.0/UnfocusMute-windows-x64.zip",
+            "hash": "f5128454895acbc0fde34b90d284fc464b815d061e0ad0db827cd60383f3abc9"
+        }
+    },
+    "extract_dir": "UnfocusMute-windows-x64",
+    "persist_link": [
+        [
+            "$env:AppData\\UnfocusMute",
+            "AppData"
+        ]
+    ],
+    "pre_install": "$exe = Get-Item \"$dir\\UnfocusMute-v*.exe\" -ErrorAction SilentlyContinue; if (!$exe) { abort 'UnfocusMute-v*.exe not found; the upstream package layout changed.' }; $exe | Rename-Item -NewName 'UnfocusMute.exe'",
+    "post_install": [
+        "$run = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "$approved = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run'",
+        "$marker = \"$persist_dir\\autostart\"",
+        "$approvedMarker = \"$persist_dir\\autostart-approved\"",
+        "$command = if (Test-Path $marker) { \"$(Get-Content $marker -Raw)\".Trim() }",
+        "if ($command) {",
+        "    $suffix = $command -replace '^(?:\"[^\"]*\"|\\S+?)(?=\\s|$)', ''",
+        "    New-ItemProperty $run -Name 'UnfocusMute' -Value ('\"{0}\"{1}' -f \"$dir\\UnfocusMute.exe\", $suffix) -PropertyType String -Force | Out-Null",
+        "}",
+        "$saved = if (Test-Path $approvedMarker) { \"$(Get-Content $approvedMarker -Raw)\".Trim() }",
+        "if ($saved) {",
+        "    if (!(Test-Path $approved)) { New-Item $approved | Out-Null }",
+        "    New-ItemProperty $approved -Name 'UnfocusMute' -Value ([byte[]]@($saved -split ',')) -PropertyType Binary -Force | Out-Null",
+        "}",
+        "Remove-Item \"$persist_dir\\autostart*\" -Force -ErrorAction SilentlyContinue"
+    ],
+    "post_uninstall": [
+        "$run = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "$approved = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run'",
+        "$backup = ensure $persist_dir",
+        "Remove-Item \"$backup\\autostart*\" -Force -ErrorAction SilentlyContinue",
+        "$value = (Get-ItemProperty $run -Name 'UnfocusMute' -ErrorAction SilentlyContinue).UnfocusMute",
+        "if ($value) { Set-Content \"$backup\\autostart\" $value }",
+        "if ($value = Get-ItemProperty $approved -Name 'UnfocusMute' -ErrorAction SilentlyContinue) { Set-Content \"$backup\\autostart-approved\" ($value.UnfocusMute -join ',') }",
+        "Remove-ItemProperty $run -Name 'UnfocusMute' -ErrorAction SilentlyContinue",
+        "Remove-ItemProperty $approved -Name 'UnfocusMute' -ErrorAction SilentlyContinue"
+    ],
+    "shortcuts": [
+        [
+            "UnfocusMute.exe",
+            "UnfocusMute"
+        ]
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/ilsd7/UnfocusMute/releases/download/v$version/UnfocusMute-windows-x64.zip"
+            }
+        },
+        "hash": {
+            "url": "$url.sha256"
+        }
+    }
+}

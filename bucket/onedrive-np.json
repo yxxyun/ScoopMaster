@@ -24,13 +24,15 @@
     },
     "checkver": {
         "script": [
-            "$resp = Invoke-WebRequest -Uri 'https://go.microsoft.com/fwlink/?linkid=844652' -MaximumRedirection 0 -SkipHttpErrorCheck -ErrorAction Ignore",
-            "$url = $resp.Headers.Location",
-            "$version = $url -split '/' -match '\\d+(\\.\\d+)+$'",
-            "Write-Output \"$version\""
+            "$url = & curl.exe --silent --show-error --head --location --max-redirs 10 --max-time 30 --output NUL --write-out '%{url_effective}' 'https://go.microsoft.com/fwlink/?linkid=844652'",
+            "if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($url)) { throw 'Could not retrieve the official OneDrive installer URL.' }",
+            "$match = [regex]::Match($url, '/Installers/(?<version>\\d+(?:\\.\\d+)+)/')",
+            "if (-not $match.Success) { throw \"Could not detect the OneDrive version from its final official URL: $url\" }",
+            "$match.Groups['version'].Value"
         ],
-        "regex": "(?<version>.+)"
+        "regex": "^(?<version>\\d+(?:\\.\\d+)+)$"
     },
+    "notes": "Detects the version from the final installer URL returned by Microsoft's official OneDrive redirect.",
     "autoupdate": {
         "architecture": {
             "64bit": {
