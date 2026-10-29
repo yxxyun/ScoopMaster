@@ -1,15 +1,15 @@
 {
     "version": "1.3.0",
     "description": "Apple TV-style Windows screen saver with aerial videos, local video playback, and configurable overlays.",
-    "homepage": "https://github.com/OrangeJedi/Aerial",
+    "homepage": "https://github.com/AerialWindows/Aerial",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/OrangeJedi/Aerial/releases/download/v1.3.0/Aerial.1.3.0.win-x64.zip",
+            "url": "https://github.com/AerialWindows/Aerial/releases/download/v1.3.0/Aerial.1.3.0.win-x64.zip",
             "hash": "8546f2544c2f0ec2a068f6fccb50e42d6ac7b97c1f0e662093dc52e093916336"
         },
         "arm64": {
-            "url": "https://github.com/OrangeJedi/Aerial/releases/download/v1.3.0/Aerial.1.3.0.win-arm64.zip",
+            "url": "https://github.com/AerialWindows/Aerial/releases/download/v1.3.0/Aerial.1.3.0.win-arm64.zip",
             "hash": "1d4f5f8ca6cfdb7064fb544503efdabc6737e4008b298d5e10f28bc033ba2046"
         }
     },
@@ -21,22 +21,40 @@
         ]
     ],
     "checkver": {
-        "github": "https://github.com/OrangeJedi/Aerial",
-        "regex": "v([\\d.]+)"
+        "script": [
+            "$headers = @{ Accept = 'application/vnd.github+json'; 'User-Agent' = 'kirobucket-checkver' }",
+            "if ($env:GITHUB_TOKEN) { $headers.Authorization = \"Bearer $env:GITHUB_TOKEN\" }",
+            "$releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/AerialWindows/Aerial/releases?per_page=100' -Headers $headers -ErrorAction Stop",
+            "$compatibleVersion = $null",
+            "foreach ($release in $releases) {",
+            "    if ($release.draft -or $release.prerelease) { continue }",
+            "    $tag = [regex]::Match([string]$release.tag_name, '^v(?<version>\\d+(?:\\.\\d+)+)$')",
+            "    if (-not $tag.Success) { continue }",
+            "    $candidateVersion = $tag.Groups['version'].Value",
+            "    $assets = @($release.assets | ForEach-Object { [string]$_.name })",
+            "    if (($assets -contains \"Aerial.$candidateVersion.win-x64.zip\") -and ($assets -contains \"Aerial.$candidateVersion.win-arm64.zip\")) {",
+            "        $compatibleVersion = $candidateVersion",
+            "        break",
+            "    }",
+            "}",
+            "if (-not $compatibleVersion) { throw 'No Aerial release with both supported Windows ZIP assets was found.' }",
+            "$compatibleVersion"
+        ],
+        "regex": "(?<version>[\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/OrangeJedi/Aerial/releases/download/v$version/Aerial.$version.win-x64.zip",
+                "url": "https://github.com/AerialWindows/Aerial/releases/download/v$version/Aerial.$version.win-x64.zip",
                 "hash": {
-                    "url": "https://api.github.com/repos/OrangeJedi/Aerial/releases/latest",
+                    "url": "https://api.github.com/repos/AerialWindows/Aerial/releases/tags/v$version",
                     "regex": "\"name\"\\s*:\\s*\"Aerial\\.[\\d.]+\\.win-x64\\.zip\"[\\s\\S]*?\"digest\"\\s*:\\s*\"sha256:([a-f0-9]{64})\""
                 }
             },
             "arm64": {
-                "url": "https://github.com/OrangeJedi/Aerial/releases/download/v$version/Aerial.$version.win-arm64.zip",
+                "url": "https://github.com/AerialWindows/Aerial/releases/download/v$version/Aerial.$version.win-arm64.zip",
                 "hash": {
-                    "url": "https://api.github.com/repos/OrangeJedi/Aerial/releases/latest",
+                    "url": "https://api.github.com/repos/AerialWindows/Aerial/releases/tags/v$version",
                     "regex": "\"name\"\\s*:\\s*\"Aerial\\.[\\d.]+\\.win-arm64\\.zip\"[\\s\\S]*?\"digest\"\\s*:\\s*\"sha256:([a-f0-9]{64})\""
                 }
             }
@@ -45,6 +63,7 @@
     "notes": [
         "Uses the official Electron Builder portable ZIP, not Aerial.Setup.exe. The archive provides aerial.exe as the launch target.",
         "The upstream installer’s optional Windows startup registration and its uninstall cleanup hook are not run by Scoop. Configure startup in Aerial if required.",
-        "Settings and the default video cache live under %APPDATA%\\Aerial. You can change the video cache location in Aerial’s settings; this manifest does not redirect application data to D:."
+        "Settings and the default video cache live under %APPDATA%\\Aerial. You can change the video cache location in Aerial’s settings; this manifest does not redirect application data to D:.",
+        "The update detector intentionally selects only releases containing both Windows architecture ZIPs. Upstream releases v1.4+ currently use a different installer/screensaver package format, so this manifest remains on the last compatible ZIP release until that format is verified."
     ]
 }

@@ -17,7 +17,25 @@
         ]
     ],
     "checkver": {
-        "github": "https://github.com/klysman08/wallpaper-changer-windows"
+        "script": [
+            "$headers = @{ Accept = 'application/vnd.github+json'; 'User-Agent' = 'kirobucket-checkver' }",
+            "if ($env:GITHUB_TOKEN) { $headers.Authorization = \"Bearer $env:GITHUB_TOKEN\" }",
+            "$releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/klysman08/wallpaper-changer-windows/releases?per_page=100' -Headers $headers -ErrorAction Stop",
+            "$compatibleVersion = $null",
+            "foreach ($release in $releases) {",
+            "    if ($release.draft -or $release.prerelease) { continue }",
+            "    $tag = [regex]::Match([string]$release.tag_name, '^v(?<version>\\d+(?:\\.\\d+)+)$')",
+            "    if (-not $tag.Success) { continue }",
+            "    $legacyAsset = @($release.assets | Where-Object { $_.name -match '^Wallpaper\\.Changer_[\\d.]+_x64-setup\\.exe$' } | Select-Object -First 1)",
+            "    if ($legacyAsset.Count -gt 0) {",
+            "        $compatibleVersion = $tag.Groups['version'].Value",
+            "        break",
+            "    }",
+            "}",
+            "if (-not $compatibleVersion) { throw 'No release with the legacy WallpaperChanger setup asset was found.' }",
+            "$compatibleVersion"
+        ],
+        "regex": "(?<version>[\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
@@ -25,5 +43,9 @@
                 "url": "https://github.com/klysman08/wallpaper-changer-windows/releases/download/v$version/Wallpaper.Changer_5.4.0_x64-setup.exe#/dl.7z"
             }
         }
-    }
+    },
+    "notes": [
+        "This manifest intentionally follows only releases that still publish the legacy Wallpaper.Changer_*_x64-setup.exe asset used by this extraction recipe.",
+        "Upstream v6.0 renamed the app to KokoroPaper and changed the package to a single native process. That installer needs a separately verified manifest migration; it is not treated as a drop-in replacement for tauri-native.exe."
+    ]
 }

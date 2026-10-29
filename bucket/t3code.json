@@ -1,74 +1,51 @@
 {
-    "##": [
-        "Why here?",
-        "* Testing",
-        "* Not sure whether it is still considered beta",
-        "  * EXE inside is still named beta",
-        "  * GitHub release info says it is stable"
-    ],
     "version": "0.1.5",
-    "description": "A minimal web GUI for coding agents",
-    "homepage": "https://t3.codes/",
+    "description": "Desktop app for orchestrating AI coding agents like Claude Code, Codex, Cursor CLI and OpenCode",
+    "homepage": "https://t3.codes",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/pingdotgg/t3code/releases/download/v0.1.5/T3-Code-0.1.5-x64.exe#dl.7z",
-            "hash": "daedb9f14e91eb309a534db17db176a86d17e0e9f064f7ad5b179ed349376c0b",
-            "pre_install": "Expand-7zipArchive -Path \"$dir\\`$PLUGINSDIR\\app-64.7z\" -DestinationPath \"$dir\""
+            "url": "https://github.com/pingdotgg/t3code/releases/download/v0.1.5/T3-Code-0.1.5-x64.exe#/dl.7z",
+            "hash": "sha512:ffd31a014c12ab6b9e727c6f335d33819d38286a7dbe200bd9fded53c9bf97dcaedd06de794277cc606b512f6accd211035eecc2cf70a2b3b8882cbe8d75f77f"
         },
         "arm64": {
-            "url": "https://github.com/pingdotgg/t3code/releases/download/v0.1.5/T3-Code-0.1.5-arm64.exe#dl.7z",
-            "hash": "80e03b8d1e4f3a7ea179bf915e42158cb50b4ac3394be521e17543af446fa24e",
-            "pre_install": "Expand-7zipArchive -Path \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" -DestinationPath \"$dir\""
+            "url": "https://github.com/pingdotgg/t3code/releases/download/v0.1.5/T3-Code-0.1.5-arm64.exe#/dl.7z",
+            "hash": "sha512:51660f7f00c5ceb6f0141807eb90a147ab1ab1ec2e8a0d2278ea7a3cdecd999e2735d885206164b648066de9ceb35eddd3688935ee8f82f6658df4b5208ab7f6"
         }
     },
+    "pre_install": [
+        "Get-Item \"$dir\\`$PLUGINSDIR\\app*.7z\" | Select-Object -First 1 | Expand-7zipArchive -DestinationPath $dir",
+        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Force -Recurse -ErrorAction Ignore"
+    ],
     "post_install": [
-        "# Clean up leftovers",
-        "## Assets",
-        "$Directories = [string[]](",
-        "    \"$dir\\`$PLUGINSDIR\",",
-        "    \"$dir\\`$R0\"",
-        ")",
-        "## For whatever reason this small wait was required",
-        "Start-Sleep -Milliseconds 50",
-        "## Delete leftovers that still exists",
-        "$Directories.ForEach{",
-        "    if ([System.IO.Directory]::Exists($_)) {",
-        "        $null = [System.IO.Directory]::Delete($_,$true)",
-        "        debug \"Deleted '$_'.\"",
-        "    }",
-        "}"
+        "if (Test-Path $env:USERPROFILE\\.t3) {",
+        "    Write-Host \"`r`nMove user config from non-portable version...\"",
+        "    Copy-Item -Path $env:USERPROFILE\\.t3\\* -Destination \"$persist_dir\\user\" -Force -Recurse -ErrorAction Stop | Out-Null",
+        "    Remove-Item $env:USERPROFILE\\.t3 -Force -Recurse",
+        "}",
+        "if (Test-Path $env:APPDATA\\t3code) {",
+        "    Write-Host \"`r`nMove app config from non-portable version...\"",
+        "    Copy-Item -Path $env:APPDATA\\t3code\\* -Destination \"$persist_dir\\app\" -Force -Recurse -ErrorAction Stop | Out-Null",
+        "    Remove-Item $env:APPDATA\\t3code -Force -Recurse",
+        "}",
+        "New-Item -ItemType Junction -Path $env:USERPROFILE\\.t3 -Target \"$persist_dir\\user\" | Out-Null",
+        "New-Item -ItemType Junction -Path $env:APPDATA\\t3code -Target \"$persist_dir\\app\" | Out-Null"
     ],
-    "bin": [
-        [
-            "T3 Code (Beta).exe",
-            "t3code",
-            "--user-data-dir=\"$dir\\data\""
+    "uninstaller": {
+        "script": [
+            "Remove-Item $env:USERPROFILE\\.t3 -Force -Recurse",
+            "Remove-Item $env:APPDATA\\t3code -Force -Recurse"
         ]
-    ],
+    },
     "shortcuts": [
         [
             "T3 Code (Beta).exe",
-            "T3 Code (Beta)",
-            "--user-data-dir=\"$dir\\data\""
+            "T3 Code (Beta)"
         ]
     ],
-    "persist": "data",
-    "post_uninstall": [
-        "# Inform of leftover directories if any was found",
-        "$LeftoverDirs = [string[]](",
-        "    ('{0}\\.t3' -f $env:USERPROFILE),",
-        "    ('{0}\\t3code' -f $env:APPDATA) | Where-Object -FilterScript {",
-        "        [System.IO.Directory]::Exists($_)",
-        "    }",
-        ")",
-        "if ($LeftoverDirs.Count -gt 0) {",
-        "    $Message = [string] \"`r`nFound some leftover directories you might want to delete:\"",
-        "    $LeftoverDirs.ForEach{",
-        "        $Message += \"`r`n* '{0}'\" -f $_",
-        "    }",
-        "    info $Message",
-        "}"
+    "persist": [
+        "user",
+        "app"
     ],
     "checkver": {
         "github": "https://github.com/pingdotgg/t3code"
@@ -76,11 +53,15 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/pingdotgg/t3code/releases/download/v$version/T3-Code-$version-x64.exe#dl.7z"
+                "url": "https://github.com/pingdotgg/t3code/releases/download/v$version/T3-Code-$version-x64.exe#/dl.7z"
             },
             "arm64": {
-                "url": "https://github.com/pingdotgg/t3code/releases/download/v$version/T3-Code-$version-arm64.exe#dl.7z"
+                "url": "https://github.com/pingdotgg/t3code/releases/download/v$version/T3-Code-$version-arm64.exe#/dl.7z"
             }
+        },
+        "hash": {
+            "url": "$baseurl/latest.yml",
+            "regex": "(?sm)$basename.*?$base64"
         }
     }
 }
