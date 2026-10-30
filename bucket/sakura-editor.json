@@ -1,44 +1,18 @@
 {
     "version": "2.4.3",
-    "description": "Japanese text editor for MS Windows",
+    "description": "Japanese text editor for Windows",
     "homepage": "https://sakura-editor.github.io/",
-    "license": "Freeware",
-    "notes": "Add SAKURA Editor as a context menu option by running: \"$dir\\sakura-install-context.reg\"",
-    "url": [
-        "https://github.com/sakura-editor/sakura/releases/download/v2.4.3/sakura-tag-v2.4.3-build2916-fe1a4a281-Win32-Release-Exe.zip",
-        "https://raw.githubusercontent.com/tk-watanabe-tch/scoop-bucket/main/scripts/sakura-install-context.reg",
-        "https://raw.githubusercontent.com/tk-watanabe-tch/scoop-bucket/main/scripts/sakura-uninstall-context.reg"
-    ],
-    "hash": [
-        "9973140125159c1615cb1841af2ecf700a87aa3f45c3414b87a0e8c6c864700c",
-        "def0597bc84cc5cd0014c1239f61f04eed99cce0016e40a7c4c8abcf07e80dd1",
-        "d6a585b6ead5e89f677cb0867276be0ddc9cf78199ae9e40fdd506f642c61cb3"
-    ],
+    "license": "Zlib",
+    "notes": "INI file will be stored in AppData\\Roaming\\sakura\\",
+    "url": "https://github.com/sakura-editor/sakura/releases/download/v2.4.3/sakura-tag-v2.4.3-build2916-fe1a4a281-Win32-Release-Installer.zip",
+    "hash": "abdbfcd349c47885c1db6911c83d73cf9057acc1fabd1f4e4e4da84c79752f03",
+    "extract_to": "inst",
     "pre_install": [
-        "Start-Process -FilePath \"$dir\\sakura.exe\"",
-        "Start-Sleep -Seconds 1.5",
-        "Stop-Process -Name sakura"
-    ],
-    "post_install": [
-        "if (Test-Path \"$dir\\sakura-install-context.reg\") {",
-        "  $sakurapath = \"$dir\\sakura.exe\".Replace('\\', '\\\\')",
-        "  $content = Get-Content \"$dir\\sakura-install-context.reg\"",
-        "  $content = $content.Replace('$sakura', $sakurapath)",
-        "  if ($global) {",
-        "    $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
-        "  }",
-        "  $content | Set-Content -Path \"$dir\\sakura-install-context.reg\"",
-        "}",
-        "if (Test-Path \"$dir\\sakura-uninstall-context.reg\") {",
-        "  $content = Get-Content \"$dir\\sakura-uninstall-context.reg\"",
-        "  if ($global) {",
-        "    $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE')",
-        "  }",
-        "  $content | Set-Content -Path \"$dir\\sakura-uninstall-context.reg\"",
-        "}"
+        "Expand-InnoArchive (Get-ChildItem \"$dir\\inst\" -Filter \"sakura_install*-x86.exe\" | Select-Object -First 1).FullName \"$dir\"",
+        "Copy-Item \"$dir\\sakura.exe,2.manifest\" \"$dir\\sakura.exe.manifest\"",
+        "Remove-Item \"$dir\\inst\" -Recurse"
     ],
     "bin": "sakura.exe",
-    "persist": "sakura.ini",
     "shortcuts": [
         [
             "sakura.exe",
@@ -47,9 +21,9 @@
     ],
     "checkver": {
         "url": "https://api.github.com/repos/sakura-editor/sakura/releases/latest",
-        "re": "\"browser_download_url\": *\"(?<url>https://github.com/sakura-editor/sakura/releases/download/v([0-9.]+)/.+-Release-Exe.zip)\""
+        "regex": "sakura-tag-v(?<version>[\\d.]+)-build(?<build>\\d+)-(?<commit>[0-9a-f]+)-Win32-Release-Installer\\.zip"
     },
     "autoupdate": {
-        "url": "$matchUrl"
+        "url": "https://github.com/sakura-editor/sakura/releases/download/v$version/sakura-tag-v$version-build$matchBuild-$matchCommit-Win32-Release-Installer.zip"
     }
 }
