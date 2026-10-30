@@ -1,0 +1,42 @@
+{
+    "version": "1.6.1324",
+    "description": "AI voice-to-text dictation app for Windows",
+    "homepage": "https://wisprflow.ai/",
+    "license": "Proprietary",
+    "architecture": {
+        "64bit": {
+            "url": "https://dl.wisprflow.com/wispr-flow/win32/x64/Wispr%20Flow%20Setup-v1.6.1324.exe#/dl.7z",
+            "hash": "b25c22c01ff9bc6c6d03ec65f68a68b4487fee9de9cdb779a1d771c9f92886c6"
+        }
+    },
+    "pre_install": [
+        "$nupkg = Get-ChildItem -LiteralPath $dir -Filter '*-full.nupkg' -File | Select-Object -First 1",
+        "if (!$nupkg) { throw 'The Wispr Flow installer did not contain a full Squirrel package.' }",
+        "$payload = Join-Path $dir 'payload'",
+        "Expand-7zipArchive $nupkg.FullName $payload",
+        "$exePath = Join-Path $payload 'lib\\net45\\Wispr Flow.exe'",
+        "if (!(Test-Path -LiteralPath $exePath)) { throw 'Wispr Flow.exe was not found in the package.' }",
+        "Get-ChildItem -LiteralPath $dir -Force | Where-Object { $_.Name -ne 'payload' } | Remove-Item -Force -Recurse"
+    ],
+    "shortcuts": [
+        [
+            "payload\\lib\\net45\\Wispr Flow.exe",
+            "Wispr Flow"
+        ]
+    ],
+    "checkver": {
+        "url": "https://dl.wisprflow.com/wispr-flow/win32/latest.json",
+        "regex": "Wispr%20Flow%20Setup-v(?<version>[\\d.]+)\\.exe"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://dl.wisprflow.com/wispr-flow/win32/x64/Wispr%20Flow%20Setup-v$version.exe#/dl.7z",
+                "hash": {
+                    "url": "https://dl.wisprflow.com/wispr-flow/win32/latest.json",
+                    "find": "\"sha256\"\\s*:\\s*\"([a-fA-F0-9]{64})\""
+                }
+            }
+        }
+    }
+}

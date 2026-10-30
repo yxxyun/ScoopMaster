@@ -1,0 +1,56 @@
+{
+    "version": "9.35.0",
+    "description": "Todoist desktop app for Windows",
+    "homepage": "https://todoist.com/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://todoist.com/terms-of-service"
+    },
+    "##": "The NSIS setup contains an app-*.7z bundle; unpack it into Scoop's managed directory.",
+    "architecture": {
+        "64bit": {
+            "url": "https://electron-dl.todoist.net/windows/Todoist-win32-9.35.0-x64-latest.exe#/dl.7z",
+            "hash": "a88d06841b1d940891dbdf24a08bc1d90ea13e947fbbb62a2a1f6c713c58ec54"
+        },
+        "arm64": {
+            "url": "https://electron-dl.todoist.net/windows/Todoist-win32-9.35.0-arm64-latest.exe#/dl.7z",
+            "hash": "eaf8ebbd8f4b1835f6d71b23b15d81c52ff3d45b0bf79ce7f7e31bcc8ee934c4"
+        }
+    },
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-*.7z\" \"$dir\"",
+        "if (!(Test-Path -LiteralPath (Join-Path $dir 'Todoist.exe'))) { throw 'Todoist.exe was not found after extraction.' }",
+        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Force -Recurse"
+    ],
+    "shortcuts": [
+        [
+            "Todoist.exe",
+            "Todoist"
+        ]
+    ],
+    "checkver": {
+        "script": [
+            "$request = [System.Net.HttpWebRequest]::Create('https://todoist.com/windows_app')",
+            "$request.Method = 'HEAD'",
+            "$response = $request.GetResponse()",
+            "try { $response.ResponseUri.AbsoluteUri } finally { $response.Close() }"
+        ],
+        "regex": "Todoist-win32-(?<version>[\\d.]+)(?:-x64)?-latest\\.exe"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://electron-dl.todoist.net/windows/Todoist-win32-$version-x64-latest.exe#/dl.7z",
+                "hash": {
+                    "mode": "download"
+                }
+            },
+            "arm64": {
+                "url": "https://electron-dl.todoist.net/windows/Todoist-win32-$version-arm64-latest.exe#/dl.7z",
+                "hash": {
+                    "mode": "download"
+                }
+            }
+        }
+    }
+}
