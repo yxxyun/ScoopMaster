@@ -1,10 +1,10 @@
 {
-    "version": "2.4.1rc17b",
+    "version": "2.4.4rc6b",
     "description": "The open source port of OpenZFS on Windows",
     "homepage": "https://github.com/openzfsonwindows/openzfs",
     "license": "Freeware",
-    "url": "https://github.com/openzfsonwindows/openzfs/releases/download/zfswin-2.4.1rc17/OpenZFSOnWindows-debug-2.4.1rc17b.exe#/setup.exe",
-    "hash": "1498437731876ce2bf6c4f00511bac3ba7d5a0cd6d05c443202ffcfae0a205e6",
+    "url": "https://github.com/openzfsonwindows/openzfs/releases/download/zfswin-2.4.4rc7/OpenZFSOnWindows-debug-2.4.4rc6b.exe#/setup.exe",
+    "hash": "c7d7c8befeb60433808c6902e012cb7eb5dbf55ca1e54f6467d154c654c02b1b",
     "installer": {
         "args": [
             "/VERYSILENT",
@@ -16,10 +16,11 @@
     "checkver": {
         "script": [
             "$headers = @{ 'User-Agent' = 'KiroBucket-ScoopCheckver'; 'Accept' = 'application/vnd.github+json' }",
-            "$release = Invoke-RestMethod -Uri 'https://api.github.com/repos/openzfsonwindows/openzfs/releases/latest' -Headers $headers -TimeoutSec 30",
-            "if ([string]::IsNullOrWhiteSpace([string]$release.tag_name)) { throw 'GitHub did not return the latest OpenZFS release tag.' }",
-            "$assets = @($release.assets | Where-Object { $_.name -match '^OpenZFSOnWindows-debug-.+\\.exe$' } | Sort-Object updated_at)",
-            "if ($assets.Count -eq 0) { throw 'The latest OpenZFS release has no matching Windows debug installer.' }",
+            "if ($env:GITHUB_TOKEN) { $headers.Authorization = \"Bearer $env:GITHUB_TOKEN\" }",
+            "$releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/openzfsonwindows/openzfs/releases?per_page=100' -Headers $headers -TimeoutSec 30 -ErrorAction Stop",
+            "$release = $releases | Where-Object { -not $_.draft -and @($_.assets | Where-Object { $_.name -match '^OpenZFSOnWindows-debug-.+\\.exe$' }).Count -gt 0 } | Sort-Object { [datetime]$_.published_at } -Descending | Select-Object -First 1",
+            "if ($null -eq $release) { throw 'No published OpenZFS release contains a matching Windows debug installer.' }",
+            "$assets = @($release.assets | Where-Object { $_.name -match '^OpenZFSOnWindows-debug-.+\\.exe$' } | Sort-Object { [datetime]$_.updated_at })",
             "$name = $assets[-1].name",
             "$versionMatch = [regex]::Match($name, '^OpenZFSOnWindows-debug-(?<version>.+)\\.exe$')",
             "if (-not $versionMatch.Success) { throw 'Could not extract the OpenZFS installer version from the asset name.' }",

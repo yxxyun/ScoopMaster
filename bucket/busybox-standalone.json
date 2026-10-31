@@ -1,6 +1,6 @@
 {
     "version": "6354-g5f09fb446",
-    "description": "BusyBox is a single binary that contains many common Unix tools. This is a standalone version which will not create aliases. Please install busybox-<command> to add desired aliases. ",
+    "description": "A single binary that contains many common Unix tools.. This is a standalone version which will not create aliases (shims). Please install busybox-<command> to add desired aliases (shims). ",
     "homepage": "https://frippery.org/busybox",
     "license": "GPL-2.0-only",
     "architecture": {
@@ -11,21 +11,52 @@
         "32bit": {
             "url": "https://frippery.org/files/busybox/busybox-w32-FRP-6354-g5f09fb446.exe#/busybox.exe",
             "hash": "1aa736a5334eb74a3342b74a5cd6e66297cdba6ca6d890e83e7b46afa5b9ce5c"
+        },
+        "arm64": {
+            "url": "https://frippery.org/files/busybox/busybox-w64a-FRP-6354-g5f09fb446.exe#/busybox.exe",
+            "hash": "ef426a4967f0a4657343242e85c290a8fb3272c6145c230439c587a0a97f9969"
         }
     },
-    "post_install": [
-        "if (!(Test-Path \"$env:USERPROFILE\\.profile\")) {",
-        "    info 'creating ~/.profile'",
-        "@\"",
-        "if [ -e ~/.bashrc ]; then",
-        "   source ~/.bashrc",
-        "fi",
-        "\"@ | Out-File \"$env:USERPROFILE\\.profile\" -Encoding oem",
+    "pre_install": [
+        "if (-not (Test-Path -Path \"$env:USERPROFILE\\.profile\" -PathType Leaf)) {",
+        "    Write-Host \"`nINFO  Creating '~/.profile'...\" -ForegroundColor DarkGray",
+        "    $cfg = @('if [ -f ~/.bashrc ]; then', '    source ~/.bashrc', 'fi')",
+        "    Set-Content -Path \"$env:USERPROFILE\\.profile\" -Value $cfg -Encoding oem",
         "}"
     ],
+    "post_install": [
+        "$process_info = [System.Diagnostics.ProcessStartInfo]@{",
+        "    FileName = \"$dir\\busybox.exe\"; Arguments = '--list'",
+        "    CreateNoWindow = $true; UseShellExecute = $false; RedirectStandardOutput = $true",
+        "}",
+        "$process = [System.Diagnostics.Process]::Start($process_info)",
+        "$stdout_content = $process.StandardOutput.ReadToEnd()",
+        "$process.WaitForExit()",
+        "Write-Output \"`nCreating shim for 'busybox'.\"",
+        "shim \"$dir\\busybox.exe\" $global 'busybox'",
+        "$stdout_content -split \"`r?`n\" | Where-Object { $_ -match '^(?!.*\\[)\\S' } | ForEach-Object {",
+        "    Write-Output \"Creating shim for '$($_.Trim())'.\"",
+        "    shim \"$dir\\busybox.exe\" $global $_.Trim() $_.Trim()",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "$process_info = [System.Diagnostics.ProcessStartInfo]@{",
+            "    FileName = \"$dir\\busybox.exe\"; Arguments = '--list'",
+            "    CreateNoWindow = $true; UseShellExecute = $false; RedirectStandardOutput = $true",
+            "}",
+            "$process = [System.Diagnostics.Process]::Start($process_info)",
+            "$stdout_content = $process.StandardOutput.ReadToEnd()",
+            "$process.WaitForExit()",
+            "rm_shim 'busybox' $(shimdir $global) $app",
+            "$stdout_content -split \"`r?`n\" | Where-Object { $_ -match '^(?!.*\\[)\\S' } | ForEach-Object {",
+            "    rm_shim $_.Trim() $(shimdir $global) $app",
+            "}"
+        ]
+    },
     "checkver": {
         "url": "https://frippery.org/files/busybox/?C=M;O=D",
-        "regex": ">busybox-w32-FRP-([\\w-]+)\\."
+        "regex": "busybox-w64-FRP-([\\w-]+)"
     },
     "autoupdate": {
         "architecture": {
@@ -34,11 +65,18 @@
             },
             "32bit": {
                 "url": "https://frippery.org/files/busybox/busybox-w32-FRP-$version.exe#/busybox.exe"
+            },
+            "arm64": {
+                "url": "https://frippery.org/files/busybox/busybox-w64a-FRP-$version.exe#/busybox.exe"
             }
         },
         "hash": {
             "url": "$baseurl/SHA256SUM"
         }
     },
-    "bin": "busybox.exe"
+    "bin": [
+        "busybox.exe",
+        "[",
+        "["
+    ]
 }

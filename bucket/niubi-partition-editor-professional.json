@@ -5,8 +5,31 @@
     "license": "Proprietary",
     "url": "https://www.hdd-tool.com/download/portable_pro.zip",
     "checkver": {
-        "url": "https://www.hdd-tool.com/download.html",
-        "regex": "(?is)Version(?:\\s|<[^>]*>|&nbsp;)*:(?:\\s|<[^>]*>|&nbsp;)*(?<version>\\d+(?:\\.\\d+){1,2})"
+        "url": "https://www.hdd-tool.com/download/portable_free.zip",
+        "script": [
+            "$ErrorActionPreference = 'Stop'",
+            "$ProgressPreference = 'SilentlyContinue'",
+            "$tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('niubi-checkver-' + [guid]::NewGuid().ToString('N'))",
+            "New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null",
+            "try {",
+            "    $archive = Join-Path $tempRoot 'niubi-portable.zip'",
+            "    Invoke-WebRequest -Uri 'https://www.hdd-tool.com/download/portable_free.zip' -OutFile $archive -UseBasicParsing -Headers @{ 'User-Agent' = 'Scoop-Checkver/1.0'; 'Accept' = 'application/zip,application/octet-stream,*/*' }",
+            "    Expand-Archive -LiteralPath $archive -DestinationPath $tempRoot -Force",
+            "    $executable = Get-ChildItem -LiteralPath $tempRoot -Filter 'npe.exe' -File -Recurse | Select-Object -First 1",
+            "    if (-not $executable) { throw 'The official NIUBI portable archive did not contain npe.exe.' }",
+            "    $versionInfo = (Get-Item -LiteralPath $executable.FullName).VersionInfo",
+            "    $rawVersion = [string]$versionInfo.ProductVersion",
+            "    if ([string]::IsNullOrWhiteSpace($rawVersion)) { $rawVersion = [string]$versionInfo.FileVersion }",
+            "    if ($rawVersion -match '(?<version>\\d+(?:\\.\\d+){1,2})') {",
+            "        Write-Output $Matches['version']",
+            "    } else {",
+            "        throw ('Could not read a numeric version from npe.exe. ProductVersion=' + $versionInfo.ProductVersion + '; FileVersion=' + $versionInfo.FileVersion)",
+            "    }",
+            "} finally {",
+            "    Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue",
+            "}"
+        ],
+        "regex": "(?<version>\\d+(?:\\.\\d+){1,2})"
     },
     "autoupdate": {
         "url": "https://www.hdd-tool.com/download/portable_pro.zip"
