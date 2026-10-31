@@ -1,36 +1,31 @@
 {
     "version": "7.02",
-    "description": "Autorun Organizer. Free Startup Manager for Windows",
+    "description": "Windows startup manager for reviewing and controlling auto-start entries",
     "homepage": "https://www.chemtable.com/autorun-organizer.htm",
-    "license": "Freeware",
-    "changelog": "https://www.chemtable.com/version-history.htm?prod_id=Autorun%20Organizer",
-    "url": "https://www.chemtable.com/files/ao3/autorun-organizer-setup.exe#/setup.7z",
-    "hash": "49fe6279bbfdb95e47940395f39d76924af09e8f9afe241ddae47ee9912c4d2a",
-    "bin": "AutorunOrganizer.exe",
+    "license": "Proprietary",
+    "url": "https://files.chemtable.com/ao/autorun-organizer-setup.exe",
+    "hash": "85BE6F0FC4AFF9BB874E946186301E5509FBF1E1996A9F8DDD75D7FFD9FC165F",
     "innosetup": true,
-    "pre_install": [
-        "if([System.Environment]::Is64BitOperatingSystem)",
-        "{",
-        "   Set-Location -Path \"$dir\"",
-        "   Get-ChildItem \"*,1*\" | Rename-Item -NewName {$_.name -replace ',1',''}",
-        "}",
-        "else",
-        "{",
-        "   Set-Location -Path \"$dir\"",
-        "   Get-ChildItem \"*,2*\" | Rename-Item -NewName {$_.name -replace ',2',''}",
-        "}"
-    ],
+    "bin": "AutorunOrganizer,1.exe",
     "shortcuts": [
         [
-            "AutorunOrganizer.exe",
+            "AutorunOrganizer,1.exe",
             "Autorun Organizer"
         ]
     ],
     "checkver": {
-        "url": "https://www.chemtable.com/autorun-organizer.htm",
-        "regex": "<title>Autorun Organizer ([\\d.]+)"
+        "script": [
+            "$html = (Invoke-WebRequest -Uri 'https://www.chemtable.com/autorun-organizer.htm' -UseBasicParsing).Content",
+            "$text = [System.Net.WebUtility]::HtmlDecode([regex]::Replace($html, '<[^>]+>', ' '))",
+            "$text = [regex]::Replace($text, '\\s+', ' ')",
+            "$match = [regex]::Match($text, '(?i)\\bAutorun Organizer\\s+(?<version>\\d+(?:\\.\\d+){1,3})')",
+            "if (-not $match.Success) { throw 'Unable to detect the Autorun Organizer version from the official ChemTable product page.' }",
+            "$match.Groups['version'].Value"
+        ],
+        "regex": "(?<version>\\d+(?:\\.\\d+){1,3})"
     },
     "autoupdate": {
-        "url": "https://www.chemtable.com/files/ao3/autorun-organizer-setup.exe#/setup.7z"
-    }
+        "url": "https://files.chemtable.com/ao/autorun-organizer-setup.exe"
+    },
+    "notes": "Scoop extracts the official Inno Setup payload into the app directory instead of executing the installer; installer-registered shell integration or machine-wide components are not installed."
 }
