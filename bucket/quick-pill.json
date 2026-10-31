@@ -1,0 +1,46 @@
+{
+    "version": "5.5.1",
+    "description": "Electron-based Dynamic Island for Windows with media controls, system tools, notifications, clipboard, tasks, notes, and an app launcher.",
+    "homepage": "https://github.com/nabil24024004/Quick-Pill-Dynamic-Island-for-Windows",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://pub-ec47b1fa4cbf4c5ba82408a738fb69d3.r2.dev/QuickPill-Windows-v5.5.1-Setup.exe#/dl.7z",
+            "hash": "14acfabffd3ddb68d78583f18685c5038bbe67355eabcc284d7760c2cd15548d",
+            "installer": {
+                "script": "Expand-7zipArchive \"$dir\\app-64.7z\" \"$dir\""
+            }
+        }
+    },
+    "extract_dir": "$PLUGINSDIR",
+    "pre_install": "Get-ChildItem -LiteralPath \"$dir\" -Force | Where-Object { $_.Name -ne 'app-64.7z' } | Remove-Item -Force -Recurse",
+    "post_install": "Remove-Item -LiteralPath (Join-Path $dir 'app-64.7z') -Force -ErrorAction SilentlyContinue",
+    "bin": "Quick Pill.exe",
+    "shortcuts": [
+        [
+            "Quick Pill.exe",
+            "Quick Pill"
+        ]
+    ],
+    "checkver": {
+        "url": "https://raw.githubusercontent.com/nabil24024004/Quick-Pill-Dynamic-Island-for-Windows/main/web%20app/public/version.json",
+        "jsonpath": "$.version"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://pub-ec47b1fa4cbf4c5ba82408a738fb69d3.r2.dev/QuickPill-Windows-v$version-Setup.exe#/dl.7z",
+                "hash": {
+                    "url": "https://raw.githubusercontent.com/nabil24024004/Quick-Pill-Dynamic-Island-for-Windows/main/web%20app/public/version.json",
+                    "jsonpath": "$.platforms['win32-x64'].sha256"
+                }
+            }
+        }
+    },
+    "notes": [
+        "Verified with 7-Zip 26.05: the NSIS installer contains $PLUGINSDIR/app-64.7z. Scoop extracts the NSIS payload with #/dl.7z, then installer.script extracts app-64.7z with Scoop's Expand-7zipArchive helper. The nested archive contained 77 files including Quick Pill.exe at the payload root.",
+        "The official 5.5.1 update feed publishes an NSIS installer only; no official MSI asset was found. The MSI fallback was therefore unavailable and unnecessary after the nested NSIS payload extraction succeeded.",
+        "The built-in updater is enabled by default. Upstream checks for updates at startup and every two hours; when a newer version is available it can download the publisher's NSIS setup and silently execute it with /S. This can create or modify a separate per-user installation outside Scoop. The manifest does not disable or modify the application's updater.",
+        "Application settings and logs are stored under Electron's per-user userData directory."
+    ]
+}

@@ -1,0 +1,40 @@
+{
+    "version": "0.22.0",
+    "description": "Windows Dynamic Notch with media controls, system HUDs, file shelf, terminal, agent integrations, widgets, and plugins.",
+    "homepage": "https://github.com/Brick-Bread/WNotch",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/Brick-Bread/WNotch/blob/main/LICENSE"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Brick-Bread/WNotch/releases/download/v0.22.0/Notch-Setup-0.22.0.exe",
+            "hash": "d8e2b78124021463cdbc7156868efa4b63fd789a019c19ce624853d9189b0f16"
+        }
+    },
+    "installer": {
+        "script": "$setupPath = Join-Path $dir $fname\n$payloadZip = Join-Path $dir '.notch-payload.zip'\n$stream = [System.IO.File]::OpenRead($setupPath)\n$output = $null\ntry {\n    if ($stream.Length -lt 16) { throw 'Notch setup is too small to contain its payload trailer.' }\n    $stream.Position = $stream.Length - 16\n    $trailer = New-Object byte[] 16\n    $totalRead = 0\n    while ($totalRead -lt 16) {\n        $read = $stream.Read($trailer, $totalRead, 16 - $totalRead)\n        if ($read -le 0) { throw 'Could not read the Notch payload trailer.' }\n        $totalRead += $read\n    }\n    $magic = [System.Text.Encoding]::ASCII.GetString($trailer, 8, 8)\n    if ($magic -cne 'NOTCHPAY') { throw 'The downloaded file does not contain the expected NOTCHPAY payload marker.' }\n    $zipLength = [System.BitConverter]::ToInt64($trailer, 0)\n    $zipOffset = $stream.Length - 16 - $zipLength\n    if ($zipLength -le 0 -or $zipOffset -le 0) { throw 'The Notch setup payload length is invalid.' }\n    $stream.Position = $zipOffset\n    $output = [System.IO.File]::Create($payloadZip)\n    $buffer = New-Object byte[] 65536\n    $remaining = $zipLength\n    while ($remaining -gt 0) {\n        $count = [int][Math]::Min([long]$buffer.Length, $remaining)\n        $read = $stream.Read($buffer, 0, $count)\n        if ($read -le 0) { throw 'The embedded Notch payload ended unexpectedly.' }\n        $output.Write($buffer, 0, $read)\n        $remaining -= $read\n    }\n    $output.Flush()\n}\nfinally {\n    if ($null -ne $output) { $output.Dispose() }\n    $stream.Dispose()\n}\ntry {\n    Expand-Archive -LiteralPath $payloadZip -DestinationPath $dir -Force\n    if (-not (Test-Path -LiteralPath (Join-Path $dir 'Notch.exe') -PathType Leaf)) {\n        throw 'The embedded Notch payload did not produce Notch.exe at its root.'\n    }\n}\nfinally {\n    Remove-Item -LiteralPath $payloadZip -Force -ErrorAction SilentlyContinue\n}\nRemove-Item -LiteralPath $setupPath -Force"
+    },
+    "bin": "Notch.exe",
+    "shortcuts": [
+        [
+            "Notch.exe",
+            "Notch"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/Brick-Bread/WNotch"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Brick-Bread/WNotch/releases/download/v$version/Notch-Setup-$version.exe"
+            }
+        }
+    },
+    "notes": [
+        "The publisher's installer/build.ps1 defines a custom appended-payload format: [setup executable][ZIP payload][8-byte ZIP length][NOTCHPAY]. The Scoop installer script extracts that embedded ZIP and verifies Notch.exe without running the publisher's registration/setup routine. The extraction script must be exercised on Windows before this manifest is considered fully verified.",
+        "The upstream setup normally registers a per-user uninstall entry, notch:// protocol, PATH entry, shortcuts, and startup behavior. Those setup-time registrations are intentionally not created by this portable Scoop extraction.",
+        "Settings are stored under %APPDATA%\\\\Notch. The application's update notices remain enabled; updates require explicit user action in the app."
+    ]
+}

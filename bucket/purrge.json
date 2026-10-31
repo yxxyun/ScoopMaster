@@ -1,0 +1,46 @@
+{
+    "##": "Native Scoop packaging of Purrge: the PSGallery .nupkg is just a ZIP with the Python runtime; we unpack it into the app dir and expose a purrge shim, so nothing is written outside scoop (user data still lives in %PURRGE_HOME% or ~/.purrge).",
+    "version": "0.3.4",
+    "description": "AI 磁盘清理助手：空间不足时提醒，让 AI（Claude Code / Codex / WorkBuddy / DSH）判断哪些能清，你勾选确认后才删",
+    "homepage": "https://github.com/RabbittuX/purrge",
+    "license": {
+        "identifier": "PolyForm-Noncommercial-1.0.0",
+        "url": "https://github.com/RabbittuX/purrge/blob/master/LICENSE"
+    },
+    "notes": [
+        "需要 Python 3.8+ 在 PATH 上：scoop install python（或 python312）",
+        "配置与运行记录在 %PURRGE_HOME%（未设置时为 ~/.purrge），Scoop 不接管",
+        "后台空间告警与 AI 技能安装请运行：purrge install",
+        "快速自检：purrge version"
+    ],
+    "url": "https://www.powershellgallery.com/api/v2/package/Purrge/0.3.4#/purrge.zip",
+    "hash": "sha512:8d2cf00673fab2501e5f9f497ed6108928526b74274028719a1f2df7ddc87875948f66c207c3451beea8e91ada1adb314baccaac8005024bebaa4601234687b6",
+    "post_install": [
+        "foreach ($junk in @('[Content_Types].xml', '_rels', 'package', 'Purrge.nuspec')) { Remove-Item -LiteralPath (Join-Path $dir $junk) -Recurse -Force -ErrorAction SilentlyContinue }"
+    ],
+    "bin": [
+        [
+            "purrge.cmd",
+            "purrge"
+        ]
+    ],
+    "checkver": {
+        "url": "https://www.powershellgallery.com/api/v2/FindPackagesById()?id='Purrge'",
+        "regex": "<d:Version>([\\d.]+)</d:Version>",
+        "reverse": true
+    },
+    "autoupdate": {
+        "url": "https://www.powershellgallery.com/api/v2/package/Purrge/$version#/purrge.zip",
+        "hash": {
+            "url": "https://www.powershellgallery.com/api/v2/Packages(Id='Purrge',Version='$version')",
+            "regex": "<d:PackageHash>([^<]+)</d:PackageHash>"
+        }
+    },
+    "suggest": {
+        "python": "Purrge 运行需要 Python 3.8+（scoop install python 或 python312）"
+    },
+    "pre_install": [
+        "$lines = @('@echo off','setlocal','set \"PY=\"','for %%c in (python python3 python312 python313 py) do (','    if not defined PY (','        where %%c >nul 2>nul && set \"PY=%%c\"','    )',')','if not defined PY (','    echo Purrge needs Python 3.8+ on PATH. Install it with: scoop install python','    exit /b 1',')','%PY% \"%~dp0runtime\\lib\\dg.py\" %*')",
+        "Set-Content -Path \"$dir\\purrge.cmd\" -Value $lines -Encoding ascii"
+    ]
+}

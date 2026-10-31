@@ -1,0 +1,66 @@
+{
+    "##": "Windows 11 x64 only. Upstream ships a self-made .NET wrapper (Pane.Setup) that embeds payload.zip and then opens a GUI setup window; this manifest carves that embedded payload out of the wrapper and unpacks it, so nothing is written outside the scoop app dir and no admin rights are needed.",
+    "version": "0.1.244",
+    "description": "启动器、鼠标手势与剪贴板工具，磨砂玻璃风格（Windows 11 x64）",
+    "homepage": "https://github.com/LBEILC/Pane",
+    "license": {
+        "identifier": "GPL-3.0-only",
+        "url": "https://github.com/LBEILC/Pane/blob/main/LICENSE"
+    },
+    "notes": [
+        "在「设置 → 关于」里关掉 Pane 自带的自动更新，改用 scoop update pane（自带更新会往 %LOCALAPPDATA%\\Programs\\Pane 再装一份）",
+        "设置、剪贴板历史与手势配置保存在 %APPDATA%\\Pane（Scoop 不接管，升级和卸载都不会动它）",
+        "文件搜索功能需要 Everything 1.4+ 正在运行"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/LBEILC/Pane/releases/download/v0.1.244/Pane-Setup-0.1.244.exe",
+            "hash": "40d8615b35a9148e92949c51c9e4e947f25f5ee5f67ba00cef509ef25e9c559b"
+        }
+    },
+    "installer": {
+        "script": [
+            "$exe = (Get-ChildItem -Path $dir -Filter '*.exe' | Select-Object -First 1).FullName",
+            "$bytes = [System.IO.File]::ReadAllBytes($exe)",
+            "$start = -1; $end = -1; $i = 0",
+            "while ($true) {",
+            "$i = [Array]::IndexOf($bytes, [byte]0x50, $i)",
+            "if ($i -lt 0 -or ($i + 22) -ge $bytes.Length) { break }",
+            "if ($bytes[$i + 1] -eq 0x4B -and $bytes[$i + 2] -eq 0x05 -and $bytes[$i + 3] -eq 0x06 -and [BitConverter]::ToUInt16($bytes, $i + 10) -gt 0) {",
+            "$candidate = $i - [BitConverter]::ToUInt32($bytes, $i + 12) - [BitConverter]::ToUInt32($bytes, $i + 16)",
+            "if ($candidate -ge 0 -and $bytes[$candidate] -eq 0x50 -and $bytes[$candidate + 1] -eq 0x4B -and $bytes[$candidate + 2] -eq 0x03 -and $bytes[$candidate + 3] -eq 0x04) {",
+            "$start = $candidate",
+            "$end = $i + 22 + [BitConverter]::ToUInt16($bytes, $i + 20)",
+            "break",
+            "}",
+            "}",
+            "$i++",
+            "}",
+            "if ($start -lt 0) { error \"Couldn't find the payload.zip embedded in $exe\" }",
+            "$payload = New-Object byte[] ($end - $start)",
+            "[Array]::Copy($bytes, $start, $payload, 0, $payload.Length)",
+            "[System.IO.File]::WriteAllBytes(\"$dir\\payload.zip\", $payload)",
+            "Expand-7zipArchive -Path \"$dir\\payload.zip\" -DestinationPath $dir -Removal",
+            "Remove-Item \"$dir\\$fname\""
+        ]
+    },
+    "shortcuts": [
+        [
+            "Pane.App.exe",
+            "Pane"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/LBEILC/Pane"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/LBEILC/Pane/releases/download/v$version/Pane-Setup-$version.exe"
+            }
+        },
+        "hash": {
+            "url": "https://github.com/LBEILC/Pane/releases/download/v$version/SHA256SUMS.txt"
+        }
+    }
+}

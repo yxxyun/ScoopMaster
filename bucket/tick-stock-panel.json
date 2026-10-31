@@ -1,0 +1,50 @@
+{
+    "##": "Inno Setup installer (packaging/tsp.iss, PrivilegesRequired=lowest). Installed silently with /DIR pointing at the scoop dir; removal delegates to Inno's own unins000.exe.",
+    "version": "0.3.24",
+    "description": "TSP 自托管、零运维的 A 股「自建策略 + 监控 + 回测」量化工作台",
+    "homepage": "https://github.com/shy3130/tick-stock-panel",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/shy3130/tick-stock-panel/blob/main/LICENSE"
+    },
+    "notes": [
+        "Windows 版是 Inno Setup 安装包（免管理员的用户级安装），本 manifest 用 /VERYSILENT /DIR 装进 Scoop 目录",
+        "卸载走安装器自带的 unins000.exe（静默）；Scoop 再清目录",
+        "首次运行会拉起本地服务并自动打开管理页，具体端口见上游 README"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/shy3130/tick-stock-panel/releases/download/v0.3.24/TSP-Setup-x64-0.3.24.exe",
+            "hash": "118111bff476ab62c2ac2398a347e6c2780aa6dd7607dbdfde54c917ecc59c9f"
+        }
+    },
+    "installer": {
+        "script": [
+            "$installer = Join-Path $dir $fname",
+            "$dirArg = '/DIR=\"{0}\"' -f $dir",
+            "Start-Process -FilePath $installer -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', $dirArg -Wait",
+            "Remove-Item $installer -Force"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$candidates = @((Join-Path $dir 'unins000.exe'), 'D:\\TSP\\unins000.exe')",
+            "foreach ($u in $candidates) { if (Test-Path -LiteralPath $u) { Start-Process -FilePath $u -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait; break } }"
+        ]
+    },
+    "checkver": {
+        "url": "https://github.com/shy3130/tick-stock-panel/releases.atom",
+        "regex": "releases/tag/v([\\d.]+)\""
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/shy3130/tick-stock-panel/releases/download/v$version/TSP-Setup-x64-$version.exe"
+            }
+        },
+        "hash": {
+            "url": "https://api.github.com/repos/shy3130/tick-stock-panel/releases/tags/v$version",
+            "regex": "\"name\":\"TSP-Setup-x64-$version\\.exe\".*?\"digest\":\"sha256:([0-9a-f]{64})\""
+        }
+    }
+}
