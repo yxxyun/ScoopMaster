@@ -1,0 +1,41 @@
+{
+    "version": "1.2",
+    "description": "Tiny Windows tray image converter with batch resizing and Explorer integration",
+    "homepage": "https://github.com/kiranohaiiro/ImgConv",
+    "license": "MIT",
+    "url": "https://github.com/kiranohaiiro/ImgConv/releases/download/v1.2/ImgConv-Setup.exe",
+    "hash": "547ac47b270f3679cf9110f7e87b07519926bdc69204c4cc4e382476afe17cfc",
+    "pre_install": [
+        "$installKey = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ImgConv'",
+        "$installPath = Join-Path $dir 'ImgConv'",
+        "$managedRoot = [IO.Path]::GetFullPath((Split-Path -Parent $dir)).TrimEnd('\\') + '\\'",
+        "if (Test-Path -LiteralPath $installKey) {",
+        "    $existingPath = (Get-ItemProperty -LiteralPath $installKey -Name InstallLocation -ErrorAction SilentlyContinue).InstallLocation",
+        "    if (-not $existingPath -or -not ([IO.Path]::GetFullPath($existingPath)).StartsWith($managedRoot, [StringComparison]::OrdinalIgnoreCase)) {",
+        "        throw \"ImgConv is already registered outside this Scoop package at '$existingPath'. Uninstall that copy before installing through Scoop.\"",
+        "    }",
+        "}",
+        "New-Item -Path $installKey -Force | Out-Null",
+        "Set-ItemProperty -LiteralPath $installKey -Name InstallLocation -Value $installPath"
+    ],
+    "installer": {
+        "args": [
+            "/S"
+        ]
+    },
+    "uninstaller": {
+        "script": "$exe = Join-Path $dir 'ImgConv\\ImgConv.exe'; if (Test-Path -LiteralPath $exe -PathType Leaf) { Start-Process -FilePath $exe -ArgumentList '/uninstall /quiet' -Wait -PassThru | Out-Null }"
+    },
+    "bin": "ImgConv\\ImgConv.exe",
+    "checkver": {
+        "github": "https://github.com/kiranohaiiro/ImgConv"
+    },
+    "autoupdate": {
+        "url": "https://github.com/kiranohaiiro/ImgConv/releases/download/v$version/ImgConv-Setup.exe",
+        "hash": {
+            "mode": "json",
+            "url": "https://api.github.com/repos/kiranohaiiro/ImgConv/releases/tags/v$version",
+            "jp": "$.assets[?(@.name == '$basename')].digest"
+        }
+    }
+}

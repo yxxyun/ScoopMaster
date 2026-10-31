@@ -1,54 +1,48 @@
 {
-    "version": "0.128.0",
-    "description": "清风输入法，Rust + TSF 的开源中文输入法，支持五笔86/全拼/双拼、辅助码与表情 | Open-source Chinese IME for Windows built on Rust + TSF",
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+    "version": "0.129.0",
+    "description": "清风输入法 | 轻量、快速、可定制的开源中文输入法，专为五笔和码表输入方案设计（Windows / macOS）",
     "homepage": "https://github.com/huanfeng/WindInput",
-    "license": "GPL-3.0-or-later",
-    "url": "https://github.com/huanfeng/WindInput/releases/download/v0.128.0/WindInput-Portable-0.128.0.zip",
-    "hash": "4eeca8728e51e03c29b226e23fae1f40c2339d7f5394803ce787a8116fb55d33",
-    "extract_dir": "WindInput-0.128.0",
-    "bin": "wind_portable.exe",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/huanfeng/WindInput/releases/download/v0.129.0/WindInput-Portable-0.129.0.zip",
+            "hash": "6163c84bfa9045bc13a44736d89ed69e571328e55922d72232a5d120345520f6",
+            "extract_dir": "WindInput-0.129.0"
+        }
+    },
+    "bin": [
+        "wind_input.exe",
+        "wind_cli.bat"
+    ],
     "shortcuts": [
         [
             "wind_portable.exe",
             "WindInput"
+        ],
+        [
+            "wind_setting.exe",
+            "WindInput Settings"
+        ],
+        [
+            "wind_portable.exe",
+            "清风输入法"
+        ],
+        [
+            "wind_setting.exe",
+            "清风输入法 设置"
         ]
     ],
     "persist": "userdata",
-    "post_install": [
-        "Write-Host 'Starting WindInput TSF registration (confirm the UAC prompt)...' -f Cyan",
-        "Start-Process -FilePath \"$dir\\wind_portable.exe\" -ArgumentList '-start'"
-    ],
-    "pre_uninstall": [
-        "$procs = Get-Process wind_input, wind_setting -ErrorAction SilentlyContinue",
-        "if ($procs) { Write-Host 'Stopping WindInput engine process...' -f Cyan; $procs | Stop-Process -Force -ErrorAction SilentlyContinue }"
-    ],
-    "uninstaller": {
-        "script": [
-            "$tip = 'HKLM:\\SOFTWARE\\Microsoft\\CTF\\TIP\\{99C2EE30-5C57-45A2-9C63-FB54B34FD90A}'",
-            "if ((Test-Path \"$dir\\wind_portable.exe\") -and (Test-Path $tip)) {",
-            "    Write-Host 'Unregistering WindInput TSF (confirm the UAC prompt)...' -f Cyan",
-            "    $proc = Start-Process -FilePath \"$dir\\wind_portable.exe\" -ArgumentList '-stop' -Wait -PassThru",
-            "    if ($proc.ExitCode -ne 0) { Write-Host \"wind_portable.exe -stop exited with code $($proc.ExitCode); TSF registration may remain (run 'wind_portable.exe -stop' manually).\" -f Yellow }",
-            "} else {",
-            "    Write-Host 'WindInput TSF not registered (or launcher missing), skipping unregister.'",
-            "}"
-        ]
+    "checkver": {
+        "github": "https://github.com/huanfeng/WindInput"
     },
-    "checkver": "github",
     "autoupdate": {
-        "extract_dir": "WindInput-$version",
-        "url": "https://github.com/huanfeng/WindInput/releases/download/v$version/WindInput-Portable-$version.zip",
-        "hash": {
-            "url": "$url.sha256"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/huanfeng/WindInput/releases/download/v$version/WindInput-Portable-$version.zip",
+                "extract_dir": "WindInput-$version"
+            }
         }
-    },
-    "notes": [
-        "安装时 post_install 会自动运行 wind_portable.exe -start（注册 TSF + 开机自启 + 启动服务），需在 UAC 弹窗确认；错过或取消后手动执行 wind_portable.exe -start 即可。",
-        "安装完成后用 Win+空格 切换到「清风输入法」；设置入口为 wind_setting.exe 或启动器托盘菜单。",
-        "更新：scoop 在运行任何 manifest 脚本之前就检查 app 目录内进程，wind_input.exe 常驻会导致 scoop update 直接跳过。先手动结束它：taskkill /f /im wind_input.exe（以当前用户运行，无需管理员），再 scoop update windinput；更新过程会弹两次 UAC（旧版卸载器注销 TSF + 新版 post_install 重新注册并启动），完成后输入法自动恢复。",
-        "卸载：直接 scoop uninstall windinput 即可，pre_uninstall 会自动结束服务进程，随后卸载器弹 UAC 运行 wind_portable.exe -stop 注销 TSF 并删除开机自启。",
-        "便携版用户数据就地存放在 userdata 目录（config.toml 配置、自造词与词频 userdata\\data、自定义主题 userdata\\themes），已 persist；data 目录是随版本发布的只读词库/主题资源，不 persist，scoop 升级自动更新词库。",
-        "Trusted Mode 游戏（如 CS2）只加载系统目录下已签名 DLL：按官方 wind-portable 说明在程序根目录建名为 system_deploy 的空文件切换系统部署模式（极少数场景，需 -stop 后 -start 生效）。",
-        "输入法引擎问题请到上游反馈：https://github.com/huanfeng/WindInput"
-    ]
+    }
 }

@@ -1,87 +1,38 @@
 {
-    "version": "0.8.5",
-    "description": "全球首个开源 AI 原生矢量设计工具，支持并发 Agent Teams，是 Pencil 的 Design-as-Code 替代方案",
-    "homepage": "https://github.com/ZSeven-W/openpencil",
+    "version": "0.16.0",
+    "description": "AI-native design editor and open-source Figma alternative",
+    "homepage": "https://github.com/open-pencil/open-pencil",
     "license": "MIT",
-    "notes": [
-        "OpenPencil 是一个开源 AI 原生矢量设计工具（0.8.0 起由 Electron 重写为 Rust 原生程序）",
-        "用户数据目录 1：%APPDATA%\\openpencil\\（settings.json、window.json、主题预设等）",
-        "用户数据目录 2：%USERPROFILE%\\.openpencil\\（ui.json、git-auth.json、MCP 端口等）",
-        "本包会将这两个目录持久化到 Scoop 的 persist，并在原路径创建 Junction 指向 persist"
-    ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/ZSeven-W/openpencil/releases/download/v0.8.5/openpencil-desktop-windows-x86_64.zip",
-            "hash": "5718043af5eca0b124f5521a22c32954df5760eeb9a34fdf2690ab972964e801"
+            "url": "https://github.com/open-pencil/open-pencil/releases/download/v0.16.0/OpenPencil_0.16.0_x64-setup.exe#/dl.7z",
+            "hash": "1b851ac488ce9be437f8b321cadb87ee169f9a1d11968d8e8be87742c9d4df4b"
+        },
+        "arm64": {
+            "url": "https://github.com/open-pencil/open-pencil/releases/download/v0.16.0/OpenPencil_0.16.0_arm64-setup.exe#/dl.7z",
+            "hash": "98f4c26d85bb1323b2d95f7064df655b6f82de3d2a7d08481ea4bca4f1a747db"
         }
     },
-    "bin": [
-        [
-            "openpencil-desktop.exe",
-            "openpencil"
-        ]
-    ],
+    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\uninstall.exe\" -Force -Recurse -ErrorAction Ignore",
+    "bin": "OpenPencil.exe",
     "shortcuts": [
         [
-            "openpencil-desktop.exe",
+            "OpenPencil.exe",
             "OpenPencil"
         ]
     ],
-    "post_install": [
-        "$createJunction = {",
-        "    param($source, $name)",
-        "    $target = Join-Path $persist_dir $name",
-        "    ensure $target",
-        "",
-        "    if (Test-Path $source) {",
-        "        $item = Get-Item -LiteralPath $source -Force",
-        "        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
-        "            Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
-        "            return",
-        "        }",
-        "        if (-not $item.PSIsContainer) {",
-        "            throw \"配置路径已存在且不是目录：$source\"",
-        "        }",
-        "",
-        "        & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
-        "        if ($LASTEXITCODE -gt 7) {",
-        "            Write-Host \"迁移失败，保留原目录：$source\"",
-        "            return",
-        "        }",
-        "",
-        "        $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
-        "        try {",
-        "            Move-Item -LiteralPath $source -Destination $backup -Force",
-        "            Write-Host \"已备份原配置目录：$backup\"",
-        "        } catch {",
-        "            Write-Host \"无法重命名原目录：$source\"",
-        "            return",
-        "        }",
-        "    }",
-        "",
-        "    New-Item -Path $source -ItemType Junction -Value $target | Out-Null",
-        "}",
-        "",
-        "& $createJunction (Join-Path $env:APPDATA 'openpencil') 'data'",
-        "& $createJunction (Join-Path $env:USERPROFILE '.openpencil') 'dotopenpencil'"
-    ],
-    "persist": [
-        "data",
-        "dotopenpencil"
-    ],
-    "checkver": {
-        "url": "https://api.github.com/repos/ZSeven-W/openpencil/releases",
-        "jsonpath": "$[0].tag_name",
-        "regex": "v(?<version>[\\d.]+)"
-    },
+    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/ZSeven-W/openpencil/releases/download/v$version/openpencil-desktop-windows-x86_64.zip"
+                "url": "https://github.com/open-pencil/open-pencil/releases/download/v$version/OpenPencil_$version_x64-setup.exe#/dl.7z"
+            },
+            "arm64": {
+                "url": "https://github.com/open-pencil/open-pencil/releases/download/v$version/OpenPencil_$version_arm64-setup.exe#/dl.7z"
             }
         },
         "hash": {
-            "mode": "download"
+            "url": "https://github.com/open-pencil/open-pencil/releases/download/v$version/SHA256SUMS"
         }
     }
 }
