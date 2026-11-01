@@ -1,0 +1,59 @@
+{
+    "##": "ltguillaume/schep",
+    "version": "9.3.6",
+    "description": "Office suite that combines text, spreadsheet, presentation and PDF editors allowing to create, view and edit documents. Portable.",
+    "homepage": "https://github.com/nextcloud-releases/Office-DesktopEditors",
+    "license": "AGPL-3.0-only",
+    "suggest": {
+        "vcredist": "extras/vcredist2022"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/nextcloud-releases/Office-DesktopEditors/releases/download/v9.3.6/Nextcloud-Office-DesktopEditors-9.3.6-0-windows-x64.exe",
+            "hash": "35e2a1ce904d7a0e2b2029d297194b849ec5142a414afaab12faf16e76f72a4e"
+        },
+        "arm64": {
+            "url": "https://github.com/nextcloud-releases/Office-DesktopEditors/releases/download/v9.3.6/Nextcloud-Office-DesktopEditors-9.3.6-0-windows-arm64.exe",
+            "hash": "af87e91d794c6dad8f2d304fe32011057d3d355beef5d19e06462002c71df097"
+        }
+    },
+    "innosetup": true,
+    "bin": "DesktopEditors.exe",
+    "shortcuts": [
+        [
+            "DesktopEditors.exe",
+            "Nextcloud Office"
+        ]
+    ],
+    "post_install": [
+        "if (-not (Test-Path \"$Env:LocalAppData\\Euro-Office\\*\")) {",
+        "    Remove-Item \"$Env:LocalAppData\\Euro-Office\" 2>$null",
+        "    if (-not (Test-Path \"$persist_dir\")) {",
+        "        New-Item -ItemType Directory -Path \"$persist_dir\" >$null",
+        "    }",
+        "    New-DirectoryJunction \"$Env:LocalAppData\\Euro-Office\" \"$persist_dir\" >$null",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$data = Get-Item \"$Env:LocalAppData\\Euro-Office\"",
+        "if (\"$($data.Target)\" -eq \"$persist_dir\") { $data.Delete() }",
+        "if ($cmd -eq 'uninstall') {",
+        "    Remove-Item \"HKCU:\\Software\\Euro-Office\" -Force -Recurse",
+        "}"
+    ],
+    "checkver": {
+        "github": "https://api.github.com/repos/nextcloud-releases/Office-DesktopEditors/releases",
+        "jsonpath": "$[*].assets[*].browser_download_url",
+        "regex": "v([\\d.-]+)/Nextcloud-Office-DesktopEditors-(?<fileversion>[\\d.-]+)-windows-x64\\.exe"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/nextcloud-releases/Office-DesktopEditors/releases/download/v$version/Nextcloud-Office-DesktopEditors-$matchFileversion-windows-x64.exe"
+            },
+            "arm64": {
+                "url": "https://github.com/nextcloud-releases/Office-DesktopEditors/releases/download/v$version/Nextcloud-Office-DesktopEditors-$matchFileversion-windows-arm64.exe"
+            }
+        }
+    }
+}

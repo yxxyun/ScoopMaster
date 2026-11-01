@@ -7,7 +7,6 @@
     "suggest": {
         "OBS": [
             "extras/obs-studio",
-            "extras/obs-studio-small",
             "versions/obs-studio-pre"
         ]
     },
@@ -22,22 +21,33 @@
         }
     },
     "pre_install": [
-        "'obs-studio', 'obs-studio-small', 'obs-studio-pre' | ForEach-Object {",
+        "$pluginName = 'shutdown-plugin'",
+        "$newPluginDir = \"$env:ProgramData\\obs-studio\\plugins\\$pluginName\"",
+        "info \"Installing $pluginName for OBS 33+ to $newPluginDir\"",
+        "if (Test-Path $newPluginDir) {",
+        "    Remove-Item $newPluginDir -Force -Recurse -ErrorAction SilentlyContinue",
+        "}",
+        "New-Item -ItemType Directory -Path $newPluginDir -Force | Out-Null",
+        "Copy-Item \"$dir\\$pluginName\\*\" \"$newPluginDir\" -Recurse -Force",
+        "Write-Host 'Cleaning up any legacy plugin files...'",
+        "'obs-studio', 'obs-studio-pre' | ForEach-Object {",
         "    $obs = \"$(appdir $_ $global)\"",
         "    if (Test-Path $obs) {",
-        "       info \"Install for $_\"",
-        "       Copy-Item \"$dir\\data\" \"$obs\\current\" -Recurse -ErrorAction SilentlyContinue",
-        "       Copy-Item \"$dir\\obs-plugins\" \"$obs\\current\" -Recurse -ErrorAction SilentlyContinue",
-        "   }",
+        "        Remove-Item \"$obs\\current\\data\\obs-plugins\\$pluginName\" -Force -Recurse -ErrorAction SilentlyContinue",
+        "        Remove-Item \"$obs\\current\\obs-plugins\\64bit\\$pluginName.*\" -Force -ErrorAction SilentlyContinue",
+        "    }",
         "}"
     ],
     "pre_uninstall": [
-        "'obs-studio', 'obs-studio-small', 'obs-studio-pre' | ForEach-Object {",
+        "$pluginName = 'shutdown-plugin'",
+        "$newPluginDir = \"$env:ProgramData\\obs-studio\\plugins\\$pluginName\"",
+        "info \"Removing $pluginName from $newPluginDir\"",
+        "Remove-Item $newPluginDir -Force -Recurse -ErrorAction SilentlyContinue",
+        "'obs-studio', 'obs-studio-pre' | ForEach-Object {",
         "    $obs = \"$(appdir $_ $global)\"",
         "    if (Test-Path $obs) {",
-        "        info \"Uninstall for $_\"",
-        "        Remove-Item \"$obs\\current\\data\\obs-plugins\\shutdown-plugin\" -Force -Recurse -ErrorAction SilentlyContinue",
-        "        Remove-Item \"$obs\\current\\obs-plugins\\64bit\\shutdown-plugin.*\" -Force -ErrorAction SilentlyContinue",
+        "        Remove-Item \"$obs\\current\\data\\obs-plugins\\$pluginName\" -Force -Recurse -ErrorAction SilentlyContinue",
+        "        Remove-Item \"$obs\\current\\obs-plugins\\64bit\\$pluginName.*\" -Force -ErrorAction SilentlyContinue",
         "    }",
         "}"
     ],
