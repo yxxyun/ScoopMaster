@@ -1,0 +1,56 @@
+{
+    "version": "4.0.2",
+    "description": "Gaming suite with an FPS overlay, game streaming, stutter analysis, and virtual gamepad tools.",
+    "homepage": "https://k-toolz.de/en/",
+    "license": "AGPL-3.0-only",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/kara2010/k-toolz/releases/download/v4.0.2/K-Toolz-Setup-4.0.2.exe#/dl.7z",
+            "hash": "f7322e1720d5f7bbdf9bcdd886a95b4bdde8fbe883e78282d7285209fb71fe89"
+        }
+    },
+    "bin": "k-toolz.exe",
+    "shortcuts": [
+        [
+            "k-toolz.exe",
+            "K-Toolz",
+            "icons\\k-toolz.ico"
+        ]
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/kara2010/k-toolz/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "^v([\\d.]+)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/kara2010/k-toolz/releases/download/v$version/K-Toolz-Setup-$version.exe#/dl.7z"
+            }
+        }
+    },
+    "notes": [
+        "The official NSIS setup is downloaded and extracted by 7-Zip; Scoop does not execute the vendor installer or its installation routines.",
+        "The upstream installer checks for Microsoft Edge WebView2 Runtime and Microsoft Visual C++ 2015-2022 x64 runtime and installs them when missing. This Scoop manifest deliberately does not run those prerequisite installers; install the missing runtimes separately if the app cannot start.",
+        "PawnIO (CPU sensor access) and ViGEmBus (virtual gamepad support) are optional drivers. K-Toolz can request their installation from its UI; Scoop does not install either driver.",
+        "User settings, game library, and related data are stored outside Scoop under %APPDATA%\\K-Toolz. The WebView2 profile is under %LOCALAPPDATA%\\K-Toolz\\WebView2. These folders are retained by scoop uninstall.",
+        "When launched, the app registers ktoolz:// and the legacy lumora:// URL handlers in HKCU. Its optional K-Toolz autostart value is also stored in HKCU. The pre_uninstall hook removes only entries that still point into this Scoop app directory.",
+        "The application's own update mechanism is left enabled."
+    ],
+    "pre_uninstall": [
+        "$appRoot = (Split-Path -Parent $dir).TrimEnd('\\')",
+        "$rootPrefix = '\"' + $appRoot + '\\'",
+        "foreach ($scheme in @('ktoolz', 'lumora')) {",
+        "    $schemeKey = \"HKCU:\\Software\\Classes\\$scheme\"",
+        "    $commandKey = Join-Path $schemeKey 'shell\\open\\command'",
+        "    $command = if (Test-Path -LiteralPath $commandKey) { (Get-Item -LiteralPath $commandKey).GetValue('') }",
+        "    if ($command -and $command.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase) -and $command.EndsWith('\\k-toolz.exe\" \"%1\"', [System.StringComparison]::OrdinalIgnoreCase)) {",
+        "        Remove-Item -LiteralPath $schemeKey -Recurse -Force",
+        "    }",
+        "}",
+        "$runKey = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "$runCommand = if (Test-Path -LiteralPath $runKey) { (Get-Item -LiteralPath $runKey).GetValue('K-Toolz') }",
+        "$ownsRun = $runCommand -and $runCommand.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase) -and ($runCommand.EndsWith('\\k-toolz.exe\"', [System.StringComparison]::OrdinalIgnoreCase) -or $runCommand.EndsWith('\\k-toolz.exe\" --minimized', [System.StringComparison]::OrdinalIgnoreCase))",
+        "if ($ownsRun) { Remove-ItemProperty -LiteralPath $runKey -Name 'K-Toolz' -Force }"
+    ]
+}
