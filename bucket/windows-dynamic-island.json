@@ -1,0 +1,123 @@
+{
+    "version": "0.8.0",
+    "description": "macOS-style Windows Dynamic Island with media controls, notifications, microphone indicators, window shelf, virtual-desktop support, and per-monitor islands.",
+    "homepage": "https://github.com/nazimferragh/windows-dynamic-island",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/nazimferragh/windows-dynamic-island/blob/main/LICENSE"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/nazimferragh/windows-dynamic-island/releases/download/v0.8.0/DynamicIsland-Setup-0.8.0.exe",
+            "hash": "cf7374f05510fe1e9cbeb47141c7acb45598b525274dc0401c04a9821cb66e49"
+        }
+    },
+    "innosetup": true,
+    "bin": "DynamicIsland.exe",
+    "shortcuts": [
+        [
+            "DynamicIsland.exe",
+            "Dynamic Island"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/nazimferragh/windows-dynamic-island"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/nazimferragh/windows-dynamic-island/releases/download/v$version/DynamicIsland-Setup-$version.exe"
+            }
+        }
+    },
+    "pre_uninstall": [
+        "$exe = Join-Path $dir 'DynamicIsland.exe'",
+        "if (Test-Path -LiteralPath $exe -PathType Leaf) {",
+        "    foreach ($argument in @('--quit', '--unregister-autostart', '--restore-banners')) {",
+        "        try { Start-Process -FilePath $exe -ArgumentList $argument -WindowStyle Hidden -Wait -ErrorAction Stop | Out-Null }",
+        "        catch { Write-Warning \"Dynamic Island cleanup command '$argument' failed: $($_.Exception.Message)\" }",
+        "    }",
+        "}",
+        "$settingsKey = 'HKCU:\\Software\\DynamicIsland'",
+        "$advancedKey = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced'",
+        "$tweaksVersion = $null",
+        "$backupCaptured = $null",
+        "$currentSnapBar = $null",
+        "if (Test-Path -LiteralPath $settingsKey) {",
+        "    $tweaksVersion = Get-ItemPropertyValue -LiteralPath $settingsKey -Name 'TweaksVersion' -ErrorAction SilentlyContinue",
+        "    $backupCaptured = Get-ItemPropertyValue -LiteralPath $settingsKey -Name 'ScoopSnapBarBackupCaptured' -ErrorAction SilentlyContinue",
+        "}",
+        "if (Test-Path -LiteralPath $advancedKey) {",
+        "    $advanced = Get-ItemProperty -LiteralPath $advancedKey -Name 'EnableSnapBar' -ErrorAction SilentlyContinue",
+        "    if ($null -ne $advanced -and $advanced.PSObject.Properties.Name -contains 'EnableSnapBar') {",
+        "        $currentSnapBar = [int]$advanced.EnableSnapBar",
+        "    }",
+        "}",
+        "if ([Environment]::OSVersion.Version.Build -ge 22621 -and $null -ne $tweaksVersion -and [int]$tweaksVersion -ge 2) {",
+        "    if ($null -ne $currentSnapBar -and $currentSnapBar -eq 0) {",
+        "        if ($null -ne $backupCaptured -and [int]$backupCaptured -eq 1) {",
+        "            $originalPresent = Get-ItemPropertyValue -LiteralPath $settingsKey -Name 'ScoopSnapBarOriginalPresent' -ErrorAction SilentlyContinue",
+        "            if ($null -eq $originalPresent) {",
+        "                Write-Warning 'The original EnableSnapBar backup is incomplete. The current value was preserved.'",
+        "            } elseif ([int]$originalPresent -eq 1) {",
+        "                $originalValue = Get-ItemPropertyValue -LiteralPath $settingsKey -Name 'ScoopSnapBarOriginalValue' -ErrorAction SilentlyContinue",
+        "                if ($null -ne $originalValue) {",
+        "                    Set-ItemProperty -LiteralPath $advancedKey -Name 'EnableSnapBar' -Value ([int]$originalValue) -Type DWord",
+        "                    Write-Host 'Restored the original EnableSnapBar value captured before Dynamic Island first ran.'",
+        "                } else {",
+        "                    Write-Warning 'The original EnableSnapBar value is missing from the backup. The current value was preserved.'",
+        "                }",
+        "            } elseif ([int]$originalPresent -eq 0) {",
+        "                Remove-ItemProperty -LiteralPath $advancedKey -Name 'EnableSnapBar' -ErrorAction SilentlyContinue",
+        "                Write-Host 'Restored the original default EnableSnapBar state (the value was absent before installation).'",
+        "            } else {",
+        "                Write-Warning 'The original EnableSnapBar backup marker is invalid. The current value was preserved.'",
+        "            }",
+        "        } else {",
+        "            Write-Warning 'The app tweak predates the Scoop backup or no safe original value is available. The current EnableSnapBar value was preserved.'",
+        "        }",
+        "    } elseif ($null -ne $currentSnapBar) {",
+        "        Write-Host 'EnableSnapBar no longer equals the value set by Dynamic Island; preserving the user change.'",
+        "    }",
+        "}",
+        "foreach ($name in @('ScoopSnapBarBackupCaptured', 'ScoopSnapBarOriginalPresent', 'ScoopSnapBarOriginalValue')) {",
+        "    Remove-ItemProperty -LiteralPath $settingsKey -Name $name -ErrorAction SilentlyContinue",
+        "}",
+        "& \"$env:WINDIR\\System32\\schtasks.exe\" /Query /TN 'DynamicIsland' *> $null",
+        "$taskStillExists = $LASTEXITCODE -eq 0",
+        "$bannerBackup = Join-Path $settingsKey 'HiddenBanners'",
+        "if (-not $taskStillExists -and -not (Test-Path -LiteralPath $bannerBackup)) {",
+        "    Remove-Item -LiteralPath $settingsKey -Recurse -Force -ErrorAction SilentlyContinue",
+        "} elseif ($taskStillExists) {",
+        "    Write-Warning 'The DynamicIsland scheduled task still exists. Its registry state was preserved; remove the task from Task Scheduler if it was not removed after the elevation prompt.'",
+        "} elseif (Test-Path -LiteralPath $bannerBackup) {",
+        "    Write-Warning 'Notification banner backup data remains under HKCU:\\Software\\DynamicIsland\\HiddenBanners and was preserved so it can still be restored.'",
+        "}"
+    ],
+    "notes": [
+        "The official v0.8.0 release is an Inno Setup installer. The upstream installer/DynamicIsland.iss defines DynamicIsland.exe as the app executable and packages the contents of the self-contained publish directory directly under {app}; Scoop uses innosetup=true to extract that payload without executing the vendor's installation, registry, startup, or uninstall sections.",
+        "This application is classified Nonportable because its own startup code applies Windows integration: on Windows 11 build 22621 or later it sets HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\EnableSnapBar to 0 and restarts Explorer once. Its default notification settings also hide native Windows notification banners while the island is running and restore them on normal exit. The app stores data under %LOCALAPPDATA%\\DynamicIsland.",
+        "pre_install captures the existing EnableSnapBar value before the app's first run. If the app had already applied the tweak before Scoop captured it, the manifest marks the original state as unknown. pre_uninstall requests a clean app exit, removes the app's optional scheduled startup task, restores notification banners, and restores the original Snap Layouts setting only when the current value is still the app-set 0 and a valid pre-install backup exists. Later user changes are preserved; legacy/manual installs without a safe backup are left untouched rather than guessed. User data under %LOCALAPPDATA%\\DynamicIsland is intentionally retained."
+    ],
+    "pre_install": [
+        "$settingsKey = 'HKCU:\\Software\\DynamicIsland'",
+        "$advancedKey = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced'",
+        "New-Item -Path $settingsKey -Force | Out-Null",
+        "$backupCaptured = Get-ItemPropertyValue -LiteralPath $settingsKey -Name 'ScoopSnapBarBackupCaptured' -ErrorAction SilentlyContinue",
+        "if ($null -eq $backupCaptured) {",
+        "    $existingTweaksVersion = Get-ItemPropertyValue -LiteralPath $settingsKey -Name 'TweaksVersion' -ErrorAction SilentlyContinue",
+        "    if ($null -ne $existingTweaksVersion -and [int]$existingTweaksVersion -ge 2) {",
+        "        Set-ItemProperty -LiteralPath $settingsKey -Name 'ScoopSnapBarBackupCaptured' -Value 2 -Type DWord",
+        "    } else {",
+        "        $advanced = Get-ItemProperty -LiteralPath $advancedKey -Name 'EnableSnapBar' -ErrorAction SilentlyContinue",
+        "        if ($null -ne $advanced -and $advanced.PSObject.Properties.Name -contains 'EnableSnapBar') {",
+        "            Set-ItemProperty -LiteralPath $settingsKey -Name 'ScoopSnapBarOriginalPresent' -Value 1 -Type DWord",
+        "            Set-ItemProperty -LiteralPath $settingsKey -Name 'ScoopSnapBarOriginalValue' -Value ([int]$advanced.EnableSnapBar) -Type DWord",
+        "        } else {",
+        "            Set-ItemProperty -LiteralPath $settingsKey -Name 'ScoopSnapBarOriginalPresent' -Value 0 -Type DWord",
+        "        }",
+        "        Set-ItemProperty -LiteralPath $settingsKey -Name 'ScoopSnapBarBackupCaptured' -Value 1 -Type DWord",
+        "    }",
+        "}"
+    ]
+}
