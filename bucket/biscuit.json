@@ -5,30 +5,18 @@
     "license": "Proprietary",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/agata/dl.biscuit/releases/download/2.2.3/Biscuit-2.2.3-setup.exe",
-            "hash": "6661527bef250f3a64751b3f8b544a44ea1aa2d4b962458f4c28ed647c2023fd"
+            "url": "https://github.com/agata/dl.biscuit/releases/download/2.2.3/Biscuit-2.2.3-setup.exe#/dl.7z",
+            "hash": "6661527bef250f3a64751b3f8b544a44ea1aa2d4b962458f4c28ed647c2023fd",
+            "pre_install": [
+                "$payload = Join-Path $dir '$PLUGINSDIR\\app-64.7z'",
+                "if (-not (Test-Path -LiteralPath $payload -PathType Leaf)) { throw \"Biscuit payload archive was not found: $payload\" }",
+                "Expand-7zipArchive $payload $dir -Removal",
+                "$mainExe = Join-Path $dir 'Biscuit.exe'",
+                "if (-not (Test-Path -LiteralPath $mainExe -PathType Leaf)) { throw \"Biscuit payload extraction did not create the expected executable: $mainExe\" }"
+            ]
         }
     },
-    "pre_install": [
-        "$sourceInstaller = Join-Path $dir $fname",
-        "if (-not (Test-Path -LiteralPath $sourceInstaller -PathType Leaf)) { throw \"Biscuit setup executable was not found: $sourceInstaller\" }",
-        "$scoopRoot = $env:SCOOP",
-        "if ([string]::IsNullOrWhiteSpace($scoopRoot)) { $scoopRoot = Split-Path (Split-Path (Split-Path $dir -Parent) -Parent) -Parent }",
-        "$stagingDir = Join-Path $scoopRoot \"cache\\biscuit-installer-$([guid]::NewGuid().ToString('N'))\"",
-        "try {",
-        "    New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null",
-        "    $installerPath = Join-Path $stagingDir $fname",
-        "    Move-Item -LiteralPath $sourceInstaller -Destination $installerPath -Force",
-        "    $remainingFiles = @(Get-ChildItem -LiteralPath $dir -Force)",
-        "    if ($remainingFiles.Count -gt 0) { throw \"Biscuit target directory must be empty before setup. Unexpected item: $($remainingFiles[0].FullName)\" }",
-        "    $process = Start-Process -FilePath $installerPath -ArgumentList @('/S', \"/D=$dir\") -Wait -PassThru",
-        "    if ($process.ExitCode -ne 0) { throw \"Biscuit silent setup failed with exit code $($process.ExitCode).\" }",
-        "    $mainExe = Join-Path $dir 'Biscuit.exe'",
-        "    if (-not (Test-Path -LiteralPath $mainExe -PathType Leaf)) { throw \"Biscuit setup returned successfully but did not create the expected executable: $mainExe. The installer may not honor the custom /D path.\" }",
-        "} finally {",
-        "    if ($stagingDir -and (Test-Path -LiteralPath $stagingDir)) { Remove-Item -LiteralPath $stagingDir -Recurse -Force -ErrorAction SilentlyContinue }",
-        "}"
-    ],
+    "post_install": "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Force -Recurse -ErrorAction SilentlyContinue",
     "bin": "Biscuit.exe",
     "shortcuts": [
         [
@@ -36,19 +24,6 @@
             "Biscuit"
         ]
     ],
-    "uninstaller": {
-        "script": [
-            "$uninstallerPath = Join-Path $dir 'Uninstall Biscuit.exe'",
-            "if (-not (Test-Path -LiteralPath $uninstallerPath -PathType Leaf)) {",
-            "    $uninstaller = Get-ChildItem -LiteralPath $dir -Filter '*uninstall*.exe' -File -ErrorAction SilentlyContinue | Select-Object -First 1",
-            "    if ($uninstaller) { $uninstallerPath = $uninstaller.FullName }",
-            "}",
-            "if (Test-Path -LiteralPath $uninstallerPath -PathType Leaf) {",
-            "    $process = Start-Process -FilePath $uninstallerPath -ArgumentList '/S' -Wait -PassThru",
-            "    if ($process.ExitCode -ne 0) { throw \"Biscuit silent uninstall failed with exit code $($process.ExitCode).\" }",
-            "}"
-        ]
-    },
     "checkver": {
         "url": "https://api.github.com/repos/agata/dl.biscuit/releases?per_page=100",
         "jsonpath": "$[0].tag_name",
@@ -57,9 +32,9 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/agata/dl.biscuit/releases/download/$version/Biscuit-$version-setup.exe"
+                "url": "https://github.com/agata/dl.biscuit/releases/download/$version/Biscuit-$version-setup.exe#/dl.7z"
             }
         }
     },
-    "notes": "Uses the official NSIS installer in silent mode with the Scoop version directory as the installation target. Biscuit includes its own Electron updater, so it may update files independently of Scoop."
+    "notes": "Extracts the Electron app payload from the NSIS installer using Scoop's 7-Zip helper instead of running setup. Biscuit includes its own Electron updater, so it may update files independently of Scoop."
 }

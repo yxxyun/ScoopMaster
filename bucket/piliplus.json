@@ -1,10 +1,13 @@
 {
     "version": "2.2.0",
-    "description": "PiliPlus",
+    "description": "使用 Flutter 开发的 BiliBili 第三方客户端",
     "homepage": "https://github.com/bggRGjQaUbCoE/PiliPlus",
-    "license": "GPL-3.0",
-    "url": "https://github.com/bggRGjQaUbCoE/PiliPlus/releases/download/2.2.0/PiliPlus_windows_2.2.0+5580_x64_portable.zip",
-    "hash": "61e2a1c7bc8b2d1287151c462e41e0cec089972d387bc4babbabbd5ca3440e0b",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/bggRGjQaUbCoE/PiliPlus/releases/download/2.2.0/PiliPlus_windows_2.2.0+5580_x64_portable.zip",
+            "hash": "61e2a1c7bc8b2d1287151c462e41e0cec089972d387bc4babbabbd5ca3440e0b"
+        }
+    },
     "extract_dir": "PiliPlus-Win",
     "shortcuts": [
         [
@@ -12,24 +15,31 @@
             "PiliPlus"
         ]
     ],
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Write-Host (\"`nPersisting $env:APPDATA\\com.example ... \") -NoNewline",
+        "New-PersistDirectory \"$env:APPDATA\\com.example\" \"$persist_dir\\AppData\" -Migrate"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        ". \"$bucketsdir\\$bucket\\scripts\\piliplus\\uninstall.ps1\""
+    ],
     "checkver": {
-        "script": [
-            "$latest = Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/bggRGjQaUbCoE/PiliPlus/releases/latest' -Headers @{ 'User-Agent' = 'Scoop' }",
-            "$releaseUri = $latest.BaseResponse.ResponseUri",
-            "if (-not $releaseUri) { $releaseUri = $latest.BaseResponse.RequestMessage.RequestUri }",
-            "if ($releaseUri.AbsolutePath -match '/releases/tag/(?<tag>[^/]+)$') {",
-            "    $tag = [Uri]::UnescapeDataString($matches['tag'])",
-            "} else { Write-Error 'Could not parse latest release tag'; exit 1 }",
-            "$assetsUrl = \"https://github.com/bggRGjQaUbCoE/PiliPlus/releases/expanded_assets/$tag\"",
-            "$assets = Invoke-WebRequest -UseBasicParsing -Uri $assetsUrl -Headers @{ 'User-Agent' = 'Scoop' }",
-            "if ($assets.Content -match 'PiliPlus_windows_(?<main>[\\d.]+)\\+(?<build>\\d+)_x64_portable\\.zip') {",
-            "    $main = $matches['main']; $build = $matches['build']",
-            "} else { Write-Error 'Could not find the Windows portable asset in the latest release'; exit 1 }",
-            "Write-Output \"$tag $main $build\""
-        ],
-        "regex": "^(?<version>[^\\s]+) (?<main>[\\d.]+) (?<build>\\d+)$"
+        "url": "https://api.github.com/repos/bggRGjQaUbCoE/PiliPlus/releases/latest",
+        "jsonpath": "$.assets[*].name",
+        "regex": "PiliPlus_windows_(?<version>[\\d.]+)\\+(?<build>\\d+)_x64_portable\\.zip"
     },
     "autoupdate": {
-        "url": "https://github.com/bggRGjQaUbCoE/PiliPlus/releases/download/$version/PiliPlus_windows_$matchMain+$matchBuild_x64_portable.zip"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/bggRGjQaUbCoE/PiliPlus/releases/download/$version/PiliPlus_windows_$version+$matchBuild_x64_portable.zip"
+            }
+        }
     }
 }
