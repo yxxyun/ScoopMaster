@@ -42,7 +42,12 @@
         "New-Item \"$classes\\$progId\" -Value 'Jump Desktop Server File' -Force | Out-Null",
         "New-Item \"$classes\\$progId\\DefaultIcon\" -Value \"$dir\\JumpClient.exe,0\" -Force | Out-Null",
         "New-Item \"$classes\\$progId\\shell\\open\\command\" -Value \"`\"$dir\\JumpClient.exe`\" `\"%1`\"\" -Force | Out-Null",
-        "New-Item \"$classes\\.jump\" -Value $progId -Force | Out-Null"
+        "New-Item \"$classes\\.jump\" -Value $progId -Force | Out-Null",
+        "# Register the jump:// protocol handler, replacing one left by a previous non-Scoop install",
+        "New-Item \"$classes\\jump\" -Value 'URL:jump Protocol' -Force | Out-Null",
+        "New-ItemProperty \"$classes\\jump\" -Name 'URL Protocol' -Value '' -Force | Out-Null",
+        "New-Item \"$classes\\jump\\DefaultIcon\" -Value \"$dir\\JumpClient.exe,1\" -Force | Out-Null",
+        "New-Item \"$classes\\jump\\shell\\open\\command\" -Value \"`\"$dir\\JumpClient.exe`\" `\"%1`\"\" -Force | Out-Null"
     ],
     "pre_uninstall": [
         "$servers = \"$env:LOCALAPPDATA\\Jump Desktop\\Client\\Servers\"",
@@ -52,7 +57,9 @@
         "$progId = 'Phase Five Systems.Jump Desktop.jump'",
         "Remove-Item \"$classes\\$progId\" -Recurse -Force -ErrorAction SilentlyContinue",
         "$ext = Get-Item \"$classes\\.jump\" -ErrorAction SilentlyContinue",
-        "if ($ext -and $ext.GetValue('') -eq $progId) { Remove-Item \"$classes\\.jump\" -Recurse -Force }"
+        "if ($ext -and $ext.GetValue('') -eq $progId) { Remove-Item \"$classes\\.jump\" -Recurse -Force }",
+        "$protocol = Get-Item \"$classes\\jump\\shell\\open\\command\" -ErrorAction SilentlyContinue",
+        "if ($protocol -and \"$($protocol.GetValue(''))\".Contains(\"$dir\\\")) { Remove-Item \"$classes\\jump\" -Recurse -Force }"
     ],
     "shortcuts": [
         [
