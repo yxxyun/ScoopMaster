@@ -1,20 +1,42 @@
 {
     "version": "4.4.6",
-    "description": "Ghost Downloader 3. A powerful all-in-one downloader supporting HTTP, FTP, BitTorrent, ed2k and more.",
-    "homepage": "https://github.com/XiaoYouChR/Ghost-Downloader-3",
+    "description": "跨平台多线程下载器，支持 HTTP/FTP/BitTorrent/M3U8/MPEG-DASH/eD2k，可嗅探网页媒体并录制直播流。",
+    "homepage": "https://gd.xychr.com/",
     "license": "GPL-3.0",
-    "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v4.4.6/Ghost-Downloader-v4.4.6-Windows-x86_64.zip",
-    "hash": "e2522809e24b75c5d55ec45bd6e78e49c0fbde3801de10648681d696097c13fd",
-    "bin": "Ghost-Downloader-3.exe",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v4.4.6/Ghost-Downloader-v4.4.6-Windows-x86_64.zip",
+            "hash": "e2522809e24b75c5d55ec45bd6e78e49c0fbde3801de10648681d696097c13fd"
+        }
+    },
+    "bin": "bin\\ghd.exe",
     "shortcuts": [
         [
             "Ghost-Downloader-3.exe",
-            "Ghost Downloader 3"
+            "Ghost Downloader"
         ]
     ],
-    "checkver": "github",
-    "autoupdate": {
-        "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v$version/Ghost-Downloader-v$version-Windows-x86_64.zip"
+    "pre_install": [
+        "if (!(Test-Path \"$persist_dir\\GhostDownloader\\UserConfig.json\")) {",
+        "    New-Item \"$persist_dir\\GhostDownloader\" -ItemType Directory -Force | Out-Null",
+        "    Set-Content -Path \"$persist_dir\\GhostDownloader\\UserConfig.json\" -Value '{\"Software\":{\"CheckUpdateAtStartUp\":false}}' -Encoding ASCII",
+        "}"
+    ],
+    "post_install": [
+        "$schemeKey = 'HKCU:\\Software\\Classes\\ghostdownloader\\shell\\open\\command'",
+        "if (Test-Path $schemeKey) { Set-ItemProperty -Path $schemeKey -Name '(default)' -Value \"`\"$dir\\Ghost-Downloader-3.exe`\" `\"%1`\"\" }",
+        "$runKey = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "if ((Get-ItemProperty -Path $runKey -Name 'GhostDownloader' -ErrorAction SilentlyContinue).GhostDownloader) { Set-ItemProperty -Path $runKey -Name 'GhostDownloader' -Value \"`\"$dir\\Ghost-Downloader-3.exe`\" --silence\" }"
+    ],
+    "persist": "GhostDownloader",
+    "checkver": {
+        "github": "https://github.com/XiaoYouChR/Ghost-Downloader-3"
     },
-    "notes": "Requires a CPU with AVX instruction set support (Qt 6.6+ requirement)."
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v$version/Ghost-Downloader-v$version-Windows-x86_64.zip"
+            }
+        }
+    }
 }

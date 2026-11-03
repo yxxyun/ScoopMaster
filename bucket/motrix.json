@@ -1,26 +1,37 @@
 {
-    "version": "2.2.0",
+    "version": "2.2.1",
     "description": "A full-featured download manager.",
     "homepage": "https://motrix.app",
-    "license": "MIT",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/agalwood/Motrix#License-1-ov-file"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/agalwood/Motrix/releases/download/v2.2.0/Motrix-2.2.0-win.zip",
-            "hash": "62e419d498646ba913cb71aa97a7a40f5bd84a01f706ebc1537a59882a5d1ddb"
-        },
-        "arm64": {
-            "url": "https://github.com/agalwood/Motrix/releases/download/v2.2.0/Motrix-2.2.0-win-arm64.zip",
-            "hash": "9a132cb397a502ebcd5a612f5e93bff26e3ed5ddcf3decf87d82e6ccd192385c"
+            "url": "https://github.com/agalwood/Motrix/releases/download/v2.2.1/Motrix-Setup-2.2.1.exe#/dl.7z",
+            "hash": "sha512:6debffb235995549f4bb010988a5e47cf0e89706acc7795dbf3708202388e68cb5d94513a695c1f96a1a39df88ade91fd78e42d74daab1c3dde001c3b85a3e4a",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\", \"$dir\\resources\" -Force -Recurse"
+            ]
         }
     },
-    "post_install": [
-        "# Disable built-in update mechanism to prevent conflicts with Scoop's update management",
-        "$yaml = \"$dir\\resources\\app-update.yml\"",
-        "$content = Get-Content -Path $yaml | Foreach-Object {",
-        "    if ($_.StartsWith('url')) { \"$($_.Replace('url', '# url')) # Disabled by Scoop\" } else { $_ }",
-        "}",
-        "Set-Content $yaml -Value $content -Encoding ascii"
-    ],
+    "installer": {
+        "script": [
+            "# handle runtime cache",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:APPDATA\\Motrix\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\Motrix\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "bin": "Motrix.exe",
     "shortcuts": [
         [
             "Motrix.exe",
@@ -28,15 +39,18 @@
         ]
     ],
     "checkver": {
-        "github": "https://github.com/agalwood/Motrix"
+        "github": "https://api.github.com/repos/agalwood/Motrix/releases/latest",
+        "jp": "$.tag_name",
+        "regex": "v([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/agalwood/Motrix/releases/download/v$version/Motrix-$version-win.zip"
-            },
-            "arm64": {
-                "url": "https://github.com/agalwood/Motrix/releases/download/v$version/Motrix-$version-win-arm64.zip"
+                "url": "https://github.com/agalwood/Motrix/releases/download/v$version/Motrix-Setup-$version.exe#/dl.7z",
+                "hash": {
+                    "url": "$baseurl/latest.yml",
+                    "regex": "sha512:\\s+$base64"
+                }
             }
         }
     }

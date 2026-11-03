@@ -27,5 +27,40 @@
                 "url": "https://github.com/trycua/cua/releases/download/cua-driver-rs-v$version/cua-driver-rs-$version-windows-arm64-binary.zip"
             }
         }
-    }
+    },
+    "pre_install": [
+        "$homePath = if ($env:HOME) { $env:HOME } else { $env:USERPROFILE }",
+        "$configPath = Join-Path $homePath '.cua-driver\\config.json'",
+        "if (!(Test-Path -LiteralPath $configPath)) {",
+        "    New-Item -ItemType Directory -Path (Split-Path $configPath) -Force | Out-Null",
+        "    [IO.File]::WriteAllText($configPath, '{\"update_check_enabled\":false}', (New-Object Text.UTF8Encoding $false))",
+        "} else {",
+        "    $text = [IO.File]::ReadAllText($configPath)",
+        "    $expected = $text | ConvertFrom-Json -ErrorAction Stop",
+        "    if ($null -eq $expected -or $expected -isnot [pscustomobject]) { throw 'Cua Driver configuration must be a JSON object.' }",
+        "    $flag = $expected.PSObject.Properties['update_check_enabled']",
+        "    if ($flag) {",
+        "        if ($flag.Value -isnot [bool]) { throw 'Cua Driver update_check_enabled must be boolean.' }",
+        "        $found = [regex]::Matches($text, '\"update_check_enabled\"\\s*:\\s*(true|false)')",
+        "        if ($found.Count -ne 1) { throw 'Cannot safely locate Cua Driver update preference.' }",
+        "        $changed = [regex]::Replace($text, '(\"update_check_enabled\"\\s*:\\s*)(true|false)', '${1}false')",
+        "        $flag.Value = $false",
+        "    } else {",
+        "        $expected | Add-Member -NotePropertyName update_check_enabled -NotePropertyValue $false",
+        "        $comma = if ($text -match '^\\s*\\{\\s*\\}') { '' } else { ',' }",
+        "        $changed = $text.Insert($text.LastIndexOf('}'), $comma + '\"update_check_enabled\":false')",
+        "    }",
+        "    $actual = $changed | ConvertFrom-Json -ErrorAction Stop",
+        "    if (($actual | ConvertTo-Json -Depth 100 -Compress) -cne ($expected | ConvertTo-Json -Depth 100 -Compress)) { throw 'Refusing to change unrelated Cua Driver settings.' }",
+        "    $temp = Join-Path (Split-Path $configPath) ('.config.' + [guid]::NewGuid() + '.tmp')",
+        "    try {",
+        "        [IO.File]::WriteAllText($temp, $changed, (New-Object Text.UTF8Encoding $false))",
+        "        [IO.File]::Replace($temp, $configPath, ($temp + '.bak'))",
+        "        Remove-Item -LiteralPath ($temp + '.bak') -Force",
+        "    } finally {",
+        "        if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Force }",
+        "    }",
+        "}"
+    ],
+    "notes": "Automatic update checks are disabled; use scoop update cua-driver."
 }

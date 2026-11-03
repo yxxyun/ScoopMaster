@@ -1,0 +1,79 @@
+{
+    "version": "1.6.1",
+    "description": "A desktop monitor for coding agent token speed and usage.",
+    "homepage": "https://github.com/zoefix/agent-speed",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/zoefix/agent-speed/releases/download/v1.6.1/AgentSpeed-Windows-x64.zip",
+            "hash": "ee3f6ac7974d0003aea96860eb837b03c51dcfe11d26f43a86522865c1f80e42"
+        }
+    },
+    "shortcuts": [
+        [
+            "AgentSpeed.exe",
+            "Agent Speed"
+        ]
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/zoefix/agent-speed/releases/download/v$version/AgentSpeed-Windows-x64.zip",
+                "hash": {
+                    "url": "https://github.com/zoefix/agent-speed/releases/download/v$version/SHA256SUMS.txt"
+                }
+            }
+        }
+    },
+    "pre_install": [
+        "$settingsPath = Join-Path $env:APPDATA 'AgentSpeed\\settings.json'",
+        "$appRoot = Split-Path $dir -Parent",
+        "$running = Get-Process -Name AgentSpeed -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith(\"$appRoot\\\", [StringComparison]::OrdinalIgnoreCase) }",
+        "if ($running) { throw 'Close Agent Speed before installing or updating it, then reopen it.' }",
+        "if (!(Test-Path -LiteralPath $settingsPath)) {",
+        "    New-Item -ItemType Directory -Path (Split-Path $settingsPath) -Force | Out-Null",
+        "    [IO.File]::WriteAllText($settingsPath, '{\"updates\":{\"autoCheck\":false}}', (New-Object Text.UTF8Encoding $false))",
+        "} else {",
+        "    $text = [IO.File]::ReadAllText($settingsPath)",
+        "    $expected = $text | ConvertFrom-Json -ErrorAction Stop",
+        "    if ($null -eq $expected -or $expected -is [array] -or $expected -isnot [pscustomobject]) { throw 'Agent Speed settings must be a JSON object.' }",
+        "    $updates = $expected.PSObject.Properties['updates']",
+        "    if (!$updates) {",
+        "        $expected | Add-Member -NotePropertyName updates -NotePropertyValue ([pscustomobject]@{autoCheck = $false})",
+        "        $comma = if ($text -match '^\\s*\\{\\s*\\}') { '' } else { ',' }",
+        "        $end = $text.LastIndexOf('}')",
+        "        $changed = $text.Insert($end, $comma + '\"updates\":{\"autoCheck\":false}')",
+        "    } else {",
+        "        if ($updates.Value -isnot [pscustomobject]) { throw 'Agent Speed updates setting must be an object.' }",
+        "        $updateMatches = [regex]::Matches($text, '(?s)\"updates\"\\s*:\\s*\\{[^{}]*\\}')",
+        "        if ($updateMatches.Count -ne 1) { throw 'Cannot safely locate Agent Speed update settings.' }",
+        "        $block = $updateMatches[0].Value",
+        "        $auto = $updates.Value.PSObject.Properties['autoCheck']",
+        "        if ($auto) {",
+        "            if ($auto.Value -isnot [bool]) { throw 'Agent Speed autoCheck must be boolean.' }",
+        "            $hits = [regex]::Matches($block, '\"autoCheck\"\\s*:\\s*(true|false)')",
+        "            if ($hits.Count -ne 1) { throw 'Cannot safely locate Agent Speed autoCheck.' }",
+        "            $newBlock = [regex]::Replace($block, '(\"autoCheck\"\\s*:\\s*)(true|false)', '${1}false', 1)",
+        "            $auto.Value = $false",
+        "        } else {",
+        "            $updates.Value | Add-Member -NotePropertyName autoCheck -NotePropertyValue $false",
+        "            $comma = if ($block -match '\\{\\s*\\}$') { '' } else { ',' }",
+        "            $newBlock = $block.Insert($block.LastIndexOf('}'), $comma + '\"autoCheck\":false')",
+        "        }",
+        "        $changed = $text.Substring(0, $updateMatches[0].Index) + $newBlock + $text.Substring($updateMatches[0].Index + $updateMatches[0].Length)",
+        "    }",
+        "    $actual = $changed | ConvertFrom-Json -ErrorAction Stop",
+        "    if (($actual | ConvertTo-Json -Depth 100 -Compress) -cne ($expected | ConvertTo-Json -Depth 100 -Compress)) { throw 'Refusing to change unrelated Agent Speed settings.' }",
+        "    $temp = Join-Path (Split-Path $settingsPath) ('.settings.' + [guid]::NewGuid() + '.tmp')",
+        "    try {",
+        "        [IO.File]::WriteAllText($temp, $changed, (New-Object Text.UTF8Encoding $false))",
+        "        [IO.File]::Replace($temp, $settingsPath, ($temp + '.bak'))",
+        "        Remove-Item -LiteralPath ($temp + '.bak') -Force",
+        "    } finally {",
+        "        if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Force }",
+        "    }",
+        "}"
+    ],
+    "notes": "Automatic update checks are disabled; use scoop update agent-speed. Close Agent Speed before installing or updating it, then reopen it."
+}

@@ -23,7 +23,8 @@
     "notes": [
         "Windows x64 requires an AVX2 CPU and a Vulkan graphics driver.",
         "Complete model setup before dictation. Settings and models remain in %APPDATA%\\hex after uninstall.",
-        "Update this Scoop-managed installation with scoop update hex. Launching Hex enables its configured dictation shortcut."
+        "Update this Scoop-managed installation with scoop update hex. Launching Hex enables its configured dictation shortcut.",
+        "Scoop disables in-app updates through the current-user Hex policy when registry permissions allow. If it warns that access was denied, ask an administrator to configure the policy. Use scoop update hex."
     ],
     "checkver": {
         "url": "https://api.github.com/repos/anomalyco/hex/releases?per_page=100",
@@ -39,5 +40,14 @@
                 "url": "https://github.com/anomalyco/hex/releases/download/v$version/hex-$version-windows-arm64.exe#/hex.exe"
             }
         }
-    }
+    },
+    "post_install": [
+        "$policy = 'HKCU:\\Software\\Policies\\Anomaly\\Hex'",
+        "try {",
+        "    New-Item -Path $policy -Force -ErrorAction Stop | Out-Null",
+        "    New-ItemProperty -Path $policy -Name DisableUpdates -Value 1 -PropertyType DWord -Force -ErrorAction Stop | Out-Null",
+        "} catch [System.UnauthorizedAccessException], [System.Security.SecurityException] {",
+        "    Write-Warning 'Cannot set the Hex update policy: the current user lacks registry access. In-app updates remain enabled unless an administrator configures the policy.'",
+        "}"
+    ]
 }
