@@ -1,24 +1,31 @@
 {
-    "version": "4.5.0.4",
+    "version": "5.4.5.0",
     "description": "Update or install a large list of programs on to your computer",
     "homepage": "https://patchmypc.com/home-updater",
     "license": "Freeware",
-    "url": "https://patchmypc.com/freeupdater/PatchMyPC.exe",
-    "hash": "d5a2ddba0ee5c577268d69bbc129046d48f36c8306c8a57d4f6b2e2ded193202",
-    "pre_install": [
-        "if (!(Test-Path \"$persist_dir\\PatchMyPC.ini\")) {",
-        "    Set-Content \"$dir\\PatchMyPC.ini\" -Value \";Options`nChk_Options_DisablePatchMyPCSelfUpdater\" -Encoding 'utf8' -Force",
-        "}"
-    ],
+    "url": "https://homeupdater.patchmypc.com/public/PatchMyPC-HomeUpdater-Portable.exe",
+    "hash": "888cd5523019e5fa8c062a611ffd45533aaf7200eb2e2f98273bee79e0ec2efb",
     "shortcuts": [
         [
-            "PatchMyPC.exe",
+            "PatchMyPC-HomeUpdater-Portable.exe",
             "Patch My PC Home Updater"
         ]
     ],
-    "persist": "PatchMyPC.ini",
-    "checkver": "Download Patch My PC Home Updater ([\\d.]+)",
+    "post_install": [
+        "$cfg = Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Patch My PC\\app-settings.json'",
+        "New-Item (Split-Path $cfg) -ItemType Directory -Force | Out-Null",
+        "$s = if (Test-Path $cfg) { Get-Content $cfg -Raw | ConvertFrom-Json } else { [pscustomobject]@{} }",
+        "if (-not $s) { $s = [pscustomobject]@{} }",
+        "foreach ($sec in 'DownloadSettings', 'TechnicalSettings') { if (-not $s.$sec) { $s | Add-Member NoteProperty $sec ([pscustomobject]@{}) } }",
+        "$s.DownloadSettings | Add-Member NoteProperty CacheLocation \"$persist_dir\\cache\" -Force",
+        "$s.TechnicalSettings | Add-Member NoteProperty LogFilesLocation \"$persist_dir\\logs\" -Force",
+        "$s | ConvertTo-Json -Depth 10 | Set-Content $cfg -Encoding UTF8"
+    ],
+    "checkver": {
+        "url": "https://patchmypc.com/release-notes/production-release/home-updater-releases/",
+        "regex": "<h2[^>]*>\\s*(?:<strong>)?([\\d.]+) \\(\\d{2}-[A-Za-z]+-\\d{4}\\)"
+    },
     "autoupdate": {
-        "url": "https://patchmypc.com/freeupdater/PatchMyPC.exe"
+        "url": "https://homeupdater.patchmypc.com/public/PatchMyPC-HomeUpdater-Portable.exe"
     }
 }

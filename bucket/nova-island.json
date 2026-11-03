@@ -1,0 +1,58 @@
+{
+    "version": "1.7.0",
+    "description": "Windows Dynamic Island overlay with media controls, notifications, downloads, prayer times, and desktop widgets.",
+    "homepage": "https://github.com/NOVA-TECH-KIT/nova-island",
+    "license": {
+        "identifier": "GPL-3.0-only",
+        "url": "https://github.com/NOVA-TECH-KIT/nova-island/blob/main/LICENSE"
+    },
+    "url": "https://github.com/NOVA-TECH-KIT/nova-island/releases/download/v1.7.0/Nova-Island-Setup-1.7.0.exe#/dl.7z",
+    "hash": "e7f9f39e7496f273691b089e77ef3940a6c2c425773bc170e75bb34e14c94a96",
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+        "if (!(Test-Path \"$dir\\Nova Island.exe\" -PathType Leaf)) { throw 'Nova Island.exe was not extracted into the Scoop version directory.' }",
+        "if (!(Test-Path \"$dir\\resources\\app.asar\" -PathType Leaf)) { throw 'resources\\app.asar was not extracted into the Scoop version directory.' }",
+        "if (!(Test-Path \"$dir\\resources\\app.asar.unpacked\\helper\\nova-helper.exe\" -PathType Leaf)) { throw 'The unpacked Nova helper executable is missing.' }",
+        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninstall*\" -Force -Recurse -ErrorAction SilentlyContinue"
+    ],
+    "post_install": [
+        "$settingsDir = Join-Path $env:APPDATA 'dynamic-nova'",
+        "New-Item -ItemType Directory -Path $settingsDir -Force | Out-Null",
+        "$featuresPath = Join-Path $settingsDir 'features.json'",
+        "$features = [ordered]@{}",
+        "if (Test-Path -LiteralPath $featuresPath -PathType Leaf) {",
+        "    $existing = Get-Content -LiteralPath $featuresPath -Raw | ConvertFrom-Json -ErrorAction Stop",
+        "    if ($null -ne $existing) { foreach ($property in $existing.PSObject.Properties) { $features[$property.Name] = $property.Value } }",
+        "}",
+        "$features['autoUpdate'] = $false",
+        "[System.IO.File]::WriteAllText($featuresPath, ($features | ConvertTo-Json -Depth 100), [System.Text.UTF8Encoding]::new($false))"
+    ],
+    "bin": [
+        [
+            "Nova Island.exe",
+            "nova-island"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "Nova Island.exe",
+            "Nova Island"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/NOVA-TECH-KIT/nova-island",
+        "regex": "v(?<version>[\\d.]+)"
+    },
+    "autoupdate": {
+        "url": "https://github.com/NOVA-TECH-KIT/nova-island/releases/download/v$version/Nova-Island-Setup-$version.exe#/dl.7z",
+        "hash": {
+            "url": "https://api.github.com/repos/NOVA-TECH-KIT/nova-island/releases/tags/v$version",
+            "jsonpath": "$.assets[?(@.name == 'Nova-Island-Setup-$version.exe')].digest"
+        }
+    },
+    "notes": [
+        "Uses the Electron Builder NSIS payload directly: Scoop extracts $PLUGINSDIR/app-64.7z into the version directory instead of running the setup program.",
+        "Scoop manages updates. The post-install hook sets autoUpdate=false in %APPDATA%\\dynamic-nova\\features.json because the application's built-in updater can replace files outside Scoop's version tracking.",
+        "Application settings and local data remain in %APPDATA%\\dynamic-nova after uninstall; they are not stored in the Scoop version directory."
+    ]
+}

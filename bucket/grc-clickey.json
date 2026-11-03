@@ -17,11 +17,14 @@
     ],
     "checkver": {
         "script": [
-            "$html = (Invoke-WebRequest -Uri 'https://www.grc.com/freeware/clickey.htm' -UseBasicParsing).Content",
+            "$html = (Invoke-WebRequest -Uri 'https://www.grc.com/freeupdated.htm' -UseBasicParsing).Content",
             "$text = [System.Net.WebUtility]::HtmlDecode([regex]::Replace($html, '<[^>]+>', ' '))",
             "$text = [regex]::Replace($text, '\\s+', ' ')",
-            "$match = [regex]::Match($text, '(?is)File stats for:\\s*ClicKey.{0,1800}?Last\\s+Updated:\\s*Size:\\s*[\\d.,]+\\s*[kKmM]?\\s+(?<date>[A-Za-z]{3}\\s+\\d{1,2},\\s+\\d{4})\\s+at\\b')",
-            "if (-not $match.Success) { throw 'Unable to read the published Last Updated date for ClicKey.' }",
+            "$nameIndex = $text.LastIndexOf('ClicKey', [StringComparison]::OrdinalIgnoreCase)",
+            "if ($nameIndex -lt 0) { throw 'Unable to find ClicKey in GRC freeware listing.' }",
+            "$entry = $text.Substring($nameIndex, [Math]::Min(1800, $text.Length - $nameIndex))",
+            "$match = [regex]::Match($entry, 'Last\\s+Updated:\\s*Size:\\s*[\\d.,]+\\s*[kKmM]?\\s+(?<date>[A-Za-z]{3}\\s+\\d{1,2},\\s+\\d{4})\\s+at\\b')",
+            "if (-not $match.Success) { throw 'Unable to read the published Last Updated date for ClicKey from GRC freeware listing.' }",
             "[DateTime]::ParseExact($match.Groups['date'].Value, 'MMM d, yyyy', [Globalization.CultureInfo]::InvariantCulture).ToString('yyyy.MM.dd')"
         ],
         "regex": "(?<version>\\d{4}\\.\\d{2}\\.\\d{2})"
