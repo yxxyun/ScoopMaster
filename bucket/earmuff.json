@@ -1,15 +1,15 @@
 {
-    "version": "0.2.5",
+    "version": "0.3.0",
     "description": "A Windows tray app that protects each output device from sudden volume jumps.",
     "homepage": "https://github.com/Hezric/Earmuff",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/Hezric/Earmuff/releases/download/v0.2.5/Earmuff-0.2.5-windows-x64.zip",
-            "hash": "f635f80659ac83d0aec18d8f4bf7e28256769e69ca61ea576ceec16aece8eaee"
+            "url": "https://github.com/Hezric/Earmuff/releases/download/v0.3.0/Earmuff-0.3.0-windows-x64.zip",
+            "hash": "76f0e61aa20bd9c2728fc8de65d9f6f5b0082dad0a42cc8ed5806a8ae9ac364f"
         }
     },
-    "extract_dir": "Earmuff-0.2.5-windows-x64",
+    "extract_dir": "Earmuff-0.3.0-windows-x64",
     "shortcuts": [
         [
             "earmuff.exe",
@@ -20,7 +20,8 @@
         "Requires Windows 11 and Microsoft Edge WebView2. Launching enables volume protection. Login startup is managed separately.",
         "Verify the installed earmuff.exe file without launching it.",
         "Companion skill: npx skills add Hezric/Earmuff -g (optional; use your own skill manager if you have one).",
-        "Scoop keeps the running executable at a fixed physical path under persist to retain tray placement across updates. Stop the app before updating. The first migration may require placing the icon once."
+        "Scoop keeps the running executable at a fixed physical path under persist to retain tray placement across updates. Stop the app before updating. The first migration may require placing the icon once.",
+        "Portable settings and WebView2 data stay in persist/runtime/data. The first portable update copies existing APPDATA settings only if no portable file exists, and leaves the old copy in place. Updates belong to Scoop."
     ],
     "checkver": "github",
     "autoupdate": {
@@ -35,5 +36,13 @@
         "extract_dir": "Earmuff-$version-windows-x64"
     },
     "persist": "runtime",
-    "post_install": "Copy-Item -LiteralPath \"$dir\\earmuff.exe\" -Destination \"$persist_dir\\runtime\\earmuff.exe\" -Force -ErrorAction Stop"
+    "post_install": [
+        "Copy-Item -LiteralPath \"$dir\\earmuff.exe\" -Destination \"$persist_dir\\runtime\\earmuff.exe\" -Force -ErrorAction Stop",
+        "$data = Join-Path $persist_dir 'runtime\\data'",
+        "New-Item -ItemType Directory -Force -Path $data -ErrorAction Stop | Out-Null",
+        "$legacy = Join-Path $env:APPDATA 'Earmuff\\Earmuff.toml'",
+        "$settings = Join-Path $data 'Earmuff.toml'",
+        "if ((Test-Path -LiteralPath $legacy) -and !(Test-Path -LiteralPath $settings)) { [IO.File]::Copy($legacy, $settings, $false) }",
+        "New-Item -ItemType File -Force -Path (Join-Path $persist_dir 'runtime\\portable') -ErrorAction Stop | Out-Null"
+    ]
 }

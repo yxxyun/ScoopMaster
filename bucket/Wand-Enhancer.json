@@ -6,6 +6,7 @@
         "identifier": "Apache-2.0",
         "url": "https://github.com/k1tbyte/Wand-Enhancer/blob/master/LICENSE.md"
     },
+    "depends": "main/git",
     "architecture": {
         "64bit": {
             "url": "https://github.com/k1tbyte/Wand-Enhancer/archive/refs/tags/2.2.0.0.zip",
@@ -21,6 +22,11 @@
             "$miseTools = @('node@22', 'pnpm@10.17.0', 'cmake@4')",
             "$vsComponents = @('Microsoft.Component.MSBuild', 'Microsoft.VisualStudio.Component.VC.Tools.x86.x64', 'Microsoft.Net.Component.4.8.TargetingPack')",
             "try {",
+            "    # Upstream documentation tests use git ls-files, including untracked source files.",
+            "    if (!(Test-Path -LiteralPath \"$dir\\.git\")) {",
+            "        & git -C $dir init --quiet",
+            "        if ($LASTEXITCODE -ne 0) { throw 'Failed to initialize the source archive Git worktree required by upstream tests.' }",
+            "    }",
             "    Invoke-WindowsSourceBuild -MiseTools $miseTools -VisualStudioComponents $vsComponents -ScriptPath \"$dir\\build.ps1\" -ScriptArguments @('-Configuration', 'Release') -WorkingDirectory $dir",
             "    $artifact = \"$dir\\WandEnhancer\\bin\\Release\\WandEnhancer.exe\"",
             "    if (!(Test-Path $artifact)) { throw \"Expected build artifact was not created: $artifact\" }",

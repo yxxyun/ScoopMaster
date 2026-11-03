@@ -1,15 +1,15 @@
 {
-    "version": "0.4.4",
+    "version": "0.5.0",
     "description": "A Windows tray app that reconnects a saved Wi-Fi profile when its network is absent.",
     "homepage": "https://github.com/Hezric/Homing",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/Hezric/Homing/releases/download/v0.4.4/Homing-0.4.4-windows-x64.zip",
-            "hash": "9e972682383b1f3f995d5862fbb2a93ffaff956084764d59763b74760dfa5fa8"
+            "url": "https://github.com/Hezric/Homing/releases/download/v0.5.0/Homing-0.5.0-windows-x64.zip",
+            "hash": "e3378e654168b919be5437a973c7c258b0f4db634820b1e7426930e84450ab65"
         }
     },
-    "extract_dir": "Homing-0.4.4-windows-x64",
+    "extract_dir": "Homing-0.5.0-windows-x64",
     "shortcuts": [
         [
             "homing.exe",
@@ -20,7 +20,8 @@
         "Requires Windows 11 and Microsoft Edge WebView2. Launching with an existing target or saving a target enables automatic Wi-Fi reconnect. Login startup is managed separately.",
         "Verify the installed homing.exe file without launching it.",
         "Companion skill: npx skills add Hezric/Homing -g (optional; use your own skill manager if you have one).",
-        "Scoop keeps the running executable at a fixed physical path under persist to retain tray placement across updates. Stop the app before updating. The first migration may require placing the icon once."
+        "Scoop keeps the running executable at a fixed physical path under persist to retain tray placement across updates. Stop the app before updating. The first migration may require placing the icon once.",
+        "Portable settings and WebView2 data stay in persist/runtime/data. The first portable update copies existing APPDATA settings only if no portable file exists, and leaves the old copy in place. Updates belong to Scoop."
     ],
     "checkver": "github",
     "autoupdate": {
@@ -35,5 +36,13 @@
         "extract_dir": "Homing-$version-windows-x64"
     },
     "persist": "runtime",
-    "post_install": "Copy-Item -LiteralPath \"$dir\\homing.exe\" -Destination \"$persist_dir\\runtime\\homing.exe\" -Force -ErrorAction Stop"
+    "post_install": [
+        "Copy-Item -LiteralPath \"$dir\\homing.exe\" -Destination \"$persist_dir\\runtime\\homing.exe\" -Force -ErrorAction Stop",
+        "$data = Join-Path $persist_dir 'runtime\\data'",
+        "New-Item -ItemType Directory -Force -Path $data -ErrorAction Stop | Out-Null",
+        "$legacy = Join-Path $env:APPDATA 'Homing\\Homing.toml'",
+        "$settings = Join-Path $data 'Homing.toml'",
+        "if ((Test-Path -LiteralPath $legacy) -and !(Test-Path -LiteralPath $settings)) { [IO.File]::Copy($legacy, $settings, $false) }",
+        "New-Item -ItemType File -Force -Path (Join-Path $persist_dir 'runtime\\portable') -ErrorAction Stop | Out-Null"
+    ]
 }
