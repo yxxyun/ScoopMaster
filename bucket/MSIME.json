@@ -1,23 +1,53 @@
 {
     "version": "0.13.2",
-    "description": "水杉输入法 - 开源的 Windows TSF 输入法 (Metasequoia IME)。安装包为全局安装，程序文件写入 C:\\Program Files\\metasequoiaime，需要管理员权限",
+    "description": "水杉输入法，基于 TSF 的开源中文输入法，支持全拼/双拼/五笔、辅助码与 AI 联想 | Open-source Chinese IME for Windows 10/11 built on TSF",
     "homepage": "https://github.com/metasequoiaime/MSIME-Windows",
     "license": "GPL-3.0-only",
-    "url": "https://github.com/metasequoiaime/MSIME-Windows/releases/download/v0.13.2/MetasequoiaIME_Setup_v0.13.2.exe",
+    "notes": [
+        "安装与卸载时会弹出 UAC 提权确认（官方 Inno Setup 安装器需要管理员权限）。",
+        "需要 Visual C++ 2015-2022 Redistributable (x64) 14.40 及以上（可装 nonportable/vcredist2022），缺失时输入法进程会静默闪退。",
+        "程序装在 Program Files\\metasequoiaime，TSF DLL 装在 System32\\IME\\MetasequoiaIME（uiAccess 与游戏 Trusted Mode 的硬性要求）；词库、配置、皮肤数据 persist 在 persist\\msime\\data。",
+        "安装后用 Win+空格 切换到「水杉输入法」；设置入口在开始菜单「Metasequoia IME 水杉输入法」。",
+        "scoop uninstall 会随官方卸载器一并删除数据目录，需要保留请先备份 persist\\msime\\data。"
+    ],
+    "url": "https://github.com/metasequoiaime/msime-windows/releases/download/v0.13.2/MetasequoiaIME_Setup_v0.13.2.exe",
     "hash": "34db47d0d6894164f83c665cccb809de9e8e3ff36f975fed63d3069f02108a7d",
     "installer": {
         "script": [
-            "if (-not (is_admin)) { error 'Administrator privileges are required to install the IME (TSF DLL must be registered in System32/SysWOW64).'; break }",
-            "Start-Process -FilePath \"$dir\\MetasequoiaIME_Setup_v$version.exe\" -ArgumentList '/VERYSILENT' -Wait -NoNewWindow"
+            "if (-not (Test-Path \"$persist_dir\\data\")) { New-Item -ItemType Directory -Path \"$persist_dir\\data\" -Force | Out-Null }",
+            "Write-Host 'Running MetasequoiaIME installer (confirm the UAC prompt)...' -f Cyan",
+            "$proc = Start-Process -FilePath \"$dir\\$fname\" -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', \"/DATADIR=`\"$persist_dir\\data`\"\") -Wait -PassThru",
+            "if ($proc.ExitCode -notin @(0, 1641, 3010)) { throw \"Installer exited with code $($proc.ExitCode).\" }",
+            "$gone = -not (Test-Path \"$dir\\$fname\")",
+            "for ($i = 0; $i -lt 3 -and -not $gone; $i++) {",
+            "    Remove-Item \"$dir\\$fname\" -Force -ErrorAction SilentlyContinue",
+            "    $gone = -not (Test-Path \"$dir\\$fname\")",
+            "    if (-not $gone) { Start-Sleep 2 }",
+            "}",
+            "if (-not $gone) { Write-Host \"Could not delete installer '$fname' (locked by antivirus?); it will be removed with this version directory on cleanup.\" -f Yellow }"
         ]
     },
+    "post_install": [
+        "try { Start-Process \"$env:ProgramFiles\\metasequoiaime\\server\\MetasequoiaImeServer.exe\" } catch { }",
+        "try { Start-Process \"$env:ProgramFiles\\metasequoiaime\\server\\MetasequoiaImeWatchdog.exe\" } catch { }"
+    ],
+    "pre_uninstall": [
+        "Remove-Item \"$dir\\MetasequoiaIME_Setup_*.exe\" -Force -ErrorAction SilentlyContinue"
+    ],
     "uninstaller": {
-        "script": "Invoke-ExternalCommand \"$dir\\unins000.exe\" -ArgumentList '/VERYSILENT' -RunAs | Out-Null"
+        "script": [
+            "$uninst = Get-ChildItem \"$env:ProgramFiles\\metasequoiaime\" -Filter 'unins*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1",
+            "if ($uninst) {",
+            "    Write-Host 'Running MetasequoiaIME uninstaller (confirm the UAC prompt)...' -f Cyan",
+            "    $proc = Start-Process -FilePath $uninst.FullName -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') -Wait -PassThru",
+            "    if ($proc.ExitCode -notin @(0, 1641, 3010)) { throw \"Uninstaller exited with code $($proc.ExitCode).\" }",
+            "} else {",
+            "    Write-Host 'Official uninstaller not found (already uninstalled?), skipping.'",
+            "}"
+        ]
     },
-    "checkver": {
-        "github": "https://github.com/metasequoiaime/MSIME-Windows"
-    },
+    "checkver": "github",
     "autoupdate": {
-        "url": "https://github.com/metasequoiaime/MSIME-Windows/releases/download/v$version/MetasequoiaIME_Setup_v$version.exe"
+        "url": "https://github.com/metasequoiaime/msime-windows/releases/download/v$version/MetasequoiaIME_Setup_v$version.exe"
     }
 }
