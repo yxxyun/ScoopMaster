@@ -1,0 +1,51 @@
+{
+    "version": "3.6.6",
+    "description": "KingstVIS Virtual Instruments Studio. Logic analyzer / oscilloscope / protocol analyzer software for Kingst Electronics instruments (LA series, VirtualScale series). Free, fully-featured demo mode without hardware.",
+    "homepage": "https://www.qdkingst.com/en/download",
+    "license": "Freeware",
+    "notes": [
+        "The installer is an Advanced Installer EXE wrapping a per-machine MSI (WinUSB driver packages included).",
+        "A UAC elevation prompt will appear during install/uninstall (silent MSI mode disables auto-elevation). This is unavoidable: the embedded DIFxApp driver custom actions are unconditionally scheduled for elevation (MsiProcessDriver condition: VersionNT >= 50), same as extras/vcredist-aio etc. and everything in the nonportable bucket.",
+        "To reduce UAC prompts, install gsudo (scoop install gsudo) and run 'gsudo cache on' before install/uninstall; the elevation is then cached for ~10 minutes.",
+        "If KingstVIS is already installed system-wide, the MSI enters maintenance mode and ignores APPDIR (files will NOT be placed in the Scoop directory). Uninstall the existing copy first for a clean Scoop install.",
+        "Version metadata source: https://www.qdkingst.com/en/download (no dedicated JSON API; installer URL pattern: https://www.qdkingst.com/kfs/KingstVIS_v<version>.exe)"
+    ],
+    "url": "https://www.qdkingst.com/kfs/KingstVIS_v3.6.6.exe",
+    "hash": "4499d56a064ba979a449a584fcb05241c421b82d424c6c80145f46b093923b28",
+    "installer": {
+        "script": [
+            "$installer = \"$dir\\KingstVIS_v$($manifest.version).exe\"",
+            "Start-Process -FilePath $installer -ArgumentList @('/exenoui', '/qn', '/norestart', \"APPDIR=`\"$dir`\"\") -Verb RunAs -Wait | Out-Null",
+            "if (!(Test-Path \"$dir\\KingstVIS.exe\")) { error 'KingstVIS.exe not found in install dir; the MSI may have entered maintenance mode (existing system-wide install detected).'; throw 'install failed' }"
+        ]
+    },
+    "shortcuts": [
+        [
+            "KingstVIS.exe",
+            "KingstVIS"
+        ]
+    ],
+    "post_install": [
+        "# Remove the per-machine Start Menu AND Desktop shortcuts created by the MSI (keep only the Scoop Apps shortcut).",
+        "# The elevated msiexec child may finish writing shortcuts long after the installer stub exits,",
+        "# so delete now AND keep a background watcher for 5 minutes to remove them whenever they (re)appear.",
+        "$msiLnk = \"$env:ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Kingst VIS.lnk\"",
+        "$deskLnk = \"$env:Public\\Desktop\\Kingst VIS.lnk\"",
+        "Remove-Item $msiLnk, $deskLnk -Force -ErrorAction SilentlyContinue",
+        "$watch = 'while ((Get-Date) -lt $d) { Remove-Item $l1, $l2 -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2 }'",
+        "Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NoProfile', '-Command', \"`$l1 = '$msiLnk'; `$l2 = '$deskLnk'; `$d = (Get-Date).AddMinutes(5); $watch\""
+    ],
+    "uninstaller": {
+        "script": [
+            "$code = Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq 'KingstVIS' } | Select-Object -ExpandProperty PSChildName -First 1",
+            "if ($code) { Start-Process msiexec.exe -ArgumentList \"/x $code /qn /norestart\" -Verb RunAs -Wait | Out-Null }"
+        ]
+    },
+    "checkver": {
+        "url": "https://www.qdkingst.com/en/download",
+        "regex": "Version ([\\d.]+) \\(32/64-bit"
+    },
+    "autoupdate": {
+        "url": "https://www.qdkingst.com/kfs/KingstVIS_v$version.exe"
+    }
+}
