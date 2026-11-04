@@ -1,18 +1,41 @@
 {
     "version": "7.5.0",
-    "description": "Git utilities: repo summary, repl, changelog population, author commit percentages and more",
+    "description": "GIT utilities -- repo summary, repl, changelog population, author commit percentages and more.",
     "homepage": "https://github.com/tj/git-extras",
     "license": "MIT",
     "suggest": {
-        "git": "git"
+        "Git": "main/git"
     },
-    "url": "https://github.com/tj/git-extras/archive/7.5.0.zip",
+    "notes": [
+        "This manifest installs scripts into scoop's main/git (mingw64\\bin\\), use as 'git <command>' in Git Bash.",
+        "It must be used inside a Bash/Zsh session, the easiest Windows option is Git Bash.",
+        "Refer to https://github.com/tj/git-extras/blob/main/Installation.md#windows"
+    ],
+    "url": "https://github.com/tj/git-extras/archive/refs/tags/7.5.0.zip#/dl.raw",
     "hash": "298f156dc7b73781721377860aa3d4199eae364dbe1bcab389eaacf7d069642e",
-    "extract_dir": "git-extras-7.5.0",
-    "post_install": "& \"$dir\\install.cmd\"",
+    "pre_install": [
+        "Expand-Archive -Path \"$dir\\dl.raw\" -DestinationPath \"$dir\" -Force",
+        "Remove-Item \"$dir\\dl.raw\" -Force",
+        "$subdir = (Get-ChildItem \"$dir\" -Directory | Select-Object -First 1).FullName",
+        "Get-ChildItem \"$subdir\\*\" -Recurse | Where-Object { $_.PSIsContainer } | ForEach-Object { $dest = $_.FullName.Replace($subdir, $dir); New-Item -ItemType Directory -Path $dest -Force | Out-Null }",
+        "Get-ChildItem \"$subdir\\*\" -Recurse -File | ForEach-Object { $dest = $_.FullName.Replace($subdir, $dir); Copy-Item $_.FullName $dest -Force }",
+        "Remove-Item $subdir -Force -Recurse",
+        "Copy-Item \"$dir\\bin\\git-abort\" \"$dir\\bin\\git-continue\" -Force",
+        "Copy-Item \"$dir\\bin\\git-scp\" \"$dir\\bin\\git-rscp\" -Force"
+    ],
+    "post_install": "Start-Process cmd -ArgumentList '/d', '/c', \"set PATH=%SystemRoot%\\System32;%PATH% && cd /d $dir && install.cmd $env:SCOOP\\apps\\git\\current\" -Wait -NoNewWindow",
+    "pre_uninstall": [
+        "$cmds = if (Test-Path \"$dir\\bin\") { @(Get-ChildItem \"$dir\\bin\\*\" -Name | ForEach-Object { ([IO.Path]::GetFileNameWithoutExtension($_)) -replace '^git-', '' }) } else { @() }",
+        "if (Test-Path \"$dir\\not_need_git_repo\") { $cmds += Get-Content \"$dir\\not_need_git_repo\" | Where-Object { $_ -notmatch '^#' -and $_ -ne '' } | ForEach-Object { $_.Trim() } }",
+        "$gitDir = if (Test-Path \"$env:SCOOP\\apps\\git\\current\") { \"$env:SCOOP\\apps\\git\\current\" } else { $null }",
+        "if ($gitDir) { @('mingw64', 'clangarm64') | ForEach-Object { $binDir = \"$gitDir\\$_\\bin\"; $manDir = \"$gitDir\\$_\\share\\doc\\git-doc\"; $cmds | ForEach-Object { $f = \"$binDir\\git-$_\"; if (Test-Path $f) { Remove-Item $f -Force } }; if (Test-Path $manDir) { Remove-Item $manDir -Recurse -Force } } }"
+    ],
     "checkver": "github",
     "autoupdate": {
-        "url": "https://github.com/tj/git-extras/archive/$version.zip",
-        "extract_dir": "git-extras-$version"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/tj/git-extras/archive/refs/tags/$version.zip#/dl.raw"
+            }
+        }
     }
 }

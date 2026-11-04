@@ -1,0 +1,73 @@
+{
+    "version": "1.14.4",
+    "description": "Official sing-box for Desktop (SFW) GUI. Nonportable NSIS system installer; requires an elevated shell and Scoop global mode.",
+    "homepage": "https://sing-box.sagernet.org/clients/desktop/",
+    "license": "GPL-3.0-or-later",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/SagerNet/sing-box/releases/download/v1.14.4/SFW-1.14.4-x64.exe#/setup.exe",
+            "hash": "9720433083bb00cacbc439cad79b89d337814fe8af31a8ff6f8dc5b807782446"
+        },
+        "32bit": {
+            "url": "https://github.com/SagerNet/sing-box/releases/download/v1.14.4/SFW-1.14.4-x86.exe#/setup.exe",
+            "hash": "601f544331c7769cbb8bd77cac32e42f35ceff3cd201a0ae97387555607984cc"
+        },
+        "arm64": {
+            "url": "https://github.com/SagerNet/sing-box/releases/download/v1.14.4/SFW-1.14.4-arm64.exe#/setup.exe",
+            "hash": "65f2813f83616c9e43625873fcc80fdf522aca66d560600d6edb721366efb781"
+        }
+    },
+    "installer": {
+        "script": [
+            "if (!$global -or !(is_admin)) { throw 'SFW needs an elevated PowerShell and scoop install -g starry/sing-box-desktop' }",
+            "if ($cmd -eq 'install') {",
+            "    $roots = @('HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*')",
+            "    $installed = @($roots | ForEach-Object { Get-ItemProperty -Path $_ -ErrorAction SilentlyContinue } | Where-Object { $_.DisplayName -in @('sing-box', 'sing-box for Desktop') -and $_.UninstallString })",
+            "    if ($installed.Count -gt 0) { throw 'sing-box for Desktop is already installed. Uninstall its WinGet/manual installation before switching management to Scoop.' }",
+            "}",
+            "$package = Join-Path $dir 'setup.exe'",
+            "if (!(Test-Path -LiteralPath $package -PathType Leaf)) { throw 'SFW installer is missing' }",
+            "$process = Start-Process -FilePath $package -ArgumentList @('/allusers', '/S') -Wait -PassThru",
+            "if ($process.ExitCode -ne 0) { throw \"SFW installation failed with exit code $($process.ExitCode)\" }"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'update') { return }",
+            "if (!$global -or !(is_admin)) { throw 'SFW uninstall needs elevated PowerShell and scoop uninstall -g sing-box-desktop' }",
+            "$roots = @('HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*')",
+            "$items = @($roots | ForEach-Object { Get-ItemProperty -Path $_ -ErrorAction SilentlyContinue } | Where-Object { $_.DisplayName -in @('sing-box', 'sing-box for Desktop') -and $_.UninstallString })",
+            "if ($items.Count -ne 1) { throw \"Expected one registered sing-box uninstall entry; found $($items.Count). Refusing to uninstall another application.\" }",
+            "$command = [string]$items[0].UninstallString",
+            "$quoted = [regex]::Match($command, '^\\s*\"([^\"]+\\.exe)\"')",
+            "$bare = [regex]::Match($command, '^\\s*(.+?\\.exe)(?=\\s|$)', 'IgnoreCase')",
+            "$exe = if ($quoted.Success) { $quoted.Groups[1].Value } elseif ($bare.Success) { $bare.Groups[1].Value } else { '' }",
+            "if (!$exe -or !(Test-Path -LiteralPath $exe -PathType Leaf)) { throw 'SFW registered uninstaller not found; use Windows Settings > Installed apps.' }",
+            "$process = Start-Process -FilePath $exe -ArgumentList @('/allusers','/S') -Wait -PassThru",
+            "if ($process.ExitCode -ne 0) { throw \"SFW uninstall failed with exit code $($process.ExitCode)\" }"
+        ]
+    },
+    "checkver": {
+        "github": "https://github.com/SagerNet/sing-box"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/SagerNet/sing-box/releases/download/v$version/SFW-$version-x64.exe#/setup.exe"
+            },
+            "32bit": {
+                "url": "https://github.com/SagerNet/sing-box/releases/download/v$version/SFW-$version-x86.exe#/setup.exe"
+            },
+            "arm64": {
+                "url": "https://github.com/SagerNet/sing-box/releases/download/v$version/SFW-$version-arm64.exe#/setup.exe"
+            }
+        }
+    },
+    "notes": [
+        "NONPORTABLE: runs official NSIS machine installer; app files are placed in the installer-selected Windows location, not the Scoop directory.",
+        "Use elevated PowerShell and scoop install -g starry/sing-box-desktop.",
+        "If SFW is already installed via WinGet, uninstall it through WinGet first; back up your configuration and stop the app before migration.",
+        "Use scoop update -g sing-box-desktop to upgrade; exit SFW before updates. Scoop uninstall -g sing-box-desktop calls official Windows uninstaller and keeps application data by default.",
+        "The upstream installer does not support Scoop installation directory customization."
+    ]
+}
