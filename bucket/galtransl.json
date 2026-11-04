@@ -1,11 +1,11 @@
 {
-    "version": "8.4.2",
-    "description": "Automated Galgame translation with GPT/Claude/DeepSeek/Sakura models through a desktop UI, dictionaries and resumable cache",
+    "version": "8.5.0",
+    "description": "Automated Galgame extraction and translation with GPT/Claude/DeepSeek/Sakura models through a desktop UI, dictionaries and resumable cache",
     "homepage": "https://github.com/GalTransl/GalTransl",
     "license": "GPL-3.0-only",
-    "url": "https://github.com/GalTransl/GalTransl/releases/download/8.4.2/GalTransl_8.4.2_win.zip",
-    "hash": "ef9634c58bb1b477b7090a7faa3b2b8a7a9f8a6e4c4267a7fedf85d40e6bef37",
-    "extract_dir": "GalTransl_8.4.2_win",
+    "url": "https://github.com/GalTransl/GalTransl/releases/download/8.5.0/GalTransl_8.5.0_win.zip",
+    "hash": "29c7898666c4764f0934c24a89419e8460cfbff534041e18f3a653d9e6865d64",
+    "extract_dir": "GalTransl_8.5.0_win",
     "bin": [
         [
             "GalTransl Desktop.exe",
@@ -18,13 +18,48 @@
             "GalTransl"
         ]
     ],
+    "pre_install": [
+        "$galtranslHome = Join-Path $env:USERPROFILE '.galtransl'",
+        "$sessionsDest = Join-Path $galtranslHome 'agent_sessions'",
+        "$settingsDest = Join-Path $galtranslHome 'app_settings.json'",
+        "Get-ChildItem -LiteralPath (Split-Path $dir -Parent) -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'current' -and $_.FullName -ne $dir } | ForEach-Object {",
+        "    $settings = Join-Path $_.FullName 'app_settings.json'",
+        "    if ((Test-Path -LiteralPath $settings) -and (-not (Test-Path -LiteralPath $settingsDest))) {",
+        "        New-Item -ItemType Directory -Force -Path $galtranslHome | Out-Null",
+        "        Copy-Item -LiteralPath $settings -Destination $settingsDest -Force",
+        "    }",
+        "    foreach ($candidate in @('agent_sessions', 'backend\\agent_sessions', 'backend\\_internal\\agent_sessions')) {",
+        "        $source = Join-Path $_.FullName $candidate",
+        "        if (Test-Path -LiteralPath $source) {",
+        "            Get-ChildItem -LiteralPath $source -Recurse -File -Force | ForEach-Object {",
+        "                $relative = $_.FullName.Substring($source.Length + 1)",
+        "                $target = Join-Path $sessionsDest $relative",
+        "                if (-not (Test-Path -LiteralPath $target)) {",
+        "                    New-Item -ItemType Directory -Force -Path (Split-Path $target -Parent) | Out-Null",
+        "                    Copy-Item -LiteralPath $_.FullName -Destination $target -Force",
+        "                }",
+        "            }",
+        "        }",
+        "    }",
+        "}",
+    ],
     "installer": {
         "script": [
             "foreach ($seed in @('Dict', 'translation_guidelines')) {",
-            "    if (Test-Path \"$persist_dir\\$seed\") {",
-            "        Get-ChildItem -LiteralPath \"$dir\\$seed\" -File -Force | Where-Object { -not (Test-Path -LiteralPath \"$persist_dir\\$seed\\$($_.Name)\") } | Copy-Item -Destination \"$persist_dir\\$seed\" -Force",
+            "    $source = \"$dir\\$seed\"",
+            "    $target = \"$persist_dir\\$seed\"",
+            "    if ((Test-Path -LiteralPath $target) -and (Test-Path -LiteralPath $source) -and (-not (Get-Item -LiteralPath $source).LinkType)) {",
+            "        Get-ChildItem -LiteralPath $source -Recurse -File -Force | ForEach-Object {",
+            "            $relative = $_.FullName.Substring($source.Length + 1)",
+            "            $dest = Join-Path $target $relative",
+            "            if (-not (Test-Path -LiteralPath $dest)) {",
+            "                New-Item -ItemType Directory -Force -Path (Split-Path $dest -Parent) | Out-Null",
+            "                Copy-Item -LiteralPath $_.FullName -Destination $dest -Force",
+            "            }",
+            "        }",
+            "        Remove-Item -LiteralPath $source -Recurse -Force",
             "    }",
-            "}"
+            "}",
         ]
     },
     "persist": [
@@ -39,6 +74,8 @@
     },
     "notes": [
         "Runs GalTransl Desktop.exe with the backend bundled, so no Python install is needed.",
-        "Dict/ and translation_guidelines/ stay in ~/scoop/persist/galtransl and pick up new bundled files on upgrade; a bundled file you also edited keeps your version."
+        "Dict/ and translation_guidelines/ stay in ~/scoop/persist/galtransl and pick up new bundled files on upgrade; a bundled file you also edited keeps your version.",
+        "Conversations and settings moved to ~/.galtransl in 8.5.0; upgrading carries over sessions and settings from the old version directory.",
+        "Update with 'scoop update galtransl'; the built-in updater writes into Scoop's version directory."
     ]
 }

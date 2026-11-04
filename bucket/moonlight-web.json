@@ -6,44 +6,69 @@
         "identifier": "GPL-3.0-or-later",
         "url": "https://github.com/linckosz/moonlight-web/blob/main/LICENSE"
     },
-    "suggest": {
-        "vcredist": "extras/vcredist2022"
-    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/linckosz/moonlight-web/releases/download/v0.4.1/MoonlightWeb-installer-0.4.1-win-x64.exe",
+            "url": "https://github.com/linckosz/moonlight-web/releases/download/v0.4.1/MoonlightWeb-installer-0.4.1-win-x64.exe#/setup.exe",
             "hash": "fc6cf19ab7a7fe29d6314d58741f389738614b35b6ce0687eda0887e8f9c608b"
         },
         "arm64": {
-            "url": "https://github.com/linckosz/moonlight-web/releases/download/v0.4.1/MoonlightWeb-installer-0.4.1-win-arm64.exe",
+            "url": "https://github.com/linckosz/moonlight-web/releases/download/v0.4.1/MoonlightWeb-installer-0.4.1-win-arm64.exe#/setup.exe",
             "hash": "4cd4ab1d1a7a2c61ebab6b4f3350afe598215d871e2622fb6182f251ae7cf8f2"
         }
     },
-    "innosetup": true,
     "installer": {
         "script": [
             ". \"$bucketsdir\\apeiraco\\bin\\persist-utils.ps1\"",
-            "Set-PersistLinks -PersistDir $persist_dir -LinkMap @{ 'appdata' = '$env:APPDATA\\MoonlightWeb\\MoonlightWeb' }"
+            "Set-PersistLinks -PersistDir $persist_dir -LinkMap @{ 'appdata' = '$env:APPDATA\\MoonlightWeb\\MoonlightWeb' }",
+            "# The elevated helpers must run from the administrator-protected native installation.",
+            "$nativeDir = Join-Path $env:ProgramFiles 'MoonlightWeb'",
+            "$arguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', \"/DIR=$nativeDir\", \"/LOG=$dir\\native-install.log\")",
+            "# Resolve the real account authority; USERDOMAIN may be stale after a computer rename.",
+            "$previousDomain = $env:USERDOMAIN",
+            "try {",
+            "    $env:USERDOMAIN = ([Security.Principal.WindowsIdentity]::GetCurrent().Name -split '\\\\', 2)[0]",
+            "    if (!(Invoke-ExternalCommand -FilePath \"$dir\\setup.exe\" -ArgumentList $arguments -RunAs -ContinueExitCodes @{ 3010 = 'Restart required to finish installing native components' })) { throw 'MoonlightWeb native installation failed. See native-install.log.' }",
+            "} finally {",
+            "    $env:USERDOMAIN = $previousDomain",
+            "}",
+            "if (!(Test-Path -LiteralPath \"$nativeDir\\MoonlightWeb.exe\")) { throw \"Native executable was not installed: $nativeDir\\MoonlightWeb.exe\" }",
+            "if (!(Test-Path -LiteralPath \"$dir\\native\")) { New-Item -Path \"$dir\\native\" -ItemType Junction -Target $nativeDir | Out-Null }",
+            "# Launch the real Program Files path: upstream matches helper tasks against its process path.",
+            "Set-Content -LiteralPath \"$dir\\MoonlightWeb.cmd\" -Value '@start \"\" \"%ProgramW6432%\\MoonlightWeb\\MoonlightWeb.exe\" %*' -Encoding Ascii"
         ]
     },
     "uninstaller": {
         "script": [
-            ". \"$bucketsdir\\apeiraco\\bin\\persist-utils.ps1\"",
-            "Remove-PersistLinks -PersistDir $persist_dir -LinkMap @{ 'appdata' = '$env:APPDATA\\MoonlightWeb\\MoonlightWeb' }"
+            "# Detach the junction before Scoop removes an old version directory.",
+            "$nativeLink = Get-Item -LiteralPath \"$dir\\native\" -Force -ErrorAction SilentlyContinue",
+            "if ($nativeLink) {",
+            "    if ($nativeLink.LinkType -ne 'Junction') { throw \"Refusing to remove an unexpected native path: $dir\\native\" }",
+            "    Remove-Item -LiteralPath \"$dir\\native\" -Force",
+            "}",
+            "if ($cmd -ne 'update') {",
+            "    $uninstaller = Join-Path $env:ProgramFiles 'MoonlightWeb\\unins000.exe'",
+            "    if (Test-Path -LiteralPath $uninstaller) {",
+            "        if (!(Invoke-ExternalCommand -FilePath $uninstaller -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') -RunAs -ContinueExitCodes @{ 3010 = 'Restart required to finish removing native components' })) { throw 'MoonlightWeb native uninstallation failed.' }",
+            "    }",
+            "    . \"$bucketsdir\\apeiraco\\bin\\persist-utils.ps1\"",
+            "    Remove-PersistLinks -PersistDir $persist_dir -LinkMap @{ 'appdata' = '$env:APPDATA\\MoonlightWeb\\MoonlightWeb' }",
+            "}"
         ]
     },
-    "bin": "MoonlightWeb.exe",
+    "bin": "MoonlightWeb.cmd",
     "shortcuts": [
         [
-            "MoonlightWeb.exe",
-            "MoonlightWeb"
+            "MoonlightWeb.cmd",
+            "MoonlightWeb",
+            "",
+            "native\\MoonlightWeb.exe"
         ]
     ],
     "notes": [
-        "Launch MoonlightWeb, then open https://localhost in your browser. Accept the self-signed certificate on your LAN.",
-        "The Microsoft Visual C++ runtime is required. The matching vc_redist installer is included in the application directory.",
-        "Scoop extracts the application without installing drivers, services, scheduled tasks or firewall rules. Virtual gamepads, virtual displays, HID passthrough and secure desktop control require additional setup; see the upstream documentation.",
-        "Use Scoop to manage updates instead of the in-app installer."
+        "This package runs the official installer with elevation and installs native components under Program Files. Scoop manages updates and keeps AppData in its persist directory.",
+        "On x64, the installer adds MoonlightWeb Virtual Display for headless streaming, its helper tasks, worker service, runtime and firewall rules. ARM64 does not include a virtual display driver; a connected display is required.",
+        "Launch MoonlightWeb and open its local HTTPS address. The virtual display is disabled when idle and is activated when a stream opens its card. Restart Windows if driver installation requests it.",
+        "Use Scoop to manage updates instead of the in-app installer. Uninstalling this package also removes the native installation and its drivers; persisted settings are kept."
     ],
     "checkver": {
         "github": "https://github.com/linckosz/moonlight-web"
@@ -51,10 +76,10 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/linckosz/moonlight-web/releases/download/v$version/MoonlightWeb-installer-$version-win-x64.exe"
+                "url": "https://github.com/linckosz/moonlight-web/releases/download/v$version/MoonlightWeb-installer-$version-win-x64.exe#/setup.exe"
             },
             "arm64": {
-                "url": "https://github.com/linckosz/moonlight-web/releases/download/v$version/MoonlightWeb-installer-$version-win-arm64.exe"
+                "url": "https://github.com/linckosz/moonlight-web/releases/download/v$version/MoonlightWeb-installer-$version-win-arm64.exe#/setup.exe"
             }
         }
     }

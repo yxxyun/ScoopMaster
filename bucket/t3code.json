@@ -1,33 +1,51 @@
 {
     "version": "0.1.7",
-    "description": "The open-source control plane for coding agents. Orchestrate Claude Code, Codex, OpenCode, Cursor, and Grok from one surface.",
+    "description": "Desktop app for orchestrating AI coding agents like Claude Code, Codex, Cursor CLI and OpenCode",
     "homepage": "https://t3.codes",
     "license": "MIT",
     "architecture": {
         "64bit": {
             "url": "https://github.com/pingdotgg/t3code/releases/download/v0.1.7/T3-Code-0.1.7-x64.exe#/dl.7z",
             "hash": "sha512:48a634fcab10924f9c3bacfd65170bffb30b2b4828f70c1d903900fe084a0f7ed5e3cb254ea771d21750ae694e359b8b788b035d4b7f05e527fea4c893a11a5f"
+        },
+        "arm64": {
+            "url": "https://github.com/pingdotgg/t3code/releases/download/v0.1.7/T3-Code-0.1.7-arm64.exe#/dl.7z",
+            "hash": "sha512:6e9d29b4350ee56afe47311e01d48ce93935fa7c36376f80edc7a2a3dbec562a87c2d3cb56ca3db80ca412bcb3ed87bc9c4645c30fec978a3351d56cc5e7d99e"
         }
     },
-    "installer": {
+    "pre_install": [
+        "Get-Item \"$dir\\`$PLUGINSDIR\\app*.7z\" | Select-Object -First 1 | Expand-7zipArchive -DestinationPath $dir",
+        "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Force -Recurse -ErrorAction Ignore"
+    ],
+    "post_install": [
+        "if (Test-Path $env:USERPROFILE\\.t3) {",
+        "    Write-Host \"`r`nMove user config from non-portable version...\"",
+        "    Copy-Item -Path $env:USERPROFILE\\.t3\\* -Destination \"$persist_dir\\user\" -Force -Recurse -ErrorAction Stop | Out-Null",
+        "    Remove-Item $env:USERPROFILE\\.t3 -Force -Recurse",
+        "}",
+        "if (Test-Path $env:APPDATA\\t3code) {",
+        "    Write-Host \"`r`nMove app config from non-portable version...\"",
+        "    Copy-Item -Path $env:APPDATA\\t3code\\* -Destination \"$persist_dir\\app\" -Force -Recurse -ErrorAction Stop | Out-Null",
+        "    Remove-Item $env:APPDATA\\t3code -Force -Recurse",
+        "}",
+        "New-Item -ItemType Junction -Path $env:USERPROFILE\\.t3 -Target \"$persist_dir\\user\" | Out-Null",
+        "New-Item -ItemType Junction -Path $env:APPDATA\\t3code -Target \"$persist_dir\\app\" | Out-Null"
+    ],
+    "uninstaller": {
         "script": [
-            "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-            "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\Uninstall*\", \"$dir\\`$R0\" -Force -Recurse -ErrorAction SilentlyContinue",
-            "$exe = Get-ChildItem \"$dir\\T3 Code*.exe\" -ErrorAction SilentlyContinue | Select-Object -First 1",
-            "if ($exe) { Rename-Item $exe.FullName 'T3 Code.exe' -Force }"
+            "Remove-Item $env:USERPROFILE\\.t3 -Force -Recurse",
+            "Remove-Item $env:APPDATA\\t3code -Force -Recurse"
         ]
     },
-    "bin": [
-        [
-            "T3 Code.exe",
-            "t3code"
-        ]
-    ],
     "shortcuts": [
         [
-            "T3 Code.exe",
-            "T3 Code"
+            "T3 Code (Beta).exe",
+            "T3 Code (Beta)"
         ]
+    ],
+    "persist": [
+        "user",
+        "app"
     ],
     "checkver": {
         "github": "https://github.com/pingdotgg/t3code"
@@ -36,11 +54,14 @@
         "architecture": {
             "64bit": {
                 "url": "https://github.com/pingdotgg/t3code/releases/download/v$version/T3-Code-$version-x64.exe#/dl.7z"
+            },
+            "arm64": {
+                "url": "https://github.com/pingdotgg/t3code/releases/download/v$version/T3-Code-$version-arm64.exe#/dl.7z"
             }
         },
         "hash": {
             "url": "$baseurl/latest.yml",
-            "regex": "(?sm)$basename.*?sha512:\\s+$base64"
+            "regex": "(?sm)$basename.*?$base64"
         }
     }
 }

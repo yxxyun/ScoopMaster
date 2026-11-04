@@ -17,28 +17,11 @@
     "extract_dir": "QcClip",
     "persist": "QcClipData",
     "post_install": [
-        "$run = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
-        "$approved = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run'",
-        "if (Test-Path \"$persist_dir\\autostart\") { New-ItemProperty $run -Name 'QcClip' -Value ('\"{0}\"' -f \"$dir\\QcClip.exe\") -PropertyType String -Force | Out-Null }",
-        "if (Test-Path \"$persist_dir\\autostart-approved\") {",
-        "    if (!(Test-Path $approved)) { New-Item $approved | Out-Null }",
-        "    $bytes = [byte[]]@((Get-Content \"$persist_dir\\autostart-approved\" -Raw).Trim() -split ',')",
-        "    New-ItemProperty $approved -Name 'QcClip' -Value $bytes -PropertyType Binary -Force | Out-Null",
-        "}",
-        "Remove-Item \"$persist_dir\\autostart*\" -Force -ErrorAction SilentlyContinue",
+        "Restore-RegistryEntry -Map @{ 'run.json' = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\QcClip' } -Path \"$dir\\QcClip.exe\"",
         "Set-Value 'QcClipData\\config.json' 'updates', 'autoDownload' $false",
         "Set-Value 'QcClipData\\config.json' 'updates', 'frequency' 'never'"
     ],
-    "post_uninstall": [
-        "$run = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
-        "$approved = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run'",
-        "$backup = ensure $persist_dir",
-        "Remove-Item \"$backup\\autostart*\" -Force -ErrorAction SilentlyContinue",
-        "if (Get-ItemProperty $run -Name 'QcClip' -ErrorAction SilentlyContinue) { Set-Content \"$backup\\autostart\" '1' }",
-        "if ($value = Get-ItemProperty $approved -Name 'QcClip' -ErrorAction SilentlyContinue) { Set-Content \"$backup\\autostart-approved\" ($value.QcClip -join ',') }",
-        "Remove-ItemProperty $run -Name 'QcClip' -ErrorAction SilentlyContinue",
-        "Remove-ItemProperty $approved -Name 'QcClip' -ErrorAction SilentlyContinue"
-    ],
+    "post_uninstall": "Save-RegistryEntry -Map @{ 'run.json' = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\QcClip' } -Delete",
     "shortcuts": [
         [
             "QcClip.exe",
