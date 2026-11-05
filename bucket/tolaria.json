@@ -1,12 +1,15 @@
 {
-    "##": "Tolaria",
     "version": "2026.11.2",
     "description": "Desktop app to manage markdown knowledge bases",
-    "homepage": "https://github.com/refactoringhq/tolaria",
+    "homepage": "https://tolaria.md",
     "license": "AGPL-3.0",
-    "url": "https://github.com/refactoringhq/tolaria/releases/download/v2026-11-02/Tolaria_2026.11.2_x64-setup.exe#/dl.7z",
-    "hash": "4b30e70b237f9a823980953a9a556644d7e70d05a7092d93cce7148d21d894cc",
-    "pre_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/refactoringhq/tolaria/releases/download/v2026-11-02/Tolaria_2026.11.2_x64-setup.exe#/dl.7z",
+            "hash": "4b30e70b237f9a823980953a9a556644d7e70d05a7092d93cce7148d21d894cc"
+        }
+    },
+    "pre_install": "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse -Force -ErrorAction SilentlyContinue",
     "shortcuts": [
         [
             "tolaria.exe",
@@ -16,18 +19,18 @@
     "checkver": {
         "script": [
             "$ErrorActionPreference = 'Stop'",
-            "$url = 'https://github.com/refactoringhq/tolaria/releases/latest'",
-            "$res = Invoke-WebRequest -Uri $url -Method Head -UseBasicParsing",
-            "$finalUrl = if ($res.BaseResponse.ResponseUri) { $res.BaseResponse.ResponseUri.AbsoluteUri } else { $res.BaseResponse.RequestMessage.RequestUri.AbsoluteUri }",
-            "if ($finalUrl -notmatch '/releases/tag/v(\\d{4})-(\\d{2})-(\\d{2})$') { throw \"Unable to parse latest version from: $finalUrl\" }",
-            "$version = \"$($Matches[1]).$([int]$Matches[2]).$([int]$Matches[3])\"",
-            "$tag = \"$($Matches[1])-$($Matches[2])-$($Matches[3])\"",
-            "\"$version $tag\""
+            "$json = Invoke-RestMethod 'https://github.com/refactoringhq/tolaria/releases/latest/download/stable-latest.json'",
+            "$tag = [regex]::Match($json.platforms.'windows-x86_64'.url, '/download/(v[^/]+)/').Groups[1].Value",
+            "\"$($json.version) $tag\""
         ],
-        "regex": "([\\d.]+) ([\\d-]+)",
+        "regex": "^(\\S+) (\\S+)$",
         "replace": "$1"
     },
     "autoupdate": {
-        "url": "https://github.com/refactoringhq/tolaria/releases/download/v$match2/Tolaria_$version_x64-setup.exe#/dl.7z"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/refactoringhq/tolaria/releases/download/$match2/Tolaria_$version_x64-setup.exe#/dl.7z"
+            }
+        }
     }
 }

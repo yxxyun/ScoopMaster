@@ -1,0 +1,53 @@
+{
+    "version": "2.5.3",
+    "description": "Cross-device workspace for sharing screens, apps, files, clipboard, input, calls, and notifications across Windows, macOS, Linux, and Android.",
+    "homepage": "https://github.com/InukaAsith/TwinDesk",
+    "license": "GPL-3.0-only",
+    "notes": [
+        "This manifest extracts the verified NSIS application payload; it does not run the vendor installer or its system-wide installer hooks.",
+        "The upstream Windows installer adds inbound Windows Firewall rules, changes the WebClient FileSizeLimitInBytes registry value, and adds a certificate to the TrustedPeople store. These actions are intentionally not run by Scoop; features that depend on them may require manual setup.",
+        "TwinDesk stores settings and pairing data under %APPDATA%\\MacShare, outside the Scoop directory. Scoop uninstall does not remove this user data.",
+        "KiroBucket's NSIS extraction workflow verified both v2.5.3 architecture downloads and their nested app-64.7z/app-arm64.7z payloads. It confirmed TwinDesk.exe at each extracted payload root without executing the installer or application."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/InukaAsith/TwinDesk/releases/download/v2.5.3/TwinDesk-Setup-2.5.3.exe#/dl.7z",
+            "hash": "cc1fc31912350d6ea513e25e70769aba0d34643ed64ca82a67b8823b2a636b5a"
+        },
+        "arm64": {
+            "url": "https://github.com/InukaAsith/TwinDesk/releases/download/v2.5.3/TwinDesk-Setup-2.5.3-arm64.exe#/dl.7z",
+            "hash": "c91e89462271e027f81bee2bb47cb15775f18d066442de9d7d3a4702dab8559e"
+        }
+    },
+    "pre_install": [
+        "$payloadDir = Join-Path $dir '$PLUGINSDIR'",
+        "$payload = Get-ChildItem -LiteralPath $payloadDir -Filter 'app-*.7z' -File | Select-Object -First 1",
+        "if ($null -eq $payload) { throw 'TwinDesk application payload archive was not found.' }",
+        "Expand-7zipArchive $payload.FullName $dir",
+        "if (-not (Test-Path -LiteralPath (Join-Path $dir 'TwinDesk.exe') -PathType Leaf)) { throw 'TwinDesk.exe was not found after extracting the nested application archive.' }"
+    ],
+    "post_install": [
+        "Remove-Item -LiteralPath (Join-Path $dir '$PLUGINSDIR'), (Join-Path $dir '$R0') -Recurse -Force -ErrorAction SilentlyContinue"
+    ],
+    "shortcuts": [
+        [
+            "TwinDesk.exe",
+            "TwinDesk"
+        ]
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/InukaAsith/TwinDesk/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "^v(?<version>[\\d.]+)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/InukaAsith/TwinDesk/releases/download/v$version/TwinDesk-Setup-$version.exe#/dl.7z"
+            },
+            "arm64": {
+                "url": "https://github.com/InukaAsith/TwinDesk/releases/download/v$version/TwinDesk-Setup-$version-arm64.exe#/dl.7z"
+            }
+        }
+    }
+}
