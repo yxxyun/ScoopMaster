@@ -1,26 +1,37 @@
 {
     "architecture": {
         "64bit": {
-            "hash": "1cf8bb048fd0ad7c5fb1587797809398da267c23b06e7d57836f36089fba1d7c",
-            "url": "https://cc.gdl.netease.com/NetEase_DD_Setup_100130_313758_x64.exe?key1=07a00d2ef908e99b3ef9dcf9c7e22265&key2=6a7d7b74#/dl.7z"
+            "url": "https://appapi.cc.163.com/v1/teamchannelpkg/get_channel_download_link#/download.json"
         }
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "$matchUrl64#/dl.7z"
-            }
-        }
+        "notes": "Installer SHA-256: $matchSha256"
     },
     "checkver": {
         "script": [
-            "$script:ver = json_path $page '$.data.version' -single $true",
-            "$script:matchesHashtable = @{",
-            "   'url64' = (json_path $page '$.data.downloadUrlFor64' -single $true)",
+            "$response = $page | ConvertFrom-Json -ErrorAction Stop",
+            "$release = $response.data",
+            "if ($response.code -ne 0 -or !$release.x64_version -or !$release.x64_download_link) {",
+            "    return",
             "}",
-            "$script:regexp = $null"
+            "if (!$ForceUpdate -and (!$Update -or $release.x64_version -eq $expected_ver)) {",
+            "    return $release.x64_version",
+            "}",
+            "ensure $cachedir | Out-Null",
+            "$archive = Join-Path $cachedir \"$app.$([guid]::NewGuid()).download\"",
+            "try {",
+            "    Invoke-WebRequest -Uri $release.x64_download_link -OutFile $archive -UseBasicParsing -ErrorAction Stop",
+            "    $sha256 = (Get-FileHash -LiteralPath $archive -Algorithm SHA256 -ErrorAction Stop).Hash.ToLowerInvariant()",
+            "    $cacheKey = \"$($json.checkver.url)#/$sha256.7z\"",
+            "    $cached = cache_path $app $release.x64_version $cacheKey",
+            "    Move-Item -LiteralPath $archive -Destination $cached -Force -ErrorAction Stop",
+            "    \"$($release.x64_version) $sha256\"",
+            "} finally {",
+            "    Remove-Item -LiteralPath $archive -ErrorAction SilentlyContinue",
+            "}"
         ],
-        "url": "https://appapi.cc.163.com/v1/mixteamversion/getDownloadUrl"
+        "regex": "^(?<version>\\d+(?:\\.\\d+)+)(?: (?<sha256>[a-f0-9]{64}))?$",
+        "url": "https://appapi.cc.163.com/v1/teamchannelpkg/get_channel_download_link"
     },
     "description": "网易DD，原有爱插件。",
     "homepage": "https://dd.163.com",
@@ -28,12 +39,50 @@
         "identifier": "Freeware",
         "url": "https://dd.163.com/policy/privacy"
     },
+    "notes": "Installer SHA-256: 1cf8bb048fd0ad7c5fb1587797809398da267c23b06e7d57836f36089fba1d7c",
     "pre_install": [
-        "$targetPath = \"$env:LocalAppData\\NeteaseDD\"",
-        "if (Test-Path \"$targetPath\") {",
-        "    Remove-Item -Path \"$targetPath\" -Force -Recurse",
+        "if ($manifest.notes -notmatch '^Installer SHA-256: ([a-f0-9]{64})$') {",
+        "    throw 'NetEase DD installer SHA-256 is missing from the manifest.'",
         "}",
-        "New-Item \"$targetPath\" -ItemType Junction -Target \"$dir\" | Out-Null"
+        "$expectedHash = $Matches[1].ToLowerInvariant()",
+        "$cacheKey = \"$($manifest.checkver.url)#/$expectedHash.7z\"",
+        "$cached = cache_path $app $version $cacheKey",
+        "$archive = Join-Path $dir 'dl.7z'",
+        "$stagedCache = $null",
+        "try {",
+        "    $cacheHit = $false",
+        "    if ($use_cache -and (Test-Path -LiteralPath $cached -PathType Leaf)) {",
+        "        Copy-Item -LiteralPath $cached -Destination $archive -Force -ErrorAction Stop",
+        "        $cacheHit = (Get-FileHash -LiteralPath $archive -Algorithm SHA256 -ErrorAction Stop).Hash -eq $expectedHash",
+        "        if ($cacheHit) { Write-Host 'Loading NetEase DD installer from cache.' }",
+        "    }",
+        "    if (!$cacheHit) {",
+        "        $response = Invoke-RestMethod -Uri $manifest.checkver.url -UseBasicParsing -ErrorAction Stop",
+        "        $release = $response.data",
+        "        if ($response.code -ne 0 -or $release.x64_version -ne $version -or !$release.x64_download_link) {",
+        "            throw \"NetEase DD API did not return a download link for version $version.\"",
+        "        }",
+        "        Invoke-WebRequest -Uri $release.x64_download_link -OutFile $archive -UseBasicParsing -ErrorAction Stop",
+        "        if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256 -ErrorAction Stop).Hash -ne $expectedHash) {",
+        "            throw 'NetEase DD installer SHA-256 mismatch.'",
+        "        }",
+        "        if ($use_cache) {",
+        "            ensure $cachedir | Out-Null",
+        "            $stagedCache = \"$cached.$([guid]::NewGuid()).download\"",
+        "            Copy-Item -LiteralPath $archive -Destination $stagedCache -ErrorAction Stop",
+        "            Move-Item -LiteralPath $stagedCache -Destination $cached -Force -ErrorAction Stop",
+        "        }",
+        "    }",
+        "    Expand-7zipArchive -Path $archive -DestinationPath $dir",
+        "} finally {",
+        "    Remove-Item -LiteralPath $archive -ErrorAction SilentlyContinue",
+        "    if ($stagedCache) { Remove-Item -LiteralPath $stagedCache -ErrorAction SilentlyContinue }",
+        "}",
+        "Remove-Item -LiteralPath (Join-Path $dir 'download.json')",
+        "$legacyLink = Get-Item -LiteralPath \"$env:LocalAppData\\NeteaseDD\" -Force -ErrorAction SilentlyContinue",
+        "if ($legacyLink.LinkType -eq 'Junction' -and (Split-Path -Parent $legacyLink.Target.TrimEnd('\\')) -eq (Split-Path -Parent $dir)) {",
+        "    [System.IO.Directory]::Delete($legacyLink.FullName)",
+        "}"
     ],
     "post_install": [
         "Remove-Item \"$dir\\`$*\" -Recurse -Force -ErrorAction SilentlyContinue",
@@ -52,8 +101,10 @@
     ],
     "uninstaller": {
         "script": [
-            "Remove-Item -Path \"$env:LocalAppData\\NeteaseDD\" -Force -Recurse -ErrorAction SilentlyContinue",
-            "Remove-Item -Path \"$env:AppData\\CCVoiceHub\" -Force -Recurse -ErrorAction SilentlyContinue"
+            "$voiceLink = Get-Item -LiteralPath \"$env:AppData\\CCVoiceHub\" -Force -ErrorAction SilentlyContinue",
+            "if ($voiceLink.LinkType -eq 'Junction' -and $voiceLink.Target.TrimEnd('\\') -eq $persist_dir) {",
+            "    [System.IO.Directory]::Delete($voiceLink.FullName)",
+            "}"
         ]
     },
     "shortcuts": [
