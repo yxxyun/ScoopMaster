@@ -15,6 +15,20 @@
             "Remove-Item \"$dir\\$fname\""
         ]
     },
+    "uninstaller": {
+        "script": [
+            "# Scoop update: the new installer upgrades Vortex in place, so only remove it on scoop uninstall",
+            "if ($cmd -eq 'uninstall') {",
+            "    $entry = Get-ItemProperty @('HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*') -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq 'Vortex' -and $_.QuietUninstallString } | Select-Object -First 1",
+            "    if ($entry.QuietUninstallString -match '^\\s*\"?(?<exe>[^\"]+?\\.exe)\"?\\s*(?<args>.*)$') {",
+            "        # --updated stops the uninstaller from popping up its feedback prompt during a silent removal",
+            "        Start-Process $Matches.exe -ArgumentList \"$($Matches.args) --updated\" -Verb RunAs -Wait",
+            "    } else {",
+            "        warn 'Vortex''s uninstaller was not found. Remove Vortex from Settings > Apps if it is still installed.'",
+            "    }",
+            "}"
+        ]
+    },
     "checkver": {
         "url": "https://api.github.com/repos/Nexus-Mods/Vortex/releases",
         "jp": "$..tag_name",

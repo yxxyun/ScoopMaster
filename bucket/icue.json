@@ -15,9 +15,25 @@
             "Remove-Item \"$dir\\$fname\""
         ]
     },
+    "uninstaller": {
+        "script": [
+            "# Scoop update: the new installer upgrades iCUE in place, so only remove it on scoop uninstall",
+            "if ($cmd -eq 'uninstall') {",
+            "    $entry = Get-ItemProperty @('HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*') -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like 'Corsair iCUE*Software' } | Select-Object -First 1",
+            "    $command = if ($entry.QuietUninstallString) { $entry.QuietUninstallString } else { $entry.UninstallString }",
+            "    if ($command -match '^\\s*\"?(?<exe>[^\"]+?\\.exe)\"?\\s*(?<args>.*)$') {",
+            "        $params = @{ FilePath = $Matches.exe; Verb = 'RunAs'; Wait = $true }",
+            "        if ($Matches.args) { $params.ArgumentList = $Matches.args }",
+            "        Start-Process @params",
+            "    } else {",
+            "        warn 'iCUE''s uninstaller was not found. Remove iCUE from Settings > Apps if it is still installed.'",
+            "    }",
+            "}"
+        ]
+    },
     "pre_uninstall": [
-        "$icue_path = \"$dir\\*\"",
-        "Get-Process | Where-Object { $_.Path -like $icue_path } | Stop-Process -Force -ErrorAction SilentlyContinue",
+        "# iCUE installs to Program Files, not $dir, so close it from there",
+        "Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -like \"$env:ProgramFiles\\Corsair\\*\" } | Stop-Process -Force -ErrorAction SilentlyContinue",
         "Stop-Process -Name CueLLAccessService -Force -ErrorAction SilentlyContinue"
     ],
     "checkver": {

@@ -1,36 +1,41 @@
 {
     "version": "2.0.1",
-    "description": "Advanced process and system monitoring tool",
+    "description": "Task Explorer is an advanced Task Manager tool with emphasis on, not just monitoring what applications are running, but on finding out what applications are doing.",
     "homepage": "https://github.com/DavidXanatos/TaskExplorer",
-    "license": "GPL-3.0",
-    "depends": "innounp",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/DavidXanatos/TaskExplorer/releases/download/v2.0.1/TaskExplorer-v2.0.1.exe",
-            "hash": "9bc3996ab828fb8d13cae2a2d405d9fa414925b202cc685dfdb81d5d2555522d"
-        }
+    "license": "GPL-3.0-or-later",
+    "suggest": {
+        "Kernel Driver": "systeminformer-nightly"
     },
+    "url": "https://github.com/DavidXanatos/TaskExplorer/releases/download/v2.0.1/TaskExplorer-v2.0.1.exe",
+    "hash": "9bc3996ab828fb8d13cae2a2d405d9fa414925b202cc685dfdb81d5d2555522d",
     "innosetup": true,
-    "bin": "TaskExplorer.exe",
+    "pre_install": [
+        "if (scoop prefix systeminformer-nightly) {",
+        "    if ($architecture -eq '64bit') {",
+        "        Copy-Item -Path \"$(scoop prefix systeminformer-nightly)\\ksidyn.*\" -Destination \"$dir\\AMD64\\\" -Force",
+        "    }",
+        "    if ($architecture -eq 'arm64') {",
+        "        Copy-Item -Path \"$(scoop prefix systeminformer-nightly)\\ksidyn.*\" -Destination \"$dir\\ARM64\\\" -Force",
+        "    }",
+        "}",
+        "if (Test-Path \"$persist_dir\\TaskExplorer.ini\") {",
+        "    Copy-Item \"$persist_dir\\TaskExplorer.ini\" \"$dir\\TaskExplorer.ini\"",
+        "} else {",
+        "    New-Item \"$dir\\TaskExplorer.ini\" | Out-Null",
+        "}"
+    ],
     "shortcuts": [
         [
             "TaskExplorer.exe",
             "Task Explorer"
         ]
     ],
-    "checkver": {
-        "github": "https://github.com/DavidXanatos/TaskExplorer"
-    },
+    "pre_uninstall": [
+        "ensure $persist_dir",
+        "Copy-Item \"$dir\\TaskExplorer.ini\" \"$persist_dir\\TaskExplorer.ini\""
+    ],
+    "checkver": "github",
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/DavidXanatos/TaskExplorer/releases/download/v$version/TaskExplorer-v$version.exe",
-                "hash": {
-                    "mode": "json",
-                    "url": "https://api.github.com/repos/DavidXanatos/TaskExplorer/releases/tags/v$version",
-                    "jp": "$.assets[?(@.name == '$basename')].digest"
-                }
-            }
-        }
+        "url": "https://github.com/DavidXanatos/TaskExplorer/releases/download/v$version/TaskExplorer-v$version.exe"
     }
 }
