@@ -1,0 +1,26 @@
+{
+    "version": "1.6.1",
+    "description": "Pulse Diagnostics",
+    "homepage": "https://github.com/Regncreative/PulseDiagnostics",
+    "license": "MIT",
+    "url": "https://github.com/Regncreative/PulseDiagnostics/releases/download/v1.6.1/PulseDiagnostics-1.6.1-windows-x64.zip",
+    "hash": "DA6CE6BBF413161D316DB78C761B2A47B2BF9FD5C5BF30B6DD868A254DCAA614",
+    "shortcuts": [["Pulse.exe", "Pulse Diagnostics"]],
+    "post_install": [
+      "New-Service -name PulseService -binaryPathName \"$dir\\service\\PulseService.exe\" -displayName PulseService -startupType Automatic | out-null",
+      "start-service PulseService"
+    ],
+    "pre_uninstall": [
+      "while (get-process -name Pulse -ea 0) {stop-process -name Pulse -force -ea 0; wait-process -name Pulse -ea 0; start-sleep 0.5}",
+      "if (! ($svc = (get-service PulseService -ea 0))) { return }",
+      "stop-service -name $svc.name -force -ea 0",
+      "while ((get-service PulseService -ea 0).status -ne \"Stopped\") {",
+      "    Start-Sleep 2",
+      "}",
+      "remove-service -name $svc.name -ea 0"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/Regncreative/PulseDiagnostics/releases/download/v$version/PulseDiagnostics-$version-windows-x64.zip"
+    }
+}
