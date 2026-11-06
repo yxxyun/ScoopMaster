@@ -1,0 +1,52 @@
+{
+    "##": "Inno Setup 6.7.4 installer (packaging/LampGuide.iss, PrivilegesRequired=lowest, per-user DefaultDirName={localappdata}\\Programs\\Lamp Guide). Upstream ships only the setup exe (no portable zip), so this package runs the official installer silently into the scoop dir without elevation. The installer bundles and auto-installs the Microsoft WebView2 Evergreen x64 runtime only when it is missing, and preserves an existing Run-key startup preference (never creates one from scratch). Removal delegates to the installer's own unins000.exe.",
+    "version": "1.2.1",
+    "description": "Lamp Guide —— zen-gate 的 Windows 桌面重构版：统一管理模型与渠道、聚合轮换、Agent 接入，内置本地 OpenAI/Anthropic 兼容网关与日夜主题",
+    "homepage": "https://github.com/LAGcomcom/Lamp-Guide",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/LAGcomcom/Lamp-Guide/blob/main/LICENSE"
+    },
+    "notes": [
+        "上游只发 Inno Setup 安装器（约 211MB），没有便携版：本包用 /VERYSILENT + /DIR 把它静默装进 Scoop 目录（按用户安装、PrivilegesRequired=lowest，正常不弹 UAC）",
+        "安装器自带微软官方 WebView2 离线运行环境，仅在系统缺少 WebView2 时自动安装（极少数缺失场景可能触发一次 UAC）",
+        "网关数据目录沿用 zen-gate（旧版账号/渠道/模型聚合/日夜设置可平滑迁移），用户数据不写入安装目录，卸载保留账号与配置",
+        "本包不自建开机启动项；安装器只在已存在 Lamp Guide / Zen Gate 启动项时改写其指向",
+        "卸载走安装器自带的 unins000.exe"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/LAGcomcom/Lamp-Guide/releases/download/v1.2.1/LampGuide-Setup-1.2.1-win-x64.exe",
+            "hash": "1779dec4aa7c8757954aa00a94d48378002ed0d8fa954dc8d26a907911871a25"
+        }
+    },
+    "installer": {
+        "script": [
+            "$installer = Join-Path $dir $fname",
+            "$dirArg = '/DIR=\"{0}\"' -f $dir",
+            "Start-Process -FilePath $installer -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', $dirArg -Wait",
+            "Remove-Item $installer -Force"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$uninst = Join-Path $dir 'unins000.exe'",
+            "if (Test-Path -LiteralPath $uninst) { Start-Process -FilePath $uninst -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait }"
+        ]
+    },
+    "checkver": {
+        "url": "https://github.com/LAGcomcom/Lamp-Guide/releases.atom",
+        "regex": "releases/tag/v([\\d.]+)\""
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/LAGcomcom/Lamp-Guide/releases/download/v$version/LampGuide-Setup-$version-win-x64.exe"
+            }
+        },
+        "hash": {
+            "url": "https://api.github.com/repos/LAGcomcom/Lamp-Guide/releases/tags/v$version",
+            "regex": "\"name\":\"LampGuide-Setup-$version-win-x64\\.exe\".*?\"digest\":\"sha256:([0-9a-f]{64})\""
+        }
+    }
+}
