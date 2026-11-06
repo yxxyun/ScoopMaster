@@ -1,18 +1,25 @@
 {
-    "version": "0.8.0",
+    "version": "0.12.0",
     "description": "The Nanyx programming language: compiles .nyx files to WebAssembly and runs them on an embedded Wasmtime engine",
     "homepage": "https://github.com/nanyx-lang/nanyx",
     "license": "Unknown",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/nanyx-lang/nanyx/releases/download/compiler/0.8.0/nanyx-0.8.0-win-x64.zip",
-            "hash": "fe060928fe7664c155a6690f5482fbbcffdfccf9c335e81b9a45f2a8c7638d6d"
+            "url": "https://github.com/nanyx-lang/nanyx/releases/download/compiler/0.12.0/nanyx-0.12.0-win-x64.zip",
+            "hash": "165d1cdc192b014e13c4f2229a03e52f1d23bfd703d5482de9e93b6cfb7332ef"
         }
     },
     "bin": "nanyx.exe",
     "checkver": {
-        "url": "https://github.com/nanyx-lang/nanyx/releases",
-        "regex": "releases/tag/compiler(?:/|%2F)([\\d.]+)"
+        "script": [
+            "$headers = @{ 'User-Agent' = 'scoop-nanyx' }",
+            "if ($env:GITHUB_TOKEN) { $headers.Authorization = \"Bearer $env:GITHUB_TOKEN\" }",
+            "$releases = Invoke-RestMethod -Headers $headers -Uri 'https://api.github.com/repos/nanyx-lang/nanyx/releases?per_page=100'",
+            "$versions = $releases | Where-Object { -not $_.draft -and -not $_.prerelease } | ForEach-Object { if ($_.tag_name -match '^compiler/(\\d+(?:\\.\\d+)+)$') { [version]$Matches[1] } }",
+            "$latest = $versions | Sort-Object -Descending | Select-Object -First 1",
+            "if ($latest) { \"compiler/$latest\" }"
+        ],
+        "regex": "compiler/([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {

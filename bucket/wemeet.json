@@ -1,29 +1,55 @@
 {
     "version": "3.47.2.405",
-    "description": "腾讯会议",
-    "homepage": "https://meeting.tencent.com",
-    "license": "Freeware",
-    "url": "https://updatecdn.meeting.qq.com/cos/0b276071624b252b08d7bf57a229d85c/TencentMeeting_0300000000_3.47.2.405.publish.officialwebsite.exe#portableapps.com/dl.7z",
-    "hash": "md5:0b276071624b252b08d7bf57a229d85c",
+    "description": "Tencent Meeting provides one-stop audio and video conferencing solutions.",
+    "homepage": "https://meeting.tencent.com/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://meeting.tencent.com/declare.html"
+    },
+    "notes": "We persist your Tencent Meeting data, they are still storaged in \"$env:scoop\\presist\\wemeet\\data\".",
+    "url": "https://updatecdn.meeting.qq.com/cos/bb80d852af40cbffe3ed5e22f27d7a86/TencentMeeting_0300000000_3.47.2.405_x86_64.publish.officialwebsite.exe#/dl.7z",
+    "hash": "1c7a862cfca4b3faeb1cf9c2244e97f09accf65c0256e690d7c3f7f2f99c71f7",
+    "post_install": [
+        "Rename-Item \"$dir\\`$_22_\" \"$dir\\$version\"",
+        "Remove-Item \"$dir\\$*\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item \"$dir\\wemeetapp_new.exe\" -Force -ErrorAction SilentlyContinue",
+        "if (-NOT (Test-Path \"$persist_dir\\data\\WeMeet\")) {",
+        "    New-Item -ItemType Directory -Path \"$persist_dir\\data\\WeMeet\" -Force | Out-Null",
+        "}",
+        "if (-NOT (Test-Path \"$env:APPDATA\\Tencent\\WeMeet\")) {",
+        "    New-Item -ItemType Junction -Path \"$env:APPDATA\\Tencent\\WeMeet\" -Target \"$persist_dir\\data\\WeMeet\" | Out-Null",
+        "} else {",
+        "    $existing = Get-Item \"$env:APPDATA\\Tencent\\WeMeet\" -Force",
+        "    if (-NOT ($existing.Attributes -band [IO.FileAttributes]::ReparsePoint)) {",
+        "        Copy-Item \"$env:APPDATA\\Tencent\\WeMeet\\*\" \"$persist_dir\\data\\WeMeet\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "        Remove-Item \"$env:APPDATA\\Tencent\\WeMeet\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "        New-Item -ItemType Junction -Path \"$env:APPDATA\\Tencent\\WeMeet\" -Target \"$persist_dir\\data\\WeMeet\" | Out-Null",
+        "    }",
+        "}"
+    ],
+    "post_uninstall": [
+        "if(Test-Path \"$env:APPDATA\\Tencent\\WeMeet\") {",
+        "    Remove-Item \"$env:APPDATA\\Tencent\\WeMeet\" -Force",
+        "}"
+    ],
+    "bin": [
+        [
+            "wemeetapp.exe",
+            "wemeet"
+        ]
+    ],
     "shortcuts": [
         [
             "wemeetapp.exe",
             "腾讯会议"
         ]
     ],
-    "post_install": [
-        "Remove-Item \"$dir\\`$PLUGINSDIR\",\"$dir\\`$TEMP\",\"$dir\\`$WINDIR\" -Force -Recurse",
-        "Get-ChildItem -LiteralPath \"$dir\" -Directory | Where-Object { $_.Name -like '$_*_' } | Select-Object -First 1 | Rename-Item -NewName \"$version\""
-    ],
+    "persist": "data",
     "checkver": {
-        "url": "https://meeting.tencent.com/web-service/query-download-info?q=%5B%7B%22package-type%22:%22app%22,%22channel%22:%220300000000%22,%22platform%22:%22windows%22%7D%5D&nonce=0000000000000000",
-        "regex": "https://(?<url>.+\\.exe).*?\"version\":.*?\"([\\d.]+)\""
+        "url": "https://meeting.tencent.com/web-service/query-download-info?q=[{\"package-type\":\"app\",\"channel\":\"0300000000\",\"arch\":\"x86_64\",\"platform\":\"windows\"}]&nonce=AAAAAAAAAAAAAAAA",
+        "regex": "(?<Md5>[0-9a-f]+)/TencentMeeting_0300000000_(?<Version>\\d+.\\d+.\\d+.\\d+)_x86_64.publish.officialwebsite.exe"
     },
     "autoupdate": {
-        "url": "https://$matchUrl#portableapps.com/dl.7z",
-        "hash": {
-            "url": "https://meeting.tencent.com/web-service/query-download-info?q=%5B%7B%22package-type%22:%22app%22,%22channel%22:%220300000000%22,%22platform%22:%22windows%22%7D%5D&nonce=0000000000000000",
-            "jsonpath": "$['info-list'][0].md5"
-        }
+        "url": "https://updatecdn.meeting.qq.com/cos/$matchMd5/TencentMeeting_0300000000_$matchVersion_x86_64.publish.officialwebsite.exe#/dl.7z"
     }
 }

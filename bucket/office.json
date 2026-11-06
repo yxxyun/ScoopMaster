@@ -20,24 +20,23 @@
         "script": "Start-Process -Wait \"$dir\\setup.exe\" -ArgumentList @('/configure', \"`\"$dir\\uninstall.xml`\"\")"
     },
     "checkver": {
+        "url": "https://www.microsoft.com/en-au/download/details.aspx?id=49117",
         "script": [
             "$ProgressPreference = 'SilentlyContinue'",
-            "$url1 = 'https://docs.microsoft.com/en-us/officeupdates/odt-release-history'",
-            "$regex1 = '<p>Version ([\\d.]+)'",
-            "$url2 = 'https://www.microsoft.com/en-au/download/details.aspx?id=49117'",
-            "$regex2 = 'download/([\\w/-]+)(officedeploymenttool_[\\d-]+\\.exe)'",
+            "$url = 'https://www.microsoft.com/en-au/download/details.aspx?id=49117'",
+            "$cont = (Invoke-WebRequest $url).Content",
             "",
-            "$cont = $(Invoke-WebRequest $url1).Content",
-            "if (!($cont -match $regex1)) { Write-Host \"Could not match '$regex1' in '$url1'\"; return }",
-            "$app_ver = $matches[1]",
-            "$cont = $(Invoke-WebRequest $url2).Content",
-            "if (!($cont -match $regex2)) { Write-Host \"Could not match '$regex2' in '$url2'\"; return }",
-            "$path = $matches[1]; $filename = $matches[2]",
-            "Write-Output $app_ver $path $filename"
+            "if (!($cont -match '\"version\":\"(?<ver>\\d+\\.\\d+\\.\\d+\\.\\d+)\"')) { Write-Error 'Could not match version'; return }",
+            "$app_ver = $matches['ver']",
+            "",
+            "if (!($cont -match '\"url\":\"(?<url>https://download\\.microsoft\\.com/download/[a-z0-9\\-]+/officedeploymenttool_[0-9\\-]+\\.exe)\"')) { Write-Error 'Could not match download URL'; return }",
+            "$download_url = $matches['url']",
+            "",
+            "Write-Output \"$app_ver $download_url\""
         ],
-        "regex": "([\\d.]+) (?<path>[\\w-/]+) (?<filename>[\\w.-]+)"
+        "regex": "(?<version>[\\d.]+) (?<url>https://download\\.microsoft\\.com/download/[a-z0-9\\-]+/officedeploymenttool_[0-9\\-]+\\.exe)"
     },
     "autoupdate": {
-        "url": "https://download.microsoft.com/download/$matchPath$matchFilename#/dl.7z_"
+        "url": "$matchUrl#/dl.7z_"
     }
 }
