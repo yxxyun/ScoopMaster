@@ -1,0 +1,48 @@
+{
+    "version": "0.2.0",
+    "description": "Windows PC cleaner for temporary files, caches, large files, duplicates, and startup entries.",
+    "homepage": "https://github.com/0xCodez/cleanly",
+    "license": "Unknown",
+    "notes": [
+        "Uses the application payload extracted from the official NSIS setup. The installer itself is not executed; Scoop extracts its nested app-64.7z payload into the app directory.",
+        "The Electron Builder portable target is not used because it extracts the application into the Windows temporary directory when launched.",
+        "Settings and encrypted API keys are stored in Electron's per-user userData directory under %APPDATA%, outside the Scoop app folder. They remain there when the Scoop app is uninstalled.",
+        "The upstream safety model permanently deletes selected caches, temporary files, and logs. Review the selected cleanup categories carefully before running cleanup."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/0xCodez/cleanly/releases/download/v0.2.0/Cleanly-setup.exe#/dl.7z",
+            "hash": "e5ba6f90f60c39bdd05b1343358bfad3457630cde16424979760ec20d0bb302a"
+        }
+    },
+    "pre_install": [
+        "$payload = Join-Path $dir '$PLUGINSDIR\\app-64.7z'",
+        "if (-not (Test-Path -LiteralPath $payload -PathType Leaf)) { throw 'Cleanly application payload archive was not found.' }",
+        "Expand-7zipArchive $payload $dir -Removal",
+        "$mainExe = Join-Path $dir 'Cleanly.exe'",
+        "$appAsar = Join-Path $dir 'resources\\app.asar'",
+        "if (-not (Test-Path -LiteralPath $mainExe -PathType Leaf)) { throw 'Cleanly.exe was not found after extracting the NSIS payload.' }",
+        "if (-not (Test-Path -LiteralPath $appAsar -PathType Leaf)) { throw 'resources\\app.asar was not found after extracting the NSIS payload.' }"
+    ],
+    "post_install": [
+        "Remove-Item -LiteralPath (Join-Path $dir '$PLUGINSDIR'), (Join-Path $dir '$R0') -Recurse -Force -ErrorAction SilentlyContinue"
+    ],
+    "shortcuts": [
+        [
+            "Cleanly.exe",
+            "Cleanly"
+        ]
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/0xCodez/cleanly/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "^v(?<version>[\\d.]+)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/0xCodez/cleanly/releases/download/v$version/Cleanly-setup.exe#/dl.7z"
+            }
+        }
+    }
+}
