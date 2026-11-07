@@ -1,0 +1,34 @@
+{
+    "version": "5",
+    "description": "Audits installed and offline Windows drivers, verifies signatures, and evaluates WDAC/HVCI posture and vulnerable-driver risk.",
+    "homepage": "https://github.com/JoasASantos/DriverTrust-Auditor",
+    "license": "MIT",
+    "url": "https://raw.githubusercontent.com/JoasASantos/DriverTrust-Auditor/main/drivertrust_auditor.py",
+    "hash": "dd5df3e99c54a0e4a4af4bd44eda5a86e26c511dc34fc49e282c89df08220be7",
+    "depends": "python",
+    "pre_install": [
+        "$pythonVersion = & python -c 'import sys; print(\"%d.%d\" % sys.version_info[:2])'",
+        "if ($LASTEXITCODE -ne 0 -or [version]$pythonVersion -lt [version]'3.10') { throw 'Python 3.10 or newer is required for PySide6.' }",
+        "$venv = Join-Path $dir 'venv'",
+        "& python -m venv $venv",
+        "if ($LASTEXITCODE -ne 0) { throw 'Failed to create the Python virtual environment.' }",
+        "$venvPython = Join-Path $venv 'Scripts\\python.exe'",
+        "& $venvPython -m pip install --disable-pip-version-check --no-cache-dir --only-binary=:all: PySide6==6.12.0",
+        "if ($LASTEXITCODE -ne 0) { throw 'Failed to install PySide6.' }",
+        "[System.IO.File]::WriteAllLines((Join-Path $dir 'DriverTrustAuditor.cmd'), @('@echo off', '\"%~dp0venv\\Scripts\\pythonw.exe\" \"%~dp0drivertrust_auditor.py\" %*'), [System.Text.Encoding]::ASCII)"
+    ],
+    "bin": [
+        [
+            "DriverTrustAuditor.cmd",
+            "joas-drivertrust-auditor"
+        ]
+    ],
+    "notes": "Run as Administrator for fuller access to protected driver files and Code Integrity logs.",
+    "checkver": {
+        "url": "https://raw.githubusercontent.com/JoasASantos/DriverTrust-Auditor/main/drivertrust_auditor.py",
+        "regex": "Python MVP v([\\d.]+)"
+    },
+    "autoupdate": {
+        "url": "https://raw.githubusercontent.com/JoasASantos/DriverTrust-Auditor/main/drivertrust_auditor.py"
+    }
+}
