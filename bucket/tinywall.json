@@ -26,6 +26,32 @@
             "TinyWall - Károly Pados"
         ]
     ],
+    "pre_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    $tinyWallExe = Join-Path -Path $dir -ChildPath 'ProgramFiles\\TinyWall\\TinyWall.exe'",
+        "    if (!(Test-Path -LiteralPath $tinyWallExe -PathType Leaf)) {",
+        "        throw \"TinyWall's cleanup executable was not found at $tinyWallExe. Scoop uninstall was aborted to avoid leaving its service and firewall filters behind.\"",
+        "    }",
+        "    try {",
+        "        $process = Start-Process -FilePath $tinyWallExe -ArgumentList 'uninstall' -Verb RunAs -Wait -PassThru -ErrorAction Stop",
+        "    } catch {",
+        "        throw \"TinyWall cleanup was cancelled or could not start. Scoop uninstall was aborted. $($_.Exception.Message)\"",
+        "    }",
+        "    if ($process.ExitCode -ne 0) {",
+        "        throw \"TinyWall cleanup failed with exit code $($process.ExitCode). Scoop uninstall was aborted.\"",
+        "    }",
+        "    if (Get-Service -Name 'TinyWall' -ErrorAction SilentlyContinue) {",
+        "        throw 'TinyWall service is still registered. Scoop uninstall was aborted.'",
+        "    }",
+        "    if (Get-ScheduledTask -TaskName 'TinyWall Controller' -ErrorAction SilentlyContinue) {",
+        "        throw 'TinyWall Controller scheduled task still exists. Scoop uninstall was aborted.'",
+        "    }",
+        "    $hostsBackup = Join-Path $env:ProgramData 'TinyWall\\hosts.restore'",
+        "    if (Test-Path -LiteralPath $hostsBackup) {",
+        "        throw 'TinyWall original Hosts file was not restored. Scoop uninstall was aborted.'",
+        "    }",
+        "}"
+    ],
     "checkver": {
         "url": "https://tinywall.pados.hu/download.php",
         "regex": "Latest version:\\s*([\\d.]+)"
@@ -46,6 +72,7 @@
     },
     "notes": [
         "On first launch, TinyWall may request administrator approval to register its Windows service and configure the scheduled task that starts the tray controller.",
+        "Uninstalling through Scoop runs TinyWall's own cleanup with administrator approval. If cleanup is cancelled or incomplete, Scoop keeps the application files.",
         "TinyWall blocks most communication by default. Use the tray menu's whitelist options to allow required applications; do not install or first-run it over a remote connection."
     ]
 }
