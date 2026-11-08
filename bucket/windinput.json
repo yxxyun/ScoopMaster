@@ -1,48 +1,85 @@
 {
-    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
     "version": "0.130.1",
-    "description": "清风输入法 | 轻量、快速、可定制的开源中文输入法，专为五笔和码表输入方案设计（Windows / macOS）",
+    "description": "清风输入法，Rust + TSF 的开源中文输入法，支持五笔86/全拼/双拼、辅助码与表情 | Open-source Chinese IME for Windows built on Rust + TSF",
     "homepage": "https://github.com/huanfeng/WindInput",
-    "license": "MIT",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/huanfeng/WindInput/releases/download/v0.130.1/WindInput-Portable-0.130.1.zip",
-            "hash": "9805e8bd049d433b8dcafac3cec1ed66660361dcc38bad075cb14d40077f1ccb",
-            "extract_dir": "WindInput-0.130.1"
-        }
-    },
-    "bin": [
-        "wind_input.exe",
-        "wind_cli.bat"
-    ],
+    "license": "GPL-3.0-or-later",
+    "url": "https://github.com/huanfeng/WindInput/releases/download/v0.130.1/WindInput-Portable-0.130.1.zip",
+    "hash": "9805e8bd049d433b8dcafac3cec1ed66660361dcc38bad075cb14d40077f1ccb",
+    "extract_dir": "WindInput-0.130.1",
+    "bin": "wind_portable.exe",
     "shortcuts": [
         [
             "wind_portable.exe",
             "WindInput"
-        ],
-        [
-            "wind_setting.exe",
-            "WindInput Settings"
-        ],
-        [
-            "wind_portable.exe",
-            "清风输入法"
-        ],
-        [
-            "wind_setting.exe",
-            "清风输入法 设置"
         ]
     ],
     "persist": "userdata",
-    "checkver": {
-        "github": "https://github.com/huanfeng/WindInput"
+    "post_install": [
+        "$link = \"$env:LOCALAPPDATA\\WindInput\"",
+        "$target = Join-Path (Split-Path $dir) 'current'",
+        "$li = Get-Item $link -ErrorAction SilentlyContinue",
+        "if ($li.Target -notlike \"$target*\") {",
+        "    if ($li -and $li.LinkType) { $li.Delete() }",
+        "    elseif ($li) { Write-Host \"ERROR: $link exists and is not a junction; remove it manually.\" -f Red }",
+        "    if (-not (Test-Path $link)) { New-Item -ItemType Junction -Path $link -Target $target | Out-Null }",
+        "}",
+        "$tip = 'HKLM:\\SOFTWARE\\Microsoft\\CTF\\TIP\\{99C2EE30-5C57-45A2-9C63-FB54B34FD90A}'",
+        "$ino = (Get-ItemProperty 'HKLM:\\SOFTWARE\\Classes\\CLSID\\{99C2EE30-5C57-45A2-9C63-FB54B34FD90A}\\InprocServer32' -ErrorAction SilentlyContinue).'(default)'",
+        "Get-Process wind_input -ErrorAction SilentlyContinue | Stop-Process -Force",
+        "if (-not (Test-Path $tip)) {",
+        "    Write-Host 'Registering WindInput TSF via junction (confirm the UAC prompt)...' -f Cyan",
+        "    Start-Process -FilePath \"$link\\wind_portable.exe\" -ArgumentList '-start'",
+        "} elseif ($ino -like \"$link*\") {",
+        "    Write-Host 'TSF already junction-registered, starting engine directly...' -f Cyan",
+        "    Set-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name WindInput -Value ('\"' + \"$link\\wind_input.exe\" + '\"')",
+        "    Start-Process -FilePath \"$link\\wind_input.exe\"",
+        "} else {",
+        "    Write-Host 'Migrating TSF registration to junction (confirm TWO UAC prompts)...' -f Cyan",
+        "    $p = Start-Process -FilePath \"$dir\\wind_portable.exe\" -ArgumentList '-stop' -Wait -PassThru",
+        "    if ($p.ExitCode -ne 0) { Write-Host 'wind_portable.exe -stop failed; continuing anyway.' -f Yellow }",
+        "    $p = Start-Process -FilePath \"$link\\wind_portable.exe\" -ArgumentList '-start' -Wait -PassThru",
+        "    if ($p.ExitCode -ne 0) { Write-Host \"wind_portable.exe -start failed; run '$link\\wind_portable.exe -start' manually.\" -f Yellow }",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$procs = Get-Process wind_input, wind_setting, wind_portable -ErrorAction SilentlyContinue",
+        "if ($procs) { Write-Host 'Stopping WindInput processes...' -f Cyan; $procs | Stop-Process -Force -ErrorAction SilentlyContinue }"
+    ],
+    "uninstaller": {
+        "script": [
+            "$tip = 'HKLM:\\SOFTWARE\\Microsoft\\CTF\\TIP\\{99C2EE30-5C57-45A2-9C63-FB54B34FD90A}'",
+            "$link = \"$env:LOCALAPPDATA\\WindInput\"",
+            "if ($old_version) {",
+            "    # $old_version only exists on scoop-update's uninstall path (scoop-update.ps1:262);",
+            "    # keep TSF registration and junction across updates, new post_install restarts the engine.",
+            "    Write-Host 'Update detected, keeping TSF registration and junction.' -f Cyan",
+            "} else {",
+            "    if ((Test-Path \"$dir\\wind_portable.exe\") -and (Test-Path $tip)) {",
+            "        Write-Host 'Unregistering WindInput TSF (confirm the UAC prompt)...' -f Cyan",
+            "        $proc = Start-Process -FilePath \"$dir\\wind_portable.exe\" -ArgumentList '-stop' -Wait -PassThru",
+            "        if ($proc.ExitCode -ne 0) { Write-Host \"wind_portable.exe -stop exited with code $($proc.ExitCode); TSF registration may remain (run 'wind_portable.exe -stop' manually).\" -f Yellow }",
+            "    } else {",
+            "        Write-Host 'WindInput TSF not registered (or launcher missing), skipping unregister.'",
+            "    }",
+            "    if ((Get-Item $link -ErrorAction SilentlyContinue).LinkType -eq 'Junction') { (Get-Item $link).Delete(); Write-Host 'Removed portable junction.' }",
+            "}"
+        ]
     },
+    "checkver": "github",
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/huanfeng/WindInput/releases/download/v$version/WindInput-Portable-$version.zip",
-                "extract_dir": "WindInput-$version"
-            }
+        "extract_dir": "WindInput-$version",
+        "url": "https://github.com/huanfeng/WindInput/releases/download/v$version/WindInput-Portable-$version.zip",
+        "hash": {
+            "url": "$url.sha256"
         }
-    }
+    },
+    "notes": [
+        "安装/更新全自动：post_install 经 %LOCALAPPDATA%\\WindInput（指向本应用 current 目录的 junction，由 manifest 自动创建和清理，请勿手动删除）完成注册与启动；全新注册需确认一次 UAC，已注册（含更新场景）则直接启动引擎、零 UAC。",
+        "安装完成后用 Win+空格 切换到「清风输入法」；设置入口为 wind_setting.exe 或启动器托盘菜单。",
+        "更新：引擎常驻进程经 junction 路径运行、不在 scoop 应用目录内，因此不触发 scoop 的占用检查，直接 scoop update windinput 即可（自动停进程、保留注册、重启引擎，零 UAC）。更新前请关闭 wind_setting 设置窗口和启动器托盘——它们若从 scoop 目录启动仍会被占用检查拦截。若曾手动从 scoop 目录运行 -start 导致注册路径回退，下次安装/更新会自动迁回 junction（需确认两次 UAC）。",
+        "卸载：直接 scoop uninstall windinput 即可，pre_uninstall 会自动结束相关进程，随后卸载器弹 UAC 注销 TSF、删除开机自启，并顺带移除 %LOCALAPPDATA%\\WindInput junction。",
+        "便携版用户数据就地存放在 userdata 目录（config.toml 配置、自造词与词频 userdata\\data、自定义主题 userdata\\themes），已 persist；data 目录是随版本发布的只读词库/主题资源，不 persist，scoop 升级自动更新词库。",
+        "Trusted Mode 游戏（如 CS2）只加载系统目录下已签名 DLL：按官方 wind-portable 说明在程序根目录建名为 system_deploy 的空文件切换系统部署模式（极少数场景，需 -stop 后 -start 生效）。",
+        "输入法引擎问题请到上游反馈：https://github.com/huanfeng/WindInput"
+    ]
 }
