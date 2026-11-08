@@ -1,36 +1,63 @@
 {
-  "version": "7.02",
-  "description": "Autorun Organizer. Free Startup Manager for Windows",
-  "homepage": "https://www.chemtable.com/autorun-organizer.htm",
-  "license": "Freeware",
-  "changelog": "https://www.chemtable.com/version-history.htm?prod_id=Autorun%20Organizer",
-  "url": "https://www.chemtable.com/files/ao3/autorun-organizer-setup.exe#/setup.7z",
-  "hash": "49fe6279bbfdb95e47940395f39d76924af09e8f9afe241ddae47ee9912c4d2a",
-  "bin": "AutorunOrganizer.exe",
-  "innosetup": true,
-  "pre_install": [
-    "if([System.Environment]::Is64BitOperatingSystem)",
-    "{",
-    "   Set-Location -Path \"$dir\"",
-    "   Get-ChildItem \"*,1*\" | Rename-Item -NewName {$_.name -replace ',1',''}",
-    "}",
-    "else",
-    "{",
-    "   Set-Location -Path \"$dir\"",
-    "   Get-ChildItem \"*,2*\" | Rename-Item -NewName {$_.name -replace ',2',''}",
-    "}"
-  ],
-  "shortcuts": [
-    [
-      "AutorunOrganizer.exe",
-      "Autorun Organizer"
+    "##": "Installer Type: Inno Setup",
+    "version": "7.02",
+    "description": "Windows startup manager for reviewing and controlling auto-start entries",
+    "homepage": "https://www.chemtable.com/autorun-organizer.htm",
+    "license": "Proprietary",
+    "url": "https://files.chemtable.com/ao/autorun-organizer-setup.exe",
+    "hash": "85BE6F0FC4AFF9BB874E946186301E5509FBF1E1996A9F8DDD75D7FFD9FC165F",
+    "pre_install": "if (!(is_admin)) { error \"$app requires administrator rights to $cmd\"; break }",
+    "installer": {
+        "args": [
+            "/VERYSILENT",
+            "/SUPPRESSMSGBOXES",
+            "/NORESTART",
+            "/SP-",
+            "/DIR=\"$dir\""
+        ]
+    },
+    "bin": "AutorunOrganizer.exe",
+    "shortcuts": [
+        [
+            "AutorunOrganizer.exe",
+            "Autorun Organizer"
+        ]
+    ],
+    "pre_uninstall": "if (!(is_admin)) { error \"$app requires administrator rights to $cmd\"; break }",
+    "uninstaller": {
+        "script": [
+            "$uninstaller = Join-Path $dir 'unins000.exe'",
+            "if (-not (Test-Path -LiteralPath $uninstaller)) {",
+            "    Write-Host 'No Inno Setup uninstaller found; this version may have been installed by the previous extraction-only manifest.'",
+            "    return",
+            "}",
+            "$process = Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru",
+            "if ($process.ExitCode -ne 0) { throw \"Autorun Organizer uninstaller exited with code $($process.ExitCode).\" }"
+        ]
+    },
+    "notes": "Requires administrator rights. The normal Inno Setup installation runs at system scope, while /DIR keeps the application files in this Scoop version directory.",
+    "checkver": {
+        "script": [
+            "$html = (Invoke-WebRequest -Uri 'https://www.chemtable.com/autorun-organizer.htm' -UseBasicParsing).Content",
+            "$text = [System.Net.WebUtility]::HtmlDecode([regex]::Replace($html, '<[^>]+>', ' '))",
+            "$text = [regex]::Replace($text, '\\s+', ' ')",
+            "$match = [regex]::Match($text, '(?i)\\bAutorun Organizer\\s+(?<version>\\d+(?:\\.\\d+){1,3})')",
+            "if (-not $match.Success) { throw 'Unable to detect the Autorun Organizer version from the official ChemTable product page.' }",
+            "$match.Groups['version'].Value"
+        ],
+        "regex": "(?<version>\\d+(?:\\.\\d+){1,3})"
+    },
+    "autoupdate": {
+        "url": "https://files.chemtable.com/ao/autorun-organizer-setup.exe"
+    },
+    "post_install": [
+        "$exe = Join-Path $dir 'AutorunOrganizer.exe'",
+        "if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {",
+        "    $found = @(Get-ChildItem -LiteralPath $dir -Filter '*.exe' -File -Recurse -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })",
+        "    if ($found.Count -gt 0) {",
+        "        throw \"Expected AutorunOrganizer.exe was not installed at the Scoop app root. Executables found: $($found -join '; ')\"",
+        "    }",
+        "    throw \"AutorunOrganizer.exe was not installed under the Scoop app directory: $dir\"",
+        "}"
     ]
-  ],
-  "checkver": {
-    "url": "https://www.chemtable.com/autorun-organizer.htm",
-    "regex": "<title>Autorun Organizer ([\\d.]+)"
-  },
-  "autoupdate": {
-    "url": "https://www.chemtable.com/files/ao3/autorun-organizer-setup.exe#/setup.7z"
-  }
 }
