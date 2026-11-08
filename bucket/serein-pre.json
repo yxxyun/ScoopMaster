@@ -1,0 +1,72 @@
+{
+    "version": "1.0.0-nightly.20261108.82",
+    "description": "Lightweight native Discord client written in Rust. Tracks the nightly pre-release.",
+    "homepage": "https://github.com/ViceVerse-cz/Serein",
+    "license": {
+        "identifier": "MIT|Apache-2.0",
+        "url": "https://github.com/ViceVerse-cz/Serein#license"
+    },
+    "notes": [
+        "Data lives in Scoop's persist folder (via SEREIN_DATA_DIR). Your login token stays in Windows Credential Manager.",
+        "Update with 'scoop update serein-pre' and leave automatic updates off in Settings > Updates, so the in-app updater doesn't change files behind Scoop's back."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/ViceVerse-cz/Serein/releases/download/v1.0.0-nightly.20261108.82/serein-v1.0.0-nightly.20261108.82-Windows-X64.zip",
+            "hash": "3bbf2acc5e4297ea518a6f3f3f767003fa9027d4ea3e1e669075ff1a3052eced"
+        },
+        "arm64": {
+            "url": "https://github.com/ViceVerse-cz/Serein/releases/download/v1.0.0-nightly.20261108.82/serein-v1.0.0-nightly.20261108.82-Windows-ARM64.zip",
+            "hash": "00890f9a459227c8bedd6b7b4e7cdeaeccd078274e230e0ea1b104c873fdab68"
+        }
+    },
+    "bin": "serein.exe",
+    "env_set": {
+        "SEREIN_DATA_DIR": "$dir\\data"
+    },
+    "persist": "data",
+    "post_install": [
+        "# Windows toasts need a Start menu shortcut carrying Serein's AppUserModelID, which upstream's script creates",
+        "$lnk = Join-Path ([Environment]::GetFolderPath('Programs')) 'Serein.lnk'",
+        "$ours = !(Test-Path -LiteralPath $lnk) -or ((New-Object -ComObject WScript.Shell).CreateShortcut($lnk).TargetPath -like \"$(Split-Path $dir)\\*\")",
+        "if ($ours) {",
+        "    try {",
+        "        & \"$dir\\install-notifications.ps1\" -Force | Out-Null",
+        "    } catch {",
+        "        warn \"Couldn't create Serein's Start menu shortcut: $_\"",
+        "    }",
+        "} else {",
+        "    warn 'Another Serein install already owns the Serein Start menu shortcut, so Scoop left it alone.'",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "# Scoop update: post_install refreshes the shortcut, so only remove it on scoop uninstall",
+            "if ($cmd -eq 'uninstall') {",
+            "    $lnk = Join-Path ([Environment]::GetFolderPath('Programs')) 'Serein.lnk'",
+            "    if ((Test-Path -LiteralPath $lnk) -and ((New-Object -ComObject WScript.Shell).CreateShortcut($lnk).TargetPath -like \"$(Split-Path $dir)\\*\")) {",
+            "        Remove-Item -LiteralPath $lnk -Force",
+            "    }",
+            "}"
+        ]
+    },
+    "checkver": {
+        "url": "https://api.github.com/repos/ViceVerse-cz/Serein/releases",
+        "jsonpath": "$[0].tag_name",
+        "regex": "v([\\d.]+(?:-[\\w.]+)?)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/ViceVerse-cz/Serein/releases/download/v$version/serein-v$version-Windows-X64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/ViceVerse-cz/Serein/releases/download/v$version/serein-v$version-Windows-ARM64.zip"
+            }
+        },
+        "hash": {
+            "url": "$baseurl/SHA256SUMS.txt",
+            "regex": "$sha256\\s+(?:\\./)?$basename"
+        }
+    }
+}

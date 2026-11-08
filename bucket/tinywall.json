@@ -3,76 +3,61 @@
     "description": "Secure-by-default firewall for Windows built on Windows Firewall. Developer: Károly Pados.",
     "homepage": "https://tinywall.pados.hu/",
     "license": "GPL-3.0-only",
-    "url": "https://tinywall.pados.hu/ccount/click.php?id=5#/dl.msi",
+    "url": "https://tinywall.pados.hu/ccount/click.php?id=5#/setup.msi_",
     "hash": "3f3bbdf2aef4cda3f18bd1ee7f4357a96b995fd78d98e8fd0889fd3bb592b453",
     "architecture": {
         "32bit": {
-            "url": "https://tinywall.pados.hu/ccount/click.php?id=5#/dl.msi",
+            "url": "https://tinywall.pados.hu/ccount/click.php?id=5#/setup.msi_",
             "hash": "3f3bbdf2aef4cda3f18bd1ee7f4357a96b995fd78d98e8fd0889fd3bb592b453"
         },
         "64bit": {
-            "url": "https://tinywall.pados.hu/ccount/click.php?id=5#/dl.msi",
+            "url": "https://tinywall.pados.hu/ccount/click.php?id=5#/setup.msi_",
             "hash": "3f3bbdf2aef4cda3f18bd1ee7f4357a96b995fd78d98e8fd0889fd3bb592b453"
         },
         "arm64": {
-            "url": "https://tinywall.pados.hu/ccount/click.php?id=6#/dl.msi",
+            "url": "https://tinywall.pados.hu/ccount/click.php?id=6#/setup.msi_",
             "hash": "3cc40d26cef85340584a647f387e615d7066738ebc8743dadb0908897721663a"
         }
     },
-    "bin": "ProgramFiles\\TinyWall\\TinyWall.exe",
-    "shortcuts": [
-        [
-            "ProgramFiles\\TinyWall\\TinyWall.exe",
-            "TinyWall - Károly Pados"
+    "installer": {
+        "script": [
+            "$msi = Join-Path $dir 'setup.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw \"TinyWall MSI not found: $msi\" }",
+            "$log = Join-Path $dir 'tinywall-msi-install.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/i', \"`\"$msi`\"\", '/qn', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -Verb RunAs -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010)) { throw \"TinyWall MSI installation failed with exit code $($process.ExitCode). Log: $log\" }"
         ]
-    ],
-    "pre_uninstall": [
-        "if ($cmd -eq 'uninstall') {",
-        "    $tinyWallExe = Join-Path -Path $dir -ChildPath 'ProgramFiles\\TinyWall\\TinyWall.exe'",
-        "    if (!(Test-Path -LiteralPath $tinyWallExe -PathType Leaf)) {",
-        "        throw \"TinyWall's cleanup executable was not found at $tinyWallExe. Scoop uninstall was aborted to avoid leaving its service and firewall filters behind.\"",
-        "    }",
-        "    try {",
-        "        $process = Start-Process -FilePath $tinyWallExe -ArgumentList 'uninstall' -Verb RunAs -Wait -PassThru -ErrorAction Stop",
-        "    } catch {",
-        "        throw \"TinyWall cleanup was cancelled or could not start. Scoop uninstall was aborted. $($_.Exception.Message)\"",
-        "    }",
-        "    if ($process.ExitCode -ne 0) {",
-        "        throw \"TinyWall cleanup failed with exit code $($process.ExitCode). Scoop uninstall was aborted.\"",
-        "    }",
-        "    if (Get-Service -Name 'TinyWall' -ErrorAction SilentlyContinue) {",
-        "        throw 'TinyWall service is still registered. Scoop uninstall was aborted.'",
-        "    }",
-        "    if (Get-ScheduledTask -TaskName 'TinyWall Controller' -ErrorAction SilentlyContinue) {",
-        "        throw 'TinyWall Controller scheduled task still exists. Scoop uninstall was aborted.'",
-        "    }",
-        "    $hostsBackup = Join-Path $env:ProgramData 'TinyWall\\hosts.restore'",
-        "    if (Test-Path -LiteralPath $hostsBackup) {",
-        "        throw 'TinyWall original Hosts file was not restored. Scoop uninstall was aborted.'",
-        "    }",
-        "}"
-    ],
+    },
+    "uninstaller": {
+        "script": [
+            "$msi = Join-Path $dir 'setup.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw \"TinyWall MSI not found: $msi. Refusing to remove Scoop files while Windows Installer registration may remain.\" }",
+            "$log = Join-Path $dir 'tinywall-msi-uninstall.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/x', \"`\"$msi`\"\", '/qb', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -Verb RunAs -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010)) { throw \"TinyWall MSI uninstallation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
     "checkver": {
         "url": "https://tinywall.pados.hu/download.php",
         "regex": "Latest version:\\s*([\\d.]+)"
     },
     "autoupdate": {
-        "url": "https://tinywall.pados.hu/ccount/click.php?id=5#/dl.msi",
+        "url": "https://tinywall.pados.hu/ccount/click.php?id=5#/setup.msi_",
         "architecture": {
             "32bit": {
-                "url": "https://tinywall.pados.hu/ccount/click.php?id=5#/dl.msi"
+                "url": "https://tinywall.pados.hu/ccount/click.php?id=5#/setup.msi_"
             },
             "64bit": {
-                "url": "https://tinywall.pados.hu/ccount/click.php?id=5#/dl.msi"
+                "url": "https://tinywall.pados.hu/ccount/click.php?id=5#/setup.msi_"
             },
             "arm64": {
-                "url": "https://tinywall.pados.hu/ccount/click.php?id=6#/dl.msi"
+                "url": "https://tinywall.pados.hu/ccount/click.php?id=6#/setup.msi_"
             }
         }
     },
     "notes": [
-        "On first launch, TinyWall may request administrator approval to register its Windows service and configure the scheduled task that starts the tray controller.",
-        "Uninstalling through Scoop runs TinyWall's own cleanup with administrator approval. If cleanup is cancelled or incomplete, Scoop keeps the application files.",
+        "Uses TinyWall's official per-machine MSI installation, including its ProgramData files, LocalSystem automatic service, and TinyWall Controller logon task.",
+        "Scoop retains the MSI in the version directory so Windows Installer can run the native uninstall action during removal and updates. Uninstallation requires administrator approval.",
         "TinyWall blocks most communication by default. Use the tray menu's whitelist options to allow required applications; do not install or first-run it over a remote connection."
     ]
 }
