@@ -3,30 +3,47 @@
     "description": "Local AI desktop assistant for working with documents, files, and everyday tasks using models that run on your computer.",
     "homepage": "https://www.hob.chat/",
     "license": "MIT",
-    "url": "https://github.com/FrigadeHQ/hob/releases/download/v0.2.6/Hob-windows-x64.exe#/dl.7z",
+    "url": "https://github.com/FrigadeHQ/hob/releases/download/v0.2.6/Hob-windows-x64.exe",
     "hash": "73516b365c59f6f659471ef90ffecae933070b476aa6c8dcf5e547ca017a1f89",
-    "pre_install": [
-        "$payload = Join-Path $dir '$PLUGINSDIR\\app-64.7z'",
-        "if (-not (Test-Path -LiteralPath $payload -PathType Leaf)) { throw \"Hob Electron payload archive was not found: $payload\" }",
-        "Expand-7zipArchive $payload $dir -Removal",
-        "$mainExe = Join-Path $dir 'Hob.exe'",
-        "if (-not (Test-Path -LiteralPath $mainExe -PathType Leaf)) { throw \"Hob.exe was not found after extracting the Electron payload: $mainExe\" }",
-        "$appAsar = Join-Path $dir 'resources\\app.asar'",
-        "if (-not (Test-Path -LiteralPath $appAsar -PathType Leaf)) { throw 'Hob resources\\app.asar was not found after payload extraction.' }"
-    ],
-    "post_install": "Get-ChildItem -LiteralPath $dir -Force | Where-Object { $_.Name.StartsWith('$') -or $_.Name -like 'Uninstall*' } | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue",
     "bin": "Hob.exe",
-    "shortcuts": [
-        [
-            "Hob.exe",
-            "Hob"
-        ]
-    ],
     "checkver": {
         "github": "https://github.com/FrigadeHQ/hob"
     },
     "autoupdate": {
-        "url": "https://github.com/FrigadeHQ/hob/releases/download/v$version/Hob-windows-x64.exe#/dl.7z"
+        "url": "https://github.com/FrigadeHQ/hob/releases/download/v$version/Hob-windows-x64.exe",
+        "hash": {
+            "mode": "json",
+            "url": "https://api.github.com/repos/FrigadeHQ/hob/releases/tags/v$version",
+            "jp": "$.assets[?(@.name == '$basename')].digest"
+        }
     },
-    "notes": "Hob requires at least 8 GB RAM; 16 GB is recommended for everyday tasks and 32 GB or more for its most capable models. Keep 10–25 GB of free disk space for Hob and its models, or about 75 GB for the largest model. Hob stores chats, settings, Python runtime, and downloaded models under %APPDATA%\\Hob by default; these files remain after Scoop uninstall. Hob also includes an internal updater that may update application files independently of Scoop."
+    "notes": [
+        "Nonportable: runs the official NSIS one-click per-user installer silently with /S and directs its application files to the Scoop version directory with /D=$dir. This is a real installation, not archive extraction.",
+        "The official NSIS installer creates its own Start Menu and desktop shortcuts. Scoop uses Hob.exe for the hob command shim.",
+        "Scoop copies Uninstall Hob.exe to a temporary path before running it with /S /KEEP_APP_DATA /currentuser --updated and _?=$dir. This mirrors electron-builder's updater behavior, removes the application and registration, and preserves chats, settings, and models under %APPDATA%\\Hob. Hob's own Remove Hob action can deliberately delete app data.",
+        "Hob includes its own updater and may update application files independently of Scoop.",
+        "Hob requires at least 8 GB RAM; 16 GB is recommended for everyday tasks and 32 GB or more for its most capable models. Keep 10–25 GB of free disk space for Hob and its models, or about 75 GB for the largest model."
+    ],
+    "##": "Installer Type: NSIS",
+    "installer": {
+        "args": [
+            "/S",
+            "/D=$dir"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$uninstaller = Join-Path $dir 'Uninstall Hob.exe'",
+            "if (-not (Test-Path -LiteralPath $uninstaller -PathType Leaf)) { throw 'Hob NSIS uninstaller was not found in the Scoop version directory.' }",
+            "$tempUninstaller = Join-Path $env:TEMP ('Hob-Uninstall-' + [guid]::NewGuid().ToString('N') + '.exe')",
+            "Copy-Item -LiteralPath $uninstaller -Destination $tempUninstaller -Force",
+            "try {",
+            "    $uninstallArgs = @('/S', '/KEEP_APP_DATA', '/currentuser', '--updated', \"_?=$dir\")",
+            "    $process = Start-Process -FilePath $tempUninstaller -ArgumentList $uninstallArgs -PassThru -Wait",
+            "    if ($process.ExitCode -ne 0) { throw \"Hob NSIS uninstaller exited with code $($process.ExitCode).\" }",
+            "} finally {",
+            "    Remove-Item -LiteralPath $tempUninstaller -Force -ErrorAction SilentlyContinue",
+            "}"
+        ]
+    }
 }
