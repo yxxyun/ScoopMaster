@@ -4,10 +4,18 @@
     "homepage": "https://pake.run/",
     "license": "Proprietary",
     "installer": {
-        "args": [
-            "--silent",
-            "--installto",
-            "$dir"
+        "script": [
+            "$sourceInstaller = Join-Path $dir $fname",
+            "$tempInstaller = Join-Path $env:TEMP ('Pake-Setup-' + [guid]::NewGuid().ToString('N') + '.exe')",
+            "Copy-Item -LiteralPath $sourceInstaller -Destination $tempInstaller -Force",
+            "Remove-Item -LiteralPath $sourceInstaller -Force",
+            "try {",
+            "    $arguments = '--silent --installto \"{0}\"' -f $dir",
+            "    $process = Start-Process -FilePath $tempInstaller -ArgumentList $arguments -WorkingDirectory $env:TEMP -Wait -PassThru",
+            "    if ($process.ExitCode -ne 0) { throw \"Pake Velopack installer failed with exit code $($process.ExitCode).\" }",
+            "} finally {",
+            "    Remove-Item -LiteralPath $tempInstaller -Force -ErrorAction SilentlyContinue",
+            "}"
         ]
     },
     "uninstaller": {

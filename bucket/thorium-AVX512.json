@@ -1,0 +1,50 @@
+{
+    "##": "AVX512 build only. Chromium mini_installer stub: the real payload is an embedded chrome.7z (Chrome-bin/) inside the .exe. Upstream's own installer wants admin + writes to Program Files, so this manifest carves the payload out and unpacks it into the scoop dir instead — no admin, nothing outside $dir. Same binary as the portable zip, just a different shape.",
+    "version": "156.0.8078.80",
+    "description": "Thorium 浏览器（安装版，Chromium 分支，AVX512 优化构建）",
+    "homepage": "https://github.com/gz83/thorium",
+    "license": {
+        "identifier": "BSD-3-Clause",
+        "url": "https://github.com/gz83/thorium/blob/main/LICENSE"
+    },
+    "notes": [
+        "本 manifest 只收录 AVX512 构建；AVX2/AVX/SSE4/SSE3/SSE2-win32/ARM64 未收录",
+        "上游 mini_installer 默认装到 Program Files 且要管理员，这里改为抽出内嵌 chrome.7z 解包到 scoop 目录，不需要管理员权限",
+        "浏览器用户数据在 %LOCALAPPDATA%\\Thorium（Scoop 不接管，升级与卸载都不会动它）",
+        "这是安装版；要免安装的绿色版请装 thorium-AVX512-Portable"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/gz83/thorium/releases/download/M156.0.8078.80/thorium_AVX512_mini_installer.exe",
+            "hash": "b243ab552054e4a17ec1dd72a12aa563d8e75f66a0fdb85a68d1d35c9eaeae1e"
+        }
+    },
+    "installer": {
+        "script": [
+            "Expand-7zipArchive -Path \"$dir\\$fname\" -DestinationPath $dir -Removal",
+            "if (-not (Test-Path \"$dir\\chrome.7z\")) { error 'Could not find the embedded chrome.7z inside $fname' }",
+            "Expand-7zipArchive -Path \"$dir\\chrome.7z\" -DestinationPath $dir -Removal"
+        ]
+    },
+    "shortcuts": [
+        [
+            "Chrome-bin\\thorium.exe",
+            "Thorium-AVX512"
+        ]
+    ],
+    "checkver": {
+        "url": "https://github.com/gz83/thorium/releases.atom",
+        "regex": "releases/tag/M([\\d.]+)\""
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/gz83/thorium/releases/download/M$version/thorium_AVX512_mini_installer.exe"
+            }
+        },
+        "hash": {
+            "url": "https://api.github.com/repos/gz83/thorium/releases/tags/M$version",
+            "regex": "\"name\":\"thorium_AVX512_mini_installer\\.exe\".*?\"digest\":\"sha256:([0-9a-f]{64})\""
+        }
+    }
+}

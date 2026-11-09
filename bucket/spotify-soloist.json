@@ -1,0 +1,40 @@
+{
+    "version": "2026.11.09.1244",
+    "description": "Spotify's official headless Spotify Connect client, with a local WebSocket API",
+    "homepage": "https://developer.spotify.com/documentation/soloist/reference/downloads-and-updates",
+    "license": "Proprietary",
+    "notes": [
+        "Builds expire 90 days after their build date- an expired build exits with code 10, so run \"scoop update spotify-soloist\" to refresh it.",
+        "Needs an API key at startup (-k or $env:SOLOIST_API_KEY); creating one needs a Premium account."
+    ],
+    "pre_install": [
+        "New-Item \"$dir\\data\" -ItemType Directory -Force | Out-Null",
+        "New-Item \"$dir\\cache\" -ItemType Directory -Force | Out-Null",
+        "Set-Content \"$dir\\soloist.cmd\" (@('@echo off','if /I \"%~1\"==\"ctl\" (','    \"%~dp0soloist.exe\" ctl %2 %3 %4 %5 %6 %7 %8 %9 --data-dir \"%~dp0data\"',') else (','    \"%~dp0soloist.exe\" --data-dir \"%~dp0data\" --cache-dir \"%~dp0cache\" %*',')')) -Encoding ASCII"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://soloist-builds.spotifycdn.com/soloist_release_windows_x86_64.zip",
+            "hash": "61d91bd6cf1c9f3f910b662e3d70feac0a90a5554336c83c9e33e3c850db5acb",
+            "bin": "soloist.cmd"
+        }
+    },
+    "persist": [
+        "data",
+        "cache"
+    ],
+    "checkver": {
+        "script": [
+            "$h = (Invoke-WebRequest -Method Head -Uri 'https://soloist-builds.spotifycdn.com/soloist_release_windows_x86_64.zip' -UseBasicParsing).Headers",
+            "([datetime]$h['Last-Modified']).ToUniversalTime().ToString('yyyy.MM.dd.HHmm')"
+        ],
+        "regex": "([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://soloist-builds.spotifycdn.com/soloist_release_windows_x86_64.zip"
+            }
+        }
+    }
+}

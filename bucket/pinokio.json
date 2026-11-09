@@ -1,0 +1,42 @@
+{
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+    "version": "8.3.7",
+    "description": "Local AI launcher for installing and managing AI applications, models, runtimes, and dependencies from scripts.",
+    "homepage": "https://desktop.pinokio.co/",
+    "license": "MIT",
+    "url": "https://github.com/pinokiocomputer/pinokio/releases/download/v8.3.7/Pinokio.exe#/Pinokio-Setup.exe",
+    "hash": "387632356bf1851f267e8b41cbeb34b2b20110c383ca9b7460567d87ef8c4987",
+    "installer": {
+        "args": [
+            "/S",
+            "/D=$dir"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$uninstaller = Join-Path $dir 'Uninstall Pinokio.exe'",
+            "if (-not (Test-Path -LiteralPath $uninstaller -PathType Leaf)) { throw 'Pinokio NSIS uninstaller was not found in the Scoop version directory.' }",
+            "$process = Start-Process -FilePath $uninstaller -ArgumentList '/S' -Wait -PassThru",
+            "if ($process.ExitCode -ne 0) { throw ('Pinokio uninstaller exited with code {0}.' -f $process.ExitCode) }"
+        ]
+    },
+    "bin": "Pinokio.exe",
+    "checkver": {
+        "url": "https://api.github.com/repos/pinokiocomputer/pinokio/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "^v(?<version>[\\d.]+)$"
+    },
+    "autoupdate": {
+        "url": "https://github.com/pinokiocomputer/pinokio/releases/download/v$version/Pinokio.exe#/Pinokio-Setup.exe",
+        "hash": {
+            "mode": "json",
+            "url": "https://api.github.com/repos/pinokiocomputer/pinokio/releases/tags/v$version",
+            "jp": "$.assets[?(@.name == 'Pinokio.exe')].digest"
+        }
+    },
+    "notes": [
+        "Nonportable: runs the official Electron Builder NSIS installer silently in the Scoop version directory and registers the pinokio:// protocol and Windows shortcuts. The downloaded setup is named Pinokio-Setup.exe so Scoop cleanup cannot delete the installed Pinokio.exe.",
+        "Pinokio stores downloaded scripts, environments, and binaries under %USERPROFILE%\\pinokio by default. This data is separate from the Scoop application directory and remains after uninstall."
+    ],
+    "##": "Installer Type: NSIS"
+}

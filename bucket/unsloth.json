@@ -1,0 +1,56 @@
+{
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+    "version": "0.1.916-beta",
+    "description": "Desktop app for running, fine-tuning, and serving local LLMs and diffusion models, including GGUF and MLX.",
+    "homepage": "https://unsloth.ai/",
+    "license": "AGPL-3.0-only",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/unslothai/unsloth/releases/download/v0.1.916-beta/Unsloth-Desktop-Windows.exe",
+            "hash": "2e79bfc196da9c52ed9fd470c31bad9652814c9ad3f04487b0fc926ea7e69a3a"
+        },
+        "arm64": {
+            "url": "https://github.com/unslothai/unsloth/releases/download/v0.1.916-beta/Unsloth-Desktop-Windows-ARM64.exe",
+            "hash": "e554da5d71458f9c38b2fcca69a5ac43947264361aa504d199da3ec507946ade"
+        }
+    },
+    "installer": {
+        "args": [
+            "/S",
+            "/D=$dir"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$uninstaller = Join-Path $dir 'uninstall.exe'",
+            "if (-not (Test-Path -LiteralPath $uninstaller -PathType Leaf)) { throw 'Unsloth Tauri NSIS uninstaller was not found in the Scoop version directory.' }",
+            "$process = Start-Process -FilePath $uninstaller -ArgumentList '/S' -WorkingDirectory $dir -Wait -PassThru",
+            "if ($process.ExitCode -ne 0) { throw ('Unsloth uninstaller exited with code {0}.' -f $process.ExitCode) }"
+        ]
+    },
+    "checkver": {
+        "url": "https://api.github.com/repos/unslothai/unsloth/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "^v(?<version>[\\d.]+(?:-[A-Za-z0-9.]+)?)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/unslothai/unsloth/releases/download/v$version/Unsloth-Desktop-Windows.exe"
+            },
+            "arm64": {
+                "url": "https://github.com/unslothai/unsloth/releases/download/v$version/Unsloth-Desktop-Windows-ARM64.exe"
+            }
+        },
+        "hash": {
+            "mode": "json",
+            "url": "https://api.github.com/repos/unslothai/unsloth/releases/tags/v$version",
+            "jp": "$.assets[?(@.name == '$basename')].digest"
+        }
+    },
+    "notes": [
+        "Nonportable: runs the official Tauri NSIS current-user installer silently, registers the unsloth:// protocol and Windows shortcuts, and silently bootstraps Microsoft Edge WebView2 Runtime when it is missing.",
+        "The official uninstaller preserves shared models, environments, outputs, and settings under %USERPROFILE%\\.unsloth."
+    ],
+    "##": "Installer Type: NSIS"
+}
