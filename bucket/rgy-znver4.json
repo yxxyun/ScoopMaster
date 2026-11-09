@@ -1,0 +1,110 @@
+{
+  "version": "0.1.10.2",
+  "description": "Fast, native file search engine and launcher: name search, content search, and a daemon behind both (Zen 4+ tuned)",
+  "homepage": "https://github.com/danalec/rgy",
+  "license": "MIT OR Apache-2.0",
+  "changelog": "https://github.com/danalec/rgy/releases",
+  "url": "https://github.com/danalec/rgy/releases/download/rgy-v0.1.10.2/rgy-v0.1.10.2-znver4-windows.zip",
+  "hash": "sha256:63576f0ff7906e4095c52c0a7cadad6c13bf0d020ba5934dc4aa6c7674eea570",
+  "bin": [
+    [
+      "rgy.exe",
+      "rgy-znver4"
+    ],
+    [
+      "rgy-autostart.exe",
+      "rgy-autostart-znver4"
+    ],
+    [
+      "searchctl.exe",
+      "searchctl-znver4"
+    ],
+    [
+      "searchd.exe",
+      "searchd-znver4"
+    ]
+  ],
+  "shortcuts": [
+    [
+      "rgxy.exe",
+      "rgy (znver4)"
+    ]
+  ],
+  "checkver": {
+    "url": "https://api.github.com/repos/danalec/rgy/releases/latest",
+    "regex": "\"tag_name\":\\s*\"rgy-v([\\d.]+)\""
+  },
+  "autoupdate": {
+    "url": "https://github.com/danalec/rgy/releases/download/rgy-v$version/rgy-v$version-znver4-windows.zip"
+  },
+  "post_install": [
+    "info 'rgy (Zen 4) READ THIS. Despite the name, searchctl is NOT a systemd service and does not require systemd.'",
+    "info '  It is a plain CLI. The daemon (searchd) is a separate, OPTIONAL binary.'",
+    "info '  Nothing installed here depends on the system init.'",
+    "info '  This is the Zen 4 build: its binaries are shimmed as *-znver4 and its shortcut is ''rgy (znver4)''.'",
+    "info '  rgxy (the launcher) needs a RUNNING daemon; without one it says ''no connection to the daemon''.'",
+    "$choice = '2'",
+    "$entry = 'rgy-searchd-znver4'",
+    "$pipe = 'pipe:rgy-searchd-znver4-' + $env:USERNAME",
+    "if ([Environment]::UserInteractive) {",
+    "    info ''",
+    "    info '  How do you want the search daemon enabled?'",
+    "    info '    [1] Register it for the NEXT LOGON only (the install does not start it now).'",
+    "    info '    [2] Register it AND start it NOW in this session. (default)'",
+    "    info '    [N] Do nothing.'",
+    "    info '    [Y] Accept the default - same as [2].'",
+    "    info '  Note: registering alone never starts the daemon in the current session - HKCU Run'",
+    "    info '  entries run at logon. And on its first start the daemon rebuilds the index of your'",
+    "    info '  home directory before it opens its pipe, which can take a minute on a large tree;'",
+    "    info '  rgxy will keep saying ''no connection to the daemon'' until that rebuild finishes.'",
+    "    info '  Press 1, 2, N or Y to decide - no answer within 10 seconds keeps the default [2].'",
+    "    Write-Host -NoNewline '  Choose [1/2/N/Y] (Enter or Y = 2): '",
+    "    $deadline = (Get-Date).AddSeconds(10)",
+    "    try {",
+    "        while ((Get-Date) -lt $deadline) {",
+    "            if ([Console]::KeyAvailable) {",
+    "                $key = [Console]::ReadKey($true)",
+    "                if ($key.Key -eq [ConsoleKey]::Enter) { break }",
+    "                if ($key.KeyChar -match '[12NnYy]') { $choice = [string]$key.KeyChar; break }",
+    "            }",
+    "            Start-Sleep -Milliseconds 100",
+    "        }",
+    "    } catch {",
+    "        Write-Host ''",
+    "        info '  (no interactive console: keeping the default [2].)'",
+    "    }",
+    "    Write-Host ''",
+    "    if ($choice -match '^[Nn]') { $choice = 'N' } elseif ($choice -match '^1') { $choice = '1' } else { $choice = '2' }",
+    "} else {",
+    "    info '  (non-interactive install: no prompt. Using the default: register AND start the daemon now.)'",
+    "}",
+    "if ($choice -match '^[12]') {",
+    "    info '  Registering the daemon (no elevation, no dialog) ...'",
+    "    & (Join-Path $dir 'rgy-autostart.exe') install --name $entry --args ('--root ' + $env:USERPROFILE + ' --listen ' + $pipe)",
+    "    $daemon = Join-Path $dir 'searchd.exe'",
+    "    $runKeyPs = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+    "    $runKeyReg = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+    "    $installedCmd = (Get-ItemProperty -Path $runKeyPs -Name $entry -ErrorAction SilentlyContinue | Select-Object -ExpandProperty $entry)",
+    "    if ($installedCmd -match '--listen\\s+(\\S+)') { $pipe = $Matches[1] }",
+    "    $runCmd = '\"' + $daemon + '\" --root ' + $env:USERPROFILE + ' --listen ' + $pipe",
+    "    reg add $runKeyReg /v $entry /t REG_SZ /d $runCmd /f | Out-Null",
+    "    info '  Registered through ''current'', so the next version bump keeps the daemon working.'",
+    "    if ($choice -match '^2') {",
+    "        info '  Starting the daemon now (detached; it keeps running after this install) ...'",
+    "        Start-Process -FilePath $daemon -ArgumentList '--root',$env:USERPROFILE,'--listen',$pipe -WindowStyle Hidden",
+    "        info '  It is indexing your home directory first; rgxy connects when the pipe opens.'",
+    "        info '  Check progress with: rgy-autostart-znver4 doctor --name rgy-searchd-znver4'",
+    "    } else {",
+    "        info '  Registered. It will start at your NEXT LOGON, not now.'",
+    "        info '  To start it sooner: rgy-autostart-znver4 doctor --name rgy-searchd-znver4'",
+    "    }",
+    "    info '  Undo it later with: rgy-autostart-znver4 uninstall --name rgy-searchd-znver4'",
+    "} else {",
+    "    info '  No daemon installed. Two things to know:'",
+    "    info '   - searchctl needs an INDEX, not a daemon. Index at least once:'",
+    "    info '       searchctl-znver4 --root $env:USERPROFILE --reindex --count ''*'''",
+    "    info '   - Try the launcher with nothing installed: Start-Process searchd.exe -ArgumentList ''--root'',$env:USERPROFILE,''--listen'',''pipe:rgy-try''; rgxy.exe --endpoint pipe:rgy-try --query invoice'",
+    "    info '     Or just use searchctl-znver4 for one question. See the README for a daily index timer.'",
+    "}"
+  ]
+}
