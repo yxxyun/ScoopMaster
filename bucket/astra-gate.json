@@ -1,0 +1,88 @@
+{
+    "##": "Unofficial portable build of Astra Gate, packaged by BobH-Official/Astra-Gate-Portable from upstream release tags.",
+    "version": "0.14.3101",
+    "description": "Local AI gateway that relays requests between AI clients and providers, with protocol conversion, usage billing and privacy guardrails",
+    "homepage": "https://astra-gate.si/",
+    "license": "MIT",
+    "notes": [
+        "Unofficial portable build. Product bugs belong upstream (https://github.com/239573049/Astra-Gate); packaging bugs belong to https://github.com/BobH-Official/Astra-Gate-Portable.",
+        "Data lives in '$dir\\data' because ASTRA_HOME is set to that directory and the directory is persisted.",
+        "Without ASTRA_HOME the app would use '%USERPROFILE%\\.astra'; existing data there is not migrated.",
+        "The bundled server runs as a child process of the app; nothing is installed as a service.",
+        "Autostart writes HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run entries only when enabled in the app or with 'astra autostart enable'.",
+        "The astra:// protocol is not registered automatically. The optional helpers scoop-register-protocol.ps1 and scoop-unregister-protocol.ps1 are downloaded into '$dir' but never run by Scoop; run scoop-register-protocol.ps1 with -AppDir '$dir' and -ExecutionPolicy Bypass to register join links, and scoop-unregister-protocol.ps1 the same way to remove them.",
+        "Uninstalling removes the astra:// registration only when it points at this installation; a registration that points somewhere else is left untouched.",
+        "Binaries are not code-signed, so Windows SmartScreen may warn on first launch."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/BobH-Official/Astra-Gate-Portable/releases/download/portable-v0.14.3101/Astra-0.14.3101-win32-x64-portable.zip",
+            "hash": "9cab6170217416742c05c0fdce8039b8d19186ea81a2921704babd1b2aafeefe"
+        },
+        "arm64": {
+            "url": "https://github.com/BobH-Official/Astra-Gate-Portable/releases/download/portable-v0.14.3101/Astra-0.14.3101-win32-arm64-portable.zip",
+            "hash": "e762a1f31be082625c5a5cd6e908be83694e1baa7e7f9cf37902e080ce97d365"
+        }
+    },
+    "env_set": {
+        "ASTRA_HOME": "$dir\\data"
+    },
+    "shortcuts": [
+        [
+            "Astra.exe",
+            "Astra Gate"
+        ]
+    ],
+    "persist": "data",
+    "post_install": [
+        "try {",
+        "    $base = 'https://github.com/BobH-Official/Astra-Gate-Portable/releases/download/portable-v' + $version",
+        "    foreach ($name in 'scoop-register-protocol.ps1', 'scoop-unregister-protocol.ps1') {",
+        "        $out = Join-Path $dir $name",
+        "        Invoke-WebRequest -Uri ($base + '/' + $name) -OutFile $out -UseBasicParsing",
+        "        $raw = (Invoke-WebRequest -Uri ($base + '/' + $name + '.sha256') -UseBasicParsing).Content",
+        "        if ($raw -is [byte[]]) { $raw = [Text.Encoding]::UTF8.GetString($raw) }",
+        "        $expected = (($raw | Out-String) -split '\\s+')[0]",
+        "        $actual = (Get-FileHash -Path $out -Algorithm SHA256).Hash.ToLowerInvariant()",
+        "        if ($actual -ne $expected) { throw ('Checksum mismatch for ' + $name) }",
+        "    }",
+        "} catch {",
+        "    Remove-Item -Path (Join-Path $dir 'scoop-*-protocol.ps1') -Force -ErrorAction SilentlyContinue",
+        "    warn ('Optional astra:// helper scripts were not downloaded: ' + $_.Exception.Message)",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "$key = 'HKCU:\\Software\\Classes\\astra'",
+            "$commandKey = Join-Path $key 'shell\\open\\command'",
+            "if (Test-Path -LiteralPath $commandKey) {",
+            "    $command = (Get-Item -LiteralPath $commandKey).GetValue('')",
+            "    $exes = @((Join-Path $dir 'Astra.exe'), (Join-Path (Join-Path (Split-Path $dir -Parent) 'current') 'Astra.exe'))",
+            "    foreach ($exe in $exes) {",
+            "        if ($command -and $command.IndexOf($exe, [StringComparison]::OrdinalIgnoreCase) -ge 0) {",
+            "            Remove-Item -LiteralPath $key -Recurse -Force",
+            "            Write-Host ('Removed the astra:// registration pointing at ' + $exe)",
+            "            break",
+            "        }",
+            "    }",
+            "}"
+        ]
+    },
+    "checkver": {
+        "github": "https://github.com/BobH-Official/Astra-Gate-Portable",
+        "regex": "portable-v([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/BobH-Official/Astra-Gate-Portable/releases/download/portable-v$version/Astra-$version-win32-x64-portable.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/BobH-Official/Astra-Gate-Portable/releases/download/portable-v$version/Astra-$version-win32-arm64-portable.zip"
+            }
+        },
+        "hash": {
+            "url": "$url.sha256"
+        }
+    }
+}

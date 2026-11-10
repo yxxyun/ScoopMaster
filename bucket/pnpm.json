@@ -17,26 +17,49 @@
         "pnpm.exe",
         [
             "pnpm.exe",
+            "pn"
+        ],
+        [
+            "pnpm.exe",
             "pnpx",
+            "dlx"
+        ],
+        [
+            "pnpm.exe",
+            "pnx",
             "dlx"
         ]
     ],
+    "post_install": [
+        "# Specify the full binary path to avoid binary collision with executables in PATH",
+        "& \"$dir\\pnpm.exe\" config set storeDir \"$dir\\store\"",
+        "& \"$dir\\pnpm.exe\" config set cacheDir \"$dir\\cache\"",
+        "& \"$dir\\pnpm.exe\" config set stateDir \"$dir\\state\""
+    ],
+    "env_add_path": "bin",
+    "env_set": {
+        "PNPM_HOME": "$dir"
+    },
+    "persist": [
+        "bin",
+        "global",
+        "store",
+        "cache",
+        "state"
+    ],
     "checkver": {
+        "github": "https://api.github.com/repos/pnpm/pnpm/releases",
         "script": [
             "# Using checkver script to check through all release tags",
-            "$auth = Get-GitHubToken",
-            "$head = @{}",
-            "if($auth) { $head.add('authorization', \"Bearer $auth\") }",
-            "$url = 'https://api.github.com/repos/pnpm/pnpm/releases'",
+            "$releases = $page | ConvertFrom-Json -ErrorAction Ignore",
             "$latest_ver = [Version]::new(0,0,0,0) # note: Powershell 5 does not support casting 'int' or 'float' to 'System.Version'",
-            "$releases = $(Invoke-WebRequest -Headers $head $url).Content | ConvertFrom-Json",
             "$releases | ForEach-Object {",
             "    if (!($_.tag_name -match '([\\d.]+)')) { return }",
             "    if ($_.prerelease) { return }",
             "    $ver = [Version]::new($matches[1])",
             "    if ($ver -gt $latest_ver) { $latest_ver = $ver }",
             "}",
-            "if ($latest_ver -eq [Version]::new(0,0,0,0)) { error \"Could not match version string in '$url'\"; continue }",
+            "if ($latest_ver -eq [Version]::new(0,0,0,0)) { error \"Could not match version string in '$url'\"; return }",
             "Write-Output $latest_ver"
         ],
         "regex": "([\\d.]+)"

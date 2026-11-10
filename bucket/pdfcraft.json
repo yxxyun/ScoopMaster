@@ -1,70 +1,20 @@
 {
     "version": "0.20.0",
-    "description": "Open-source PDF workbench: read, organize, combine, split, comment, fill and secure documents",
+    "description": "The PDF workbench; an open-source, clean-room reimplementation of Adobe Acrobat, rebuilt in pure Rust",
     "homepage": "https://github.com/storytold/pdfcraft",
-    "license": "MIT OR Apache-2.0",
-    "notes": [
-        "The portable build ships 'portable.txt' beside pdfcraft.exe, so PdfCraft keeps its settings, autosave and logs in a 'PdfCraftData' folder next to the executable. Scoop junctions that folder to '$persist_dir\\PdfCraftData', so the data survives 'scoop update'.",
-        "While that marker is present nothing is written to %APPDATA%\\PdfCraft; delete 'portable.txt' in the install directory to go back to the per-user folder.",
-        "The first install copies an existing %APPDATA%\\PdfCraft into the persist folder, and the pre-uninstall hook mirrors it back as a safety copy; that also runs on 'scoop update'.",
-        "'pdfcraft-cli.exe' is exposed as the 'pdfcraft-cli' shim.",
-        "The portable zip does not register the file associations that the MSI installer adds.",
-        "The app has no built-in updater; use 'scoop update pdfcraft' so the install and this manifest stay in sync."
-    ],
+    "license": "MIT|Apache-2.0",
     "architecture": {
         "64bit": {
             "url": "https://github.com/storytold/pdfcraft/releases/download/v0.20.0/pdfcraft-0.20.0-windows-x64-portable.zip",
             "hash": "efb636a8c5c4f8041e6dbe39f56f40992c9a1b199a0b8a27cd0fc4d6037715d2",
-            "installer": {
-                "script": [
-                    "$stage = \"$dir\\pdfcraft-$version-windows-x64-portable\"",
-                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
-                    "Remove-Item $stage -ErrorAction Stop"
-                ]
-            }
+            "extract_dir": "pdfcraft-0.20.0-windows-x64-portable"
         },
         "arm64": {
             "url": "https://github.com/storytold/pdfcraft/releases/download/v0.20.0/pdfcraft-0.20.0-windows-arm64-portable.zip",
             "hash": "b066d375a16f6cda28c24a99f7b3d90582d9a70f4af0c4473dc0ffaae7170c7f",
-            "installer": {
-                "script": [
-                    "$stage = \"$dir\\pdfcraft-$version-windows-arm64-portable\"",
-                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
-                    "Remove-Item $stage -ErrorAction Stop"
-                ]
-            }
+            "extract_dir": "pdfcraft-0.20.0-windows-arm64-portable"
         }
     },
-    "pre_install": [
-        "$target = \"$persist_dir\\PdfCraftData\"",
-        "$legacy = \"$env:APPDATA\\PdfCraft\"",
-        "if (!(Test-Path $target) -and (Test-Path $legacy)) {",
-        "    if (Get-Process -Name 'pdfcraft*' -ErrorAction SilentlyContinue) {",
-        "        abort 'PdfCraft is running, so %APPDATA%\\PdfCraft cannot be copied into Scoop persist safely. Quit PdfCraft, then run the install again.'",
-        "    }",
-        "    $previous = $ErrorActionPreference",
-        "    $ErrorActionPreference = 'Continue'",
-        "    $null = robocopy $legacy $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
-        "    $code = $LASTEXITCODE",
-        "    $ErrorActionPreference = $previous",
-        "    if ($code -ge 8) { warn \"robocopy exit $code while copying '$legacy' to '$target'; compare the two directories before relying on the new location.\" } else { info \"Copied '$legacy' to '$target'.\" }",
-        "}"
-    ],
-    "pre_uninstall": [
-        "$legacy = \"$env:APPDATA\\PdfCraft\"",
-        "$data = \"$persist_dir\\PdfCraftData\"",
-        "if (!(Test-Path $data) -or @(Get-ChildItem $data -Force).Count -eq 0) { return }",
-        "if (Get-Process -Name 'pdfcraft*' -ErrorAction SilentlyContinue) {",
-        "    warn 'PdfCraft is running, so the state was not mirrored back to %APPDATA%\\PdfCraft. Quit it and uninstall again if you want that safety copy.'",
-        "    return",
-        "}",
-        "$previous = $ErrorActionPreference",
-        "$ErrorActionPreference = 'Continue'",
-        "$null = robocopy $data $legacy /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
-        "$code = $LASTEXITCODE",
-        "$ErrorActionPreference = $previous",
-        "if ($code -ge 8) { warn \"robocopy exit $code while mirroring '$data' back to '$legacy'.\" } else { info \"Mirrored '$data' back to '$legacy': a plain portable copy or the MSI installer reads that path, while this Scoop install uses the portable marker.\" }"
-    ],
     "bin": "pdfcraft-cli.exe",
     "shortcuts": [
         [
@@ -72,16 +22,20 @@
             "PdfCraft"
         ]
     ],
-    "persist": "PdfCraftData",
     "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/storytold/pdfcraft/releases/download/v$version/pdfcraft-$version-windows-x64-portable.zip"
+                "url": "https://github.com/storytold/pdfcraft/releases/download/v$version/pdfcraft-$version-windows-x64-portable.zip",
+                "extract_dir": "pdfcraft-$version-windows-x64-portable"
             },
             "arm64": {
-                "url": "https://github.com/storytold/pdfcraft/releases/download/v$version/pdfcraft-$version-windows-arm64-portable.zip"
+                "url": "https://github.com/storytold/pdfcraft/releases/download/v$version/pdfcraft-$version-windows-arm64-portable.zip",
+                "extract_dir": "pdfcraft-$version-windows-arm64-portable"
             }
+        },
+        "hash": {
+            "url": "$baseurl/SHA256SUMS.txt"
         }
     }
 }
