@@ -1,12 +1,9 @@
 {
     "version": "0.1.22",
-    "description": "A native music player you extend with plugins.",
-    "homepage": "https://music.egoist.dev/",
-    "license": "AGPL-3.0-only",
-    "notes": [
-        "MyGo Music can update itself. Turn off 'Download and Install Automatically' in Settings > Updates and run 'scoop update mygo-music' instead.",
-        "Closing its window leaves it in the tray: quit it from the tray menu before updating."
-    ],
+    "description": "A native music player you extend with plugins",
+    "homepage": "https://github.com/egoist/mygo-music",
+    "license": "AGPL-3.0",
+    "notes": "User data is persisted through a junction at '%APPDATA%\\MyGo Music' and survives updates and uninstalls.",
     "architecture": {
         "64bit": {
             "url": "https://github.com/egoist/mygo-music/releases/download/v0.1.22/mygo-music-0.1.22-windows-amd64.tar.gz",
@@ -23,6 +20,48 @@
             "MyGo Music"
         ]
     ],
+    "pre_install": [
+        "Write-Host ''",
+        "$dataDir = \"$env:APPDATA\\MyGo Music\"",
+        "New-Item -Path $persist_dir -ItemType Directory -Force -ErrorAction Stop | Out-Null",
+        "$existingItem = Get-Item -LiteralPath $dataDir -Force -ErrorAction SilentlyContinue",
+        "if ($existingItem -and ($existingItem.Attributes -band [IO.FileAttributes]::ReparsePoint)) {",
+        "    if ($existingItem.LinkType -eq 'Junction' -and $existingItem.Target -eq $persist_dir) {",
+        "        return",
+        "    }",
+        "    throw \"Cannot persist MyGo Music data: '$dataDir' is an unsupported link or points to another directory.\"",
+        "}",
+        "if ($existingItem -and !$existingItem.PSIsContainer) {",
+        "    throw \"Cannot persist MyGo Music data: '$dataDir' is not a directory.\"",
+        "}",
+        "if ($existingItem) {",
+        "    info \"Moving MyGo Music data from '$dataDir' to '$persist_dir'...\"",
+        "    Get-ChildItem -LiteralPath $dataDir -Force -ErrorAction Stop | Move-Item -Destination $persist_dir -ErrorAction Stop",
+        "    [IO.Directory]::Delete($dataDir)",
+        "}",
+        "info \"Creating MyGo Music data junction from '$dataDir' to '$persist_dir'...\"",
+        "New-Item -Path $dataDir -ItemType Junction -Target $persist_dir -ErrorAction Stop | Out-Null"
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -eq 'uninstall') {",
+            "    Write-Host ''",
+            "    $dataDir = \"$env:APPDATA\\MyGo Music\"",
+            "    $existingItem = Get-Item -LiteralPath $dataDir -Force -ErrorAction SilentlyContinue",
+            "    if ($existingItem -and ($existingItem.LinkType -eq 'Junction') -and ($existingItem.Target -eq $persist_dir)) {",
+            "        info \"Removing MyGo Music data junction at '$dataDir'...\"",
+            "        [IO.Directory]::Delete($dataDir)",
+            "    }",
+            "    if ($purge) {",
+            "        $localDataDirs = @(\"$env:LOCALAPPDATA\\MyGo\", \"$env:LOCALAPPDATA\\MyGo Music\")",
+            "        foreach ($localDataDir in $localDataDirs) {",
+            "            info \"Removing MyGo Music local data at '$localDataDir'...\"",
+            "            Remove-Item -LiteralPath $localDataDir -Recurse -Force -ErrorAction SilentlyContinue",
+            "        }",
+            "    }",
+            "}"
+        ]
+    },
     "checkver": {
         "github": "https://github.com/egoist/mygo-music"
     },
@@ -36,7 +75,8 @@
             }
         },
         "hash": {
-            "url": "$baseurl/SHA256SUMS"
+            "url": "https://github.com/egoist/mygo-music/releases/download/v$version/SHA256SUMS",
+            "regex": "$sha256\\s+$basename"
         }
     }
 }

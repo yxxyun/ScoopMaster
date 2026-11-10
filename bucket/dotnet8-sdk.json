@@ -1,51 +1,128 @@
 {
-    "version": "8.0.427",
+    "version": "8.0.428",
     "description": ".NET is a free, cross-platform, open source developer platform for building many different types of applications.",
     "homepage": "https://www.microsoft.com/net/",
     "license": "MIT",
+    "notes": [
+        "You can switch to the required dotnet SDK version at any time.",
+        "To do so, use the 'scoop reset' command with similar examples as shown below:",
+        "# Reseting to the latest .NET SDK (LTS) version",
+        "'scoop reset dotnet-sdk'",
+        "# Reseting to a specific .NET SDK version",
+        "'scoop reset dotnet-sdk@10.0.100'",
+        "# Reseting to the current .NET SDK (STS) version",
+        "'scoop reset dotnet-sdk-sts'",
+        "# Resetting to the latest .NET SDK (Preview) version",
+        "'scoop reset dotnet-sdk-preview'"
+    ],
     "suggest": {
-        "vcredist": "extras/vcredist2022"
+        "Visual C++ Redistributable": "vcredist",
+        ".NET SDK (STS)": "dotnet-sdk-sts",
+        ".NET SDK (LTS - preview)": "dotnet-sdk-preview"
     },
     "architecture": {
         "64bit": {
-            "url": "https://dotnetcli.azureedge.net/dotnet/Sdk/8.0.427/dotnet-sdk-8.0.427-win-x64.zip",
-            "hash": "sha512:a4dd6eb2bf2a2f6fb10997d3e044a229b23ad96a5c86d20494687e34ee73b537d7bd14488ce14cded6917f6778da4d66360e2734020b7ef487d0f29ab144489d"
-        },
-        "32bit": {
-            "url": "https://dotnetcli.azureedge.net/dotnet/Sdk/8.0.427/dotnet-sdk-8.0.427-win-x86.zip",
-            "hash": "sha512:07a22836fa94f0816b4ef5ccc9fa0d2d25770ea3f8e685f9f4539e0c89f7ed63c0900d107162908de3a6f0e8147b83c9e573a9231fb2e4274b04f43491142cf4"
+            "url": "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/8.0.428/dotnet-sdk-8.0.428-win-x64.zip",
+            "hash": "sha512:cce1dc5cfb2c5b73ddd9d3658f6009deb85be3a58dbec44a6dfe3910bb32b044ad2fc6bb28c77aded70c73270a204d207fe790dcb82ffca6c7b42c1335b51c21"
         },
         "arm64": {
-            "url": "https://dotnetcli.azureedge.net/dotnet/Sdk/8.0.427/dotnet-sdk-8.0.427-win-arm64.zip",
-            "hash": "sha512:c660ae75b27ffb56b2c1178884ee86eeb77c38c697c80c0110986962b4472995d1eac9d08044ca5b116ad8199d0b600c1f838c7fde2835c6cfdd147b25b9ccd2"
+            "url": "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/8.0.428/dotnet-sdk-8.0.428-win-arm64.zip",
+            "hash": "sha512:909437e6001bdd3b5f9a5a0914f990c165f5687570430442631dea8775ddbf5e6fb3eb7840cbbbaaf00d4830a205d1be68f4e048d4bb534ec5a03ced0f4b83f9"
+        },
+        "32bit": {
+            "url": "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/8.0.428/dotnet-sdk-8.0.428-win-x86.zip",
+            "hash": "sha512:b7c5aa90b8b87c86637afc94344ea7a1f5f1aeb65a28eed7c53c26b802be4e27d5c99ac2eecf42bd22f9457345b2049930304f1762f5ef07cf28e4a26cbab9b9"
         }
     },
-    "env_add_path": ".",
+    "bin": "dotnet.exe",
+    "env_add_path": [
+        ".",
+        "\\sdk\\8.0.428"
+    ],
     "env_set": {
         "DOTNET_ROOT": "$dir",
+        "DOTNET_HOST_PATH": "$dir",
+        "DOTNET_MULTILEVEL_LOOKUP": 0,
+        "DOTNET_CLI_TELEMETRY_OPTOUT": true,
         "MSBuildSDKsPath": "$dir\\sdk\\$version\\Sdks"
     },
-    "pre_uninstall": "info 'If the uninstall fails with a message saying that access is denied, you may need to log out of your current account, log back in and try again.'",
+    "pre_install": [
+        "# Move .NET SDK files only if the shared persist directory already exists",
+        "Write-Host",
+        "$sharedPersist = Join-Path (Resolve-Path \"$persist_dir\\..\").Path \"dotnet\"",
+        "Write-Host The \"$sharedPersist\" folder will be used to shared all dotnet-sdk* release",
+        "Write-Host \"   to add support to sdks and runtimes of dotnet installed by scoop\"",
+        "if (Test-Path \"$sharedPersist\") {",
+        "   (\"sdk\",\"sdk-manifests\",\"shared\") | ForEach-Object {",
+        "       $src = Join-Path $dir $_",
+        "       $dst = Join-Path $sharedPersist $_",
+        "       Write-Host \"Sharing the $_ folder into $sharedPersist\"",
+        "       New-Item -ItemType Directory -Path $dst -Force | Out-Null",
+        "       Copy-Item -Path (Join-Path $src \"*\") -Destination $dst -Recurse -Force",
+        "       Remove-Item -Path $src -Recurse -Force",
+        "   }",
+        "} else {",
+        "   Write-Host \"$sharedPersist\" does not exist. It will be created...",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$major = ($version -split '\\.')[0]",
+        "$sharedRoot = Join-Path (Resolve-Path \"$persist_dir\\..\").Path \"dotnet\"",
+        "if (Test-Path $sharedRoot) {",
+        "   Write-Host Removing any shared dotnet-sdk files for version \"${major}.*\"",
+        "   (\"sdk\",\"sdk-manifests\",\"shared\") | ForEach-Object {",
+        "      $root = Join-Path $sharedRoot $_",
+        "      if (Test-Path $root) {",
+        "         if ($_ -eq 'shared') {",
+        "            Get-ChildItem -LiteralPath $root -Directory -Force -ErrorAction SilentlyContinue | ForEach-Object {",
+        "               Get-ChildItem -LiteralPath $_.FullName -Directory -Force -ErrorAction SilentlyContinue | Where-Object { $_.Name -like \"${major}.*\" } | ForEach-Object {",
+        "                  Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue",
+        "               }",
+        "            }",
+        "         } else {",
+        "            Get-ChildItem -LiteralPath $root -Directory -Force -ErrorAction SilentlyContinue | Where-Object { $_.Name -like \"${major}.*\" } | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue }",
+        "         }",
+        "      }",
+        "   }",
+        "}"
+    ],
+    "persist": [
+        [
+            "sdk",
+            "../dotnet/sdk"
+        ],
+        [
+            "sdk-manifests",
+            "../dotnet/sdk-manifests"
+        ],
+        [
+            "shared",
+            "../dotnet/shared"
+        ]
+    ],
     "checkver": {
         "url": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json",
-        "jsonpath": "$..releases-index[?(@.channel-version == '8.0')].latest-sdk",
-        "regex": "([\\d.]+)"
+        "jsonpath": "$.releases-index[?(@.channel-version == '8.0')].latest-sdk"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://dotnetcli.azureedge.net/dotnet/Sdk/$version/dotnet-sdk-$version-win-x64.zip"
-            },
-            "32bit": {
-                "url": "https://dotnetcli.azureedge.net/dotnet/Sdk/$version/dotnet-sdk-$version-win-x86.zip"
+                "url": "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/$version/dotnet-sdk-$version-win-x64.zip"
             },
             "arm64": {
-                "url": "https://dotnetcli.azureedge.net/dotnet/Sdk/$version/dotnet-sdk-$version-win-arm64.zip"
+                "url": "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/$version/dotnet-sdk-$version-win-arm64.zip"
+            },
+            "32bit": {
+                "url": "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/$version/dotnet-sdk-$version-win-x86.zip"
             }
         },
         "hash": {
             "url": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/$majorVersion.$minorVersion/releases.json",
             "regex": "(?s)$basename.*?$sha512"
-        }
+        },
+        "env_add_path": [
+            ".",
+            "\\sdk\\$version"
+        ]
     }
 }

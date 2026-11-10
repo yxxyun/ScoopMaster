@@ -1,70 +1,20 @@
 {
     "version": "0.19.0",
-    "description": "Open-source video editor rebuilt in pure Rust: multi-track timeline, Lumetri-style colour, scopes, loudness metering and AAF/OTIO interchange",
+    "description": "Video editing, color and sound; an open-source, clean-room reimplementation of Adobe Premiere Pro, rebuilt in pure Rust",
     "homepage": "https://github.com/storytold/filmcraft",
-    "license": "MIT OR Apache-2.0",
-    "notes": [
-        "The portable build ships 'portable.txt' beside filmcraft.exe, so FilmCraft keeps its settings, autosave and logs in a 'data' folder next to the executable. Scoop junctions that folder to '$persist_dir\\data', so the data survives 'scoop update'.",
-        "While that marker is present nothing is written to %APPDATA%\\FilmCraft; delete 'portable.txt' in the install directory to go back to the per-user folder.",
-        "The first install copies an existing %APPDATA%\\FilmCraft into the persist folder, and the pre-uninstall hook mirrors it back as a safety copy; that also runs on 'scoop update'.",
-        "'filmcraft-cli.exe' is exposed as the 'filmcraft-cli' shim.",
-        "The portable zip does not register the file associations that the MSI installer adds.",
-        "The app has no built-in updater; use 'scoop update filmcraft' so the install and this manifest stay in sync."
-    ],
+    "license": "MIT|Apache-2.0",
     "architecture": {
         "64bit": {
             "url": "https://github.com/storytold/filmcraft/releases/download/v0.19.0/filmcraft-0.19.0-windows-x64-portable.zip",
             "hash": "b31f362b4767da4336f14b025ae92618b48e0a37b84e55905a6afc9fe51a5aae",
-            "installer": {
-                "script": [
-                    "$stage = \"$dir\\filmcraft-$version-windows-x64-portable\"",
-                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
-                    "Remove-Item $stage -ErrorAction Stop"
-                ]
-            }
+            "extract_dir": "filmcraft-0.19.0-windows-x64-portable"
         },
         "arm64": {
             "url": "https://github.com/storytold/filmcraft/releases/download/v0.19.0/filmcraft-0.19.0-windows-arm64-portable.zip",
             "hash": "bdfef7bbcb5f5e7a092ca20e5cb1da15909e3b382b0a66abf0cfeb83e771c70f",
-            "installer": {
-                "script": [
-                    "$stage = \"$dir\\filmcraft-$version-windows-arm64-portable\"",
-                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
-                    "Remove-Item $stage -ErrorAction Stop"
-                ]
-            }
+            "extract_dir": "filmcraft-0.19.0-windows-arm64-portable"
         }
     },
-    "pre_install": [
-        "$target = \"$persist_dir\\data\"",
-        "$legacy = \"$env:APPDATA\\FilmCraft\"",
-        "if (!(Test-Path $target) -and (Test-Path $legacy)) {",
-        "    if (Get-Process -Name 'filmcraft*' -ErrorAction SilentlyContinue) {",
-        "        abort 'FilmCraft is running, so %APPDATA%\\FilmCraft cannot be copied into Scoop persist safely. Quit FilmCraft, then run the install again.'",
-        "    }",
-        "    $previous = $ErrorActionPreference",
-        "    $ErrorActionPreference = 'Continue'",
-        "    $null = robocopy $legacy $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
-        "    $code = $LASTEXITCODE",
-        "    $ErrorActionPreference = $previous",
-        "    if ($code -ge 8) { warn \"robocopy exit $code while copying '$legacy' to '$target'; compare the two directories before relying on the new location.\" } else { info \"Copied '$legacy' to '$target'.\" }",
-        "}"
-    ],
-    "pre_uninstall": [
-        "$legacy = \"$env:APPDATA\\FilmCraft\"",
-        "$data = \"$persist_dir\\data\"",
-        "if (!(Test-Path $data) -or @(Get-ChildItem $data -Force).Count -eq 0) { return }",
-        "if (Get-Process -Name 'filmcraft*' -ErrorAction SilentlyContinue) {",
-        "    warn 'FilmCraft is running, so the state was not mirrored back to %APPDATA%\\FilmCraft. Quit it and uninstall again if you want that safety copy.'",
-        "    return",
-        "}",
-        "$previous = $ErrorActionPreference",
-        "$ErrorActionPreference = 'Continue'",
-        "$null = robocopy $data $legacy /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
-        "$code = $LASTEXITCODE",
-        "$ErrorActionPreference = $previous",
-        "if ($code -ge 8) { warn \"robocopy exit $code while mirroring '$data' back to '$legacy'.\" } else { info \"Mirrored '$data' back to '$legacy': a plain portable copy or the MSI installer reads that path, while this Scoop install uses the portable marker.\" }"
-    ],
     "bin": "filmcraft-cli.exe",
     "shortcuts": [
         [
@@ -72,16 +22,20 @@
             "FilmCraft"
         ]
     ],
-    "persist": "data",
     "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/storytold/filmcraft/releases/download/v$version/filmcraft-$version-windows-x64-portable.zip"
+                "url": "https://github.com/storytold/filmcraft/releases/download/v$version/filmcraft-$version-windows-x64-portable.zip",
+                "extract_dir": "filmcraft-$version-windows-x64-portable"
             },
             "arm64": {
-                "url": "https://github.com/storytold/filmcraft/releases/download/v$version/filmcraft-$version-windows-arm64-portable.zip"
+                "url": "https://github.com/storytold/filmcraft/releases/download/v$version/filmcraft-$version-windows-arm64-portable.zip",
+                "extract_dir": "filmcraft-$version-windows-arm64-portable"
             }
+        },
+        "hash": {
+            "url": "$baseurl/SHA256SUMS.txt"
         }
     }
 }

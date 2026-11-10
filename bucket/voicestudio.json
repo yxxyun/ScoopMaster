@@ -14,7 +14,9 @@
     },
     "pre_install": [
         "Remove-Item \"$dir\\resources\" -Recurse -Force -ErrorAction SilentlyContinue",
-        "Get-Item \"$dir\\`$PLUGINSDIR\\app*.7z\" | Select-Object -First 1 | Expand-7zipArchive -DestinationPath $dir",
+        "$payload = Get-ChildItem -LiteralPath \"$dir\\`$PLUGINSDIR\" -Filter 'app*.7z' -File | Select-Object -First 1",
+        "if (-not $payload) { throw 'VoiceStudio nested app archive was not found.' }",
+        "$payload | Expand-7zipArchive -DestinationPath $dir",
         "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Force -Recurse -ErrorAction Ignore"
     ],
     "bin": "VoiceStudio.exe",
@@ -37,5 +39,10 @@
             "url": "$baseurl/SHA256SUMS.txt",
             "regex": "$sha256\\s+\\*?$basename"
         }
-    }
+    },
+    "##": "Installer Type: NSIS",
+    "notes": [
+        "This is the official Electron/NSIS Windows setup package. Scoop extracts the outer NSIS container and the embedded $PLUGINSDIR\\app-64.7z payload; it does not execute the vendor installer.",
+        "VoiceStudio stores its projects, voices, runtime, and model cache outside the Scoop version directory. Removing the Scoop app does not clean those user-data folders."
+    ]
 }
