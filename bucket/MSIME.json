@@ -1,53 +1,59 @@
 {
     "version": "0.13.2",
-    "description": "水杉输入法，基于 TSF 的开源中文输入法，支持全拼/双拼/五笔、辅助码与 AI 联想 | Open-source Chinese IME for Windows 10/11 built on TSF",
-    "homepage": "https://github.com/metasequoiaime/MSIME-Windows",
+    "description": "Metasequoia IME (MSIME), a free and open-source Chinese input method for Windows built on TSF.",
+    "homepage": "https://msime.app/",
     "license": "GPL-3.0-only",
+    "##": "scoop update runs the uninstaller hook of the old manifest before installing the new version (scoop-update.ps1), and the vendor uninstaller deletes the user data directory, so the uninstaller hook returns early when Scoop's $cmd is 'update'.",
     "notes": [
-        "安装与卸载时会弹出 UAC 提权确认（官方 Inno Setup 安装器需要管理员权限）。",
-        "需要 Visual C++ 2015-2022 Redistributable (x64) 14.40 及以上（可装 nonportable/vcredist2022），缺失时输入法进程会静默闪退。",
-        "程序装在 Program Files\\metasequoiaime，TSF DLL 装在 System32\\IME\\MetasequoiaIME（uiAccess 与游戏 Trusted Mode 的硬性要求）；词库、配置、皮肤数据 persist 在 persist\\msime\\data。",
-        "安装后用 Win+空格 切换到「水杉输入法」；设置入口在开始菜单「Metasequoia IME 水杉输入法」。",
-        "scoop uninstall 会随官方卸载器一并删除数据目录，需要保留请先备份 persist\\msime\\data。"
+        "The setup registers a TSF input method for all users, so installing and uninstalling both need administrator rights and raise a UAC prompt.",
+        "This package only wraps the official setup: program files go to %ProgramFiles%\\metasequoiaime and the TSF DLLs to %SystemRoot%\\System32%\\IME\\MetasequoiaIME, outside the Scoop apps directory.",
+        "User data (settings, learned words, skins) is kept in %LOCALAPPDATA%\\metasequoiaime. 'scoop update' keeps it by skipping the vendor uninstaller, while a real 'scoop uninstall' runs that uninstaller, which deletes the directory.",
+        "The vendor uninstaller leaves the input method in the Windows language list after removing its files; delete it under Settings > Time & language > Language & region if Win+Space still lists it.",
+        "The setup is Authenticode-signed by 'Open Source Developer LU FAN' (SignPath Foundation); Scoop only verifies the SHA256, so check the signature if you need that guarantee too.",
+        "The x64 Microsoft Visual C++ 2015-2022 Redistributable is required; without it the server exits and the input method cannot be turned on.",
+        "Press Win+Space to switch to the input method after installing."
     ],
-    "url": "https://github.com/metasequoiaime/msime-windows/releases/download/v0.13.2/MetasequoiaIME_Setup_v0.13.2.exe",
-    "hash": "34db47d0d6894164f83c665cccb809de9e8e3ff36f975fed63d3069f02108a7d",
+    "suggest": {
+        "Microsoft Visual C++ 2015-2022 Redistributable (x64)": "extras/vcredist2022"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/metasequoiaime/MSIME-Windows/releases/download/v0.13.2/MetasequoiaIME_Setup_v0.13.2.exe",
+            "hash": "34db47d0d6894164f83c665cccb809de9e8e3ff36f975fed63d3069f02108a7d"
+        }
+    },
     "installer": {
         "script": [
-            "if (-not (Test-Path \"$persist_dir\\data\")) { New-Item -ItemType Directory -Path \"$persist_dir\\data\" -Force | Out-Null }",
-            "Write-Host 'Running MetasequoiaIME installer (confirm the UAC prompt)...' -f Cyan",
-            "$proc = Start-Process -FilePath \"$dir\\$fname\" -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', \"/DATADIR=`\"$persist_dir\\data`\"\") -Wait -PassThru",
-            "if ($proc.ExitCode -notin @(0, 1641, 3010)) { throw \"Installer exited with code $($proc.ExitCode).\" }",
-            "$gone = -not (Test-Path \"$dir\\$fname\")",
-            "for ($i = 0; $i -lt 3 -and -not $gone; $i++) {",
-            "    Remove-Item \"$dir\\$fname\" -Force -ErrorAction SilentlyContinue",
-            "    $gone = -not (Test-Path \"$dir\\$fname\")",
-            "    if (-not $gone) { Start-Sleep 2 }",
-            "}",
-            "if (-not $gone) { Write-Host \"Could not delete installer '$fname' (locked by antivirus?); it will be removed with this version directory on cleanup.\" -f Yellow }"
+            "$setup = Get-ChildItem -LiteralPath $dir -Filter '*.exe' | Select-Object -First 1",
+            "if (!$setup) { abort 'The Metasequoia IME setup was not downloaded.' }",
+            "$exitCodes = @{ 3010 = 'A restart is required to finish the installation.' }",
+            "if (!(Invoke-ExternalCommand -FilePath $setup.FullName -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-' -Activity 'Running the Metasequoia IME setup' -RunAs -ContinueExitCodes $exitCodes)) { abort 'The Metasequoia IME setup failed.' }",
+            "Remove-Item -LiteralPath $setup.FullName -Force -ErrorAction SilentlyContinue"
         ]
     },
-    "post_install": [
-        "try { Start-Process \"$env:ProgramFiles\\metasequoiaime\\server\\MetasequoiaImeServer.exe\" } catch { }",
-        "try { Start-Process \"$env:ProgramFiles\\metasequoiaime\\server\\MetasequoiaImeWatchdog.exe\" } catch { }"
-    ],
-    "pre_uninstall": [
-        "Remove-Item \"$dir\\MetasequoiaIME_Setup_*.exe\" -Force -ErrorAction SilentlyContinue"
-    ],
     "uninstaller": {
         "script": [
-            "$uninst = Get-ChildItem \"$env:ProgramFiles\\metasequoiaime\" -Filter 'unins*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1",
-            "if ($uninst) {",
-            "    Write-Host 'Running MetasequoiaIME uninstaller (confirm the UAC prompt)...' -f Cyan",
-            "    $proc = Start-Process -FilePath $uninst.FullName -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') -Wait -PassThru",
-            "    if ($proc.ExitCode -notin @(0, 1641, 3010)) { throw \"Uninstaller exited with code $($proc.ExitCode).\" }",
-            "} else {",
-            "    Write-Host 'Official uninstaller not found (already uninstalled?), skipping.'",
-            "}"
+            "$programFiles = if ($env:ProgramW6432) { $env:ProgramW6432 } else { $env:ProgramFiles }",
+            "if ($cmd -eq 'update') {",
+            "    Write-Host 'Skipping the vendor uninstaller during update: it would delete %LOCALAPPDATA%\\metasequoiaime.'",
+            "    return",
+            "}",
+            "$uninstaller = Get-ChildItem -LiteralPath (Join-Path $programFiles 'metasequoiaime') -Filter 'unins*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1",
+            "$exitCodes = @{ 3010 = 'A restart is required to finish the uninstallation.' }",
+            "if ($uninstaller -and !(Invoke-ExternalCommand -FilePath $uninstaller.FullName -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Activity 'Running the Metasequoia IME uninstaller' -RunAs -ContinueExitCodes $exitCodes)) { abort 'The Metasequoia IME uninstaller failed.' }"
         ]
     },
-    "checkver": "github",
+    "checkver": {
+        "github": "https://github.com/metasequoiaime/MSIME-Windows"
+    },
     "autoupdate": {
-        "url": "https://github.com/metasequoiaime/msime-windows/releases/download/v$version/MetasequoiaIME_Setup_v$version.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/metasequoiaime/MSIME-Windows/releases/download/v$version/MetasequoiaIME_Setup_v$version.exe"
+            }
+        },
+        "hash": {
+            "mode": "github"
+        }
     }
 }

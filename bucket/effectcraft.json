@@ -1,89 +1,41 @@
 {
     "version": "0.23.1",
-    "description": "Open-source motion graphics and visual effects built in pure Rust: compositions, keyframes, tracking and rotoscoping",
-    "homepage": "https://github.com/storytold/effectcraft",
-    "license": "MIT OR Apache-2.0",
-    "notes": [
-        "EffectCraft's data directory (settings, autosave, logs) is redirected to '$persist_dir\\config' through the EFFECTCRAFT_CONFIG_DIR environment variable, so it lives in Scoop's persist store and survives 'scoop update'.",
-        "EFFECTCRAFT_CONFIG_DIR is a USER-level environment variable, so any other EffectCraft installation (the MSI build, for example) uses this directory too.",
-        "The first install copies an existing %APPDATA%\\EffectCraft into the persist folder. 'scoop uninstall' removes the variable and EffectCraft falls back to %APPDATA%\\EffectCraft, so the pre-uninstall hook mirrors the state back there first; that also runs on 'scoop update'.",
-        "'effectcraft-cli.exe' is exposed as the 'effectcraft-cli' shim.",
-        "The portable zip does not register the file associations that the MSI installer adds.",
-        "The app has no built-in updater; use 'scoop update effectcraft' so the install and this manifest stay in sync."
+    "description": "Motion graphics and visual effects; an open-source, clean-room reimplementation of Adobe After Effects, rebuilt in pure Rust",
+    "homepage": "https://getartcraft.com/apps/effectcraft",
+    "license": "Apache-2.0",
+    "url": "https://github.com/storytold/effectcraft/releases/download/v0.23.1/effectcraft-0.23.1-windows-x64-portable.zip",
+    "hash": "9697f99ba8b8c2c36d791a19367ec39ffa0a6f71e849f716e07d1fc69b531310",
+    "extract_dir": "effectcraft-0.23.1-windows-x64-portable",
+    "bin": [
+        "effectcraft.exe",
+        "effectcraft-cli.exe"
     ],
     "architecture": {
-        "64bit": {
-            "url": "https://github.com/storytold/effectcraft/releases/download/v0.23.1/effectcraft-0.23.1-windows-x64-portable.zip",
-            "hash": "9697f99ba8b8c2c36d791a19367ec39ffa0a6f71e849f716e07d1fc69b531310",
-            "installer": {
-                "script": [
-                    "$stage = \"$dir\\effectcraft-$version-windows-x64-portable\"",
-                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
-                    "Remove-Item $stage -ErrorAction Stop"
-                ]
-            }
+        "32bit": {
+            "url": "https://github.com/storytold/effectcraft/releases/download/v0.4.0/effectcraft-0.4.0-windows-x86-portable.zip",
+            "hash": "0e786fa2b03ecb75fdcd979f3ffb766fa05a41e66acb4e377ca3683d118f583f",
+            "extract_dir": "effectcraft-0.4.0-windows-x86-portable"
         },
         "arm64": {
-            "url": "https://github.com/storytold/effectcraft/releases/download/v0.23.1/effectcraft-0.23.1-windows-arm64-portable.zip",
-            "hash": "9612097232dfbdc95457e6f96706c14f056ac8182f818ece36c43c9665f14ca2",
-            "installer": {
-                "script": [
-                    "$stage = \"$dir\\effectcraft-$version-windows-arm64-portable\"",
-                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
-                    "Remove-Item $stage -ErrorAction Stop"
-                ]
-            }
+            "url": "https://github.com/storytold/effectcraft/releases/download/v0.4.0/effectcraft-0.4.0-windows-arm64-portable.zip",
+            "hash": "c8616ea63e9c2cd866f285f403a058b2817644101e5d3ddcc34da912e1761ca0",
+            "extract_dir": "effectcraft-0.4.0-windows-arm64-portable"
         }
     },
-    "pre_install": [
-        "$target = \"$persist_dir\\config\"",
-        "$legacy = \"$env:APPDATA\\EffectCraft\"",
-        "if (!(Test-Path $target) -and (Test-Path $legacy)) {",
-        "    if (Get-Process -Name 'effectcraft*' -ErrorAction SilentlyContinue) {",
-        "        abort 'EffectCraft is running, so %APPDATA%\\EffectCraft cannot be copied into Scoop persist safely. Quit EffectCraft, then run the install again.'",
-        "    }",
-        "    $previous = $ErrorActionPreference",
-        "    $ErrorActionPreference = 'Continue'",
-        "    $null = robocopy $legacy $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
-        "    $code = $LASTEXITCODE",
-        "    $ErrorActionPreference = $previous",
-        "    if ($code -ge 8) { warn \"robocopy exit $code while copying '$legacy' to '$target'; compare the two directories before relying on the new location.\" } else { info \"Copied '$legacy' to '$target'.\" }",
-        "}"
-    ],
-    "pre_uninstall": [
-        "$legacy = \"$env:APPDATA\\EffectCraft\"",
-        "$data = \"$persist_dir\\config\"",
-        "if (!(Test-Path $data) -or @(Get-ChildItem $data -Force).Count -eq 0) { return }",
-        "if (Get-Process -Name 'effectcraft*' -ErrorAction SilentlyContinue) {",
-        "    warn 'EffectCraft is running, so the state was not mirrored back to %APPDATA%\\EffectCraft. Quit it and uninstall again if you want that safety copy.'",
-        "    return",
-        "}",
-        "$previous = $ErrorActionPreference",
-        "$ErrorActionPreference = 'Continue'",
-        "$null = robocopy $data $legacy /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
-        "$code = $LASTEXITCODE",
-        "$ErrorActionPreference = $previous",
-        "if ($code -ge 8) { warn \"robocopy exit $code while mirroring '$data' back to '$legacy'.\" } else { info \"Mirrored '$data' back to '$legacy': scoop removes EFFECTCRAFT_CONFIG_DIR on uninstall and EffectCraft falls back to that path.\" }"
-    ],
-    "bin": "effectcraft-cli.exe",
-    "shortcuts": [
-        [
-            "effectcraft.exe",
-            "EffectCraft"
-        ]
-    ],
-    "persist": "config",
-    "env_set": {
-        "EFFECTCRAFT_CONFIG_DIR": "$persist_dir\\config"
+    "checkver": {
+        "github": "https://github.com/storytold/effectcraft"
     },
-    "checkver": "github",
     "autoupdate": {
+        "url": "https://github.com/storytold/effectcraft/releases/download/v$version/effectcraft-$version-windows-x64-portable.zip",
+        "extract_dir": "effectcraft-$version-windows-x64-portable",
         "architecture": {
-            "64bit": {
-                "url": "https://github.com/storytold/effectcraft/releases/download/v$version/effectcraft-$version-windows-x64-portable.zip"
+            "32bit": {
+                "url": "https://github.com/storytold/effectcraft/releases/download/v$version/effectcraft-$version-windows-x86-portable.zip",
+                "extract_dir": "effectcraft-$version-windows-x86-portable"
             },
             "arm64": {
-                "url": "https://github.com/storytold/effectcraft/releases/download/v$version/effectcraft-$version-windows-arm64-portable.zip"
+                "url": "https://github.com/storytold/effectcraft/releases/download/v$version/effectcraft-$version-windows-arm64-portable.zip",
+                "extract_dir": "effectcraft-$version-windows-arm64-portable"
             }
         }
     }
