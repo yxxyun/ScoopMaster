@@ -1,89 +1,41 @@
 {
-    "version": "0.19.0",
-    "description": "Open-source computer-aided design and drafting in pure Rust: floor plans, dimensions, schedules and a command line",
+    "version": "0.20.0",
+    "description": "CADCraft: computer-aided design and drafting, an open-source clean-room AutoCAD-style app in pure Rust",
     "homepage": "https://github.com/storytold/cadcraft",
-    "license": "MIT OR Apache-2.0",
-    "notes": [
-        "CADCraft's data directory (settings, autosave, logs) is redirected to '$persist_dir\\config' through the CADCRAFT_CONFIG_DIR environment variable, so it lives in Scoop's persist store and survives 'scoop update'.",
-        "CADCRAFT_CONFIG_DIR is a USER-level environment variable, so any other CADCraft installation (the MSI build, for example) uses this directory too.",
-        "The first install copies an existing %APPDATA%\\CADCraft into the persist folder. 'scoop uninstall' removes the variable and CADCraft falls back to %APPDATA%\\CADCraft, so the pre-uninstall hook mirrors the state back there first; that also runs on 'scoop update'.",
-        "'cadcraft-cli.exe' is exposed as the 'cadcraft-cli' shim.",
-        "The portable zip does not register the file associations that the MSI installer adds.",
-        "The app has no built-in updater; use 'scoop update cadcraft' so the install and this manifest stay in sync."
+    "license": "Apache-2.0",
+    "url": "https://github.com/storytold/cadcraft/releases/download/v0.20.0/cadcraft-0.20.0-windows-x64-portable.zip",
+    "hash": "56fd63f9667aa27c47a98fcdc2f661668e7b9ef1b920a7f8cc97ba12a7d98859",
+    "extract_dir": "cadcraft-0.20.0-windows-x64-portable",
+    "bin": [
+        "cadcraft.exe",
+        "cadcraft-cli.exe"
     ],
     "architecture": {
-        "64bit": {
-            "url": "https://github.com/storytold/cadcraft/releases/download/v0.19.0/cadcraft-0.19.0-windows-x64-portable.zip",
-            "hash": "38fa68aafef23e0ebbef78721180634e8a24ce6f7c590bbaabf003e7e9d88731",
-            "installer": {
-                "script": [
-                    "$stage = \"$dir\\cadcraft-$version-windows-x64-portable\"",
-                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
-                    "Remove-Item $stage -ErrorAction Stop"
-                ]
-            }
+        "32bit": {
+            "url": "https://github.com/storytold/cadcraft/releases/download/v0.1.0/cadcraft-0.1.0-windows-x86-portable.zip",
+            "hash": "8db9e1349b2b844219973d60cdc31247a6a0a8d4bcba811dfe863d849efb32d5",
+            "extract_dir": "cadcraft-0.1.0-windows-x86-portable"
         },
         "arm64": {
-            "url": "https://github.com/storytold/cadcraft/releases/download/v0.19.0/cadcraft-0.19.0-windows-arm64-portable.zip",
-            "hash": "1bc4a43ab0cffd60751b517b4c5ee40e32548a9e620176a0d22e2877fb66f1ea",
-            "installer": {
-                "script": [
-                    "$stage = \"$dir\\cadcraft-$version-windows-arm64-portable\"",
-                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
-                    "Remove-Item $stage -ErrorAction Stop"
-                ]
-            }
+            "url": "https://github.com/storytold/cadcraft/releases/download/v0.1.0/cadcraft-0.1.0-windows-arm64-portable.zip",
+            "hash": "fa9ea12a2a7bdd7f050888e12ccffd8d8ee693b77c9f41020de68c72ee8b423b",
+            "extract_dir": "cadcraft-0.1.0-windows-arm64-portable"
         }
     },
-    "pre_install": [
-        "$target = \"$persist_dir\\config\"",
-        "$legacy = \"$env:APPDATA\\CADCraft\"",
-        "if (!(Test-Path $target) -and (Test-Path $legacy)) {",
-        "    if (Get-Process -Name 'cadcraft*' -ErrorAction SilentlyContinue) {",
-        "        abort 'CADCraft is running, so %APPDATA%\\CADCraft cannot be copied into Scoop persist safely. Quit CADCraft, then run the install again.'",
-        "    }",
-        "    $previous = $ErrorActionPreference",
-        "    $ErrorActionPreference = 'Continue'",
-        "    $null = robocopy $legacy $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
-        "    $code = $LASTEXITCODE",
-        "    $ErrorActionPreference = $previous",
-        "    if ($code -ge 8) { warn \"robocopy exit $code while copying '$legacy' to '$target'; compare the two directories before relying on the new location.\" } else { info \"Copied '$legacy' to '$target'.\" }",
-        "}"
-    ],
-    "pre_uninstall": [
-        "$legacy = \"$env:APPDATA\\CADCraft\"",
-        "$data = \"$persist_dir\\config\"",
-        "if (!(Test-Path $data) -or @(Get-ChildItem $data -Force).Count -eq 0) { return }",
-        "if (Get-Process -Name 'cadcraft*' -ErrorAction SilentlyContinue) {",
-        "    warn 'CADCraft is running, so the state was not mirrored back to %APPDATA%\\CADCraft. Quit it and uninstall again if you want that safety copy.'",
-        "    return",
-        "}",
-        "$previous = $ErrorActionPreference",
-        "$ErrorActionPreference = 'Continue'",
-        "$null = robocopy $data $legacy /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
-        "$code = $LASTEXITCODE",
-        "$ErrorActionPreference = $previous",
-        "if ($code -ge 8) { warn \"robocopy exit $code while mirroring '$data' back to '$legacy'.\" } else { info \"Mirrored '$data' back to '$legacy': scoop removes CADCRAFT_CONFIG_DIR on uninstall and CADCraft falls back to that path.\" }"
-    ],
-    "bin": "cadcraft-cli.exe",
-    "shortcuts": [
-        [
-            "cadcraft.exe",
-            "CADCraft"
-        ]
-    ],
-    "persist": "config",
-    "env_set": {
-        "CADCRAFT_CONFIG_DIR": "$persist_dir\\config"
+    "checkver": {
+        "github": "https://github.com/storytold/cadcraft"
     },
-    "checkver": "github",
     "autoupdate": {
+        "url": "https://github.com/storytold/cadcraft/releases/download/v$version/cadcraft-$version-windows-x64-portable.zip",
+        "extract_dir": "cadcraft-$version-windows-x64-portable",
         "architecture": {
-            "64bit": {
-                "url": "https://github.com/storytold/cadcraft/releases/download/v$version/cadcraft-$version-windows-x64-portable.zip"
+            "32bit": {
+                "url": "https://github.com/storytold/cadcraft/releases/download/v$version/cadcraft-$version-windows-x86-portable.zip",
+                "extract_dir": "cadcraft-$version-windows-x86-portable"
             },
             "arm64": {
-                "url": "https://github.com/storytold/cadcraft/releases/download/v$version/cadcraft-$version-windows-arm64-portable.zip"
+                "url": "https://github.com/storytold/cadcraft/releases/download/v$version/cadcraft-$version-windows-arm64-portable.zip",
+                "extract_dir": "cadcraft-$version-windows-arm64-portable"
             }
         }
     }

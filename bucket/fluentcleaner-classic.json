@@ -1,19 +1,31 @@
 {
     "version": "26.09.01",
-    "description": "A real WinUI desktop cleaner with terminal control and multi-database support",
+    "description": "Lightweight Windows system cleaning tool built with .NET Framework 4.8 and WinForms",
     "homepage": "https://github.com/builtbybel/FluentCleaner",
     "license": "MIT",
+    "notes": "FluentCleaner Classic needs .NET Framework 4.8 (built into Windows 10 1903+ and Windows 11). Settings, the 'Custom' cleaners folder and Winapp3.ini are kept in the app folder and survive updates. Silent cleanup: 'FluentCleaner.Classic.exe /AUTO' (log: %APPDATA%\\FluentCleaner\\auto.log).",
     "architecture": {
         "64bit": {
             "url": "https://github.com/builtbybel/FluentCleaner/releases/download/26.09.01/FluentCleaner-Classic-net48.zip",
             "hash": "42703e673cff81eb9d2ec7f8eacaaf93fa009915ffca40e54b63ba789d80fe85"
         }
     },
-    "notes": [
-        "Optional: download Custom.zip and extract to $persist_dir for additional tools:",
-        "https://github.com/builtbybel/FluentCleaner/releases/download/26.09.01/Custom.zip"
-    ],
     "extract_dir": "FluentCleaner-Classic-net48",
+    "pre_install": [
+        "# Older installs keep settings in %APPDATA%, a file both editions share; seed the portable file from there",
+        "if ((Test-Path \"$env:APPDATA\\FluentCleaner\\settings.json\") -and -not (Test-Path \"$persist_dir\\settings.json\")) {",
+        "    info \"Migrating settings from '$env:APPDATA\\FluentCleaner\\settings.json' to '$dir\\settings.json'\"",
+        "    Copy-Item \"$env:APPDATA\\FluentCleaner\\settings.json\" \"$dir\\settings.json\" -Force",
+        "}",
+        "# Scoop's persist turns a missing path into a directory, so these files must exist before persist runs",
+        "if ((-not (Test-Path \"$persist_dir\\settings.json\")) -and (-not (Test-Path \"$dir\\settings.json\"))) {",
+        "    New-Item \"$dir\\settings.json\" -ItemType File -Force | Out-Null",
+        "    Set-Content -Path \"$dir\\settings.json\" -Value '{}'",
+        "}",
+        "if ((-not (Test-Path \"$persist_dir\\Winapp3.ini\")) -and (-not (Test-Path \"$dir\\Winapp3.ini\"))) {",
+        "    New-Item \"$dir\\Winapp3.ini\" -ItemType File -Force | Out-Null",
+        "}"
+    ],
     "bin": "FluentCleaner.Classic.exe",
     "shortcuts": [
         [
@@ -21,20 +33,20 @@
             "FluentCleaner Classic"
         ]
     ],
-    "persist": "Custom",
+    "persist": [
+        "Custom",
+        "settings.json",
+        "Winapp3.ini"
+    ],
     "checkver": {
-        "github": "https://github.com/builtbybel/FluentCleaner",
-        "regex": "/releases/tag/((?:classic-)?[\\d.]+)"
+        "url": "https://api.github.com/repos/builtbybel/FluentCleaner/releases?per_page=100",
+        "regex": "https://github\\.com/builtbybel/FluentCleaner/releases/download/(?<version>[\\d.]+)/FluentCleaner-Classic-net48\\.zip"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
                 "url": "https://github.com/builtbybel/FluentCleaner/releases/download/$version/FluentCleaner-Classic-net48.zip"
             }
-        },
-        "notes": [
-            "Optional: download Custom.zip and extract to $persist_dir for additional tools:",
-            "https://github.com/builtbybel/FluentCleaner/releases/download/$version/Custom.zip"
-        ]
+        }
     }
 }

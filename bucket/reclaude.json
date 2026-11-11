@@ -1,0 +1,66 @@
+{
+    "version": "v1.8.3",
+    "description": "ReClaude CLI - launcher that runs official Claude Code / Codex through ReClaude-managed Anthropic accounts (creates reclaude/rec/recodex/recx entries)",
+    "homepage": "https://www.reclaude.ai",
+    "license": "Unknown",
+    "notes": [
+        "recshim 原生命令入口: reclaude / rec / recodex / recx 四个命令 (argv[0] 分发, 与官方 setup 行为一致, 无 BAT 中断提示)",
+        "入口处已拦截 update / setup / uninstall (recodex app update 不受影响); 升级请用 scoop update reclaude",
+        "登录: reclaude login (Claude) / recodex login (Codex); Claude Code 首次运行时自动下载",
+        "文档: https://docs.reclaude.ai/cli/install"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://dl.reclaude.ai/v1.8.3/reclaude-windows-amd64.exe",
+            "hash": "00eeaf00ba7114aba9589881003f99f9ec345ce8de8268fde2c1f54d1fbf73c1"
+        },
+        "arm64": {
+            "url": "https://dl.reclaude.ai/v1.8.3/reclaude-windows-arm64.exe",
+            "hash": "1c581cf468946007cbf6e3cef05bff8bf34721b19547799df94fc265d3f4b160"
+        }
+    },
+    "pre_install": [
+        "$arch = if ($architecture -eq 'arm64') { 'arm64' } else { 'amd64' }",
+        "$asset = \"recshim-$arch.exe\"",
+        "$cand = @()",
+        "if ($bucketdir) { $cand += Join-Path (Join-Path $bucketdir 'assets') $asset }",
+        "if ($bucket) { $cand += Join-Path (Join-Path (Join-Path $env:USERPROFILE 'scoop\\buckets') $bucket) (Join-Path 'assets' $asset) }",
+        "$cand += Join-Path $env:USERPROFILE \"scoop\\buckets\\*\\assets\\$asset\"",
+        "$src = $cand | Where-Object { Test-Path $_ } | Select-Object -First 1",
+        "if (-not $src) { throw \"recshim asset not found: $asset\" }",
+        "Copy-Item $src (Join-Path $dir 'recshim.exe')",
+        "foreach ($n in @('reclaude', 'rec', 'recodex', 'recx')) {",
+        "    $link = Join-Path $dir \"$n.exe\"",
+        "    if (-not (Test-Path $link)) { New-Item -ItemType HardLink -Path $link -Target (Join-Path $dir 'recshim.exe') -ErrorAction SilentlyContinue | Out-Null }",
+        "    if (-not (Test-Path $link)) { Copy-Item (Join-Path $dir 'recshim.exe') $link }",
+        "}"
+    ],
+    "bin": [
+        ["reclaude.exe", "reclaude"],
+        ["rec.exe", "rec"],
+        ["recodex.exe", "recodex"],
+        ["recx.exe", "recx"]
+    ],
+    "checkver": {
+        "url": "https://dl.reclaude.ai/stable.json",
+        "jsonpath": "$.version"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://dl.reclaude.ai/$version/reclaude-windows-amd64.exe",
+                "hash": {
+                    "url": "https://dl.reclaude.ai/stable.json",
+                    "jsonpath": "$.binaries['windows-amd64'].sha256"
+                }
+            },
+            "arm64": {
+                "url": "https://dl.reclaude.ai/$version/reclaude-windows-arm64.exe",
+                "hash": {
+                    "url": "https://dl.reclaude.ai/stable.json",
+                    "jsonpath": "$.binaries['windows-arm64'].sha256"
+                }
+            }
+        }
+    }
+}

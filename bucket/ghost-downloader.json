@@ -1,19 +1,15 @@
 {
     "version": "4.5.1",
-    "description": "A cross-platform fluent-design AI-boost multi-threaded downloader built with Python.",
-    "homepage": "https://gd3.top/",
-    "license": "GPL-3.0-or-later",
+    "description": "跨平台多线程下载器，支持 HTTP/FTP/BitTorrent/M3U8/MPEG-DASH/eD2k，可嗅探网页媒体并录制直播流。",
+    "homepage": "https://gd.xychr.com/",
+    "license": "GPL-3.0",
     "architecture": {
         "64bit": {
             "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v4.5.1/Ghost-Downloader-v4.5.1-Windows-x86_64.zip",
             "hash": "aa11ac5a12f92e1825fd0dd78e50380eca2ae51d019fb93e39c2ca9e79468f37"
-        },
-        "arm64": {
-            "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v4.5.1/Ghost-Downloader-v4.5.1-Windows-arm64.zip",
-            "hash": "c4de57214e377051bce7e2b20eb5979ecac3453597dae2d6bb8e82b83d2c6a81"
         }
     },
-    "extract_dir": "dist\\Ghost-Downloader-3.dist",
+    "bin": "bin\\ghd.exe",
     "shortcuts": [
         [
             "Ghost-Downloader-3.exe",
@@ -21,23 +17,18 @@
         ]
     ],
     "pre_install": [
-        "if (!(Test-Path \"$persist_dir\\Ghost Downloader 配置文件.json\") -or !(Get-Item \"$persist_dir\\Ghost Downloader 配置文件.json\").Length) {",
-        "    New-Item \"$persist_dir\\Ghost Downloader 配置文件.json\" -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null",
-        "    Set-Content -Path \"$persist_dir\\Ghost Downloader 配置文件.json\" -Value '{\"Software\":{\"CheckUpdateAtStartUp\":false}}'",
-        "}",
-        "if (!(Test-Path \"$persist_dir\\Ghost Downloader 记录文件\") -or !(Get-Item \"$persist_dir\\Ghost Downloader 记录文件\").Length) {",
-        "    New-Item \"$persist_dir\\Ghost Downloader 记录文件\" -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null",
+        "if (!(Test-Path \"$persist_dir\\GhostDownloader\\UserConfig.json\")) {",
+        "    New-Item \"$persist_dir\\GhostDownloader\" -ItemType Directory -Force | Out-Null",
+        "    Set-Content -Path \"$persist_dir\\GhostDownloader\\UserConfig.json\" -Value '{\"Software\":{\"CheckUpdateAtStartUp\":false}}' -Encoding ASCII",
         "}"
     ],
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App"
+    "post_install": [
+        "$schemeKey = 'HKCU:\\Software\\Classes\\ghostdownloader\\shell\\open\\command'",
+        "if (Test-Path $schemeKey) { Set-ItemProperty -Path $schemeKey -Name '(default)' -Value \"`\"$dir\\Ghost-Downloader-3.exe`\" `\"%1`\"\" }",
+        "$runKey = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "if ((Get-ItemProperty -Path $runKey -Name 'GhostDownloader' -ErrorAction SilentlyContinue).GhostDownloader) { Set-ItemProperty -Path $runKey -Name 'GhostDownloader' -Value \"`\"$dir\\Ghost-Downloader-3.exe`\" --silence\" }"
     ],
-    "persist": [
-        "Ghost Downloader 配置文件.json",
-        "Ghost Downloader 记录文件"
-    ],
+    "persist": "GhostDownloader",
     "checkver": {
         "github": "https://github.com/XiaoYouChR/Ghost-Downloader-3"
     },
@@ -45,9 +36,6 @@
         "architecture": {
             "64bit": {
                 "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v$version/Ghost-Downloader-v$version-Windows-x86_64.zip"
-            },
-            "arm64": {
-                "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v$version/Ghost-Downloader-v$version-Windows-arm64.zip"
             }
         }
     }
