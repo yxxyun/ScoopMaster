@@ -1,0 +1,40 @@
+{
+  "version": "1.00",
+  "description": "Runtime assets required by some games made with RPG Maker VX Ace",
+  "homepage": "https://www.rpgmakerweb.com/run-time-package",
+  "license": {
+    "identifier": "Proprietary",
+    "url": "https://www.rpgmakerweb.com/eula"
+  },
+  "notes": [
+    "This package runs the official Inno Setup installer and installs the RTP system-wide under the shared Program Files (x86) location.",
+    "Install only as a global Scoop app from an elevated PowerShell session: scoop install <bucket>/rpg-vx-ace-rtp --global.",
+    "The official EULA limits use of the RTP to playing games created and distributed by registered RPG Maker VX Ace users and prohibits redistribution of the RTP files.",
+    "This manifest downloads directly from the official RPG Maker website. The RTP archive is not included or mirrored in this bucket.",
+    "The manifest hash must be initialized with scripts/Initialize-RtpManifest.ps1 before installing or publishing the bucket."
+  ],
+  "url": "https://assets.rpgmakerweb.com/RPGVXAce_RTP.zip",
+  "hash": "7e93d0ead93a686218b7c671bf099ef42f09f536083bd0b2f0fa6423a39fc19b",
+  "innosetup": true,
+  "pre_install": [
+    "if (-not $global) { throw 'RPG Maker VX Ace RTP is a system-wide runtime installer. Install it with --global from an elevated PowerShell session; do not use a normal per-user Scoop install.' }",
+    "$pf86 = [Environment]::GetFolderPath('ProgramFilesX86'); if (-not $pf86) { $pf86 = $env:ProgramFiles }; $existingUninstaller = Join-Path $pf86 'Common Files\\Enterbrain\\RGSS3\\RPGVXAce\\unins000.exe'; if (Test-Path -LiteralPath $existingUninstaller) { throw 'An RPG Maker VX Ace RTP installation already exists outside this Scoop package. Uninstall that copy first, or keep using it without installing this package.' }"
+  ],
+  "installer": {
+    "file": "RPGVXAce_RTP100\\Setup.exe",
+    "args": [
+      "/VERYSILENT",
+      "/SUPPRESSMSGBOXES",
+      "/NORESTART",
+      "/SP-"
+    ]
+  },
+  "post_install": [
+    "$marker = Join-Path $dir '.scoop-managed-rpg-vx-ace-rtp'; Set-Content -LiteralPath $marker -Value $version -Encoding ASCII; Get-ChildItem -LiteralPath $dir -Force | Where-Object { $_.FullName -ne $marker } | Remove-Item -Recurse -Force"
+  ],
+  "uninstaller": {
+    "script": [
+      "$marker = Join-Path $dir '.scoop-managed-rpg-vx-ace-rtp'; if (Test-Path -LiteralPath $marker) { $pf86 = [Environment]::GetFolderPath('ProgramFilesX86'); if (-not $pf86) { $pf86 = $env:ProgramFiles }; $uninstaller = Join-Path $pf86 'Common Files\\Enterbrain\\RGSS3\\RPGVXAce\\unins000.exe'; if (Test-Path -LiteralPath $uninstaller) { $p = Start-Process -FilePath $uninstaller -ArgumentList '/SILENT' -Wait -PassThru; if ($p.ExitCode -ne 0) { throw \"RPG Maker VX Ace RTP uninstaller exited with code $($p.ExitCode).\" } } else { Write-Warning 'Scoop ownership marker exists, but the vendor uninstaller was not found. Check the RTP installation manually.' } }"
+    ]
+  }
+}
