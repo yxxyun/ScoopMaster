@@ -1,20 +1,70 @@
 {
     "version": "0.19.0",
-    "description": "Page layout and publishing; an open-source, clean-room reimplementation of Adobe InDesign, rebuilt in pure Rust",
+    "description": "Open-source page layout and publishing rebuilt in pure Rust: threaded stories, master pages, wrapped text and print-ready output",
     "homepage": "https://github.com/storytold/designcraft",
-    "license": "MIT|Apache-2.0",
+    "license": "MIT OR Apache-2.0",
+    "notes": [
+        "DesignCraft's data directory (settings, autosave, logs) is redirected to '$persist_dir\\config' through the DESIGNCRAFT_CONFIG_DIR environment variable, so it lives in Scoop's persist store and survives 'scoop update'.",
+        "DESIGNCRAFT_CONFIG_DIR is a USER-level environment variable, so any other DesignCraft installation (the MSI build, for example) uses this directory too.",
+        "The first install copies an existing %APPDATA%\\DesignCraft into the persist folder. 'scoop uninstall' removes the variable and DesignCraft falls back to %APPDATA%\\DesignCraft, so the pre-uninstall hook mirrors the state back there first; that also runs on 'scoop update'.",
+        "'designcraft-cli.exe' is exposed as the 'designcraft-cli' shim.",
+        "The portable zip does not register the file associations that the MSI installer adds.",
+        "The app has no built-in updater; use 'scoop update designcraft' so the install and this manifest stay in sync."
+    ],
     "architecture": {
         "64bit": {
             "url": "https://github.com/storytold/designcraft/releases/download/v0.19.0/designcraft-0.19.0-windows-x64-portable.zip",
             "hash": "2204682b869ac5858bf07b1dcf3e89489a04dbc8a01a4d129cba850168002809",
-            "extract_dir": "designcraft-0.19.0-windows-x64-portable"
+            "installer": {
+                "script": [
+                    "$stage = \"$dir\\designcraft-$version-windows-x64-portable\"",
+                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
+                    "Remove-Item $stage -ErrorAction Stop"
+                ]
+            }
         },
         "arm64": {
             "url": "https://github.com/storytold/designcraft/releases/download/v0.19.0/designcraft-0.19.0-windows-arm64-portable.zip",
             "hash": "36f8a5c856c7e386f5fdb362ae70e1abe1cfa4dcebb3948ce537ac3f3f91c525",
-            "extract_dir": "designcraft-0.19.0-windows-arm64-portable"
+            "installer": {
+                "script": [
+                    "$stage = \"$dir\\designcraft-$version-windows-arm64-portable\"",
+                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
+                    "Remove-Item $stage -ErrorAction Stop"
+                ]
+            }
         }
     },
+    "pre_install": [
+        "$target = \"$persist_dir\\config\"",
+        "$legacy = \"$env:APPDATA\\DesignCraft\"",
+        "if (!(Test-Path $target) -and (Test-Path $legacy)) {",
+        "    if (Get-Process -Name 'designcraft*' -ErrorAction SilentlyContinue) {",
+        "        abort 'DesignCraft is running, so %APPDATA%\\DesignCraft cannot be copied into Scoop persist safely. Quit DesignCraft, then run the install again.'",
+        "    }",
+        "    $previous = $ErrorActionPreference",
+        "    $ErrorActionPreference = 'Continue'",
+        "    $null = robocopy $legacy $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
+        "    $code = $LASTEXITCODE",
+        "    $ErrorActionPreference = $previous",
+        "    if ($code -ge 8) { warn \"robocopy exit $code while copying '$legacy' to '$target'; compare the two directories before relying on the new location.\" } else { info \"Copied '$legacy' to '$target'.\" }",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$legacy = \"$env:APPDATA\\DesignCraft\"",
+        "$data = \"$persist_dir\\config\"",
+        "if (!(Test-Path $data) -or @(Get-ChildItem $data -Force).Count -eq 0) { return }",
+        "if (Get-Process -Name 'designcraft*' -ErrorAction SilentlyContinue) {",
+        "    warn 'DesignCraft is running, so the state was not mirrored back to %APPDATA%\\DesignCraft. Quit it and uninstall again if you want that safety copy.'",
+        "    return",
+        "}",
+        "$previous = $ErrorActionPreference",
+        "$ErrorActionPreference = 'Continue'",
+        "$null = robocopy $data $legacy /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
+        "$code = $LASTEXITCODE",
+        "$ErrorActionPreference = $previous",
+        "if ($code -ge 8) { warn \"robocopy exit $code while mirroring '$data' back to '$legacy'.\" } else { info \"Mirrored '$data' back to '$legacy': scoop removes DESIGNCRAFT_CONFIG_DIR on uninstall and DesignCraft falls back to that path.\" }"
+    ],
     "bin": "designcraft-cli.exe",
     "shortcuts": [
         [
@@ -22,20 +72,19 @@
             "DesignCraft"
         ]
     ],
+    "persist": "config",
+    "env_set": {
+        "DESIGNCRAFT_CONFIG_DIR": "$persist_dir\\config"
+    },
     "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/storytold/designcraft/releases/download/v$version/designcraft-$version-windows-x64-portable.zip",
-                "extract_dir": "designcraft-$version-windows-x64-portable"
+                "url": "https://github.com/storytold/designcraft/releases/download/v$version/designcraft-$version-windows-x64-portable.zip"
             },
             "arm64": {
-                "url": "https://github.com/storytold/designcraft/releases/download/v$version/designcraft-$version-windows-arm64-portable.zip",
-                "extract_dir": "designcraft-$version-windows-arm64-portable"
+                "url": "https://github.com/storytold/designcraft/releases/download/v$version/designcraft-$version-windows-arm64-portable.zip"
             }
-        },
-        "hash": {
-            "url": "$baseurl/SHA256SUMS.txt"
         }
     }
 }

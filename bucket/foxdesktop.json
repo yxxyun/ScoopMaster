@@ -1,0 +1,35 @@
+{
+    "##": "Installer Type: Inno Setup",
+    "version": "2.0.1",
+    "description": "Windows desktop application.",
+    "homepage": "https://foxdesktop-app.com/",
+    "url": "https://foxdesktop-app.com/download#/FoxDesktopSetup.exe",
+    "hash": "70cdad4a678d453364ab8cdfd3514708a5c1e79952781052106b47de27c796aa",
+    "innosetup": true,
+    "shortcuts": [
+        [
+            "DesktopApp.exe",
+            "FoxDesktop"
+        ]
+    ],
+    "notes": "The official download is unsigned. Scoop extracts the Inno Setup {app} payload instead of running the vendor installer. The current download endpoint is unversioned, so checkver reads ProductVersion from the downloaded EXE; Scoop computes the update hash from the same download endpoint.",
+    "checkver": {
+        "script": [
+            "$url = 'https://foxdesktop-app.com/download'",
+            "$tempFile = Join-Path $env:TEMP ('foxdesktop-checkver-' + [guid]::NewGuid().ToString('N') + '.exe')",
+            "try {",
+            "    Invoke-WebRequest -Uri $url -OutFile $tempFile -MaximumRedirection 10 -TimeoutSec 900 -ErrorAction Stop",
+            "    $productVersion = (Get-Item -LiteralPath $tempFile).VersionInfo.ProductVersion",
+            "    if ([string]::IsNullOrWhiteSpace($productVersion)) { throw 'FoxDesktop installer does not expose ProductVersion.' }",
+            "    $productVersion.Trim()",
+            "} finally {",
+            "    Remove-Item -LiteralPath $tempFile -Force -ErrorAction SilentlyContinue",
+            "}"
+        ],
+        "regex": "^([0-9]+\\.[0-9]+\\.[0-9]+)$"
+    },
+    "autoupdate": {
+        "url": "https://foxdesktop-app.com/download#/FoxDesktopSetup.exe"
+    },
+    "license": "Proprietary"
+}

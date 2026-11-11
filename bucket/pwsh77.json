@@ -1,0 +1,77 @@
+{
+    "##": [
+        "Why here? I want multiple PowerShell versions side by side.",
+        "Strategy for having multiple versions installed side by side:",
+        "* Add all versions to PATH (env_add_path), because a shim (bin) does not carry over the icon.",
+        "* Rename all versions but the current newest stable one to avoid naming conflict."
+    ],
+    "version": "7.7.0",
+    "description": "Latest stable PowerShell 7.7.x. Cross-platform automation and configuration tool/framework, known as Powershell Core, that works well with existing tools and is optimized for dealing with structured data.",
+    "homepage": "https://github.com/PowerShell/PowerShell",
+    "license": "MIT",
+    "architecture": {
+        "32bit": {
+            "url": "https://github.com/PowerShell/PowerShell/releases/download/v7.7.0/PowerShell-7.7.0-win-x86.zip",
+            "hash": "1723b1ef5ff7791a77638f05b48168331df84f51c19fbec7a1321fe924f3463b"
+        },
+        "64bit": {
+            "url": "https://github.com/PowerShell/PowerShell/releases/download/v7.7.0/PowerShell-7.7.0-win-x64.zip",
+            "hash": "7c74e03b20a75b59715847439d046a6214b1863ee79b187872980f139bb4a05f"
+        },
+        "arm64": {
+            "url": "https://github.com/PowerShell/PowerShell/releases/download/v7.7.0/PowerShell-7.7.0-win-arm64.zip",
+            "hash": "5dc7440cd98f0ba786a44d7db9205df5058474fd4db143caf7171e8375f34f75"
+        }
+    },
+    "pre_install": [
+        "# Rename and add to path instead of shimming, as the shim will not show the app icon",
+        "Rename-Item -Path \"$dir\\pwsh.exe\" -NewName \"pwsh76.exe\"",
+        "# Delete some included modules",
+        "$ModulesToRemove = [string[]](",
+        "    'Microsoft.PowerShell.PSResourceGet',",
+        "    'PackageManagement',",
+        "    'PowerShellGet'",
+        ")",
+        "$ModulesToRemove.ForEach{",
+        "    $Path = [System.IO.Path]::Combine($dir, 'Modules', $_)",
+        "    if ([System.IO.Directory]::Exists($Path)) {",
+        "        info ('Removing included module \"{0}\".' -f $_)",
+        "        $null = [System.IO.Directory]::Delete($Path, $true)",
+        "    }",
+        "}"
+    ],
+    "env_add_path": ".",
+    "env_set": {
+        "POWERSHELL_UPDATECHECK": "Off"
+    },
+    "shortcuts": [
+        [
+            "pwsh77.exe",
+            "PowerShell 7.7",
+            "-WorkingDirectory ~"
+        ],
+        [
+            "pwsh77.exe",
+            "PowerShell 7.7 -NoProfile",
+            "-WorkingDirectory ~ -NoProfile"
+        ]
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/PowerShell/PowerShell/releases",
+        "jsonpath": "$[?(@.prerelease == false)].tag_name",
+        "regex": "v(7\\.7\\.\\d+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "32bit": {
+                "url": "https://github.com/PowerShell/PowerShell/releases/download/v$version/PowerShell-$version-win-x86.zip"
+            },
+            "64bit": {
+                "url": "https://github.com/PowerShell/PowerShell/releases/download/v$version/PowerShell-$version-win-x64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/PowerShell/PowerShell/releases/download/v$version/PowerShell-$version-win-arm64.zip"
+            }
+        }
+    }
+}

@@ -1,0 +1,46 @@
+{
+    "version": "0.2.2",
+    "description": "Configurable Windows protocol-link router for schemes such as tel, sms, and mailto.",
+    "homepage": "https://github.com/karmaniverous/win-link-router",
+    "license": "BSD-3-Clause",
+    "url": "https://github.com/karmaniverous/win-link-router/releases/download/v0.2.2/win-link-router-0.2.2.Setup.exe",
+    "hash": "36d11a4be0d6eab82bb9c4bd6c36449ccc996b260a38cd0a74781c466e69f16a",
+    "installer": {
+        "args": "--silent"
+    },
+    "uninstaller": {
+        "script": [
+            "$installRoot = Join-Path $env:LOCALAPPDATA 'win-link-router'",
+            "$updateExe = Join-Path $installRoot 'Update.exe'",
+            "if (Test-Path -LiteralPath $updateExe -PathType Leaf) {",
+            "    $uninstallProcess = Start-Process -FilePath $updateExe -ArgumentList @('--uninstall', '-s') -Wait -PassThru",
+            "    if ($uninstallProcess.ExitCode -ne 0) { throw \"win-link-router Squirrel uninstaller exited with code $($uninstallProcess.ExitCode).\" }",
+            "}",
+            "if (Test-Path -LiteralPath $installRoot -PathType Container) {",
+            "    Remove-Item -LiteralPath $installRoot -Recurse -Force",
+            "}",
+            "if (Test-Path -LiteralPath $installRoot) { throw \"Squirrel install directory remains after cleanup: $installRoot\" }"
+        ]
+    },
+    "bin": "win-link-router.cmd",
+    "shortcuts": [
+        [
+            "win-link-router.cmd",
+            "win-link-router"
+        ]
+    ],
+    "notes": [
+        "Nonportable: Scoop runs the publisher's Squirrel Setup.exe. Squirrel installs the application under %LOCALAPPDATA%\\win-link-router; Scoop uninstall runs Update.exe --uninstall -s and removes any remaining application files in that folder.",
+        "The application stores its configuration and route logs under %APPDATA%\\win-link-router. That user data is outside Scoop and is retained when the application is uninstalled.",
+        "The application's own updater is enabled by default and checks for releases independently of Scoop. Disable Auto Updates in the application settings to keep Scoop as the update source."
+    ],
+    "pre_install": [
+        "$launcher = @(",
+        "    '@echo off',",
+        "    'set \"UPDATER=%LOCALAPPDATA%\\win-link-router\\Update.exe\"',",
+        "    'if not exist \"%UPDATER%\" exit /b 1',",
+        "    '\"%UPDATER%\" --processStart \"win-link-router.exe\" %*'",
+        ")",
+        "[System.IO.File]::WriteAllLines((Join-Path $dir 'win-link-router.cmd'), [string[]]$launcher, [System.Text.Encoding]::ASCII)"
+    ]
+}
