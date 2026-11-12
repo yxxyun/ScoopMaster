@@ -1,0 +1,49 @@
+{
+    "##": "install-manifest.txt is downloaded twice in autoupdate but it would be better than Github mode",
+    "version": "0.2.13",
+    "description": "Strata Terminal - CLI for local LLM inference",
+    "homepage": "https://github.com/Niko1221/Strata",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Niko1221/Strata/releases/download/v0.2.13/strata-control-0.1.59-windows-x86_64.zip",
+            "hash": "c81f6800094942a5e750c7d93f348062bc16484f946ea83b0c0d2f8c91c44e87"
+        }
+    },
+    "bin": "bin/strata.ps1",
+    "persist": [
+        "components",
+        "data"
+    ],
+    "env_set": {
+        "STRATA_COMPONENTS_DIR": "$persist_dir\\components",
+        "STRATA_DATA_DIR": "$persist_dir\\data"
+    },
+    "checkver": {
+        "url": "https://github.com/Niko1221/Strata/releases/latest",
+        "script": [
+            "if ($page -match '/releases/tag/(?:v|V)?([\\d.-]+)') {",
+            "    $version = $Matches[1]",
+            "    $stream=[System.Net.WebRequest]::Create(\"https://github.com/Niko1221/Strata/releases/download/v$version/install-manifest.txt\").GetResponse().GetResponseStream()",
+            "    $encoding = [System.Text.Encoding]::GetEncoding('utf-8')",
+            "    $temp=(New-Object System.IO.StreamReader($stream, $encoding)).ReadToEnd()",
+            "    if ($temp -match 'windows[-_0-9a-z]* ([\\d.]+)') {",
+            "        $cversion = $Matches[1]",
+            "    }",
+            "}",
+            "return \"$version $cversion\""
+        ],
+        "regex": "(?<version>[\\d.-]+) (?<cversion>[\\d.-]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Niko1221/Strata/releases/download/v$version/strata-control-$matchCversion-windows-x86_64.zip",
+                "hash": {
+                    "url": "https://github.com/Niko1221/Strata/releases/download/v$version/install-manifest.txt",
+                    "regex": "$basename ([a-fA-F\\d]{64})"
+                }
+            }
+        }
+    }
+}

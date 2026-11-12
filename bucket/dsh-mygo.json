@@ -1,0 +1,49 @@
+{
+    "version": "0.1.2",
+    "description": "Native Windows desktop client for the DeepSeek Harness agent runtime, with session management and runtime setup.",
+    "homepage": "https://github.com/denislov/dsh-mygo",
+    "license": "Unknown",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/denislov/dsh-mygo/releases/download/v0.1.2/dsh-mygo-0.1.2-windows-x64-setup.exe",
+            "hash": "7b8baf43b5ab4873af0a69478aaa5ecf2f2c9fcc431fbd919897e823eb6d8d79"
+        }
+    },
+    "installer": {
+        "args": [
+            "/S",
+            "/D=$dir"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$uninstaller = Get-ChildItem -LiteralPath $dir -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)^(unins\\d*|uninstall.*)\\.exe$' } | Select-Object -First 1",
+            "if (-not $uninstaller) { throw 'The application uninstaller was not found in the Scoop version directory.' }",
+            "$process = Start-Process -FilePath $uninstaller.FullName -ArgumentList '/S' -WorkingDirectory $uninstaller.DirectoryName -Wait -PassThru",
+            "if ($process.ExitCode -ne 0) { throw ('The application uninstaller exited with code {0}.' -f $process.ExitCode) }"
+        ]
+    },
+    "bin": "dsh-mygo.exe",
+    "shortcuts": [
+        [
+            "dsh-mygo.exe",
+            "DSH MyGo"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/denislov/dsh-mygo"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/denislov/dsh-mygo/releases/download/v$version/dsh-mygo-$version-windows-x64-setup.exe",
+                "hash": {
+                    "mode": "json",
+                    "url": "https://api.github.com/repos/denislov/dsh-mygo/releases/tags/v$version",
+                    "jp": "$.assets[?(@.name == 'dsh-mygo-$version-windows-x64-setup.exe')].digest"
+                }
+            }
+        }
+    },
+    "notes": "The setup contains only the desktop client. First launch requires a compatible DSH runtime and Node.js 24+; the app can download or import the runtime. The release uses a self-signed certificate and may trigger SmartScreen warnings."
+}

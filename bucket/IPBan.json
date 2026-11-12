@@ -1,29 +1,41 @@
 {
     "version": "4.1.0",
-    "description": "Since 2011, IPBan is the worlds most trusted, free security software to block hackers and botnets. With both Windows and Linux support, IPBan has your dedicated or cloud server protected. Upgrade to IPBan Pro today and get a discount.",
+    "description": "Windows intrusion-prevention service that detects failed logins and blocks abusive IP addresses using Windows Firewall.",
     "homepage": "https://github.com/DigitalRuby/IPBan",
     "license": "MIT",
-    "notes": "",
     "architecture": {
         "64bit": {
             "url": "https://github.com/DigitalRuby/IPBan/releases/download/4.1.0/IPBan-Windows-x64_4_1_0.zip",
             "hash": "08867379f6fc165e71ea7c8ecb38cf3661a212737b41d9a480d721e5fb4f97d7"
+        },
+        "32bit": {
+            "url": "https://github.com/DigitalRuby/IPBan/releases/download/4.1.0/IPBan-Windows-x86_4_1_0.zip",
+            "hash": "471eb6656e46fa39a705616c85e18441b0856aa3281050addc2f67f5c2b14f93"
         }
     },
-    "bin": [
-        [
-            "DigitalRuby.IPBan.exe",
-            "IPBan"
-        ]
-    ],
     "checkver": {
-        "github": "https://github.com/DigitalRuby/IPBan"
+        "script": [
+            "$headers = @{ 'Accept' = 'application/vnd.github+json'; 'User-Agent' = 'KiroBucket-ScoopCheckver' }",
+            "if ($env:GITHUB_TOKEN) { $headers.Authorization = \"Bearer $env:GITHUB_TOKEN\" }",
+            "$release = Invoke-RestMethod -Uri 'https://api.github.com/repos/DigitalRuby/IPBan/releases/latest' -Headers $headers -TimeoutSec 30 -ErrorAction Stop",
+            "$asset = $release.assets | Where-Object { $_.name -match '^IPBan-Windows-x64_(?<major>[\\d]+)_(?<minor>[\\d]+)_(?<patch>[\\d]+)\\.zip$' } | Select-Object -First 1",
+            "if ($null -eq $asset) { throw 'No stable IPBan Windows x64 ZIP asset was found in the latest release.' }",
+            "$asset.name"
+        ],
+        "regex": "^IPBan-Windows-x64_(?<major>[\\d]+)_(?<minor>[\\d]+)_(?<patch>[\\d]+)\\.zip$",
+        "replace": "${major}.${minor}.${patch}"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/DigitalRuby/IPBan/releases/download/$version/IPBan-Windows-x64_$underscoreVersion.zip"
+                "url": "https://github.com/DigitalRuby/IPBan/releases/download/$version/IPBan-Windows-x64_$matchMajor_$matchMinor_$matchPatch.zip"
+            },
+            "32bit": {
+                "url": "https://github.com/DigitalRuby/IPBan/releases/download/$version/IPBan-Windows-x86_$matchMajor_$matchMinor_$matchPatch.zip"
             }
         }
-    }
+    },
+    "notes": [
+        "This manifest extracts the x64/x86 ZIP packages only. It does not create or start the IPBan Windows service or change Windows audit policy. The upstream service setup performs those actions; extracting the ZIP alone does not enable IPBan protection."
+    ]
 }

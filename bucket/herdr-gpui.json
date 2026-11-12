@@ -1,0 +1,33 @@
+{
+    "version": "20261109.1",
+    "description": "Desktop interface for the Herdr daemon",
+    "homepage": "https://github.com/penso/herdr-gpui",
+    "license": "Apache-2.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/penso/herdr-gpui/releases/download/v20261103.1/Herdr-20261103.1-x86_64-pc-windows-msvc.zip",
+            "hash": "3d4b27301c0ed2e53ae3343286170495563f99bae15d511fa72de464587838e0",
+            "extract_dir": "Herdr-20261103.1-x86_64-pc-windows-msvc"
+        },
+        "arm64": {
+            "url": "https://github.com/penso/herdr-gpui/releases/download/v20261103.1/Herdr-20261103.1-aarch64-pc-windows-msvc.zip",
+            "hash": "8a48e8a093ab9b8a8da6413e04f333b0b205235cdebdf4c4c54437d98aa69cbf",
+            "extract_dir": "Herdr-20261103.1-aarch64-pc-windows-msvc"
+        }
+    },
+    "depends": "rcedit",
+    "pre_install": [
+        "$bucketDir = if ($bucket) { Find-BucketDirectory $bucket -Root } else { Split-Path (Split-Path $url) }",
+        "Copy-Item \"$bucketDir\\scripts\\herdr-gpui\" \"$dir\\icons\" -Recurse",
+        "# Avoid Scoop treating system conhost as a competing app when replacing Herdr's own shim.",
+        "$shim = \"$(shimdir $global)\\herdr-gpui.shim\"",
+        "if ((get_app_name_from_shim $shim) -eq 'herdr-gpui') { Remove-Item $shim }"
+    ],
+    "bin": [["conhost.exe", "herdr-gpui", "--headless \"$dir\\herdr-gpui.exe\""]],
+    "shortcuts": [["..\\..\\..\\shims\\herdr-gpui.exe", "Herdr", "", "icons\\herdr.ico"]],
+    "post_install": [
+        "rcedit \"$(shimdir $global)\\herdr-gpui.exe\" --set-icon \"$dir\\icons\\herdr.ico\"",
+        "if ($LASTEXITCODE -ne 0) { throw 'Failed to set Herdr shim icon' }"
+    ],
+    "notes": "Experimental, unsigned Windows GUI build. Requires an existing Herdr daemon."
+}
