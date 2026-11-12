@@ -1,34 +1,57 @@
 {
     "version": "1.12.1",
-    "description": "An open-source desktop client for Hongguo short dramas.",
+    "description": "红果开源播放器",
     "homepage": "https://github.com/zfdang/hongguo-open-player",
-    "license": "AGPL-3.0-only",
+    "license": {
+        "identifier": "AGPL-3.0 license",
+        "url": "https://github.com/zfdang/hongguo-open-player#AGPL-3.0-1-ov-file"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/zfdang/hongguo-open-player/releases/download/v1.12.1/hongguo-open-player-1.12.1-win-x64.zip",
-            "hash": "89b7de48185bc381b77b0ecdb38ac9a0b2be2220a151808841703fb6782937c1"
+            "url": "https://github.com/zfdang/hongguo-open-player/releases/download/v1.12.1/hongguo-open-player-1.12.1-win-x64-setup.exe#/dl.7z",
+            "hash": "abf237e406ba2c81be7bba8e769be04bce5ed2dec4d28a265a2a69f4f6eedeaf",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\" -Force -Recurse",
+                "Get-ChildItem \"$dir\\红果*.exe\" | Rename-Item -NewName 'hongguo-open-player.exe'"
+            ]
         }
     },
+    "installer": {
+        "script": [
+            "# handle runtime cache",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:APPDATA\\hongguo-open-player\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\hongguo-open-player\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "bin": "hongguo-open-player.exe",
     "shortcuts": [
         [
-            "红果开源播放器.exe",
-            "Hongguo Open Player",
-            "--user-data-dir=\"$persist_dir\\data\""
+            "hongguo-open-player.exe",
+            "hongguo-open-player"
         ]
     ],
-    "persist": "data",
     "checkver": {
-        "github": "https://github.com/zfdang/hongguo-open-player"
+        "github": "https://api.github.com/repos/zfdang/hongguo-open-player/releases",
+        "jp": "$[0].tag_name",
+        "regex": "v([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/zfdang/hongguo-open-player/releases/download/v$version/hongguo-open-player-$version-win-x64.zip"
+                "url": "https://github.com/zfdang/hongguo-open-player/releases/download/v$version/hongguo-open-player-$version-win-x64-setup.exe#/dl.7z"
             }
         },
         "hash": {
-            "url": "$baseurl/SHA256SUMS.txt",
-            "regex": "$sha256\\s+$basename"
+            "url": "$baseurl/SHA256SUMS.txt"
         }
     }
 }

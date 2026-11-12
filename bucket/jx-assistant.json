@@ -1,0 +1,51 @@
+{
+    "##": "Inno Setup installer (打包/安装包.iss, PrivilegesRequired=lowest, DefaultDirName={localappdata}\\Programs\\{AppName}). Windows desktop build only; the Linux tarball / Android apk assets are skipped. Installed silently with /DIR pointing at the scoop dir; removal delegates to Inno's own unins000.exe.",
+    "version": "20261110-2",
+    "description": "AI 数字助理 —— 本地优先的 AI 助理，Go 单二进制 + 内嵌原生网页前端，桌面(WebView2)/浏览器/手机远程三端可用",
+    "homepage": "https://github.com/touzi0/jx-assistant",
+    "license": {
+        "identifier": "Apache-2.0",
+        "url": "https://github.com/touzi0/jx-assistant/blob/main/LICENSE"
+    },
+    "notes": [
+        "上游是 Inno Setup 安装包（免管理员的用户级安装），本 manifest 用 /VERYSILENT /DIR 装进 Scoop 目录",
+        "卸载走安装器自带的 unins000.exe（静默），Scoop 再清目录",
+        "version 采用上游的日期-序号标签（如 20261110-2），并非 semver",
+        "首次运行会拉起本地服务并打开管理页；数据默认落在安装目录的 data\\ 与 config.json"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/touzi0/jx-assistant/releases/download/20261110-2/jxai-desktop-20261110-2.exe",
+            "hash": "2960b1fb447272798036a60fdf3f9a886785a303468d14a6097124c79afc6e8d"
+        }
+    },
+    "installer": {
+        "script": [
+            "$installer = Join-Path $dir $fname",
+            "$dirArg = '/DIR=\"{0}\"' -f $dir",
+            "Start-Process -FilePath $installer -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', $dirArg -Wait",
+            "Remove-Item $installer -Force"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$candidates = @((Join-Path $dir 'unins000.exe'))",
+            "foreach ($u in $candidates) { if (Test-Path -LiteralPath $u) { Start-Process -FilePath $u -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait; break } }"
+        ]
+    },
+    "checkver": {
+        "url": "https://github.com/touzi0/jx-assistant/releases.atom",
+        "regex": "releases/tag/(\\d{8}-\\d+)\""
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/touzi0/jx-assistant/releases/download/$version/jxai-desktop-$version.exe"
+            }
+        },
+        "hash": {
+            "url": "https://api.github.com/repos/touzi0/jx-assistant/releases/tags/$version",
+            "regex": "\"name\":\"jxai-desktop-$version\\.exe\".*?\"digest\":\"sha256:([0-9a-f]{64})\""
+        }
+    }
+}
