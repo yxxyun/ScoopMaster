@@ -1,52 +1,83 @@
 {
-    "##": "Inno Setup installer (apps/windows/installer/qingjian.iss, PrivilegesRequired=admin, MinVersion=10.0.17763). Upstream ships no portable build, so this package runs the official installer silently into the scoop dir (UAC will appear). The installer itself does the TSF registration: icacls ALL APPLICATION PACKAGES on the install dir, regsvr32 of both bitness DLLs, and a machine-level Startup shortcut for qingjian-server. Removal delegates to the installer's own unins000.exe.",
-    "version": "0.3.3",
-    "description": "青简 —— Rust 写的拼音输入法，候选词旁多一条正在学的外语译词（Windows TSF）",
-    "homepage": "https://qingjian.app/",
-    "license": {
-        "identifier": "GPL-3.0-or-later",
-        "url": "https://github.com/qingjian-team/qingjian/blob/main/LICENSE"
-    },
-    "notes": [
-        "上游只发 Inno Setup 安装器（88MB，PrivilegesRequired=admin），没有便携版：本包用 /VERYSILENT + /DIR 把它静默装进 Scoop 目录，装的时候会弹 UAC",
-        "注册输入法由安装器自己完成（regsvr32 两份按版本命名的 TSF DLL：64 位 qingjian_tsf-<版本>.dll、32 位 -x86.dll），并在「所有用户 → 启动」放 qingjian-server 快捷方式",
-        "装完要注销重新登录（或重启）才在所有应用里生效；之后 Win+空格 切到「青简」",
-        "输入引擎 qingjian-server 由 TSF DLL 自动拉起，不必常驻；设置程序见开始菜单「青简设置」",
-        "卸载走安装器自带的 unins000.exe（会 taskkill server、regsvr32 /u 反注册），用户数据留在 %APPDATA%\\Qingjian"
-    ],
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/qingjian-team/qingjian/releases/download/v0.3.3/qingjian-0.3.3-windows-x86_64-setup.exe",
-            "hash": "c201e380b7be21179100d64b8adfb6b4c73b565ddcf3bf0fc44923161d0abb73"
-        }
-    },
-    "installer": {
-        "script": [
-            "$installer = Join-Path $dir $fname",
-            "$dirArg = '/DIR=\"{0}\"' -f $dir",
-            "Start-Process -FilePath $installer -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', $dirArg -Verb RunAs -Wait",
-            "Remove-Item $installer -Force"
-        ]
-    },
-    "uninstaller": {
-        "script": [
-            "$uninst = Join-Path $dir 'unins000.exe'",
-            "if (Test-Path -LiteralPath $uninst) { Start-Process -FilePath $uninst -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Verb RunAs -Wait }"
-        ]
-    },
-    "checkver": {
-        "url": "https://github.com/qingjian-team/qingjian/releases.atom",
-        "regex": "releases/tag/v([\\d.]+)\""
-    },
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/qingjian-team/qingjian/releases/download/v$version/qingjian-$version-windows-x86_64-setup.exe"
-            }
-        },
-        "hash": {
-            "url": "https://api.github.com/repos/qingjian-team/qingjian/releases/tags/v$version",
-            "regex": "\"name\":\"qingjian-$version-windows-x86_64-setup\\.exe\".*?\"digest\":\"sha256:([0-9a-f]{64})\""
-        }
+  "version": "0.3.3",
+  "description": "用 Rust 写的拼音输入法，候选词旁多一条正在学的语言的译词",
+  "homepage": "https://qingjian.app/",
+  "license": "GPL-3.0-or-later",
+  "notes": "青简是 TSF 输入法，注册 DLL 要写 HKCR 与 HKLM\\SOFTWARE\\Microsoft\\CTF。输入引擎 qingjian-server 在切到青简时自动拉起，也可以从开始菜单启动。",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/qingjian-team/qingjian/releases/download/v0.3.3/qingjian-0.3.3-windows-x86_64-setup.exe",
+      "hash": "c201e380b7be21179100d64b8adfb6b4c73b565ddcf3bf0fc44923161d0abb73"
     }
+  },
+  "innosetup": true,
+  "post_install": [
+    "$clsid = '{4FDCA82D-E923-49BF-9E75-BB906B93B8BB}'",
+    "$tsf = @(",
+    "    @{ Dll = (Get-ChildItem -LiteralPath $dir -Filter 'qingjian_tsf-*.dll' | Where-Object { $_.Name -notlike '*-x86.dll' } | Select-Object -First 1); Regsvr = \"$env:windir\\System32\\regsvr32.exe\" },",
+    "    @{ Dll = (Get-ChildItem -LiteralPath $dir -Filter 'qingjian_tsf-*-x86.dll' | Select-Object -First 1); Regsvr = \"$env:windir\\SysWOW64\\regsvr32.exe\" }",
+    ") | Where-Object { $_.Dll }",
+    "& \"$env:windir\\System32\\icacls.exe\" $dir /grant '*S-1-15-2-1:(OI)(CI)RX' /T /C /Q | Out-Null",
+    "$elevated = ([Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+    "try {",
+    "    foreach ($item in $tsf) {",
+    "        if ($elevated) { & $item.Regsvr '/s' $item.Dll.FullName }",
+    "        else { Start-Process -FilePath $item.Regsvr -ArgumentList '/s', $item.Dll.FullName -Verb RunAs -Wait -ErrorAction Stop }",
+    "    }",
+    "} catch {",
+    "    Write-Host '注册「青简」文本服务失败，请以管理员身份运行 regsvr32 注册安装目录下的 qingjian_tsf-<版本>.dll。' -ForegroundColor Yellow",
+    "}",
+    "try {",
+    "    if (-not ('Qingjian.Tsf' -as [type])) {",
+    "        Add-Type -Namespace 'Qingjian' -Name 'Tsf' -MemberDefinition '[DllImport(\"input.dll\", CharSet = CharSet.Unicode)] public static extern bool InstallLayoutOrTip(string psz, uint dwFlags);'",
+    "    }",
+    "    if (-not [Qingjian.Tsf]::InstallLayoutOrTip(\"0x0804:$clsid{8119F8E0-CF81-423B-9189-C0D7374324B3}\", 0)) {",
+    "        Write-Host '没能自动添加「青简」键盘，请在「设置 → 时间和语言 → 语言和区域 → 中文(简体) → 键盘」里手动添加。' -ForegroundColor Yellow",
+    "    }",
+    "} catch {",
+    "    Write-Host \"没能自动添加「青简」键盘：$($_.Exception.Message)\" -ForegroundColor Yellow",
+    "}"
+  ],
+  "shortcuts": [
+    [
+      "qingjian-server.exe",
+      "青简"
+    ],
+    [
+      "qingjian-settings.exe",
+      "青简设置"
+    ]
+  ],
+  "pre_uninstall": [
+    "$clsid = '{4FDCA82D-E923-49BF-9E75-BB906B93B8BB}'",
+    "Get-Process -Name qingjian-server, qingjian-settings -ErrorAction SilentlyContinue | Stop-Process -Force",
+    "try {",
+    "    if (-not ('Qingjian.Tsf' -as [type])) {",
+    "        Add-Type -Namespace 'Qingjian' -Name 'Tsf' -MemberDefinition '[DllImport(\"input.dll\", CharSet = CharSet.Unicode)] public static extern bool InstallLayoutOrTip(string psz, uint dwFlags);'",
+    "    }",
+    "    [void][Qingjian.Tsf]::InstallLayoutOrTip(\"0x0804:$clsid{8119F8E0-CF81-423B-9189-C0D7374324B3}\", 1)",
+    "} catch {",
+    "    Write-Host \"没能自动移除「青简」键盘：$($_.Exception.Message)\" -ForegroundColor Yellow",
+    "}",
+    "$tsf = @(",
+    "    @{ Dll = (Get-ChildItem -LiteralPath $dir -Filter 'qingjian_tsf-*.dll' | Where-Object { $_.Name -notlike '*-x86.dll' } | Select-Object -First 1); Regsvr = \"$env:windir\\System32\\regsvr32.exe\" },",
+    "    @{ Dll = (Get-ChildItem -LiteralPath $dir -Filter 'qingjian_tsf-*-x86.dll' | Select-Object -First 1); Regsvr = \"$env:windir\\SysWOW64\\regsvr32.exe\" }",
+    ") | Where-Object { $_.Dll }",
+    "try {",
+    "    foreach ($item in $tsf) { Start-Process -FilePath $item.Regsvr -ArgumentList '/u', '/s', $item.Dll.FullName -Verb RunAs -Wait -ErrorAction Stop }",
+    "} catch {",
+    "    Write-Host \"注销「青简」文本服务失败：$($_.Exception.Message)\" -ForegroundColor Yellow",
+    "}"
+  ],
+  "checkver": {
+    "url": "https://api.github.com/repos/qingjian-team/qingjian/releases",
+    "regex": "/releases/download/v([\\d.]+)/qingjian-\\1-windows-x86_64-setup\\.exe"
+  },
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://github.com/qingjian-team/qingjian/releases/download/v$version/qingjian-$version-windows-x86_64-setup.exe"
+      }
+    }
+  }
 }

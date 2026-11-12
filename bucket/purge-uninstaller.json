@@ -1,0 +1,46 @@
+{
+    "version": "1.0.1",
+    "description": "Windows application uninstaller that identifies and removes leftover files and registry entries.",
+    "homepage": "https://purgeuninstaller.com/",
+    "license": "Proprietary",
+    "url": "https://purgeuninstaller.com/download/windows/1.0.1/Purge.Uninstaller_1.0.1_x64-setup.exe",
+    "hash": "641d18295e260273b35e1abc436f525a82710b16460f4cb14ee11fcbe1c0595d",
+    "installer": {
+        "args": [
+            "/S",
+            "/D=$dir"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$uninstaller = Join-Path $dir 'uninstall.exe'",
+            "if (-not (Test-Path -LiteralPath $uninstaller -PathType Leaf)) { throw 'Purge Uninstaller NSIS uninstaller was not found in the Scoop version directory.' }",
+            "$process = Start-Process -FilePath $uninstaller -ArgumentList '/S' -Wait -PassThru",
+            "if ($process.ExitCode -ne 0) { throw ('Purge Uninstaller uninstaller exited with code {0}.' -f $process.ExitCode) }"
+        ]
+    },
+    "bin": "purge.exe",
+    "shortcuts": [
+        [
+            "purge.exe",
+            "Purge Uninstaller"
+        ]
+    ],
+    "checkver": {
+        "script": [
+            "$dl_url = 'https://purgeuninstaller.com/download/windows/1.0.1/Purge.Uninstaller_1.0.1_x64-setup.exe'",
+            "$dl_path = cache_path 'PurgeUninstaller' 'unknown' $dl_url",
+            "New-Item -ItemType Directory -Path (Split-Path -Parent $dl_path) -Force | Out-Null",
+            "Invoke-WebRequest -Uri $dl_url -OutFile $dl_path",
+            "$version = (Get-Item -LiteralPath $dl_path).VersionInfo.FileVersion",
+            "Write-Output $version"
+        ],
+        "regex": "([\\d.]+)"
+    },
+    "autoupdate": {
+        "url": "https://purgeuninstaller.com/download/windows/$version/Purge.Uninstaller_$version_x64-setup.exe"
+    },
+    "notes": [
+        "Nonportable: installs through the Tauri/NSIS setup in the Scoop version directory and registers the app for the current Windows user."
+    ]
+}

@@ -1,0 +1,46 @@
+{
+    "version": "0.3.0",
+    "description": "Windows 11 workspace with a top-edge shelf, shortcuts, clipboard history, media controls, notes and optional AI.",
+    "homepage": "https://tomte.xditya.me/",
+    "license": "MIT",
+    "url": [
+        "https://github.com/xditya/tomte-windows/releases/download/v0.3.0/Tomte_0.3.0.0_x64.msix#/dl.7z",
+        "https://github.com/xditya/tomte-windows/releases/download/v0.3.0/Tomte-test-certificate.cer"
+    ],
+    "hash": [
+        "e6902564b08cff804b93b69a86d9c79a47a8ed7fc06fd32c097fdd7fc669f901",
+        "7d5583fff7e93f7c7ebba95cfa2d0b12aec3ca50e7cdd3e70e36fae0d1f12f21"
+    ],
+    "bin": "Tomte.Shell.exe",
+    "shortcuts": [
+        [
+            "Tomte.Shell.exe",
+            "Tomte"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/xditya/tomte-windows"
+    },
+    "autoupdate": {
+        "url": [
+            "https://github.com/xditya/tomte-windows/releases/download/v$version/Tomte_$version.0_x64.msix#/dl.7z",
+            "https://github.com/xditya/tomte-windows/releases/download/v$version/Tomte-test-certificate.cer"
+        ]
+    },
+    "notes": [
+        "Imports the developer's self-signed test certificate into LocalMachine\\TrustedPeople (requires UAC/admin approval); this trusts packages signed with that certificate. The current Scoop install still runs Tomte unpackaged. Remove the certificate manually when no longer needed.",
+        "Settings and data remain in %LOCALAPPDATA%\\Tomte; package startup and firewall integrations are not registered."
+    ],
+    "pre_install": [
+        "$certPath = Join-Path $dir 'Tomte-test-certificate.cer'",
+        "$certificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($certPath)",
+        "$trusted = Get-ChildItem 'Cert:\\LocalMachine\\TrustedPeople' | Where-Object { $_.Thumbprint -eq $certificate.Thumbprint }",
+        "if (-not $trusted) {",
+        "    $pathData = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($certPath))",
+        "    $command = \"`$ErrorActionPreference = 'Stop'; `$path = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('$pathData')); `$cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(`$path); if (-not (Get-ChildItem 'Cert:\\LocalMachine\\TrustedPeople' | Where-Object { `$_.Thumbprint -eq `$cert.Thumbprint })) { Import-Certificate -FilePath `$path -CertStoreLocation 'Cert:\\LocalMachine\\TrustedPeople' -ErrorAction Stop | Out-Null }\"",
+        "    $encodedCommand = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($command))",
+        "    $process = Start-Process -FilePath 'powershell.exe' -Verb RunAs -Wait -PassThru -ArgumentList @('-NoProfile', '-EncodedCommand', $encodedCommand)",
+        "    if ($process.ExitCode -ne 0) { throw 'Failed to trust Tomte signing certificate.' }",
+        "}"
+    ]
+}
