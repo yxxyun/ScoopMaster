@@ -1,0 +1,45 @@
+{
+    "version": "2.10.5",
+    "description": "Native Windows dictation and in-place selection translation using speech and language-model providers.",
+    "homepage": "https://margbug01.github.io/mami/",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/margbug01/mami/releases/download/v2.10.5/Mami.exe",
+            "hash": "cbc326276ae6aee0f8a4442c7421fe777f21d0ae5e99378889397ba3982329b2"
+        }
+    },
+    "bin": "Mami.exe",
+    "shortcuts": [
+        [
+            "Mami.exe",
+            "Mami"
+        ]
+    ],
+    "checkver": {
+        "script": [
+            "$headers = @{ 'Accept' = 'application/vnd.github+json'; 'User-Agent' = 'Scoop-KiroBucket' }",
+            "if ($env:GITHUB_TOKEN) { $headers.Authorization = \"Bearer $env:GITHUB_TOKEN\" }",
+            "$releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/margbug01/mami/releases?per_page=100' -Headers $headers -TimeoutSec 30 -ErrorAction Stop",
+            "$release = $releases | Where-Object { -not $_.draft -and -not $_.prerelease -and @($_.assets | Where-Object { $_.name -eq 'Mami.exe' }).Count -gt 0 } | Sort-Object { [datetime]$_.published_at } -Descending | Select-Object -First 1",
+            "if ($null -eq $release) { throw 'No stable Mami Windows portable executable was found in GitHub releases.' }",
+            "$tag = [regex]::Match([string]$release.tag_name, '^v(?<version>[\\d.]+)$')",
+            "if (-not $tag.Success) { throw 'The Mami release tag does not match the expected version format.' }",
+            "$tag.Groups['version'].Value"
+        ],
+        "regex": "^([\\d.]+)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/margbug01/mami/releases/download/v$version/Mami.exe",
+                "hash": {
+                    "mode": "json",
+                    "url": "https://api.github.com/repos/margbug01/mami/releases/tags/v$version",
+                    "jp": "$.assets[?(@.name == 'Mami.exe')].digest"
+                }
+            }
+        }
+    },
+    "notes": "The portable build keeps settings and user data in %APPDATA%\\Mami. Use Scoop to manage updates."
+}

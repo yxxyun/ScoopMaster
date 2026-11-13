@@ -31,41 +31,17 @@
     ],
     "checkver": {
         "script": [
-            "$url = 'https://support.emeditor.com/en/downloads/latest/portable'",
-            "$version = '0.0.0'",
-            "try {",
-            "    $req = [System.Net.HttpWebRequest]::Create($url)",
-            "    $req.AllowAutoRedirect = $true",
-            "    $req.MaximumAutomaticRedirections = 10",
-            "    $req.UserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'",
-            "    $resp = $req.GetResponse()",
-            "    $finalUri = $resp.ResponseUri.AbsoluteUri",
-            "    $contentType = $resp.ContentType",
-            "    if ($finalUri -match 'emed64_([\\d.]+)_portable\\.zip') {",
-            "        $version = $matches[1]",
-            "        $resp.Close()",
-            "    } elseif ($contentType -match 'text/html') {",
-            "        $stream = $resp.GetResponseStream()",
-            "        $buffer = New-Object byte[] 51200",
-            "        $read = $stream.Read($buffer, 0, 51200)",
-            "        $content = [System.Text.Encoding]::UTF8.GetString($buffer, 0, $read)",
-            "        $stream.Close()",
-            "        $resp.Close()",
-            "        if ($content -match 'emed64_([\\d.]+)_portable\\.zip') {",
-            "            $version = $matches[1]",
-            "        }",
-            "    } else {",
-            "        $resp.Close()",
-            "    }",
-            "} catch {}",
-            "Write-Output $version"
+            ". $Dir\\..\\scripts\\Get-TrueUrl.ps1",
+            "$dl_url = 'https://support.emeditor.com/en/downloads/latest/portable/64'",
+            "$true_url = Get-TrueUrl $dl_url",
+            "$true_url"
         ],
-        "regex": "([\\d.]+)"
+        "regex": "https://(?<site>[^\\s]+)/emed64_(?<version>[\\d.]+)_portable.zip"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://download.emeditor.com/emed64_$version_portable.zip"
+                "url": "https://$matchSite/emed64_$version_portable.zip"
             }
         }
     }

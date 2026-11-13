@@ -1,59 +1,51 @@
 {
     "version": "0.13.2",
-    "description": "Metasequoia IME (MSIME), a free and open-source Chinese input method for Windows built on TSF.",
+    "description": "水杉输入法 (Metasequoia IME) — 开源的 Windows 中文 / 日文 TSF 输入法",
     "homepage": "https://msime.app/",
     "license": "GPL-3.0-only",
-    "##": "scoop update runs the uninstaller hook of the old manifest before installing the new version (scoop-update.ps1), and the vendor uninstaller deletes the user data directory, so the uninstaller hook returns early when Scoop's $cmd is 'update'.",
-    "notes": [
-        "The setup registers a TSF input method for all users, so installing and uninstalling both need administrator rights and raise a UAC prompt.",
-        "This package only wraps the official setup: program files go to %ProgramFiles%\\metasequoiaime and the TSF DLLs to %SystemRoot%\\System32%\\IME\\MetasequoiaIME, outside the Scoop apps directory.",
-        "User data (settings, learned words, skins) is kept in %LOCALAPPDATA%\\metasequoiaime. 'scoop update' keeps it by skipping the vendor uninstaller, while a real 'scoop uninstall' runs that uninstaller, which deletes the directory.",
-        "The vendor uninstaller leaves the input method in the Windows language list after removing its files; delete it under Settings > Time & language > Language & region if Win+Space still lists it.",
-        "The setup is Authenticode-signed by 'Open Source Developer LU FAN' (SignPath Foundation); Scoop only verifies the SHA256, so check the signature if you need that guarantee too.",
-        "The x64 Microsoft Visual C++ 2015-2022 Redistributable is required; without it the server exits and the input method cannot be turned on.",
-        "Press Win+Space to switch to the input method after installing."
+    "##": [
+        "更新（scoop update）时不要运行厂商卸载器：unins000.exe 会把整个用户数据目录 %LOCALAPPDATA%\\metasequoiaime 删掉，使用后的 config.toml、用户词库 msime_user.db / user_dict.dat、skins / shuangpin / models 会一并丢失。",
+        "升级所需的清理由厂商安装器自己完成（msime_setup.iss 的 PrepareToInstall：停输入法进程、清旧 server / TSF 目录、CleanAppDataExceptUserFiles 保留用户文件并替换随包数据），即厂商「覆盖安装」的升级路径，所以更新前跑卸载器是多余的。",
+        "uninstaller.script 用 $cmd 判别当前子命令：'update' 时直接 return；其余情况（真卸载 'uninstall'，以及识别不到 $cmd 时）照旧运行厂商卸载器，方向安全 —— 真卸载仍按厂商本意清空用户数据。",
+        "$cmd 由 scoop 的 lib\\commands.ps1 里 function exec($cmd, $arguments) 提供，经动态作用域在 installer / uninstaller 等钩子中可见（本机 scoop v0.6.0 用 dummy 应用实测：更新时为 'update'，真卸载时为 'uninstall'）。"
     ],
     "suggest": {
-        "Microsoft Visual C++ 2015-2022 Redistributable (x64)": "extras/vcredist2022"
+        "VC++ x64 运行库": "extras/vcredist2022"
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/metasequoiaime/MSIME-Windows/releases/download/v0.13.2/MetasequoiaIME_Setup_v0.13.2.exe",
+            "url": "https://github.com/metasequoiaime/msime-windows/releases/download/v0.13.2/MetasequoiaIME_Setup_v0.13.2.exe#/MetasequoiaIME_Setup.exe",
             "hash": "34db47d0d6894164f83c665cccb809de9e8e3ff36f975fed63d3069f02108a7d"
         }
     },
     "installer": {
-        "script": [
-            "$setup = Get-ChildItem -LiteralPath $dir -Filter '*.exe' | Select-Object -First 1",
-            "if (!$setup) { abort 'The Metasequoia IME setup was not downloaded.' }",
-            "$exitCodes = @{ 3010 = 'A restart is required to finish the installation.' }",
-            "if (!(Invoke-ExternalCommand -FilePath $setup.FullName -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-' -Activity 'Running the Metasequoia IME setup' -RunAs -ContinueExitCodes $exitCodes)) { abort 'The Metasequoia IME setup failed.' }",
-            "Remove-Item -LiteralPath $setup.FullName -Force -ErrorAction SilentlyContinue"
-        ]
+        "script": "Start-Process -FilePath \"$dir\\MetasequoiaIME_Setup.exe\" -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', \"/DIR=$dir\") -Wait"
     },
     "uninstaller": {
         "script": [
-            "$programFiles = if ($env:ProgramW6432) { $env:ProgramW6432 } else { $env:ProgramFiles }",
             "if ($cmd -eq 'update') {",
-            "    Write-Host 'Skipping the vendor uninstaller during update: it would delete %LOCALAPPDATA%\\metasequoiaime.'",
+            "    Write-Host '更新模式：跳过厂商卸载器，保留 %LOCALAPPDATA%\\metasequoiaime 下的用户配置与词库。'",
             "    return",
             "}",
-            "$uninstaller = Get-ChildItem -LiteralPath (Join-Path $programFiles 'metasequoiaime') -Filter 'unins*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1",
-            "$exitCodes = @{ 3010 = 'A restart is required to finish the uninstallation.' }",
-            "if ($uninstaller -and !(Invoke-ExternalCommand -FilePath $uninstaller.FullName -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Activity 'Running the Metasequoia IME uninstaller' -RunAs -ContinueExitCodes $exitCodes)) { abort 'The Metasequoia IME uninstaller failed.' }"
+            "if (Test-Path \"$dir\\unins000.exe\") {",
+            "    Start-Process -FilePath \"$dir\\unins000.exe\" -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') -Wait",
+            "}"
         ]
     },
+    "notes": [
+        "TSF 输入法，安装 / 卸载需管理员权限，建议用管理员终端执行 scoop 命令。",
+        "安装后按 Win + 空格 切换，可能需要注销或重启生效。",
+        "缺 VC++ x64 运行库会闪退，可先 scoop install vcredist2022。",
+        "scoop update 不会删除用户数据（%LOCALAPPDATA%\\metasequoiaime 里的配置、词库、皮肤、models）；scoop uninstall 会按厂商逻辑清空它。"
+    ],
     "checkver": {
-        "github": "https://github.com/metasequoiaime/MSIME-Windows"
+        "github": "https://github.com/metasequoiaime/msime-windows"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/metasequoiaime/MSIME-Windows/releases/download/v$version/MetasequoiaIME_Setup_v$version.exe"
+                "url": "https://github.com/metasequoiaime/msime-windows/releases/download/v$version/MetasequoiaIME_Setup_v$version.exe#/MetasequoiaIME_Setup.exe"
             }
-        },
-        "hash": {
-            "mode": "github"
         }
     }
 }
