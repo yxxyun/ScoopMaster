@@ -1,0 +1,45 @@
+{
+    "version": "1.0.0",
+    "description": "Windows utility for tracking PC uptime, reviewing session history, and analyzing system stability.",
+    "homepage": "https://uptime-pc.vercel.app/",
+    "license": "Proprietary",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/ildenteproibito/PC-Uptime/releases/download/1.0.0/Uptime-1.0.0-win-x64-portable.zip",
+            "hash": "64c25005b668a5c500dfef75526ccb62e10f856f797bd30ec2f013218e85bd76"
+        }
+    },
+    "shortcuts": [
+        [
+            "Uptime.exe",
+            "PC Uptime"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/ildenteproibito/PC-Uptime"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/ildenteproibito/PC-Uptime/releases/download/$version/Uptime-$version-win-x64-portable.zip",
+                "hash": {
+                    "mode": "json",
+                    "url": "https://api.github.com/repos/ildenteproibito/PC-Uptime/releases/tags/$version",
+                    "jp": "$.assets[?(@.name == 'Uptime-$version-win-x64-portable.zip')].digest"
+                }
+            }
+        }
+    },
+    "pre_install": [
+        "$archives = @(Get-ChildItem -LiteralPath $dir -File -Filter 'Uptime-*-win-x64-portable.zip')",
+        "if ($archives.Count -ne 1) { throw \"Expected one nested PC Uptime payload ZIP; found $($archives.Count).\" }",
+        "$payloadDir = Join-Path $dir '.pc-uptime-payload'",
+        "if (Test-Path -LiteralPath $payloadDir) { throw \"Temporary extraction directory already exists: $payloadDir\" }",
+        "New-Item -ItemType Directory -Path $payloadDir -ErrorAction Stop | Out-Null",
+        "Expand-Archive -LiteralPath $archives[0].FullName -DestinationPath $payloadDir -ErrorAction Stop",
+        "if (-not (Test-Path -LiteralPath (Join-Path $payloadDir 'Uptime.exe') -PathType Leaf)) { throw 'The nested archive does not contain Uptime.exe at its root.' }",
+        "Get-ChildItem -LiteralPath $payloadDir -Force | Move-Item -Destination $dir -ErrorAction Stop",
+        "Remove-Item -LiteralPath $payloadDir -Recurse -Force -ErrorAction Stop",
+        "Remove-Item -LiteralPath $archives[0].FullName -Force -ErrorAction Stop"
+    ]
+}

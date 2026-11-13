@@ -1,44 +1,44 @@
 {
-    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+    "##": "Tauri desktop app (NSIS installer). Silent install /S /D=$dir; removal delegates to Tauri NSIS uninstaller. App data lives in %APPDATA%\\codeg, not managed by Scoop.",
     "version": "0.43.0",
-    "description": "Aggregate and browse AI coding agent sessions (Claude Code, Codex, Gemini CLI, etc.) in one place. Desktop app, self-hosted server, or Docker",
-    "homepage": "https://github.com/xintaofei/codeg",
-    "license": "Apache-2.0",
-    "depends": "main/nanazip",
+    "description": "Codeg —— 多智能体协作编码工作台：一个界面聚合 Claude Code/Codex/OpenCode/Pi/Grok 等 20+ 智能体会话，支持会话迁移、@ 委派、后台待办、Git 工作树与仓库面板",
+    "homepage": "https://github.com/spacering-net/codeg",
+    "license": {
+        "identifier": "Apache-2.0",
+        "url": "https://github.com/spacering-net/codeg/blob/main/LICENSE"
+    },
+    "notes": [
+        "桌面 GUI 应用，数据与配置默认在 %APPDATA%\\codeg，Scoop 不接管",
+        "只想无头自托管/浏览器访问请装 codeg-server 包",
+        "卸载走安装目录下的 Tauri NSIS 卸载器（静默）"
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/xintaofei/codeg/releases/download/v0.43.0/codeg_0.43.0_x64-setup.exe#/nsis.exe",
+            "url": "https://github.com/spacering-net/codeg/releases/download/v0.43.0/codeg_0.43.0_x64-setup.exe",
             "hash": "935d23b9f92a5720eb79fab815d43b8231efc8693ee1321a2eb9f3345f37c758"
         }
     },
     "installer": {
         "script": [
-            "7z x -bso0 -bsp0 -y \"$dir\\nsis.exe\" \"-o$dir\"",
-            "Remove-Item -Path \"$dir\\nsis.exe\" -Recurse",
-            "Remove-Item -Path \"$dir\\*.nsi\" -Recurse",
-            "Remove-Item -Path \"$dir\\`$*\" -Recurse"
+            "$installer = Join-Path $dir $fname",
+            "Start-Process -FilePath $installer -ArgumentList '/S', \"/D=$dir\" -Wait",
+            "Remove-Item $installer -Force"
         ]
     },
-    "shortcuts": [
-        [
-            "codeg.exe",
-            "Codeg"
+    "uninstaller": {
+        "script": [
+            "$names = @('Uninstall codeg.exe','Uninstall Codeg.exe','Uninstall.exe')",
+            "foreach ($n in $names) { $u = Join-Path $dir $n; if (Test-Path -LiteralPath $u) { Start-Process -FilePath $u -ArgumentList '/S' -Wait; break } }"
         ]
-    ],
-    "bin": [
-        "codeg-cli.exe",
-        [
-            "codeg-cli.exe",
-            "codeg"
-        ],
-        "codeg-computer-helper.exe",
-        "codeg-mcp.exe"
-    ],
-    "checkver": "github",
+    },
+    "checkver": {
+        "url": "https://github.com/spacering-net/codeg/releases/latest/download/latest.json",
+        "regex": "\"version\"\\s*:\\s*\"([\\d.]+)\""
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/xintaofei/codeg/releases/download/v$version/codeg_$version_x64-setup.exe#/nsis.exe"
+                "url": "https://github.com/spacering-net/codeg/releases/download/v$version/codeg_$version_x64-setup.exe"
             }
         }
     }

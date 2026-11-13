@@ -1,63 +1,18 @@
 {
     "version": "0.7",
-    "description": "Small Windows utility for registering custom URL protocols.",
+    "description": "自定义协议 URL Protocol",
     "homepage": "https://github.com/xifangczy/URLProtocol",
-    "license": "GPL-3.0-only",
+    "license": "GPL-3.0 license",
     "url": "https://github.com/xifangczy/URLProtocol/releases/download/0.7/URLProtocol.zip",
     "hash": "2da252504e7c7c6925ab55ed483a0a56ae105848b5f638a5ee065a1a39c706ce",
-    "notes": "The executable is launched directly from Scoop's persistent directory so registered URL protocols keep a stable path across updates.",
-    "persist": "URLProtocol.exe",
-    "pre_install": [
-        "$persistExe = Join-Path $persist_dir 'URLProtocol.exe'",
-        "$launcherContent = '@echo off' + [Environment]::NewLine + 'start \"\" \"' + $persistExe + '\" %*' + [Environment]::NewLine",
-        "Set-Content -LiteralPath (Join-Path $dir 'URLProtocol.cmd') -Value $launcherContent -Encoding ASCII"
+    "shortcuts": [
+        [
+            "URLProtocol.exe",
+            "URLProtocol"
+        ]
     ],
-    "bin": "URLProtocol.cmd",
-    "post_install": [
-        "$persistExe = Join-Path $persist_dir 'URLProtocol.exe'",
-        "if (-not (Test-Path -LiteralPath $persistExe -PathType Leaf)) { throw 'URLProtocol.exe was not persisted.' }",
-        "$programsFolder = if ($global) { [Environment]::GetFolderPath([Environment+SpecialFolder]::CommonPrograms) } else { [Environment]::GetFolderPath([Environment+SpecialFolder]::Programs) }",
-        "$shortcutFolder = Join-Path $programsFolder 'Scoop Apps'",
-        "New-Item -ItemType Directory -Path $shortcutFolder -Force | Out-Null",
-        "$shortcutPath = Join-Path $shortcutFolder 'URLProtocol.lnk'",
-        "$shell = New-Object -ComObject WScript.Shell",
-        "$shortcut = $shell.CreateShortcut($shortcutPath)",
-        "$shortcut.TargetPath = $persistExe",
-        "$shortcut.WorkingDirectory = $persist_dir",
-        "$shortcut.IconLocation = \"$persistExe,0\"",
-        "$shortcut.Save()"
-    ],
-    "checkver": {
-        "url": "https://api.github.com/repos/xifangczy/URLProtocol/releases/latest",
-        "jsonpath": "$.tag_name",
-        "regex": "^(?<version>[\\d.]+)$"
-    },
+    "checkver": "github",
     "autoupdate": {
         "url": "https://github.com/xifangczy/URLProtocol/releases/download/$version/URLProtocol.zip"
-    },
-    "post_uninstall": [
-        "$persistExe = [System.IO.Path]::GetFullPath((Join-Path $persist_dir 'URLProtocol.exe'))",
-        "$expectedCommand = '\"{0}\" \"%1\"' -f $persistExe",
-        "$classesPath = 'HKCU:\\Software\\Classes'",
-        "Get-ChildItem -LiteralPath $classesPath -ErrorAction SilentlyContinue | ForEach-Object {",
-        "    $protocolPath = Join-Path $classesPath $_.PSChildName",
-        "    $commandPath = Join-Path $protocolPath 'shell\\open\\command'",
-        "    if (Test-Path -LiteralPath $commandPath) {",
-        "        $commandKey = Get-Item -LiteralPath $commandPath -ErrorAction SilentlyContinue",
-        "        $protocolKey = Get-Item -LiteralPath $protocolPath -ErrorAction SilentlyContinue",
-        "        if ($null -ne $commandKey -and $null -ne $protocolKey) {",
-        "            $registeredCommand = [string]$commandKey.GetValue('')",
-        "            $registeredTarget = $commandKey.GetValue('Target', $null)",
-        "            $urlProtocol = $protocolKey.GetValue('URL Protocol', $null)",
-        "            if ($registeredCommand -ieq $expectedCommand -and $null -ne $registeredTarget -and $null -ne $urlProtocol) {",
-        "                Remove-Item -LiteralPath $protocolPath -Recurse -Force",
-        "            }",
-        "        }",
-        "    }",
-        "}",
-        "$programsFolder = if ($global) { [Environment]::GetFolderPath([Environment+SpecialFolder]::CommonPrograms) } else { [Environment]::GetFolderPath([Environment+SpecialFolder]::Programs) }",
-        "$shortcutPath = Join-Path (Join-Path $programsFolder 'Scoop Apps') 'URLProtocol.lnk'",
-        "Remove-Item -LiteralPath $shortcutPath -Force -ErrorAction SilentlyContinue",
-        "Remove-Item -LiteralPath $persistExe -Force -ErrorAction SilentlyContinue"
-    ]
+    }
 }

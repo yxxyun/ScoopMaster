@@ -1,0 +1,56 @@
+{
+    "version": "1.8.9",
+    "description": "Lightweight desktop widgets for Windows with a community widget gallery.",
+    "homepage": "https://github.com/whoissaaif/desk-widgets",
+    "license": "MIT",
+    "url": "https://github.com/whoissaaif/desk-widgets/releases/download/v1.8.9/DeskWidgets.exe",
+    "hash": "1344e39dfbc212053cc1e8c13377f8508768b7cf0661e1a4e38cd7416245c5b0",
+    "bin": "DeskWidgets.exe",
+    "shortcuts": [
+        [
+            "DeskWidgets.exe",
+            "Desk Widgets"
+        ]
+    ],
+    "pre_uninstall": [
+        "$appRoot = [IO.Path]::GetFullPath((Split-Path $dir))",
+        "$isManagedPath = { param($path) if ([string]::IsNullOrWhiteSpace([string]$path)) { return $false }; try { $candidate = [IO.Path]::GetFullPath(([string]$path).Trim('\"')); return $candidate.StartsWith($appRoot.TrimEnd('\\') + '\\', [StringComparison]::OrdinalIgnoreCase) } catch { return $false } }",
+        "Get-CimInstance -ClassName Win32_Process -Filter \"Name='DeskWidgets.exe'\" -ErrorAction SilentlyContinue | Where-Object { & $isManagedPath $_.ExecutablePath } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
+        "$protocolKey = 'HKCU:\\Software\\Classes\\deskwidgets'",
+        "$protocolCommandKey = Join-Path $protocolKey 'shell\\open\\command'",
+        "$protocolCommand = if (Test-Path -LiteralPath $protocolCommandKey) { (Get-Item -LiteralPath $protocolCommandKey).GetValue('') }",
+        "$protocolExe = [regex]::Match([string]$protocolCommand, '^\\s*\"([^\"]+)\"').Groups[1].Value",
+        "if (& $isManagedPath $protocolExe) { Remove-Item -LiteralPath $protocolKey -Recurse -Force }",
+        "$runKey = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "$runValue = if (Test-Path -LiteralPath $runKey) { (Get-Item -LiteralPath $runKey).GetValue('DeskWidgets') }",
+        "$runExe = [regex]::Match([string]$runValue, '^\\s*\"([^\"]+)\"').Groups[1].Value",
+        "if (& $isManagedPath $runExe) { Remove-ItemProperty -LiteralPath $runKey -Name 'DeskWidgets' -Force }",
+        "$task = Get-ScheduledTask -TaskName 'DeskWidgets' -ErrorAction SilentlyContinue",
+        "$taskActions = @($task.Actions | Where-Object { & $isManagedPath $_.Execute })",
+        "if ($taskActions.Count -gt 0) { Unregister-ScheduledTask -TaskName 'DeskWidgets' -Confirm:$false -ErrorAction SilentlyContinue }",
+        "$shortcutPath = Join-Path ([Environment]::GetFolderPath('Programs')) 'Desk Widgets.lnk'",
+        "if (Test-Path -LiteralPath $shortcutPath) {",
+        "    $shell = $null",
+        "    $shortcut = $null",
+        "    try {",
+        "        $shell = New-Object -ComObject WScript.Shell",
+        "        $shortcut = $shell.CreateShortcut($shortcutPath)",
+        "        if (& $isManagedPath $shortcut.TargetPath) { Remove-Item -LiteralPath $shortcutPath -Force }",
+        "    } finally {",
+        "        if ($shortcut) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($shortcut) }",
+        "        if ($shell) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell) }",
+        "    }",
+        "}"
+    ],
+    "checkver": {
+        "github": "https://github.com/whoissaaif/desk-widgets"
+    },
+    "autoupdate": {
+        "url": "https://github.com/whoissaaif/desk-widgets/releases/download/v$version/DeskWidgets.exe",
+        "hash": {
+            "url": "https://api.github.com/repos/whoissaaif/desk-widgets/releases/latest",
+            "regex": "\"name\"\\s*:\\s*\"DeskWidgets\\.exe\"[\\s\\S]*?\"digest\"\\s*:\\s*\"sha256:([a-fA-F0-9]{64})\""
+        }
+    },
+    "notes": "By default, settings and cache are stored in %APPDATA%\\DeskWidgets and remain after uninstall. Creating widgets.ini beside the executable switches to portable mode; its data is stored in the app version directory and is replaced on update. The built-in updater can overwrite the Scoop-managed executable; use Scoop to update Desk Widgets."
+}
