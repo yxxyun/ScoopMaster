@@ -1,54 +1,26 @@
 {
-    "##": [
-        "Why here?",
-        "* Testing.",
-        "* Has already been rejected from Scoop main bucket once.",
-        "  * 2025-10-16 <https://github.com/ScoopInstaller/Main/pull/7264>"
-    ],
     "version": "0.36.0",
-    "description": "Package manager version manager for Node.js projects",
+    "description": "Zero-runtime-dependency package acting as bridge between Node projects and their package managers",
     "homepage": "https://github.com/nodejs/corepack",
     "license": "MIT",
-    "notes": [
-        "Requires Node.js in PATH to function:",
-        "* Either install with `scoop install main/node`",
-        "* Or use a Node.js version manager like fnm.",
-        "This will likely fail to shim `npm` and `npx` if using",
-        "a Node.js version manager like fnm, as it will likely",
-        "modify PATH."
-    ],
+    "suggest": {
+        "nodejs": "main/nodejs"
+    },
     "url": "https://github.com/nodejs/corepack/releases/download/v0.36.0/corepack.tgz",
     "hash": "9128cfe26aee0c99f4fc68c15c6b8b12309a68be0de2c012cdfea2a463cb722f",
     "extract_dir": "package",
-    "bin": [
-        [
-            "shims\\corepack.cmd",
-            "corepack"
-        ],
-        [
-            "shims\\npm.cmd",
-            "npm"
-        ],
-        [
-            "shims\\npx.cmd",
-            "npx"
-        ],
-        [
-            "shims\\pnpm.cmd",
-            "pnpm"
-        ],
-        [
-            "shims\\pnpx.cmd",
-            "pnpx"
-        ],
-        [
-            "shims\\yarn.cmd",
-            "yarn"
-        ],
-        [
-            "shims\\yarnpkg.cmd",
-            "yarnpkg"
-        ]
+    "env_add_path": "shims/nodewin",
+    "post_install": [
+        "Get-ChildItem \"$dir/shims/nodewin\" | ForEach-Object {",
+        "    (Get-Content $_.FullName).Replace($(",
+        "        if ($_.Name -like '*.cmd') {",
+        "            '%~dp0\\node_modules\\corepack'",
+        "        }",
+        "        else {",
+        "            '$basedir/node_modules/corepack'",
+        "        }",
+        "    ), $dir) | Set-Content $_.FullName.Replace('\\', '/')",
+        "}"
     ],
     "checkver": "github",
     "autoupdate": {

@@ -1,89 +1,41 @@
 {
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
     "version": "0.21.1",
-    "description": "Open-source photo library and raw developer that runs locally: cataloguing, non-destructive develop tools and batch export",
+    "description": "Open-source Adobe Lightroom-style photo management app in pure Rust",
     "homepage": "https://github.com/storytold/lightcraft",
-    "license": "MIT OR Apache-2.0",
-    "notes": [
-        "LightCraft's data directory (settings, autosave, logs) is redirected to '$persist_dir\\config' through the LIGHTCRAFT_CONFIG_DIR environment variable, so it lives in Scoop's persist store and survives 'scoop update'.",
-        "LIGHTCRAFT_CONFIG_DIR is a USER-level environment variable, so any other LightCraft installation (the MSI build, for example) uses this directory too.",
-        "The first install copies an existing %APPDATA%\\LightCraft into the persist folder. 'scoop uninstall' removes the variable and LightCraft falls back to %APPDATA%\\LightCraft, so the pre-uninstall hook mirrors the state back there first; that also runs on 'scoop update'.",
-        "'lightcraft-cli.exe' is exposed as the 'lightcraft-cli' shim.",
-        "The portable zip does not register the file associations that the MSI installer adds.",
-        "The app has no built-in updater; use 'scoop update lightcraft' so the install and this manifest stay in sync."
-    ],
+    "license": "MIT",
     "architecture": {
         "64bit": {
             "url": "https://github.com/storytold/lightcraft/releases/download/v0.21.1/lightcraft-0.21.1-windows-x64-portable.zip",
             "hash": "c2f195a4611bd7a314675c090b71e46e14001a232ba825edd5b6ea0ea7f616da",
-            "installer": {
-                "script": [
-                    "$stage = \"$dir\\lightcraft-$version-windows-x64-portable\"",
-                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
-                    "Remove-Item $stage -ErrorAction Stop"
-                ]
-            }
+            "extract_dir": "lightcraft-0.21.1-windows-x64-portable"
         },
         "arm64": {
             "url": "https://github.com/storytold/lightcraft/releases/download/v0.21.1/lightcraft-0.21.1-windows-arm64-portable.zip",
             "hash": "ba7af25ccb555f72747c5b52c57518e57c45e846de19267a3633acabc8d5976f",
-            "installer": {
-                "script": [
-                    "$stage = \"$dir\\lightcraft-$version-windows-arm64-portable\"",
-                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
-                    "Remove-Item $stage -ErrorAction Stop"
-                ]
-            }
+            "extract_dir": "lightcraft-0.21.1-windows-arm64-portable"
         }
     },
-    "pre_install": [
-        "$target = \"$persist_dir\\config\"",
-        "$legacy = \"$env:APPDATA\\LightCraft\"",
-        "if (!(Test-Path $target) -and (Test-Path $legacy)) {",
-        "    if (Get-Process -Name 'lightcraft*' -ErrorAction SilentlyContinue) {",
-        "        abort 'LightCraft is running, so %APPDATA%\\LightCraft cannot be copied into Scoop persist safely. Quit LightCraft, then run the install again.'",
-        "    }",
-        "    $previous = $ErrorActionPreference",
-        "    $ErrorActionPreference = 'Continue'",
-        "    $null = robocopy $legacy $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
-        "    $code = $LASTEXITCODE",
-        "    $ErrorActionPreference = $previous",
-        "    if ($code -ge 8) { warn \"robocopy exit $code while copying '$legacy' to '$target'; compare the two directories before relying on the new location.\" } else { info \"Copied '$legacy' to '$target'.\" }",
-        "}"
+    "bin": [
+        "lightcraft.exe",
+        "lightcraft-cli.exe"
     ],
-    "pre_uninstall": [
-        "$legacy = \"$env:APPDATA\\LightCraft\"",
-        "$data = \"$persist_dir\\config\"",
-        "if (!(Test-Path $data) -or @(Get-ChildItem $data -Force).Count -eq 0) { return }",
-        "if (Get-Process -Name 'lightcraft*' -ErrorAction SilentlyContinue) {",
-        "    warn 'LightCraft is running, so the state was not mirrored back to %APPDATA%\\LightCraft. Quit it and uninstall again if you want that safety copy.'",
-        "    return",
-        "}",
-        "$previous = $ErrorActionPreference",
-        "$ErrorActionPreference = 'Continue'",
-        "$null = robocopy $data $legacy /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
-        "$code = $LASTEXITCODE",
-        "$ErrorActionPreference = $previous",
-        "if ($code -ge 8) { warn \"robocopy exit $code while mirroring '$data' back to '$legacy'.\" } else { info \"Mirrored '$data' back to '$legacy': scoop removes LIGHTCRAFT_CONFIG_DIR on uninstall and LightCraft falls back to that path.\" }"
-    ],
-    "bin": "lightcraft-cli.exe",
     "shortcuts": [
         [
             "lightcraft.exe",
-            "LightCraft"
+            "Lightcraft"
         ]
     ],
-    "persist": "config",
-    "env_set": {
-        "LIGHTCRAFT_CONFIG_DIR": "$persist_dir\\config"
-    },
     "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/storytold/lightcraft/releases/download/v$version/lightcraft-$version-windows-x64-portable.zip"
+                "url": "https://github.com/storytold/lightcraft/releases/download/v$version/lightcraft-$version-windows-x64-portable.zip",
+                "extract_dir": "lightcraft-$version-windows-x64-portable"
             },
             "arm64": {
-                "url": "https://github.com/storytold/lightcraft/releases/download/v$version/lightcraft-$version-windows-arm64-portable.zip"
+                "url": "https://github.com/storytold/lightcraft/releases/download/v$version/lightcraft-$version-windows-arm64-portable.zip",
+                "extract_dir": "lightcraft-$version-windows-arm64-portable"
             }
         }
     }
