@@ -14,17 +14,14 @@
     "extract_dir": "sing-box-1.14.4-windows-amd64",
     "pre_install": [
         "Copy-Item -Path \"$bucketsdir\\$bucket\\scripts\\$app\\run.ps1\" -Destination \"$dir\\run.ps1\"",
-        "Copy-Item -Path \"$bucketsdir\\$bucket\\scripts\\$app\\default.json\" -Destination \"$dir\\default.json\""
+        "Copy-Item -Path \"$bucketsdir\\$bucket\\scripts\\$app\\mixed.json\" -Destination \"$dir\\mixed.json\""
     ],
     "post_install": [
-        "$Action = New-ScheduledTaskAction -Execute \"$dir\\sing-box.exe\" -Argument \"run -c config.json\" -WorkingDirectory $dir",
-        "$Trigger = New-ScheduledTaskTrigger -AtStartup",
-        "$Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable",
-        "$Principal = New-ScheduledTaskPrincipal -UserId \"SYSTEM\" -LogonType ServiceAccount -RunLevel Highest",
-        "Register-ScheduledTask -TaskName \"SingBoxStartup\" -Action $Action -Trigger $Trigger -Settings $Settings -Principal $Principal -Description \"Start sing-box service at startup\""
+        "schtasks /Create /TN \"SingBoxMixed\" /TR \"'$dir\\sing-box.exe' run -c mixed.json\" /SC ONSTART /RU SYSTEM /RL HIGHEST /F",
+        "schtasks /Create /TN \"SingBoxTun\" /TR \"'$dir\\sing-box.exe' run -c tun.json\" /SC ONSTART /RU SYSTEM /RL HIGHEST /F"
     ],
     "uninstaller": {
-        "script": "Unregister-ScheduledTask -TaskName \"SingBoxStartup\" -Confirm:$false"
+        "script": "Get-ScheduledTask -TaskName \"SingBox*\" -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false"
     },
     "checkver": "github",
     "autoupdate": {

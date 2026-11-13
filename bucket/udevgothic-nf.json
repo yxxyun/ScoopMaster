@@ -1,17 +1,72 @@
 {
     "version": "2.2.0",
-    "description": "Nerd Fonts patched 'UDEVGothic' Font family. (Normal version, Nerd Fonts Symbol/Icon could be 1 or 2 cell wide)",
+    "description": "UDEV Gothic with Nerd Fonts and ligatures (UDEVGothic35NFLG, half-width/full-width ratio 3:5).",
     "homepage": "https://github.com/yuru7/udev-gothic",
     "license": "OFL-1.1",
     "url": "https://github.com/yuru7/udev-gothic/releases/download/v2.2.0/UDEVGothic_NF_v2.2.0.zip",
     "hash": "45faeef7b5d8bc591bcc5887a2ca0c5fb9028066f18a5a52cd6f10b7d655ba37",
-    "depends": "jp-util-font",
     "extract_dir": "UDEVGothic_NF_v2.2.0",
     "installer": {
-        "script": "jp-util-font $true $dir '*.ttf'"
+        "script": [
+            "$currentBuildNumber = [int] (Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion').CurrentBuildNumber",
+            "if ($currentBuildNumber -lt 17763 -and !$global) {",
+            "    throw 'Per-user font installation requires Windows 10 version 1809 or later. Install with scoop install -g from an elevated terminal instead.'",
+            "}",
+            "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
+            "if (!$global) {",
+            "    New-Item -Path $fontInstallDir -ItemType Directory -Force | Out-Null",
+            "    $acl = Get-Acl -LiteralPath $fontInstallDir",
+            "    foreach ($sid in @('S-1-15-2-1', 'S-1-15-2-2')) {",
+            "        $identity = [System.Security.Principal.SecurityIdentifier]::new($sid)",
+            "        $rule = [System.Security.AccessControl.FileSystemAccessRule]::new($identity, 'ReadAndExecute', 'ContainerInherit,ObjectInherit', 'None', 'Allow')",
+            "        $acl.SetAccessRule($rule)",
+            "    }",
+            "    Set-Acl -LiteralPath $fontInstallDir -AclObject $acl",
+            "}",
+            "$registryRoot = if ($global) { 'HKLM' } else { 'HKCU' }",
+            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
+            "New-Item -Path $registryKey -Force | Out-Null",
+            "$fonts = @(Get-ChildItem -LiteralPath $dir -Filter 'UDEVGothic35NFLG-*.ttf' -File)",
+            "if ($fonts.Count -eq 0) { throw 'No UDEVGothic35NFLG fonts found in the archive.' }",
+            "foreach ($font in $fonts) {",
+            "    $name = if ($font.BaseName -eq 'UDEVGothic35NFLG-Regular') { 'UDEVGothic35NFLG (TrueType)' } else { \"$($font.BaseName) (TrueType)\" }",
+            "    $destination = Join-Path $fontInstallDir $font.Name",
+            "    $value = if ($global) { $font.Name } else { $destination }",
+            "    Copy-Item -LiteralPath $font.FullName -Destination $destination -Force -ErrorAction Stop",
+            "    New-ItemProperty -Path $registryKey -Name $name -Value $value -PropertyType String -Force -ErrorAction Stop | Out-Null",
+            "}"
+        ]
     },
+    "pre_uninstall": [
+        "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
+        "Get-ChildItem -LiteralPath $dir -Filter 'UDEVGothic35NFLG-*.ttf' -File | ForEach-Object {",
+        "    $installedFont = Join-Path $fontInstallDir $_.Name",
+        "    if (Test-Path -LiteralPath $installedFont) {",
+        "        try {",
+        "            Rename-Item -LiteralPath $installedFont -NewName $_.Name -ErrorAction Stop",
+        "        } catch {",
+        "            throw \"Cannot remove font '$installedFont'. Close applications using the font and retry. $($_.Exception.Message)\"",
+        "        }",
+        "    }",
+        "}"
+    ],
     "uninstaller": {
-        "script": "jp-util-font $false $dir '*.ttf'"
+        "script": [
+            "$fontInstallDir = if ($global) { \"$env:windir\\Fonts\" } else { \"$env:LOCALAPPDATA\\Microsoft\\Windows\\Fonts\" }",
+            "$registryRoot = if ($global) { 'HKLM' } else { 'HKCU' }",
+            "$registryKey = \"${registryRoot}:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts\"",
+            "Get-ChildItem -LiteralPath $dir -Filter 'UDEVGothic35NFLG-*.ttf' -File | ForEach-Object {",
+            "    $name = if ($_.BaseName -eq 'UDEVGothic35NFLG-Regular') { 'UDEVGothic35NFLG (TrueType)' } else { \"$($_.BaseName) (TrueType)\" }",
+            "    $installedFont = Join-Path $fontInstallDir $_.Name",
+            "    if (Test-Path -LiteralPath $installedFont) {",
+            "        Remove-Item -LiteralPath $installedFont -Force -ErrorAction Stop",
+            "    }",
+            "    Remove-ItemProperty -Path $registryKey -Name $name -Force -ErrorAction SilentlyContinue",
+            "}",
+            "if ($cmd -eq 'uninstall') {",
+            "    Write-Host 'Restart applications or Windows if the removed fonts remain visible.' -ForegroundColor Yellow",
+            "}"
+        ]
     },
     "checkver": "github",
     "autoupdate": {

@@ -1,5 +1,5 @@
 {
-    "version": "0.6.3.12",
+    "version": "0.6.3.14",
     "description": "The fastest browser for AI agents to run browser automation (ego lite)",
     "homepage": "https://lite.ego.app/",
     "license": "MIT",
@@ -8,14 +8,14 @@
         "首次启动需在 GUI 内完成 onboarding（可选择从其他浏览器导入数据）。",
         "ego-browser 命令由本清单的 shim 提供，不依赖 onboarding 写入的 PATH。",
         "升级 / 重装前请先完全退出 ego lite。",
-        "清单版本跟随官网安装器版本；浏览器本体由更新服务提供，实际版本可用 ego-browser --version 查看。",
+        "清单版本取官网安装器版本与更新服务载荷版本中的较高者；实际运行版本可用 ego-browser --version 查看。",
         "用户数据保存在 %LOCALAPPDATA%\\Citro Labs\\ego\\User Data，不随 Scoop 升级或卸载删除。",
         "首次启动会在 ~/.local/share/ego 建立指向 current 的 junction 并写入用户 PATH；卸载时本清单会自动清理这两个链接和 PATH 项。"
     ],
     "architecture": {
         "64bit": {
             "url": "https://cdn.ego.app/setup/windows/x64/egoliteSetup.exe",
-            "hash": "7e1a9f48dee0cd05ca56278411c605e27eddfc982b7373d358c940ec638cac06"
+            "hash": "b2e5881312201d2b03c306c1446d4ce996b92fa45611a9f60b224a1082cc5a65"
         }
     },
     "installer": {
@@ -96,7 +96,16 @@
         ]
     ],
     "checkver": {
-        "script": "(Invoke-WebRequest -Uri 'https://cdn.ego.app/setup/windows/x64/egoliteSetup.exe' -Method Head -UseBasicParsing).Headers['x-amz-meta-omaha-version']",
+        "script": [
+            "$body = @{ request = @{ protocol = '4.0'; acceptformat = 'crx3,download,puff,run,xz,zucc'; os = @{ platform = 'win'; arch = 'x64' }; apps = @(@{ appid = '{712B23BF-E734-4038-BE42-D5736B6D9570}'; updatecheck = @{} }) } } | ConvertTo-Json -Depth 5",
+            "$latest = $null",
+            "try {",
+            "    $raw = (Invoke-WebRequest -Uri 'https://update.citrolabs.ai/service/update2' -Method Post -Body $body -ContentType 'application/json' -UseBasicParsing).Content",
+            "    $latest = (($raw -replace '^[^{\\\\[]+', '') | ConvertFrom-Json).response.apps[0].updatecheck.nextversion",
+            "} catch { }",
+            "$stub = (Invoke-WebRequest -Uri 'https://cdn.ego.app/setup/windows/x64/egoliteSetup.exe' -Method Head -UseBasicParsing).Headers['x-amz-meta-omaha-version']",
+            "if ($latest -and ([version]$latest -gt [version]([string]$stub))) { $latest } else { [string]$stub }"
+        ],
         "regex": "([\\d.]+)"
     },
     "autoupdate": {

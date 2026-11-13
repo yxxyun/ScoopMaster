@@ -1,8 +1,12 @@
 {
     "version": "0.1.21",
-    "description": "Native AI teammate app for running agents on your computer, with end-to-end encrypted chat sync.",
+    "description": "Lorca desktop app: chat with your bots, which run on computers you own.",
     "homepage": "https://lorca.app",
-    "license": "GPL-3.0",
+    "license": "GPL-3.0-or-later",
+    "notes": [
+        "Lorca Desktop is self-updating via GitHub (desktop-v* release channel), so it may also update itself in place after installation.",
+        "The app stores its account, credentials, chats and preferences outside the Scoop directory (Windows app data, bundle id app.lorca), so this manifest does not persist them."
+    ],
     "architecture": {
         "64bit": {
             "url": "https://github.com/egoist/lorca/releases/download/desktop-v0.1.21/lorca-0.1.21-windows-amd64.tar.gz",
@@ -17,29 +21,14 @@
         ]
     ],
     "checkver": {
-        "script": [
-            "$headers = @{ 'Accept' = 'application/vnd.github+json'; 'User-Agent' = 'Scoop-KiroBucket' }",
-            "if ($env:GITHUB_TOKEN) { $headers.Authorization = \"Bearer $env:GITHUB_TOKEN\" }",
-            "$releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/egoist/lorca/releases?per_page=100' -Headers $headers -TimeoutSec 30 -ErrorAction Stop",
-            "$release = $releases | Where-Object { -not $_.draft -and -not $_.prerelease -and $_.tag_name -match '^desktop-v[\\d.]+$' -and @($_.assets | Where-Object { $_.name -match '^lorca-[\\d.]+-windows-amd64\\.tar\\.gz$' }).Count -gt 0 } | Sort-Object { [datetime]$_.published_at } -Descending | Select-Object -First 1",
-            "if ($null -eq $release) { throw 'No stable Lorca Windows desktop archive was found.' }",
-            "$tag = [regex]::Match([string]$release.tag_name, '^desktop-v(?<version>[\\d.]+)$')",
-            "if (-not $tag.Success) { throw 'The Lorca desktop tag does not match the expected version format.' }",
-            "$tag.Groups['version'].Value"
-        ],
-        "regex": "^([\\d.]+)$"
+        "url": "https://github.com/egoist/lorca/releases.atom",
+        "regex": "desktop-v([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/egoist/lorca/releases/download/desktop-v$version/lorca-$version-windows-amd64.tar.gz",
-                "hash": {
-                    "mode": "json",
-                    "url": "https://api.github.com/repos/egoist/lorca/releases/tags/desktop-v$version",
-                    "jp": "$.assets[?(@.name == 'lorca-$version-windows-amd64.tar.gz')].digest"
-                }
+                "url": "https://github.com/egoist/lorca/releases/download/desktop-v$version/lorca-$version-windows-amd64.tar.gz"
             }
         }
-    },
-    "notes": "The portable archive does not register the lorca:// URL handler installed by the Windows setup package. Use Scoop to manage versions."
+    }
 }
