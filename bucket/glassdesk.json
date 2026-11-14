@@ -1,0 +1,40 @@
+{
+    "version": "1.8.0",
+    "description": "Glass-style Windows desktop organizer with auto-sorting fences, drag-and-drop organization, and widgets.",
+    "homepage": "https://github.com/Stapc-svg/GlassDesk",
+    "license": "Unknown",
+    "url": "https://github.com/Stapc-svg/GlassDesk/releases/download/v1.8.0_windows/GlassDesk-Setup-1.8.0.msi#/setup.msi_",
+    "hash": "db0b6b51dadbc8784c16d7c7c9808ce1670aff9ba1f44fec089d4023d13bce42",
+    "installer": {
+        "script": [
+            "$msi = Join-Path $dir 'setup.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw \"GlassDesk MSI not found: $msi\" }",
+            "$log = Join-Path $dir 'glassdesk-msi-install.log'",
+            "$msiArgs = @('/i', ('\"{0}\"' -f $msi), '/qn', '/norestart', ('INSTALLDIR=\"{0}\"' -f $dir), '/L*V', ('\"{0}\"' -f $log))",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList $msiArgs -Wait -PassThru -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010)) { throw \"GlassDesk MSI installation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$msi = Join-Path $dir 'setup.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw \"GlassDesk MSI not found: $msi. Refusing to remove Scoop files while Windows Installer registration may remain.\" }",
+            "$log = Join-Path $dir 'glassdesk-msi-uninstall.log'",
+            "$msiArgs = @('/x', ('\"{0}\"' -f $msi), '/qn', '/norestart', '/L*V', ('\"{0}\"' -f $log))",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList $msiArgs -Wait -PassThru -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010)) { throw \"GlassDesk MSI uninstallation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
+    "checkver": {
+        "url": "https://api.github.com/repos/Stapc-svg/GlassDesk/releases?per_page=30",
+        "regex": "\"tag_name\"\\s*:\\s*\"v([\\d.]+)_windows\""
+    },
+    "autoupdate": {
+        "url": "https://github.com/Stapc-svg/GlassDesk/releases/download/v$version_windows/GlassDesk-Setup-$version.msi#/setup.msi_",
+        "hash": {
+            "url": "https://api.github.com/repos/Stapc-svg/GlassDesk/releases/tags/v$version_windows",
+            "regex": "\"name\"\\s*:\\s*\"GlassDesk-Setup-$version\\.msi\"[\\s\\S]*?\"digest\"\\s*:\\s*\"sha256:([a-f0-9]{64})\""
+        }
+    },
+    "notes": "Uses the publisher's per-user MSI, which registers an HKCU startup entry and Start Menu shortcut. The upstream repository does not publish a license for the GlassDesk application."
+}

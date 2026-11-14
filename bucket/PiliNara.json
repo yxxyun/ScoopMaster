@@ -1,53 +1,28 @@
 {
-    "##": "The release asset name carries its own build version (e.g. PiliNara_windows_2.2.0+6231_x64_portable.zip) that does NOT track the release tag (2.6.2), so autoupdate cannot rebuild the filename from $version: checkver reports the real asset name and autoupdate reuses it as $matchAsset. This checkver must never throw - Scoop invokes checkver.script with no try/catch, so an uncaught throw aborts the entire bucket-wide checkver run, not just this app. Returning nothing instead makes checkver report this app as an error while every other manifest is still checked.",
-    "version": "2.6.2",
-    "description": "A Flutter BiliBili desktop client forked from PiliPlus, with offline cache support",
-    "homepage": "https://github.com/Starfallan/PiliNara",
-    "license": "GPL-3.0-only",
-    "notes": "The app checks for updates at startup by default; disable it in the app settings if you prefer Scoop-managed updates.",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/Starfallan/PiliNara/releases/download/2.6.2/PiliNara_windows_2.2.0%2B6231_x64_portable.zip",
-            "hash": "609bca44f7c11707ecbac5f21d98cf5c11b7a74a1a6c07d6f006713865595c29"
-        }
-    },
-    "extract_dir": "PiliNara-Win",
-    "shortcuts": [
-        [
-            "pilinara.exe",
-            "PiliNara"
-        ]
+  "version": "2.6.2",
+  "description": "An open-source, cross-platform Bilibili client featuring video playback, live streaming, and danmaku support.",
+  "homepage": "https://github.com/Starfallan/PiliNara",
+  "license": "GPL-3.0-only",
+  "url": "https://github.com/Starfallan/PiliNara/releases/download/2.6.2/PiliNara_windows_2.2.0%2B6231_x64_NewLibmpv_portable.zip",
+  "hash": "a2eb1839da11e07a8cf631a1aaa53422fdcc8bc3d086601033851db57fc55085",
+  "extract_dir": "PiliNara-Win",
+  "shortcuts": [
+    [
+      "pilinara.exe",
+      "PiliNara"
+    ]
+  ],
+  "checkver": {
+    "script": [
+      "$releases = Invoke-RestMethod -Headers @{ 'User-Agent' = 'Scoop' } -Uri 'https://api.github.com/repos/Starfallan/PiliNara/releases'",
+      "$release = ($releases | Where-Object { -not $_.prerelease })[0]",
+      "$asset = ($release.assets | Where-Object { $_.name -like '*windows*portable.zip' })[0]",
+      "Write-Output \"$($release.tag_name) $($asset.browser_download_url) $($asset.digest.Replace('sha256:', ''))\""
     ],
-    "post_install": [
-        ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
-        "New-PersistDirectory \"$env:APPDATA\\com.example\\PiliNara\" \"$persist_dir\\AppData\" -Migrate"
-    ],
-    "uninstaller": {
-        "script": [
-            "$bucket = $install.bucket",
-            ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
-            "Remove-Junction \"$env:APPDATA\\com.example\\PiliNara\"",
-            "Remove-EmptyDirectory \"$env:APPDATA\\com.example\""
-        ]
-    },
-    "checkver": {
-        "script": [
-            "$headers = @{ 'User-Agent' = 'Scoop' }",
-            "$token = if (Get-Command Get-GitHubToken -ErrorAction SilentlyContinue) { Get-GitHubToken }",
-            "if ($token) { $headers['Authorization'] = \"Bearer $token\" }",
-            "$releases = Invoke-RestMethod -Headers $headers -Uri 'https://api.github.com/repos/Starfallan/PiliNara/releases?per_page=30'",
-            "$release = $releases | Where-Object { -not $_.draft -and $_.assets.name -like 'PiliNara_windows_*x64_portable.zip' } | Select-Object -First 1",
-            "if (-not $release) { return }",
-            "$asset = $release.assets | Where-Object { $_.name -like 'PiliNara_windows_*x64_portable.zip' } | Select-Object -First 1",
-            "Write-Output \"$($release.tag_name) $($asset.browser_download_url)\""
-        ],
-        "regex": "(?<version>[^\\s]+)\\shttps://github\\.com/Starfallan/PiliNara/releases/download/[^/]+/(?<asset>[^\\s]+)"
-    },
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/Starfallan/PiliNara/releases/download/$version/$matchAsset"
-            }
-        }
-    }
+    "regex": "(?<version>[^\\s]+)\\s(?<url>[^\\s]+)\\s(?<hash>[^\\s]+)"
+  },
+  "autoupdate": {
+    "url": "$matchUrl",
+    "hash": "$matchHash"
+  }
 }

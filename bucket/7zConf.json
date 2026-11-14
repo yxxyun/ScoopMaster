@@ -1,11 +1,18 @@
 {
     "version": "latest",
     "description": "7zConf",
+    "homepage": "https://github.com/ScoopInstaller/Main",
+    "license": "Unlicense",
+    "depends": "7zip",
     "url": "https://raw.githubusercontent.com/ScoopInstaller/Main/master/scripts/7-zip/install-context.reg",
     "post_install": [
-        "cd $dir",
-        "ls",
-        "regedit ./install-context.reg",
-        "regedit /s install-context.reg"
+        "$sevenZipDir = \"$(appdir '7zip' $global)\\current\"",
+        "$registryFile = Join-Path $dir 'install-context.reg'",
+        "$content = Get-Content -LiteralPath $registryFile -Raw -Encoding UTF8",
+        "$content = $content.Replace('{{7zip_dir}}', $sevenZipDir.Replace('\\', '\\\\'))",
+        "if ($global) { $content = $content -replace 'HKEY_CURRENT_USER(?=.+Classes)', 'HKEY_LOCAL_MACHINE' }",
+        "Set-Content -LiteralPath $registryFile -Value $content -Encoding Unicode",
+        "reg.exe import $registryFile",
+        "if ($LASTEXITCODE -ne 0) { throw 'Failed to import 7-Zip context menu entries.' }"
     ]
 }
