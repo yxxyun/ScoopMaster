@@ -1,39 +1,55 @@
 {
-    "version": "0.31.5",
-    "description": "Unofficial Tauri desktop client for DeepSeek Harness (DSH), with a managed runtime and preset plugins",
-    "homepage": "https://github.com/dsh-tauri/deepseek-harness-desktop",
-    "license": {
-        "identifier": "MIT",
-        "url": "https://github.com/dsh-tauri/deepseek-harness-desktop/blob/main/LICENSE"
-    },
+    "version": "1.1.0",
+    "description": "DSH Pack: Tauri desktop client for DeepSeek Harness with curated plugins and a bundled runtime.",
+    "homepage": "https://github.com/myYangyunfan/dsh_desktop",
+    "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/dsh-tauri/deepseek-harness-desktop/releases/download/v0.31.5/Deepseek.Harness.Desktop_0.31.5_x64_en-US.msi",
-            "hash": "86b45af5b0fe6bdcae6a8026ef2b833a890050488784d77960ce1b8507cb08fd"
+            "url": "https://github.com/myYangyunfan/dsh_desktop/releases/download/v1.1.0/DSH-Desktop-Portable-1.1.0-win-x64.zip",
+            "hash": "e3d248824d2991490d07f2cce9929e1336e899230aa8f5abb361dcf6d1227119"
         }
     },
-    "extract_dir": "PFiles\\DSH Tauri",
+    "extract_dir": "DSH Desktop",
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "$dsh_path = Join-Path $env:USERPROFILE '.dsh'",
+            "$persist_dsh = Join-Path $persist_dir 'USERPROFILE\\.dsh'",
+            "$legacy_dsh = Join-Path (Split-Path $persist_dir -Parent) 'deepseek-harness-desktop\\USERPROFILE\\.dsh'",
+            "$dsh_item = Get-Item -LiteralPath $dsh_path -ErrorAction SilentlyContinue",
+            "$source_dsh = $null",
+            "if ($dsh_item -and $dsh_item.LinkType -eq 'Junction') {",
+            "    $source_dsh = $dsh_path",
+            "} elseif (!$dsh_item -and (Test-Path $legacy_dsh)) {",
+            "    $source_dsh = $legacy_dsh",
+            "}",
+            "if ($source_dsh -and !(Test-Path $persist_dsh)) {",
+            "    New-Item $persist_dsh -ItemType Directory -Force | Out-Null",
+            "    Get-ChildItem -LiteralPath $source_dsh -Force | Copy-Item -Destination $persist_dsh -Recurse -Force",
+            "}",
+            "New-PersistDirectory $dsh_path $persist_dsh -Migrate"
+        ]
+    },
     "shortcuts": [
         [
-            "deepseek-harness-desktop.exe",
-            "DSH Tauri"
+            "DSH Desktop.exe",
+            "DSH Desktop"
         ]
     ],
-    "suggest": {
-        "extras/webview2": "The embedded Harness UI needs the WebView2 Runtime (usually preinstalled on Windows 10+)"
-    },
-    "notes": [
-        "This is the community build from the dsh-tauri project, not the official DeepSeek desktop app (https://www.deepseek.com/harness).",
-        "Turn off Settings -> Auto update after the first launch. The built-in updater runs the vendor installer and would create a second install outside Scoop; update with 'scoop update dsh-tauri' instead.",
-        "The first launch still downloads the Node runtime and Harness core into %APPDATA%\\dsh-tauri; this installer does not include them.",
-        "Log-in autostart points at the versioned exe. Start the app once after 'scoop update' to refresh it, or keep autostart disabled.",
-        "Uninstall does not remove %APPDATA%\\dsh-tauri or %USERPROFILE%\\.dsh."
+    "persist": "data",
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:USERPROFILE\\.dsh\""
     ],
-    "checkver": "github",
+    "checkver": {
+        "github": "https://github.com/myYangyunfan/dsh_desktop"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/dsh-tauri/deepseek-harness-desktop/releases/download/v$version/Deepseek.Harness.Desktop_$version_x64_en-US.msi"
+                "url": "https://github.com/myYangyunfan/dsh_desktop/releases/download/v$version/DSH-Desktop-Portable-$version-win-x64.zip"
             }
         }
     }

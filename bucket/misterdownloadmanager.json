@@ -1,62 +1,68 @@
 {
-  "version": "0.5.2",
-  "description": "misterdownloadmanager: The ultimate open-source, clean-room download manager written from scratch in pure Rust for Windows, Mac, and Linux",
-  "homepage": "https://misterdownloadmanager.com/",
-  "license": {
-    "identifier": "GPL-3.0 license",
-    "url": "https://github.com/anefzaoui/misterdownloadmanager/tree/main#GPL-3.0-1-ov-file"
-  },
-  "architecture": {
-    "64bit": {
-      "url": "https://github.com/anefzaoui/misterdownloadmanager/releases/download/v0.5.2/MisterDownloadManager-0.5.2-setup.exe",
-      "hash": "a8c9586fd6e9c6385e3b85242bb658e029be1b9d81ed0911200e272c380ec31d"
-    }
-  },
-  "innosetup": true,
-  "installer": {
-    "script": [
-      "# handle runtime cache",
-      "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
-      "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:APPDATA\\misterdownloadmanager\"",
-      "Remove-Module -Name AppsUtils"
-    ]
-  },
-  "uninstaller": {
-    "script": [
-      "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
-      "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\misterdownloadmanager\"",
-      "Remove-Module -Name AppsUtils"
-    ]
-  },
-  "bin": [
-    [
-      "misterdownloadmanager.exe",
-      "MisterDownloadManager"
+    "version": "0.5.2",
+    "description": "用 Rust 从零编写的开源下载管理器，支持多线程分段下载、浏览器扩展与 MCP 接口",
+    "homepage": "https://misterdownloadmanager.com/",
+    "license": "GPL-3.0-only",
+    "notes": [
+        "使用安装版：配置与下载记录位于 %APPDATA%\\misterdownloadmanager\\，本包通过 Junction 持久化到 Scoop persist",
+        "安装时会调用 misterdownloadmanager-nmhost.exe --register，注册 Chromium 与 Firefox 系列浏览器的本机消息宿主",
+        "浏览器扩展在安装目录的 extension\\ 下，需要时在浏览器里加载已解压的扩展即可联动",
+        "卸载时会调用 --unregister 移除该宿主注册",
+        "附带命令行工具 misterdownloadmanager-cli 与 MCP 服务 misterdownloadmanager-mcp",
+        "命令行可输入 misterdownloadmanager 启动"
     ],
-    [
-      "misterdownloadmanager-cli.exe",
-      "misterdownloadmanager-cli"
-    ]
-  ],
-  "shortcuts": [
-    [
-      "misterdownloadmanager.exe",
-      "MisterDownloadManager"
-    ]
-  ],
-  "checkver": {
-    "github": "https://api.github.com/repos/anefzaoui/misterdownloadmanager/releases",
-    "jp": "$[0].tag_name",
-    "regex": "v([\\d.]+)"
-  },
-  "autoupdate": {
     "architecture": {
-      "64bit": {
-        "url": "https://github.com/anefzaoui/misterdownloadmanager/releases/download/v$version/MisterDownloadManager-$version-setup.exe"
-      }
+        "64bit": {
+            "url": "https://github.com/anefzaoui/misterdownloadmanager/releases/download/v0.5.2/MisterDownloadManager-0.5.2-setup.exe",
+            "hash": "a8c9586fd6e9c6385e3b85242bb658e029be1b9d81ed0911200e272c380ec31d"
+        }
     },
-    "hash": {
-      "url": "$baseurl/SHA256SUMS.txt"
+    "innosetup": true,
+    "bin": [
+        [
+            "misterdownloadmanager.exe",
+            "misterdownloadmanager"
+        ],
+        [
+            "misterdownloadmanager-cli.exe",
+            "misterdownloadmanager-cli"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "misterdownloadmanager.exe",
+            "Mister Download Manager"
+        ]
+    ],
+    "installer": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name mqbucket) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:APPDATA\\misterdownloadmanager\"",
+            "Remove-Module -Name AppsUtils",
+            "& \"$dir\\misterdownloadmanager-nmhost.exe\" --register | Out-Null"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if (Test-Path \"$dir\\misterdownloadmanager-nmhost.exe\") { & \"$dir\\misterdownloadmanager-nmhost.exe\" --unregister | Out-Null }",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name mqbucket) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\misterdownloadmanager\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "checkver": {
+        "github": "https://api.github.com/repos/anefzaoui/misterdownloadmanager/releases",
+        "jsonpath": "$[0].tag_name",
+        "regex": "v([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/anefzaoui/misterdownloadmanager/releases/download/v$version/MisterDownloadManager-$version-setup.exe"
+            }
+        },
+        "hash": {
+            "url": "$baseurl/SHA256SUMS.txt"
+        }
     }
-  }
 }

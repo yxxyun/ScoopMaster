@@ -1,0 +1,69 @@
+{
+    "version": "1.7.3.0",
+    "description": "Hierarchical note taking application, featuring rich text and syntax highlighting. No LaTeX to reduce size.",
+    "homepage": "https://github.com/giuspen/cherrytree",
+    "license": "GPL-3.0-or-later",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/giuspen/cherrytree/releases/download/v1.7.3/cherrytree_1.7.3.0_win64_portable_nolatex.7z",
+            "hash": "e7c3426d9a28c2057a1ee4ee634c0d4d4806de6291f279bc1d55075c0c8b56ef",
+            "extract_dir": "cherrytree_1.7.3.0_win64_portable_nolatex",
+            "pre_install": [
+                "New-Item -ItemType Directory -Force -Path $persist_dir -ErrorAction Stop | Out-Null",
+                "$old = Join-Path (Split-Path $dir) 'current'",
+                "$oldConfig = Join-Path $old 'config.cfg'",
+                "$savedConfig = Join-Path $persist_dir 'config.cfg'",
+                "if (Test-Path -LiteralPath $oldConfig -PathType Leaf) {",
+                "    $tempConfig = Join-Path $persist_dir ('config.cfg.tmp-' + [guid]::NewGuid().ToString('N'))",
+                "    Copy-Item -LiteralPath $oldConfig -Destination $tempConfig -ErrorAction Stop",
+                "    Move-Item -LiteralPath $tempConfig -Destination $savedConfig -Force -ErrorAction Stop",
+                "}",
+                "$oldHunspell = Join-Path $old 'ucrt64\\share\\hunspell'",
+                "$savedHunspell = Join-Path $persist_dir 'ucrt64\\share\\hunspell'",
+                "if (Test-Path -LiteralPath $oldHunspell -PathType Container) {",
+                "    New-Item -ItemType Directory -Force -Path $savedHunspell -ErrorAction Stop | Out-Null",
+                "    Get-ChildItem -LiteralPath $oldHunspell -File -Filter 'Firefox_*.*' -ErrorAction Stop | Copy-Item -Destination $savedHunspell -Force -ErrorAction Stop",
+                "}",
+                "if (Test-Path -LiteralPath $old -PathType Container) {",
+                "    Get-ChildItem -LiteralPath $old -File -Filter 'config - Manual backup*.cfg' -ErrorAction Stop | Copy-Item -Destination $persist_dir -Force -ErrorAction Stop",
+                "}",
+                "if (!(Test-Path -LiteralPath (Join-Path $dir 'config.cfg'))) {",
+                "    New-Item (Join-Path $dir 'config.cfg') -ItemType File -ErrorAction Stop | Out-Null",
+                "}"
+            ],
+            "bin": "ucrt64\\bin\\cherrytree.exe",
+            "shortcuts": [
+                [
+                    "ucrt64\\bin\\cherrytree.exe",
+                    "Cherrytree"
+                ]
+            ],
+            "post_install": [
+                "Get-ChildItem -LiteralPath $persist_dir -File -Filter 'config - Manual backup*.cfg' -ErrorAction Stop | Copy-Item -Destination $dir -Force -ErrorAction Stop",
+                "$savedHunspell = Join-Path $persist_dir 'ucrt64\\share\\hunspell'",
+                "$newHunspell = Join-Path $dir 'ucrt64\\share\\hunspell'",
+                "if (Test-Path -LiteralPath $savedHunspell -PathType Container) {",
+                "    New-Item -ItemType Directory -Force -Path $newHunspell -ErrorAction Stop | Out-Null",
+                "    Get-ChildItem -LiteralPath $savedHunspell -File -Filter 'Firefox_*.*' -ErrorAction Stop | Copy-Item -Destination $newHunspell -Force -ErrorAction Stop",
+                "}"
+            ]
+        }
+    },
+    "persist": [
+        "config.cfg",
+        "styles"
+    ],
+    "checkver": {
+        "github": "https://github.com/giuspen/cherrytree",
+        "regex": "v(?<tag>[0-9.]+)",
+        "replace": "${tag}.0"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/giuspen/cherrytree/releases/download/v$matchTag/cherrytree_$version_win64_portable_nolatex.7z",
+                "extract_dir": "cherrytree_$version_win64_portable_nolatex"
+            }
+        }
+    }
+}

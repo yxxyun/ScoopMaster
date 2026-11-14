@@ -5,58 +5,11 @@
     "license": "Unknown",
     "url": "https://github.com/Stapc-svg/GlassDesk/releases/download/v1.8.0_windows/GlassDesk-Setup-1.8.0.msi#/dl.msi",
     "hash": "db0b6b51dadbc8784c16d7c7c9808ce1670aff9ba1f44fec089d4023d13bce42",
-    "persist": "settings",
     "shortcuts": [
         [
-            "Programs/GlassDesk/GlassDesk.exe",
+            "Programs\\GlassDesk\\GlassDesk.exe",
             "GlassDesk"
         ]
-    ],
-    "post_install": [
-        "$ErrorActionPreference = 'Stop'",
-        "$profileFolder = Join-Path $env:APPDATA 'GlassDesk'",
-        "$settingsFolder = Join-Path $persist_dir 'settings'",
-        "$markerName = '.kirobucket-portable-settings'",
-        "$markerPath = Join-Path $settingsFolder $markerName",
-        "New-Item -ItemType Directory -Path $settingsFolder -Force | Out-Null",
-        "if (Test-Path -LiteralPath $profileFolder) {",
-        "    $profileItem = Get-Item -LiteralPath $profileFolder -Force",
-        "    if (($profileItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq [System.IO.FileAttributes]::ReparsePoint) {",
-        "        if (-not (Test-Path -LiteralPath $markerPath -PathType Leaf)) { throw 'GlassDesk AppData is already a junction or symbolic link not created by this manifest. Refusing to replace it.' }",
-        "    } else {",
-        "        Get-ChildItem -LiteralPath $profileFolder -Force | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $settingsFolder -Recurse -Force -ErrorAction Stop }",
-        "        Get-ChildItem -LiteralPath $profileFolder -Force | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction Stop }",
-        "        Remove-Item -LiteralPath $profileFolder -Force -ErrorAction Stop",
-        "    }",
-        "}",
-        "if (-not (Test-Path -LiteralPath $profileFolder)) { New-Item -ItemType Junction -Path $profileFolder -Target $settingsFolder -ErrorAction Stop | Out-Null }",
-        "if (-not (Test-Path -LiteralPath $markerPath -PathType Leaf)) { Set-Content -LiteralPath $markerPath -Value ([System.IO.Path]::GetFullPath($settingsFolder)) -Encoding UTF8 }",
-        "$settingsFile = Join-Path $settingsFolder 'settings.ini'",
-        "$settingsLines = @()",
-        "if (Test-Path -LiteralPath $settingsFile -PathType Leaf) { $settingsLines = @(Get-Content -LiteralPath $settingsFile -Encoding UTF8) }",
-        "$settingsLines = @($settingsLines | Where-Object { $_ -notmatch '^\\s*(StartWithWindows|StartupV2|AutoUpdate|UpdateRepo)=' })",
-        "$settingsLines += @('StartWithWindows=0', 'StartupV2=1', 'AutoUpdate=0', 'UpdateRepo=')",
-        "[System.IO.File]::WriteAllText($settingsFile, (($settingsLines -join \"`r`n\") + \"`r`n\"), [System.Text.UTF8Encoding]::new($false))"
-    ],
-    "pre_uninstall": [
-        "$ErrorActionPreference = 'Stop'",
-        "$profileFolder = Join-Path $env:APPDATA 'GlassDesk'",
-        "$settingsFolder = Join-Path $persist_dir 'settings'",
-        "$markerName = '.kirobucket-portable-settings'",
-        "$markerPath = Join-Path $settingsFolder $markerName",
-        "if (Test-Path -LiteralPath $markerPath -PathType Leaf) {",
-        "    $expectedTarget = [System.IO.Path]::GetFullPath($settingsFolder).TrimEnd('\\')",
-        "    $recordedTarget = (Get-Content -LiteralPath $markerPath -Raw -Encoding UTF8).Trim().TrimEnd('\\')",
-        "    if (-not [string]::Equals($expectedTarget, $recordedTarget, [System.StringComparison]::OrdinalIgnoreCase)) { throw 'GlassDesk portable settings marker does not match the Scoop persist directory. Refusing to alter AppData.' }",
-        "    if (Test-Path -LiteralPath $profileFolder) {",
-        "        $profileItem = Get-Item -LiteralPath $profileFolder -Force",
-        "        if (($profileItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne [System.IO.FileAttributes]::ReparsePoint) { throw 'GlassDesk AppData is no longer a junction. Refusing to overwrite its contents during uninstall.' }",
-        "        Remove-Item -LiteralPath $profileFolder -Force -ErrorAction Stop",
-        "    }",
-        "    New-Item -ItemType Directory -Path $profileFolder -Force | Out-Null",
-        "    Get-ChildItem -LiteralPath $settingsFolder -Force | Where-Object { $_.Name -ne $markerName } | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $profileFolder -Recurse -Force -ErrorAction Stop }",
-        "    Remove-Item -LiteralPath $markerPath -Force -ErrorAction Stop",
-        "}"
     ],
     "checkver": {
         "url": "https://api.github.com/repos/Stapc-svg/GlassDesk/releases?per_page=30",
@@ -69,5 +22,5 @@
             "regex": "\"name\"\\s*:\\s*\"GlassDesk-Setup-$version\\.msi\"[\\s\\S]*?\"digest\"\\s*:\\s*\"sha256:([a-f0-9]{64})\""
         }
     },
-    "notes": "Extracts the MSI payload without running Windows Installer. Settings are persisted under Scoop; automatic startup and the bundled MSI updater are disabled. Update with Scoop."
+    "notes": "Settings are stored in %APPDATA%\\GlassDesk. GlassDesk enables Windows startup and hides desktop icons by default."
 }

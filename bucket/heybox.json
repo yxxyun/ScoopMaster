@@ -1,0 +1,54 @@
+{
+    "version": "2.11.5",
+    "description": "小黑盒是一款专为游戏玩家定制，集新闻资讯、百科工具、内容社区、战绩查询、游戏商城为一体的专业应用。",
+    "homepage": "https://www.xiaoheihe.cn/",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://api.xiaoheihe.cn/account/privacy_introduce/?page_type=1"
+    },
+    "depends": "7zip",
+    "architecture": {
+        "64bit": {
+            "url": "https://install.max-c.com/static/heybox/heybox_desktop/v2.11.5/release/win/x64/bc681532d252f4fcbef401cdb149a22ff909aa20bb21e055fec3f5a69f217201/heybox-desktop-2.11.5-win-x64.exe#/heybox-setup.exe",
+            "hash": "bc681532d252f4fcbef401cdb149a22ff909aa20bb21e055fec3f5a69f217201",
+            "pre_install": [
+                "$installer = Join-Path $dir 'heybox-setup.exe'",
+                "$archive = Join-Path $dir 'app.7z'",
+                "# The NSIS payload stores all parts under the same path. Stream them in archive order.",
+                "$arguments = 'x -so -bsp0 \"{0}\" \"$PLUGINSDIR\\aid-app-archive.part\"' -f $installer",
+                "$process = Start-Process -FilePath (Get-HelperPath 7zip) -ArgumentList $arguments -RedirectStandardOutput $archive -NoNewWindow -Wait -PassThru",
+                "if ($process.ExitCode -ne 0) { abort 'Failed to extract the Heybox archive.' }",
+                "Expand-7zipArchive -Path $archive -DestinationPath $dir -Removal",
+                "Remove-Item -LiteralPath $installer"
+            ]
+        }
+    },
+    "shortcuts": [
+        [
+            "小黑盒.exe",
+            "小黑盒"
+        ]
+    ],
+    "checkver": {
+        "script": [
+            "Add-Type -AssemblyName System.Net.Http",
+            "$handler = [System.Net.Http.HttpClientHandler]::new()",
+            "$handler.AllowAutoRedirect = $false",
+            "$client = [System.Net.Http.HttpClient]::new($handler)",
+            "try {",
+            "    $response = $client.GetAsync('https://accoriapi.xiaoheihe.cn/wow/download/').GetAwaiter().GetResult()",
+            "    if ($response.Headers.Location) { $response.Headers.Location.GetLeftPart([UriPartial]::Path) }",
+            "} finally {",
+            "    $client.Dispose()",
+            "}"
+        ],
+        "regex": "^https://install\\.max-c\\.com/(?<url>static/heybox/heybox_desktop/v[\\d.]+/release/win/x64/[a-f0-9]+/heybox-desktop-(?<version>\\d+\\.\\d+\\.\\d+)-win-x64\\.exe)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://install.max-c.com/$matchUrl#/heybox-setup.exe"
+            }
+        }
+    }
+}

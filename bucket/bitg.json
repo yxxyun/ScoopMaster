@@ -1,0 +1,57 @@
+{
+    "version": "0.4.0",
+    "description": "Uzbek keyboard that converts text to the new 2026 Latin alphabet (ö ğ ş ç) as you type.",
+    "homepage": "https://bitg.uz/",
+    "license": "MIT|Apache-2.0",
+    "notes": [
+        "bitg is a Windows input method (TSF). Press Win + Space and choose bitg.",
+        "It is installed per machine through its MSI, so Windows asks for administrator rights (UAC) once."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/dtwinuz/bitg/releases/download/v0.4.0/bitg-0.4.0-x64.msi#/bitg-setup.msi_",
+            "hash": "5bddcdafe8e780fee3d9c869861b04b61a3e7cf6c637976834c659c5695c7171"
+        }
+    },
+    "installer": {
+        "script": [
+            "# '.msi_': Scoop MSI'ni ochib yubormasin, IME tizimda ro'yxatdan o'tishi uchun msiexec bilan o'rnatiladi",
+            "$msi = Join-Path $dir \"bitg-$version-x64.msi\"",
+            "Move-Item -LiteralPath (Join-Path $dir 'bitg-setup.msi_') -Destination $msi -Force",
+            "$log = Join-Path $dir 'install.log'",
+            "$argv = @('/i', \"`\"$msi`\"\", '/qn', '/norestart', \"/l*v `\"$log`\"\")",
+            "$admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+            "$p = if ($admin) { Start-Process msiexec.exe -ArgumentList $argv -Wait -PassThru } else { Start-Process msiexec.exe -ArgumentList $argv -Verb RunAs -Wait -PassThru }",
+            "if ($p.ExitCode -notin 0, 3010, 1641) { throw \"bitg MSI: msiexec exit code $($p.ExitCode), log: $log\" }",
+            "Remove-Item -LiteralPath $log -ErrorAction SilentlyContinue"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "# scoop update: yangi MSI eski versiyani MajorUpgrade bilan o'zi almashtiradi, oldindan o'chirilmaydi",
+            "if ($cmd -eq 'update') { return }",
+            "# ProductCode har build'da yangi: o'rnatilgan bitg UpgradeCode bo'yicha topiladi",
+            "$wi = New-Object -ComObject WindowsInstaller.Installer",
+            "$codes = @(foreach ($c in $wi.RelatedProducts('{80B9514E-EB2C-4EA5-B42A-CECB40A16979}')) { $c })",
+            "$admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+            "foreach ($c in $codes) {",
+            "    $argv = @('/x', $c, '/qn', '/norestart')",
+            "    $p = if ($admin) { Start-Process msiexec.exe -ArgumentList $argv -Wait -PassThru } else { Start-Process msiexec.exe -ArgumentList $argv -Verb RunAs -Wait -PassThru }",
+            "    if ($p.ExitCode -notin 0, 3010, 1605, 1614, 1641) { throw \"bitg MSI: msiexec /x exit code $($p.ExitCode)\" }",
+            "}"
+        ]
+    },
+    "checkver": {
+        "github": "https://github.com/dtwinuz/bitg"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/dtwinuz/bitg/releases/download/v$version/bitg-$version-x64.msi#/bitg-setup.msi_",
+                "hash": {
+                    "url": "https://github.com/dtwinuz/bitg/releases/download/v$version/bitg-$version-x64.msi.sha256"
+                }
+            }
+        }
+    }
+}
