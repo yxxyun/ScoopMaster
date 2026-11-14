@@ -1,28 +1,48 @@
 {
-    "homepage": "https://github.com/facebook/hermes",
-    "version": "0.13.0",
-    "description": "The Hermes JavaScript Engine",
+    "version": "0.23.1",
+    "description": "An open-source self-evolving AI agent framework by Nous Research.",
+    "homepage": "https://github.com/NousResearch/hermes-agent",
     "license": "MIT",
-    "notes": "Please run 'hermes --help' in the Windows Terminal for more information.",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/facebook/hermes/releases/download/v0.13.0/hermes-cli-windows.tar.gz",
-            "hash": "485907ae87f267f7901f45c12979fea9703967ee2fa930bab887d022de9d6478"
-        }
+    "depends": "uv",
+    "url": "https://github.com/NousResearch/hermes-agent/archive/refs/tags/v0.23.1.zip",
+    "hash": "e37a5e1451b2e8483e4749a2d8df3a058e46785822fbe8fbf31b79d6704b6b88",
+    "extract_dir": "hermes-agent-$match",
+    "installer": {
+        "script": [
+            "pushd \"$dir\"",
+            "# 1. 创建独立虚拟环境",
+            "uv venv venv --python 3.11",
+            "# 2. 使用 uv 现场编译安装项目全量依赖",
+            "uv pip install -e \".[all,dev]\" --python \".\\venv\\Scripts\\python.exe\"",
+            "# 3. 【精准修复】创建指向新版重构后 hermes_cli 模块的启动垫片",
+            "$ps1Content = '& \"$PSScriptRoot\\venv\\Scripts\\hermes.exe\" $args'",
+            "Set-Content -Path \".\\hermes-launcher.ps1\" -Value $ps1Content -Encoding utf8",
+            "# 4. 【新增联动】创建桌面客户端识别所需的官方数据总目录",
+            "if (!(Test-Path \"$env:LOCALAPPDATA\\hermes\\hermes-agent\")) {",
+            "    New-Item -ItemType Junction -Path \"$env:LOCALAPPDATA\\hermes\\hermes-agent\" -Value \"$dir\" | Out-Null",
+            "}",
+            "popd"
+        ]
     },
-    "checkver": "github",
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/facebook/hermes/releases/download/v$version/hermes-cli-windows.tar.gz"
-            }
-        }
+    "uninstaller": {
+        "script": [
+            "# 1. 自动切断并删除官方预期路径的软链接与总目录",
+            "if (Test-Path \"$env:LOCALAPPDATA\\hermes\\hermes-agent\") {",
+            "    Remove-Item \"$env:LOCALAPPDATA\\hermes\\hermes-agent\" -Force -Recurse",
+            "}"
+        ]
     },
     "bin": [
-        ["hermes.exe"],
-        ["hvm.exe", "hermes-vm"],
-        ["hdb.exe", "hermes-debugger"],
-        ["hermesc.exe", "hermes-compiler"],
-        ["hbcdump.exe", "hermes-dump"]
-    ]
+        [
+            "hermes-launcher.ps1",
+            "hermes"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/NousResearch/hermes-agent"
+    },
+    "autoupdate": {
+        "url": "https://github.com/NousResearch/hermes-agent/archive/refs/tags/v$version.zip",
+        "extract_dir": "hermes-agent-$match"
+    }
 }
