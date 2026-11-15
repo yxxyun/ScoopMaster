@@ -12,7 +12,24 @@
             "GMSSH"
         ]
     ],
-    "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+        "Remove-Item \"$dir\\`$*\" -Force -Recurse"
+    ],
+    "persist": "data",
+    "post_install": [
+        "if (-not (Test-Path \"$persist_dir\\AppData\")) {",
+        "    if (Test-Path \"$Env:APPDATA\\GMSSH\") {",
+        "        Move-Item \"$Env:APPDATA\\GMSSH\" \"$persist_dir\\AppData\"",
+        "    } else {",
+        "        New-Item -ItemType Directory -Path \"$persist_dir\\AppData\" | Out-Null",
+        "    }",
+        "}",
+        "if (-not (Test-Path \"$Env:APPDATA\\GMSSH\")) {",
+        "    New-Item -ItemType Junction -Path \"$Env:APPDATA\\GMSSH\" -Value \"$persist_dir\\AppData\" | Out-Null",
+        "}"
+    ],
+    "post_uninstall": "if ($purge -and (Test-Path \"$Env:APPDATA\\GMSSH\")) { Remove-Item -Recurse -Force \"$Env:APPDATA\\GMSSH\" }",
     "checkver": {
         "script": [
             "$api = 'https://api.gmssh.com/api/package_client/download_v2'",

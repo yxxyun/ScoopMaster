@@ -1,0 +1,47 @@
+{
+    "version": "1.1.0",
+    "description": "GUI that lists the PowerShell scripts of a folder, reads their built-in help and builds the command line for you",
+    "homepage": "https://github.com/Arnaud-Ferriere/PSScriptLauncher",
+    "license": "MIT",
+    "url": [
+        "https://github.com/Arnaud-Ferriere/PSScriptLauncher/archive/refs/tags/v1.1.0.zip",
+        "https://raw.githubusercontent.com/PowerShell/PowerShell/v7.6.0/assets/Powershell_black.ico"
+    ],
+    "hash": [
+        "31e3b6af965903615e149e49fd69d2b1b279c2656308dea1518e78fa66301968",
+        "541E130176053EA0E044A6A7A0FA49C70D287F5E81BE2C0785471F1AC9586904"
+    ],
+    "extract_dir": "PSScriptLauncher-1.1.0",
+    "bin": [
+        [
+            "Show-PSScriptLauncher.ps1",
+            "psscriptlauncher"
+        ]
+    ],
+    "pre_install": [
+        "Get-ChildItem -LiteralPath $dir -Force | Where-Object { $_.Name -notin 'Show-PSScriptLauncher.ps1', 'PSScriptLauncher', 'LICENSE', 'Powershell_black.ico' } | Remove-Item -Recurse -Force",
+        "$parent = Join-Path $dir 'PSScriptLauncher'; $keep = @((Import-PowerShellDataFile (Join-Path $parent 'PSScriptLauncher.psd1')).FileList | ForEach-Object { $_.Split('\\')[0] }); Get-ChildItem -LiteralPath $parent -Force | Where-Object { $_.Name -notin $keep } | Remove-Item -Recurse -Force",
+        "if (-not (Test-Path \"$dir\\Show-PSScriptLauncher.ps1\") -or -not (Test-Path \"$dir\\PSScriptLauncher\\PSScriptLauncher.psm1\")) { abort 'PSScriptLauncher layout changed upstream: update the pre_install keep list.' }",
+        "Set-Content \"$dir\\PSScriptLauncher.cmd\" ('@echo off', 'set \"ps=powershell.exe\"', 'where pwsh.exe >nul 2>nul && set \"ps=pwsh.exe\"', '\"%ps%\" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"%~dp0Show-PSScriptLauncher.ps1\" %*') -Encoding Ascii"
+    ],
+    "shortcuts": [
+        [
+            "PSScriptLauncher.cmd",
+            "PSScriptLauncher",
+            "",
+            "Powershell_black.ico"
+        ]
+    ],
+    "notes": [
+        "Run 'psscriptlauncher' to open the window and pick the folder with the Folder... button or Ctrl+O, or 'psscriptlauncher -Path <folder>' to start on another folder.",
+        "The Start Menu shortcut runs PowerShell 7 when it is installed, otherwise Windows PowerShell 5.1; 'psscriptlauncher' runs in the PowerShell session you call it from and needs an execution policy that allows local scripts (RemoteSigned or Bypass)."
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": [
+            "https://github.com/Arnaud-Ferriere/PSScriptLauncher/archive/refs/tags/v$version.zip",
+            "https://raw.githubusercontent.com/PowerShell/PowerShell/v7.6.0/assets/Powershell_black.ico"
+        ],
+        "extract_dir": "PSScriptLauncher-$version"
+    }
+}
