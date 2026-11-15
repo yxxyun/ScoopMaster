@@ -1,6 +1,6 @@
 {
     "version": "3.0.37",
-    "description": "A Flutter-based comic reader with plugin support.",
+    "description": "Breeze - a Flutter-based comic reader that loads multiple comic sources through plugins.",
     "homepage": "https://github.com/deretame/Breeze",
     "license": "MPL-2.0",
     "depends": "7zip",
@@ -10,14 +10,39 @@
             "hash": "22c28005c5f2eacad9736302fb87b76cbbf57a085c04a11f703cd57123d1ef8a"
         }
     },
-    "pre_install": "Expand-7zipArchive -Path \"$dir\\windows-installer-v$version.exe\" -DestinationPath $dir -ExtractDir 'Release' -Switches '-t7z' -Removal",
+    "installer": {
+        "script": [
+            "$ErrorActionPreference = 'Stop'",
+            "# Upstream only ships a Tauri GUI installer with no silent flags; the real payload is a",
+            "# Release.7z compiled into .rdata by include_bytes!(). It is located at runtime instead of",
+            "# hard-coding an offset, so a version bump does not need a manifest rewrite.",
+            "function Get-Crc32([byte[]]$d, [int]$o, [int]$n) { $t = New-Object 'uint32[]' 256; for ($k = 0; $k -lt 256; $k++) { $c = [uint32]$k; for ($j = 0; $j -lt 8; $j++) { if ($c -band 1) { $c = [uint32](0xEDB88320 -bxor ($c -shr 1)) } else { $c = [uint32]($c -shr 1) } }; $t[$k] = $c }; $crc = [uint32]::MaxValue; for ($k = $o; $k -lt ($o + $n); $k++) { $crc = [uint32]($t[($crc -bxor $d[$k]) -band 0xFF] -bxor ($crc -shr 8)) }; return [uint32]($crc -bxor [uint32]::MaxValue) }",
+            "$exe = Join-Path $dir $fname",
+            "$bz = [System.IO.File]::ReadAllBytes($exe)",
+            "$bzMagic = [string]::Join('', [char]0x37, [char]0x7A, [char]0xBC, [char]0xAF, [char]0x27, [char]0x1C)",
+            "$bzText = [System.Text.Encoding]::GetEncoding(28591).GetString($bz)",
+            "$bzFound = -1; $bzSize = 0; $bzPos = $bzText.IndexOf($bzMagic)",
+            "while ($bzPos -ge 0) { if ((Get-Crc32 $bz ($bzPos + 12) 20) -eq [System.BitConverter]::ToUInt32($bz, $bzPos + 8)) { $bzOff = [System.BitConverter]::ToUInt64($bz, $bzPos + 12); $bzNext = [System.BitConverter]::ToUInt64($bz, $bzPos + 20); if (($bzPos + 32 + $bzOff + $bzNext) -le $bz.Length) { $bzFound = $bzPos; $bzSize = [int](32 + $bzOff + $bzNext); break } }; $bzPos = $bzText.IndexOf($bzMagic, $bzPos + 1) }",
+            "if ($bzFound -lt 0) { abort 'Cannot locate an embedded Release.7z in the Breeze installer - upstream changed the packaging?' }",
+            "$bzPayload = New-Object byte[] $bzSize",
+            "[System.Array]::Copy($bz, $bzFound, $bzPayload, 0, $bzSize)",
+            "$bzArchive = Join-Path $dir 'breeze-payload.7z'",
+            "[System.IO.File]::WriteAllBytes($bzArchive, $bzPayload)",
+            "Expand-7zipArchive $bzArchive $dir -Removal",
+            "if (-not (Test-Path (Join-Path $dir 'Release\\zephyr.exe'))) { abort 'Breeze layout changed: Release\\zephyr.exe is missing after extraction.' }",
+            "Remove-Item $exe -Force"
+        ]
+    },
     "shortcuts": [
         [
-            "zephyr.exe",
+            "Release\\zephyr.exe",
             "Breeze"
         ]
     ],
-    "checkver": "github",
+    "notes": "Breeze renders web content through the Microsoft Edge WebView2 runtime (bundled with Windows 11 and most Windows 10 builds). If plugin pages stay blank, install it from https://developer.microsoft.com/microsoft-edge/webview2/",
+    "checkver": {
+        "github": "https://github.com/deretame/Breeze"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {

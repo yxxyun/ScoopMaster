@@ -1,37 +1,51 @@
 {
-    "version": "5.9.3.42398134",
-    "description": "A full-scenario AI workbench from Tencent. (China version)",
-    "homepage": "https://www.codebuddy.cn",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://www.codebuddy.cn/document/term"
-    },
+    "version": "5.11.3.43806934-ecace0f7",
+    "description": "腾讯云推出的 AI Agent 办公助手，可自主规划并交付多模态复杂任务结果",
+    "homepage": "https://www.codebuddy.cn/work/",
+    "license": "Proprietary",
     "architecture": {
         "64bit": {
-            "url": "https://download.codebuddy.cn/workbuddy/saas/win32-x64-user/WorkBuddy-win32-x64-user-5.9.3.42398134-d4692421.exe#/dl.7z",
-            "hash": "b5edb52bd6c5b6c7296cf2fff697b019c86d11992a8a814c3010d611896852f9"
+            "url": "https://download.codebuddy.cn/workbuddy/saas/win32-x64-user/WorkBuddy-win32-x64-user-5.11.3.43806934-ecace0f7.exe#/dl.7z",
+            "hash": "2fd40059eea2f9a2d641c675a66f2476d71b49d9eb32f19db8c318768133b56b"
         }
     },
-    "installer": {
-        "script": [
-            "Get-Item \"$dir\\`$PLUGINSDIR\\app*.7z\" | Select-Object -First 1 | Expand-7zipArchive -DestinationPath $dir",
-            "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Force -Recurse -ErrorAction Ignore"
-        ]
-    },
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$R0\" -Force -Recurse -ErrorAction SilentlyContinue"
+    ],
+    "post_install": [
+        "$configDir = \"$env:USERPROFILE\\.workbuddy\"",
+        "$persistConfigDir = \"$persist_dir\\.workbuddy\"",
+        "if ((Test-Path $configDir) -and !(Get-Item $configDir -Force).LinkType) {",
+        "    warn \"$configDir already exists and is not managed by Scoop, user data will stay in %USERPROFILE%.\"",
+        "} else {",
+        "    if (Test-Path $configDir) { Remove-Item $configDir -Force }",
+        "    New-Item -ItemType Junction -Path $configDir -Target $persistConfigDir -Force | Out-Null",
+        "    info \"Created junction: %USERPROFILE%\\.workbuddy -> $persistConfigDir\"",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$configDir = \"$env:USERPROFILE\\.workbuddy\"",
+        "if ((Test-Path $configDir) -and (Get-Item $configDir -Force).LinkType) {",
+        "    Remove-Item $configDir -Force",
+        "    info 'Removed junction: %USERPROFILE%\\.workbuddy (data kept in Scoop persist directory)'",
+        "}"
+    ],
     "shortcuts": [
         [
             "WorkBuddy.exe",
             "WorkBuddy"
         ]
     ],
+    "persist": ".workbuddy",
     "checkver": {
         "url": "https://www.codebuddy.cn/v2/update?platform=workbuddy-win32-x64-user",
-        "regex": "WorkBuddy-win32-x64-user-(?<version>\\d+(?:\\.\\d+)+)-(?<sha>[0-9a-f]+).exe"
+        "regex": "WorkBuddy-win32-x64-user-([\\d.]+(?:-[\\da-f]+)?)\\.exe"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://download.codebuddy.cn/workbuddy/saas/win32-x64-user/WorkBuddy-win32-x64-user-$version-$matchSha.exe#/dl.7z"
+                "url": "https://download.codebuddy.cn/workbuddy/saas/win32-x64-user/WorkBuddy-win32-x64-user-$version.exe#/dl.7z"
             }
         }
     }

@@ -1,50 +1,38 @@
 {
-    "version": "4.47.1.5286",
-    "description": "NetEase UU Remote (缃戞槗UU杩滅▼) - remote desktop access and control tool.",
-    "homepage": "https://uuyc.163.com/",
-    "license": "Freeware",
-    "notes": [
-        "The app is installed by the vendor NSIS installer into 'C:\\Program Files\\Netease\\GameViewer' and registers the GameViewerService system service.",
-        "The app UI requires the Microsoft Edge WebView2 Runtime."
-    ],
+    "version": "4.47.1",
+    "description": "网易UU远程 - 免费远程控制软件，真4K、超低延迟，支持远程办公/游戏/协助",
+    "homepage": "https://uuyc.163.com",
+    "license": "Unknown",
     "url": "https://api.nrd.nie.163.com/api/v1/release/dl/1?channel=gwqd#/UURemote_Setup.exe",
     "hash": "e095939fc410e7a092b2ccc7b0350cdd8db6ab61f02e215fcb47bd4c8ec3b8bd",
     "installer": {
-        "script": [
-            "if (!(is_admin)) {",
-            "    error 'Administrator rights are required to install $app.'",
-            "    break",
-            "}",
-            "",
-            "Start-Process \"$dir\\UURemote_Setup.exe\" -ArgumentList '/S' -Wait",
-            "",
-            "# the postinstall script automatically launches the app",
-            "Start-Sleep -Seconds 2",
-            "Get-Process | Where-Object { $_.name -match '^GameViewer' } | ForEach-Object { Stop-Process -Id $_.Id -Force }"
-        ]
+        "script": "Invoke-ExternalCommand \"$dir\\UURemote_Setup.exe\" -ArgumentList '/S', \"/D=$dir\" -RunAs"
     },
+    "shortcuts": [
+        [
+            "GameViewer\\bin\\GameViewerLauncher.exe",
+            "网易UU远程"
+        ]
+    ],
+    "persist": [
+        "GameViewer\\Download",
+        "GameViewer\\config"
+    ],
     "uninstaller": {
         "script": [
-            "if (!(is_admin)) {",
-            "    error 'Administrator rights are required to uninstall $app.'",
-            "    break",
-            "}",
-            "",
-            "Stop-Process -Name 'GameViewer*' -Force -ErrorAction SilentlyContinue",
-            "Start-Process \"$env:ProgramFiles\\Netease\\GameViewer\\Uninstall.exe\" -ArgumentList '/S' -Wait"
+            "attrib -R /L \"$dir\\GameViewer\\Download\"",
+            "Remove-Item \"$dir\\GameViewer\\Download\" -Recurse -Force -ErrorAction SilentlyContinue",
+            "attrib -R /L \"$dir\\GameViewer\\config\"",
+            "Remove-Item \"$dir\\GameViewer\\config\" -Recurse -Force -ErrorAction SilentlyContinue",
+            "Invoke-ExternalCommand \"$dir\\GameViewer\\Uninstall.exe\" -ArgumentList '/S' -RunAs",
+            "Get-Process | Where-Object { $_.Path -like \"$dir*\" } | Stop-Process -Force -ErrorAction SilentlyContinue",
+            "Start-Sleep -Seconds 10"
         ]
     },
+    "post_install": "Remove-Item \"$dir\\UURemote_Setup.exe\" -Force -ErrorAction SilentlyContinue",
     "checkver": {
-        "script": [
-            "$req = [System.Net.HttpWebRequest]::Create('https://api.nrd.nie.163.com/api/v1/release/dl/1?channel=gwqd')",
-            "$req.AllowAutoRedirect = $false",
-            "$req.Timeout = 30000",
-            "$resp = $req.GetResponse()",
-            "$loc = $resp.Headers['Location']",
-            "$resp.Close()",
-            "Write-Output $loc"
-        ],
-        "regex": "UURemote_Setup_([\\d.]+)_"
+        "url": "https://api.nrd.nie.163.com/api/v1/release/dl-infos?channel=gwqd",
+        "jsonpath": "$.data.release_download_info_map['1'].version_name"
     },
     "autoupdate": {
         "url": "https://api.nrd.nie.163.com/api/v1/release/dl/1?channel=gwqd#/UURemote_Setup.exe"
