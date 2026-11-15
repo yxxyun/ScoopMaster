@@ -1,8 +1,18 @@
 {
     "version": "5.13.1",
-    "description": "适用于 Windows 的高性能本地文件检索与效率启动工具 | High-performance local file search and productivity launcher for Windows",
+    "description": "A modern, high-performance local file search and productivity tool for Windows",
     "homepage": "https://lertaro.github.io",
     "license": "MIT",
+    "notes": [
+        "便携模式下，应用配置、索引与缓存保存在 '$persist_dir\\Data'，升级时会自动保留。",
+        "提供 CLI 命令 'lff' 和 GUI 命令 'lertaro'。",
+        "运行需要 .NET 10 Desktop Runtime（versions/windowsdesktop-runtime-10.0）。",
+        "更新前请退出 Lertaro，并执行 'Stop-Service LertaroService -Force -ErrorAction SilentlyContinue'。",
+        "建议关闭应用内的静默自动更新，统一使用 'scoop update lertaro'。"
+    ],
+    "suggest": {
+        ".NET Desktop Runtime 10.0": "versions/windowsdesktop-runtime-10.0"
+    },
     "architecture": {
         "64bit": {
             "url": "https://github.com/Lertaro/Lertaro/releases/download/v5.13.1/Lertaro-Portable.zip",
@@ -13,12 +23,31 @@
             "hash": "f36e1021bc48fe654db4fdccf80f4bd0d88bd1357258d7c739b39780b81532af"
         }
     },
-    "innosetup": true,
+    "extract_dir": "Lertaro",
+    "bin": [
+        "lff.exe",
+        [
+            "Lertaro.App.exe",
+            "lertaro"
+        ]
+    ],
     "shortcuts": [
         [
             "Lertaro.App.exe",
             "Lertaro"
         ]
+    ],
+    "persist": "Data",
+    "pre_uninstall": [
+        "Stop-Service -Name 'LertaroService' -Force -ErrorAction SilentlyContinue",
+        "Get-Process -Name 'Lertaro.App', 'Lertaro.Service', 'lff' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue",
+        "if ($cmd -eq 'uninstall') {",
+        "    sc.exe stop LertaroService *>$null",
+        "    sc.exe delete LertaroService *>$null",
+        "    Remove-Item -Path 'HKCU:\\Software\\Classes\\lertaro' -Recurse -Force -ErrorAction SilentlyContinue",
+        "    Remove-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'Lertaro' -Force -ErrorAction SilentlyContinue",
+        "    if ($purge) { Remove-Item -Path 'HKCU:\\Software\\Lertaro' -Recurse -Force -ErrorAction SilentlyContinue }",
+        "}"
     ],
     "checkver": {
         "github": "https://github.com/Lertaro/Lertaro"
