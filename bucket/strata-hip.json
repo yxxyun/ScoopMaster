@@ -1,0 +1,41 @@
+{
+    "##": "Strata Terminal + HIP engine (Windows x64). Two archives are unpacked into the app dir: the Control runtime (flat, no top-level folder) and the engine tarball into components\\engine\\<version>-windows-x86_64-hip-rdna3. pre_install writes bin\\strata-hip.cmd, which exports STRATA_COMPONENTS_DIR and STRATA_ENGINE_BACKEND so the runtime resolves its engine from this package instead of %LOCALAPPDATA%\\Strata\\components. Asset names embed the Control version (0.1.59) while the release tag is v0.2.13, so autoupdate is deliberately omitted: bump version, url, hash and extract_to together.",
+    "version": "0.2.13",
+    "description": "Strata 终端版 + HIP 推理引擎（AMD Radeon RX 7000 / 9000 与 Strix Halo，ROCm 打包在包内）：一条命令装好控制端与引擎，模型文件另存",
+    "homepage": "https://github.com/Niko1221/Strata",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/Niko1221/Strata/blob/main/LICENSE"
+    },
+    "notes": [
+        "引擎与控制端都装在本包目录内（apps\\strata-hip\\<version>），shim 名称为 strata-hip；不写系统环境变量，也不碰 %LOCALAPPDATA%\\Strata 下的其它引擎",
+        "HIP 变体默认按 RDNA3 打包（gfx1100/1101/1102/1151）：RX 7900 XT/XTX/GRE、RX 7800/7700、RX 9070 之前的 7000 系列与 Strix Halo。RX 6000（gfx1030/1031）或 RX 9070/9070 XT（gfx1200/1201）需要换引擎包，见 README",
+        "模型（GGUF）不随包分发：先自行准备模型，再用 start-model-visible.ps1 启动",
+        "启动：start-model-visible.ps1 -Backend hip（或直接运行 strata-hip）",
+        "卸载：scoop uninstall strata-hip"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": [
+                "https://github.com/Niko1221/Strata/releases/download/v0.2.13/strata-control-0.1.59-windows-x86_64.zip",
+                "https://github.com/Niko1221/Strata/releases/download/v0.2.13/strata-engine-0.1.59-windows-x86_64-hip-rdna3.tar.gz"
+            ],
+            "hash": [
+                "c81f6800094942a5e750c7d93f348062bc16484f946ea83b0c0d2f8c91c44e87",
+                "418ea947b7bfc088677ac012eeaad7a3184444707801541e34b4abfe5f19b9da"
+            ]
+        }
+    },
+    "extract_to": [
+        ".",
+        "components\\engine\\0.1.59-windows-x86_64-hip-rdna3"
+    ],
+    "pre_install": "$c = @('@echo off','setlocal','rem Strata (HIP / AMD Radeon) - Scoop build: the engine lives inside this package.','set \"STRATA_COMPONENTS_DIR=%~dp0..\\components\"','set \"STRATA_ENGINE_BACKEND=hip\"','call \"%~dp0strata.cmd\" %*','exit /b %ERRORLEVEL%'); New-Item -ItemType Directory -Force -Path (Join-Path $dir 'bin') | Out-Null; Set-Content -LiteralPath (Join-Path $dir 'bin\\strata-hip.cmd') -Value $c -Encoding Ascii",
+    "bin": [
+        "bin\\strata-hip.cmd"
+    ],
+    "checkver": {
+        "url": "https://github.com/Niko1221/Strata/releases/latest/download/strata-feed.json",
+        "jsonpath": "$.app.version"
+    }
+}

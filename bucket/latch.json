@@ -1,0 +1,50 @@
+{
+    "version": "6.0.0",
+    "description": "Low-latency desktop and game streaming between your own computers over Tailscale.",
+    "homepage": "https://github.com/latch-remote/latch",
+    "license": "GPL-3.0-or-later",
+    "notes": [
+        "Latch is installed to $env:LOCALAPPDATA\\Latch, with Start Menu and Desktop shortcuts and an entry in Settings > Apps.",
+        "Open Latch Host and click 'Set up as administrator' on the Sharing tab to share this PC.",
+        "Latch updates itself. 'scoop update' installs a release only when it is newer than the copy in $env:LOCALAPPDATA\\Latch.",
+        "'scoop uninstall' leaves that copy in place. To remove it, use Latch's entry in Settings > Apps."
+    ],
+    "suggest": {
+        "Tailscale": "extras/tailscale"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/latch-remote/latch-releases/releases/download/v6.0.0/latch-windows-x64.zip",
+            "hash": "dd9d04988f6b42afb0f3737c3f53c3317f4d3e707d27b904bce11933f2b9703a"
+        }
+    },
+    "post_install": [
+        "$installed = Join-Path $env:LOCALAPPDATA 'Latch\\latch-host.exe'",
+        "$have = $null",
+        "if (Test-Path -LiteralPath $installed) { $have = (Get-Item -LiteralPath $installed).VersionInfo.ProductVersion }",
+        "$newer = $false",
+        "try { $newer = $have -and ([version]$have -gt [version]$version) } catch {}",
+        "if ($newer) {",
+        "    Write-Host \"Latch $have in $installed is newer than $version; it was left in place.\"",
+        "} else {",
+        "    # install-host.ps1 up to 6.0.0 stops if the profile has no Run key.",
+        "    $run = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "    if (-not (Test-Path -LiteralPath $run)) { New-Item -Path $run | Out-Null }",
+        "    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$dir\\install-host.ps1\" -Exe \"$dir\\latch-host.exe\" -NoStart",
+        "    if ($LASTEXITCODE -ne 0) { throw \"install-host.ps1 failed with exit code $LASTEXITCODE\" }",
+        "}"
+    ],
+    "checkver": {
+        "github": "https://github.com/latch-remote/latch-releases"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/latch-remote/latch-releases/releases/download/v$version/latch-windows-x64.zip"
+            }
+        },
+        "hash": {
+            "url": "$baseurl/SHA256SUMS"
+        }
+    }
+}

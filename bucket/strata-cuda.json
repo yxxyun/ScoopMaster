@@ -1,0 +1,41 @@
+{
+    "##": "Strata Terminal + CUDA engine (Windows x64). Two archives are unpacked into the app dir: the Control runtime (flat, no top-level folder) and the engine tarball into components\\engine\\<version>-windows-x86_64-cuda-cuda13. pre_install writes bin\\strata-cuda.cmd, which exports STRATA_COMPONENTS_DIR and STRATA_ENGINE_BACKEND so the runtime resolves its engine from this package instead of %LOCALAPPDATA%\\Strata\\components. Asset names embed the Control version (0.1.59) while the release tag is v0.2.13, so autoupdate is deliberately omitted: bump version, url, hash and extract_to together.",
+    "version": "0.2.13",
+    "description": "Strata 终端版 + CUDA 推理引擎（NVIDIA，含 sm_120 / RTX 50 系）：一条命令装好控制端与引擎，模型文件另存",
+    "homepage": "https://github.com/Niko1221/Strata",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/Niko1221/Strata/blob/main/LICENSE"
+    },
+    "notes": [
+        "引擎与控制端都装在本包目录内（apps\\strata-cuda\\<version>），shim 名称为 strata-cuda；不写系统环境变量",
+        "本包使用 cuda13 变体（sm_75/80/86/89/120）；更老的驱动或 sm_60/61/70 请改用 cuda12 变体（同一 release，文件名替换 cuda-cuda13 → cuda-cuda12）",
+        "模型（GGUF）不随包分发：先自行准备模型，再用 start-model-visible.ps1 启动",
+        "启动：start-model-visible.ps1 -Backend cuda（或直接运行 strata-cuda）",
+        "卸载：scoop uninstall strata-cuda"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": [
+                "https://github.com/Niko1221/Strata/releases/download/v0.2.13/strata-control-0.1.59-windows-x86_64.zip",
+                "https://github.com/Niko1221/Strata/releases/download/v0.2.13/strata-engine-0.1.59-windows-x86_64-cuda-cuda13.tar.gz"
+            ],
+            "hash": [
+                "c81f6800094942a5e750c7d93f348062bc16484f946ea83b0c0d2f8c91c44e87",
+                "3f071a7ccbbf3dcdefed8bff777896d8dd0b580417a078154a7d2c2402ec4158"
+            ]
+        }
+    },
+    "extract_to": [
+        ".",
+        "components\\engine\\0.1.59-windows-x86_64-cuda-cuda13"
+    ],
+    "pre_install": "$c = @('@echo off','setlocal','rem Strata (CUDA / NVIDIA) - Scoop build: the engine lives inside this package.','set \"STRATA_COMPONENTS_DIR=%~dp0..\\components\"','set \"STRATA_ENGINE_BACKEND=cuda\"','call \"%~dp0strata.cmd\" %*','exit /b %ERRORLEVEL%'); New-Item -ItemType Directory -Force -Path (Join-Path $dir 'bin') | Out-Null; Set-Content -LiteralPath (Join-Path $dir 'bin\\strata-cuda.cmd') -Value $c -Encoding Ascii",
+    "bin": [
+        "bin\\strata-cuda.cmd"
+    ],
+    "checkver": {
+        "url": "https://github.com/Niko1221/Strata/releases/latest/download/strata-feed.json",
+        "jsonpath": "$.app.version"
+    }
+}
