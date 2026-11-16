@@ -1,0 +1,107 @@
+{
+    "version": "1.0.0",
+    "description": "Animate G'MIC image-processing filters by interpolating filter parameters and exporting image sequences or GIFs.",
+    "homepage": "https://github.com/ThioJoe/Gmic-Animation-Tools",
+    "license": "GPL-3.0",
+    "architecture": {
+        "64bit": {
+            "url": [
+                "https://github.com/ThioJoe/Gmic-Animation-Tools/releases/download/v1.0.0/GmicAnimator.exe",
+                "https://github.com/ThioJoe/Gmic-Animation-Tools/releases/download/v1.0.0/DrosteGUIExpandedRange.gmic"
+            ],
+            "hash": [
+                "e31433d35258ace4399323ca635d185bf558b882e8d5dbd55218f8fb0d040543",
+                "a019bc8f12f6d01d58c16f52452a49b1462f7f505e95ec391b46027c4a64f0b5"
+            ]
+        }
+    },
+    "depends": [
+        "gmic-cli",
+        "ffmpeg"
+    ],
+    "pre_install": [
+        "if (-not (Test-Path -LiteralPath (Join-Path $dir 'GmicAnimatorConfig.ini'))) {",
+        "    $configLines = @(",
+        "        '# In this file you can change the default startup values for various settings. You can also leave anything blank and it will use the default.',",
+        "        '[Preferences]',",
+        "        '',",
+        "        'Input_File_Path = ',",
+        "        '',",
+        "        'Single_Thread_Mode = False',",
+        "        'Debug_Log_Level = 0',",
+        "        '',",
+        "        'Create_GIF = True',",
+        "        'Dont_Create_Images = False',",
+        "        'Use_Same_Output_Directory = False',",
+        "        '',",
+        "        'Default_Filter = Continuous Droste (Custom)',",
+        "        'Default_Filter_Start_Params = ',",
+        "        'Default_Filter_End_Params = ',",
+        "        'Default_Master_Parameter_Index = ',",
+        "        '',",
+        "        'Default_Frame_Count = 100',",
+        "        'Auto_Switch_Master_Parameter = True',",
+        "        '',",
+        "        'Open_Parameter_Window_On_Start = False',",
+        "        'Open_Expressions_Window_On_Start = False',",
+        "        'Custom_Main_Window_Coordinates = ',",
+        "        '',",
+        "        'Max_Parallel_Threads = 10',",
+        "        '',",
+        "        '[ConfigVersion]',",
+        "        'Version = 2'",
+        "    )",
+        "    [System.IO.File]::WriteAllText((Join-Path $dir 'GmicAnimatorConfig.ini'), ($configLines -join [Environment]::NewLine) + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))",
+        "}",
+        "if (-not (Test-Path -LiteralPath (Join-Path $dir 'FiltersParameterListCustom.json'))) {",
+        "    [System.IO.File]::WriteAllText((Join-Path $dir 'FiltersParameterListCustom.json'), '[]', [System.Text.UTF8Encoding]::new($false))",
+        "}",
+        "if (-not (Test-Path -LiteralPath (Join-Path $dir 'CustomFilterFile.gmic'))) {",
+        "    [System.IO.File]::WriteAllText((Join-Path $dir 'CustomFilterFile.gmic'), '', [System.Text.UTF8Encoding]::new($false))",
+        "}"
+    ],
+    "post_install": [
+        "$gmicSource = Join-Path (appdir 'gmic-cli' $global) 'current'",
+        "$ffmpegSource = Join-Path (appdir 'ffmpeg' $global) 'current\\bin'",
+        "if (-not (Test-Path -LiteralPath (Join-Path $gmicSource 'gmic.exe'))) { throw \"gmic.exe was not found in the installed gmic-cli dependency: $gmicSource\" }",
+        "if (-not (Test-Path -LiteralPath (Join-Path $ffmpegSource 'ffmpeg.exe'))) { throw \"ffmpeg.exe was not found in the installed ffmpeg dependency: $ffmpegSource\" }",
+        "Get-ChildItem -LiteralPath $gmicSource -Force | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $dir -Recurse -Force }",
+        "Get-ChildItem -LiteralPath $ffmpegSource -File | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $dir -Force }"
+    ],
+    "persist": [
+        "GmicAnimatorConfig.ini",
+        "FiltersParameterListCustom.json",
+        "CustomFilterFile.gmic",
+        "Output"
+    ],
+    "shortcuts": [
+        [
+            "GmicAnimator.exe",
+            "G'MIC Animator - ThioJoe"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/ThioJoe/Gmic-Animation-Tools"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": [
+                    "https://github.com/ThioJoe/Gmic-Animation-Tools/releases/download/v$version/GmicAnimator.exe",
+                    "https://github.com/ThioJoe/Gmic-Animation-Tools/releases/download/v$version/DrosteGUIExpandedRange.gmic"
+                ]
+            }
+        },
+        "shortcuts": [
+            [
+                "GmicAnimator.exe",
+                "G'MIC Animator - ThioJoe"
+            ]
+        ]
+    },
+    "notes": [
+        "The manifest installs gmic-cli and ffmpeg from Scoop Main, then copies their required runtime files beside GmicAnimator.exe because the upstream application expects gmic.exe beside itself and FFmpeg in the application folder or PATH.",
+        "The first run may need internet access to download the G'MIC filter definitions.",
+        "DrosteGUIExpandedRange.gmic is an additional modified Continuous Droste filter file intended for the separate G'MIC GUI."
+    ]
+}

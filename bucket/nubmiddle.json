@@ -1,0 +1,80 @@
+{
+    "version": "0.4.0",
+    "description": "Tray tool that gives the middle button of a TrackPoint-style pointing stick both middle click and scrolling",
+    "homepage": "https://github.com/akivajp/nubmiddle",
+    "license": "MIT",
+    "notes": [
+        "Start nubmiddle from the Start menu; its tray icon can make it start with Windows.",
+        "'scoop update nubmiddle' restarts a nubmiddle that was started with Windows.",
+        "Quit one you started yourself from the tray icon before updating."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/akivajp/nubmiddle/releases/download/v0.4.0/nubmiddle-v0.4.0-x64.zip",
+            "hash": "4b7f6415bf1cd08e768dd14e03baf9d31c3d5693f895439c078d5f69754ecc57",
+            "extract_dir": "nubmiddle-v0.4.0-x64"
+        },
+        "arm64": {
+            "url": "https://github.com/akivajp/nubmiddle/releases/download/v0.4.0/nubmiddle-v0.4.0-arm64.zip",
+            "hash": "9b003001a9ddc996c601241c402da8f5d5304d2f7923464df48b43708abe91f7",
+            "extract_dir": "nubmiddle-v0.4.0-arm64"
+        }
+    },
+    "bin": "nubmiddle.exe",
+    "shortcuts": [
+        [
+            "nubmiddle.exe",
+            "nubmiddle"
+        ]
+    ],
+    "post_install": [
+        "# After an update that quit nubmiddle: start it again. The 'Start with",
+        "# Windows' task, if it points to this install, starts it as administrator",
+        "# without a UAC prompt.",
+        "if ($env:NUBMIDDLE_WAS_RUNNING) {",
+        "    $env:NUBMIDDLE_WAS_RUNNING = ''",
+        "    $task = cmd.exe /c 'schtasks.exe /Query /TN nubmiddle /XML 2>nul' | Out-String",
+        "    if ($task -match [regex]::Escape((Split-Path $dir))) {",
+        "        cmd.exe /c 'schtasks.exe /Run /TN nubmiddle >nul 2>&1'",
+        "    } else {",
+        "        Start-Process -FilePath \"$(Split-Path $dir)\\current\\nubmiddle.exe\"",
+        "    }",
+        "}"
+    ],
+    "pre_uninstall": [
+        "# Quit the running nubmiddle (an update runs this too). Scoop does not see",
+        "# one started with Windows, as it runs as administrator.",
+        "$env:NUBMIDDLE_WAS_RUNNING = if (Get-Process nubmiddle -ErrorAction SilentlyContinue) { '1' } else { '' }",
+        "Start-Process -FilePath \"$dir\\nubmiddle.exe\" -ArgumentList '--quit' -Wait"
+    ],
+    "uninstaller": {
+        "script": [
+            "# Only when uninstalling (an update runs this too): remove the 'Start with",
+            "# Windows' task if it points to this install. Deleting it needs",
+            "# administrator rights (one UAC prompt).",
+            "if ($cmd -eq 'uninstall') {",
+            "    $task = cmd.exe /c 'schtasks.exe /Query /TN nubmiddle /XML 2>nul' | Out-String",
+            "    if ($task -match [regex]::Escape((Split-Path $dir))) {",
+            "        try {",
+            "            Start-Process -FilePath \"$dir\\nubmiddle.exe\" -ArgumentList '--unregister-autostart' -Verb RunAs -Wait",
+            "        } catch {",
+            "            warn \"The 'nubmiddle' task was not removed; delete it in Task Scheduler.\"",
+            "        }",
+            "    }",
+            "}"
+        ]
+    },
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/akivajp/nubmiddle/releases/download/v$version/nubmiddle-v$version-x64.zip",
+                "extract_dir": "nubmiddle-v$version-x64"
+            },
+            "arm64": {
+                "url": "https://github.com/akivajp/nubmiddle/releases/download/v$version/nubmiddle-v$version-arm64.zip",
+                "extract_dir": "nubmiddle-v$version-arm64"
+            }
+        }
+    }
+}

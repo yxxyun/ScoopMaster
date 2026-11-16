@@ -1,0 +1,55 @@
+{
+    "version": "1.11.1",
+    "description": "Native Windows Explorer thumbnail provider for SVG and SVGZ files.",
+    "homepage": "https://github.com/ThioJoe/win-svg-thumbs-rust",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/ThioJoe/win-svg-thumbs-rust/releases/download/v1.11.1/SVG-Thumbnail-Extension-Installer_1.11.1_x64.msi#/setup.msi_",
+            "hash": "fdb4bd08bb8d6a9cfcd5d483f89101e7d44ba606c4d857b9974abdaf67d1bad3"
+        },
+        "arm64": {
+            "url": "https://github.com/ThioJoe/win-svg-thumbs-rust/releases/download/v1.11.1/SVG-Thumbnail-Extension-Installer_1.11.1_arm64.msi#/setup.msi_",
+            "hash": "6539c50b3bc1f2377955d04033f661a917676333a97878f2d05f91168242469f"
+        }
+    },
+    "installer": {
+        "script": [
+            "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+            "$msi = Join-Path $dir 'setup.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw \"SVG Thumbnail Extension MSI not found: $msi\" }",
+            "$log = Join-Path $dir 'svg-thumbnail-install.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/i', \"`\"$msi`\"\", '/qn', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -Verb RunAs -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010)) { throw \"SVG Thumbnail Extension installation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+            "$msi = Join-Path $dir 'setup.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw \"SVG Thumbnail Extension MSI not found: $msi. Refusing to remove Scoop files while Windows Installer registration may remain.\" }",
+            "$log = Join-Path $dir 'svg-thumbnail-uninstall.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/x', \"`\"$msi`\"\", '/qn', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -Verb RunAs -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010)) { throw \"SVG Thumbnail Extension uninstallation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
+    "checkver": {
+        "github": "https://github.com/ThioJoe/win-svg-thumbs-rust"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/ThioJoe/win-svg-thumbs-rust/releases/download/v$version/SVG-Thumbnail-Extension-Installer_$version_x64.msi#/setup.msi_"
+            },
+            "arm64": {
+                "url": "https://github.com/ThioJoe/win-svg-thumbs-rust/releases/download/v$version/SVG-Thumbnail-Extension-Installer_$version_arm64.msi#/setup.msi_"
+            }
+        }
+    },
+    "##": "Installer Type: MSI",
+    "notes": [
+        "Nonportable system integration: installs the Windows Explorer thumbnail provider for SVG and SVGZ files.",
+        "Requires an elevated PowerShell session to install, update, or uninstall.",
+        "Disable other SVG thumbnail extensions that may conflict, such as the one included with PowerToys."
+    ]
+}
