@@ -1,4 +1,5 @@
 {
+    "##": "Portable extraction from the official Inno Setup package. Scoop extracts the application payload; the vendor installer is not executed.",
     "version": "1.4.16",
     "description": "Windows SSD/HDD endurance monitor with ETW process attribution, SMART telemetry, write trends, and alerts.",
     "homepage": "https://github.com/andrewtheart/DiskActivityMonitor",
@@ -9,33 +10,28 @@
             "hash": "358f9924e194a3227ad87b71f0f4009ae6a4dbdde52901c867ae5b64ca867835"
         }
     },
-    "installer": {
-        "args": [
-            "/VERYSILENT",
-            "/SUPPRESSMSGBOXES",
-            "/NORESTART",
-            "/SP-",
-            "/TASKS=!autostart"
+    "innosetup": true,
+    "bin": [
+        [
+            "service\\DiskActivityMonitor.Service.exe",
+            "dam-service"
+        ],
+        [
+            "tray\\DiskActivityMonitor.Tray.exe",
+            "dam-tray"
         ]
-    },
-    "uninstaller": {
-        "script": [
-            "$programFiles = [Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFiles)",
-            "$uninstaller = Join-Path $programFiles 'Disk Activity Monitor\\unins000.exe'",
-            "if (Test-Path -LiteralPath $uninstaller) {",
-            "    $process = Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru",
-            "    if ($process.ExitCode -ne 0) { throw \"Disk Activity Monitor uninstaller failed with exit code $($process.ExitCode).\" }",
-            "} else {",
-            "    $service = Get-Service -Name 'DiskActivityMonitor' -ErrorAction SilentlyContinue",
-            "    if ($service) {",
-            "        if ($service.Status -ne 'Stopped') { Stop-Service -Name 'DiskActivityMonitor' -Force -ErrorAction Stop; $service.WaitForStatus('Stopped', [TimeSpan]::FromSeconds(20)) }",
-            "        & \"$env:SystemRoot\\System32\\sc.exe\" delete DiskActivityMonitor | Out-Null",
-            "        if ($LASTEXITCODE -ne 0) { throw 'Failed to delete the DiskActivityMonitor service.' }",
-            "    }",
-            "}"
+    ],
+    "shortcuts": [
+        [
+            "tray\\DiskActivityMonitor.Tray.exe",
+            "Disk Activity Monitor",
+            "--show",
+            "app.ico"
         ]
+    ],
+    "checkver": {
+        "github": "https://github.com/andrewtheart/DiskActivityMonitor"
     },
-    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
@@ -47,7 +43,6 @@
         }
     },
     "notes": [
-        "Nonportable: the vendor installer registers a Windows service and installs files under Program Files; installation requires elevation.",
-        "The vendor uninstaller removes the service and application files. Monitoring data and settings outside the application directory are retained."
+        "Run `dam-service` in an elevated terminal and keep it open; launch the dashboard with `dam-tray`. Data is stored outside Scoop in `%ProgramData%\\DiskActivityMonitor` and `%LOCALAPPDATA%\\DiskActivityMonitor`."
     ]
 }

@@ -1,0 +1,55 @@
+{
+    "version": "25.0.27026",
+    "description": "Bootable Windows recovery environment for offline system repair, troubleshooting, and data recovery.",
+    "homepage": "https://www.oo-software.com/en/bluecontrial",
+    "license": "Proprietary",
+    "url": "https://package.oo-software.com/winget/bluecon/25.0.27026/oobluecon_25.0.27026_eng_neutral.exe",
+    "hash": "b5f47c1fd5c8784018fff37418c48e6cec2494a403f833930e3fcd0944fe4580",
+    "installer": {
+        "script": [
+            "$installer = Join-Path $dir $fname",
+            "if (!(Test-Path -LiteralPath $installer -PathType Leaf)) { throw ('O&O BlueCon setup was not found: ' + $installer) }",
+            "$arguments = '/S /V\"/qn REBOOT=ReallySuppress /norestart\"'",
+            "$process = Start-Process -FilePath $installer -ArgumentList $arguments -Wait -PassThru -Verb RunAs -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010)) { throw \"O&O BlueCon installation failed with exit code $($process.ExitCode).\" }"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$roots = @('HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*')",
+            "$entries = @(foreach ($root in $roots) { Get-ItemProperty -Path $root -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -match '(?i)^O&O BlueCon(?:\\s|$)' } })",
+            "$entries = @($entries | Sort-Object -Property PSChildName -Unique)",
+            "if ($entries.Count -eq 0) { Write-Host 'O&O BlueCon is not registered as installed.'; return }",
+            "if ($entries.Count -gt 1) { throw 'Multiple O&O BlueCon uninstall entries were found; refusing to remove an ambiguous installation.' }",
+            "$productCode = [string]$entries[0].PSChildName",
+            "if ($productCode -notmatch '^\\{[0-9A-Fa-f-]{36}\\}$') { $match = [regex]::Match([string]$entries[0].UninstallString, '\\{[0-9A-Fa-f-]{36}\\}'); if (-not $match.Success) { throw 'Could not determine the O&O BlueCon MSI ProductCode.' }; $productCode = $match.Value }",
+            "$log = Join-Path $env:TEMP 'oo-bluecon-uninstall.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/x', $productCode, '/qn', 'REBOOT=ReallySuppress', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -Verb RunAs -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010, 1605)) { throw \"O&O BlueCon uninstallation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
+    "checkver": {
+        "script": [
+            "$ErrorActionPreference = 'Stop'",
+            "$ProgressPreference = 'SilentlyContinue'",
+            "$html = (Invoke-WebRequest -Uri 'https://www.oo-software.com/en/support/productreleases' -UseBasicParsing).Content",
+            "$rows = [regex]::Matches($html, '(?is)<tr\\b[^>]*>.*?</tr>')",
+            "$version = $null",
+            "foreach ($row in $rows) {",
+            "    $text = [System.Net.WebUtility]::HtmlDecode([regex]::Replace($row.Value, '<[^>]+>', ' '))",
+            "    $text = [regex]::Replace($text, '[|\\s]+', ' ').Trim()",
+            "    if ($text -match '(?i)O&O BlueCon\\s+\\d+\\s+(?<version>\\d+(?:\\.\\d+){1,3})\\b') {",
+            "        $version = $Matches['version']",
+            "        break",
+            "    }",
+            "}",
+            "if (-not $version) { throw 'Unable to detect the O&O BlueCon version on the official O&O product releases page.' }",
+            "$version"
+        ],
+        "regex": "(?<version>\\d+(?:\\.\\d+){1,3})"
+    },
+    "autoupdate": {
+        "url": "https://package.oo-software.com/winget/bluecon/$version/oobluecon_$version_eng_neutral.exe"
+    },
+    "notes": "Nonportable: runs O&O's official machine-wide installer. Administrator approval is required; a restart may be requested."
+}

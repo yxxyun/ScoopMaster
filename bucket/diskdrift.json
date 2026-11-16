@@ -1,5 +1,5 @@
 {
-    "##": "Installer Type: Inno Setup",
+    "##": "Portable extraction from the official Inno Setup package. Scoop's persist feature keeps the application data; the vendor setup is not executed.",
     "version": "0.1.2",
     "description": "Windows disk-space monitor that records free-space changes, storage growth, and the processes writing to disk.",
     "homepage": "https://github.com/AnwarRezk/disk-monitor",
@@ -10,29 +10,34 @@
             "hash": "6a9b655af7d6b7341c9446cda9a214a6ecda47236e645aad2de8f14dd466177c"
         }
     },
-    "pre_install": "if (!(is_admin)) { error \"$app requires administrator rights to $cmd\"; break }",
-    "installer": {
-        "args": [
-            "/VERYSILENT",
-            "/SUPPRESSMSGBOXES",
-            "/NORESTART",
-            "/SP-"
+    "innosetup": true,
+    "post_install": [
+        "$configPath = Join-Path $dir 'Collector\\appsettings.json'",
+        "if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) { throw \"DiskDrift configuration file was not found: $configPath\" }",
+        "$config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json",
+        "$config.DiskDrift.DataDirectory = Join-Path $persist_dir 'data'",
+        "$configJson = $config | ConvertTo-Json -Depth 100",
+        "[System.IO.File]::WriteAllText($configPath, $configJson + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))"
+    ],
+    "persist": [
+        "data"
+    ],
+    "bin": [
+        [
+            "Collector\\DiskDrift.Collector.exe",
+            "diskdrift-collector"
+        ],
+        [
+            "Tray\\DiskDrift.Tray.exe",
+            "diskdrift"
         ]
-    },
-    "pre_uninstall": "if (!(is_admin)) { error \"$app requires administrator rights to $cmd\"; break }",
-    "uninstaller": {
-        "script": [
-            "$programFiles = if ($env:ProgramW6432) { $env:ProgramW6432 } else { $env:ProgramFiles }",
-            "$uninstaller = Join-Path $programFiles 'DiskDrift\\unins000.exe'",
-            "if (-not (Test-Path -LiteralPath $uninstaller -PathType Leaf)) { throw \"DiskDrift Inno Setup uninstaller was not found: $uninstaller\" }",
-            "$process = Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru -ErrorAction Stop",
-            "if ($process.ExitCode -ne 0) { throw \"DiskDrift uninstaller exited with code $($process.ExitCode).\" }",
-            "$service = Get-Service -Name 'DiskDrift' -ErrorAction SilentlyContinue",
-            "if ($null -ne $service) { throw 'DiskDrift service is still registered after the vendor uninstaller completed.' }",
-            "$runEntry = Get-ItemProperty -Path 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'DiskDriftTray' -ErrorAction SilentlyContinue",
-            "if ($null -ne $runEntry) { throw 'DiskDriftTray is still registered in the machine-wide Run key.' }"
+    ],
+    "shortcuts": [
+        [
+            "Tray\\DiskDrift.Tray.exe",
+            "DiskDrift"
         ]
-    },
+    ],
     "checkver": {
         "github": "https://github.com/AnwarRezk/disk-monitor"
     },
@@ -46,5 +51,7 @@
             }
         }
     },
-    "notes": "Nonportable by design. Requires an elevated Scoop session. The official setup installs Collector and Tray under %ProgramFiles%\\DiskDrift, registers the LocalSystem DiskDrift service, and adds a machine-wide tray startup entry. The uninstaller removes the service and tray registration but keeps history and logs under %ProgramData%\\DiskDrift. The setup's protected Program Files location is intentional; do not override it with /DIR=$dir because the service runs as LocalSystem."
+    "notes": [
+        "Run `diskdrift-collector` from an elevated PowerShell window and keep it open; launch the dashboard with `diskdrift`. Data is stored in Scoop's persistent `data` directory."
+    ]
 }

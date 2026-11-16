@@ -1,0 +1,72 @@
+{
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+    "version": "0.3.0",
+    "description": "Per-process disk I/O monitor with disk write alerts, per-app network traffic, and NVMe health monitoring for Windows.",
+    "homepage": "https://github.com/tab16360/flowcat-windows",
+    "license": "Apache-2.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/tab16360/flowcat-windows/releases/download/v0.3.0/FlowCat-Windows-x64-Setup.exe",
+            "hash": "5659792626861960cff14a6252c6e0dab434028ee0d302306f5b131bed75afe1"
+        }
+    },
+    "innosetup": true,
+    "pre_install": [
+        "$ErrorActionPreference = 'Stop'",
+        "$serviceKey = 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\FlowCatCollector'",
+        "if (Test-Path -LiteralPath $serviceKey) {",
+        "    $serviceImagePath = (Get-ItemProperty -LiteralPath $serviceKey -Name ImagePath -ErrorAction Stop).ImagePath",
+        "    $imagePathMatch = [regex]::Match($serviceImagePath, '^\\s*\"(?<path>[^\"]+)\"')",
+        "    if (-not $imagePathMatch.Success) { throw 'Could not resolve the existing FlowCat Collector executable path.' }",
+        "    $oldServiceExe = $imagePathMatch.Groups['path'].Value",
+        "    if (-not (Test-Path -LiteralPath $oldServiceExe -PathType Leaf)) { throw \"Existing FlowCat Collector executable not found: $oldServiceExe\" }",
+        "    $stopProcess = Start-Process -FilePath $oldServiceExe -ArgumentList '--stop-service' -Verb RunAs -Wait -PassThru -ErrorAction Stop",
+        "    if ($stopProcess.ExitCode -ne 0) { throw \"Could not stop FlowCat Collector before updating (exit code $($stopProcess.ExitCode)).\" }",
+        "}"
+    ],
+    "post_install": [
+        "$ErrorActionPreference = 'Stop'",
+        "$serviceExe = Join-Path $dir 'FlowCatService.exe'",
+        "if (-not (Test-Path -LiteralPath $serviceExe -PathType Leaf)) { throw 'FlowCatService.exe was not extracted from the Inno Setup package.' }",
+        "$installProcess = Start-Process -FilePath $serviceExe -ArgumentList '--install-service' -Verb RunAs -Wait -PassThru -ErrorAction Stop",
+        "if ($installProcess.ExitCode -ne 0) { throw \"FlowCat Collector service installation failed (exit code $($installProcess.ExitCode)).\" }"
+    ],
+    "pre_uninstall": [
+        "$ErrorActionPreference = 'Stop'",
+        "$serviceExe = Join-Path $dir 'FlowCatService.exe'",
+        "if (Test-Path -LiteralPath $serviceExe -PathType Leaf) {",
+        "    $uninstallProcess = Start-Process -FilePath $serviceExe -ArgumentList '--uninstall-service' -Verb RunAs -Wait -PassThru -ErrorAction Stop",
+        "    if ($uninstallProcess.ExitCode -ne 0) { throw \"FlowCat Collector service removal failed (exit code $($uninstallProcess.ExitCode)).\" }",
+        "}"
+    ],
+    "bin": [
+        [
+            "FlowCat.exe",
+            "flowcat"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "FlowCat.exe",
+            "FlowCat for Windows"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/tab16360/flowcat-windows"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/tab16360/flowcat-windows/releases/download/v$version/FlowCat-Windows-x64-Setup.exe"
+            }
+        },
+        "hash": {
+            "mode": "github"
+        }
+    },
+    "notes": [
+        "Scoop extracts the Inno Setup payload directly; the vendor installer and its Start Menu / uninstall routines are not executed.",
+        "Installing, updating, and uninstalling registers, restarts, or removes the FlowCat Collector Windows service and requires UAC approval. The service binary remains inside the Scoop app directory.",
+        "Statistics and privacy settings are stored in %ProgramData%\\FlowCatWindows and are retained when the Scoop app is uninstalled."
+    ]
+}

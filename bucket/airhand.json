@@ -1,0 +1,65 @@
+{
+    "version": "0.2.3",
+    "description": "Airhand: high-performance, low-latency remote desktop over QUIC (controller and host in one program)",
+    "homepage": "https://github.com/sqlpxc/airhand",
+    "license": "MIT",
+    "notes": [
+        "The Windows host must run as the \"Airhand\" system service, so this package needs administrator rights to install, update and uninstall. Installing registers the service, a system-wide \"Start with Windows\" entry and a firewall rule; uninstalling removes all three.",
+        "Keep the tray closed before \"scoop update airhand\": Scoop skips the update while an Airhand process from the package directory is running. Starting Airhand from the start menu opens the console; the tray entry is \"Open console\".",
+        "Scoop unpacks the official NSIS installer instead of running it, and calls \"airhand.exe --install\" itself. The install directory stays under Scoop, so version rollbacks keep working and the service path follows the current version.",
+        "config.toml holds this computer's control code, its end-to-end identity and paired controllers. It is persisted, so it survives updates and uninstall unless \"scoop uninstall --purge\" is used."
+    ],
+    "url": "https://github.com/sqlpxc/airhand/releases/download/v0.2.3/Airhand_0.2.3_x64-setup.exe#/dl.7z",
+    "hash": "535bd8139f86010724c5af73117571e8d408f3b182090c18c0e010d6c8ee7d61",
+    "pre_install": [
+        "# \"#/dl.7z\" only renames the download; Scoop will not auto-extract a .exe, so unpack the NSIS",
+        "# payload here (same approach as the other Electron/Tauri manifests in this bucket).",
+        "Expand-7zipArchive \"$dir\\dl.7z\" \"$dir\"",
+        "# The service reads config.toml from its own directory, so restore the persisted copy before",
+        "# \"--install\" runs. persist_data would otherwise replace this file with a directory junction.",
+        "if (Test-Path \"$persist_dir\\config.toml\" -PathType Leaf) {",
+        "    Copy-Item \"$persist_dir\\config.toml\" \"$dir\\config.toml\" -Force",
+        "}"
+    ],
+    "installer": {
+        "script": [
+            "# Wrap in a scriptblock: \"break\" inside a plain if would unwind the whole install.",
+            "$installService = {",
+            "    if (!(is_admin)) { throw \"Airhand needs administrator rights to $app $cmd.\" }",
+            "    # Register and start the \"Airhand\" system service, mirroring the official installer.",
+            "    Invoke-ExternalCommand \"$dir\\airhand.exe\" -ArgumentList @('--install') -RunAs -Activity \"Installing the Airhand service ...\" | Out-Null",
+            "}",
+            "& $installService"
+        ]
+    },
+    "post_install": [
+        "# Drop the installer scaffolding, not the program.",
+        "Remove-Item -LiteralPath \"$dir\\`$PLUGINSDIR\", \"$dir\\uninstall.exe\" -Recurse -Force -ErrorAction SilentlyContinue"
+    ],
+    "uninstaller": {
+        "script": [
+            "$removeService = {",
+            "    if (!(is_admin)) { throw \"Airhand needs administrator rights to $app $cmd.\" }",
+            "    # Stops and deletes the service and removes the system-wide startup entry.",
+            "    Invoke-ExternalCommand \"$dir\\airhand.exe\" -ArgumentList @('--uninstall') -RunAs -Activity \"Removing the Airhand service ...\" | Out-Null",
+            "}",
+            "& $removeService"
+        ]
+    },
+    "persist": "config.toml",
+    "shortcuts": [
+        [
+            "airhand.exe",
+            "Airhand"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/sqlpxc/airhand"
+    },
+    "autoupdate": {
+        "hash": {
+            "mode": "download"
+        },
+        "url": "https://github.com/sqlpxc/airhand/releases/download/v$version/Airhand_$version_x64-setup.exe#/dl.7z"
+    }
+}

@@ -1,0 +1,45 @@
+{
+    "version": "1.0.9816.26710",
+    "description": "Firewall and intrusion protection for Windows Servers and PCs - bans password guessers and port scanners automatically.",
+    "homepage": "https://coinetic.io",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://coinetic.io/eula"
+    },
+    "notes": [
+        "Coinetic AI Security runs as a Windows service and starts the free 30-day trial (all features, no payment details).",
+        "Installing through Scoop accepts the licence agreement: https://coinetic.io/eula",
+        "Coinetic updates itself; uninstalling asks for a confirmation on purpose (tamper protection). Unattended removal: https://coinetic.io/deploy-coinetic"
+    ],
+    "url": "https://coinetic.io/download/1.0.9816.26710/CoineticSetup.exe",
+    "hash": "006d0673036ef4a593939e61c6c04bcba49f9933a30632cd40c5df18b65af9d8",
+    "pre_install": "if (-not (is_admin)) { abort \"$app requires admin rights to $cmd (it installs a Windows service).\" }",
+    "installer": {
+        "script": [
+            "Write-Host 'Installing Coinetic AI Security - you accept the licence agreement https://coinetic.io/eula'",
+            "$p = Start-Process -FilePath \"$dir\\$fname\" -ArgumentList @('/quiet', '/accepteula', '/trial') -Wait -PassThru",
+            "Remove-Item \"$dir\\$fname\" -Force -ErrorAction SilentlyContinue",
+            "if ($p.ExitCode -ne 0) { abort \"CoineticSetup.exe ended with code $($p.ExitCode) - see https://coinetic.io/deploy-coinetic\" }"
+        ]
+    },
+    "pre_uninstall": "if (-not (is_admin)) { abort \"$app requires admin rights to $cmd.\" }",
+    "uninstaller": {
+        "script": [
+            "if ($cmd -ne 'uninstall') { return }",
+            "$loc = (Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Coinetic' -ErrorAction SilentlyContinue).InstallLocation",
+            "if ($loc -and (Test-Path \"$loc\\Coinetic.exe\")) { Start-Process -FilePath \"$loc\\Coinetic.exe\" -ArgumentList '/uninstall' -Wait }",
+            "else { warn 'Coinetic AI Security is not installed (no Apps and Features entry).' }"
+        ]
+    },
+    "checkver": {
+        "url": "https://coinetic.io/download/version.json",
+        "jsonpath": "$.version"
+    },
+    "autoupdate": {
+        "url": "https://coinetic.io/download/$version/CoineticSetup.exe",
+        "hash": {
+            "url": "https://coinetic.io/download/version.json",
+            "jsonpath": "$.sha256"
+        }
+    }
+}

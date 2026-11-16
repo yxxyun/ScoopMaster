@@ -1,0 +1,50 @@
+{
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+    "version": "70b93aa644d4045395b4e4482ba954009422b482",
+    "description": "Windows console utility for monitoring per-process disk I/O, process rankings, and ETW-attributed activity.",
+    "homepage": "https://github.com/Mainkill1/DiskMonitor",
+    "license": "MIT",
+    "url": "https://github.com/Mainkill1/DiskMonitor/archive/70b93aa644d4045395b4e4482ba954009422b482.zip",
+    "hash": "bc8c4134728b308aecec6e29331356ceb73063c425050a0b953f0f206bfb5cd8",
+    "depends": "dotnet-sdk",
+    "pre_install": [
+        "$project = Get-ChildItem -LiteralPath $dir -Filter 'DiskMonitor.csproj' -File -Recurse | Select-Object -First 1",
+        "if (-not $project) { throw 'DiskMonitor.csproj was not found in the pinned source archive.' }",
+        "$env:NUGET_PACKAGES = Join-Path $dir '.nuget\\packages'",
+        "$env:DOTNET_CLI_HOME = Join-Path $dir '.dotnet-home'",
+        "$publish = Join-Path $dir 'publish'",
+        "New-Item -ItemType Directory -Path $publish -Force | Out-Null",
+        "& dotnet publish $project.FullName --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false --output $publish",
+        "if ($LASTEXITCODE -ne 0) { throw \"DiskMonitor source build failed with exit code $LASTEXITCODE.\" }",
+        "if (-not (Test-Path -LiteralPath (Join-Path $publish 'DiskMonitor.exe') -PathType Leaf)) { throw 'DiskMonitor.exe was not produced by the .NET publish step.' }",
+        "Remove-Item -LiteralPath (Join-Path $dir '.nuget') -Recurse -Force -ErrorAction SilentlyContinue",
+        "$launcher = @('@echo off','setlocal','set \"DOTNET_BUNDLE_EXTRACT_BASE_DIR=%~dp0bundle\"','pushd \"%~dp0\"','\"%~dp0publish\\DiskMonitor.exe\" %*','set \"exitcode=%ERRORLEVEL%\"','popd','exit /b %exitcode%') -join [Environment]::NewLine",
+        "Set-Content -LiteralPath (Join-Path $dir 'diskmonitor.cmd') -Value $launcher -Encoding ASCII",
+        "if (-not (Test-Path -LiteralPath (Join-Path $dir 'io_monitor.csv') -PathType Leaf)) { New-Item -ItemType File -Path (Join-Path $dir 'io_monitor.csv') -Force | Out-Null }",
+        "Remove-Item -LiteralPath (Join-Path $dir '.dotnet-home') -Recurse -Force -ErrorAction SilentlyContinue",
+        "if ($project.Directory.FullName -ne $dir) { Remove-Item -LiteralPath $project.Directory.FullName -Recurse -Force }"
+    ],
+    "bin": "diskmonitor.cmd",
+    "shortcuts": [
+        [
+            "diskmonitor.cmd",
+            "DiskMonitor"
+        ]
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/Mainkill1/DiskMonitor/commits/main",
+        "jsonpath": "$.sha"
+    },
+    "autoupdate": {
+        "url": "https://github.com/Mainkill1/DiskMonitor/archive/$version.zip",
+        "hash": {
+            "mode": "download"
+        }
+    },
+    "notes": [
+        "The upstream repository publishes source only; this manifest pins a full Git commit and builds the Windows x64 application during installation. The upstream project version at this commit is 1.13.",
+        "The build uses the dotnet-sdk dependency and publishes a self-contained single-file executable inside the Scoop app directory. Native runtime files are extracted into the app's bundle directory, not the user TEMP directory. ETW-enhanced process attribution requires an elevated terminal.",
+        "The optional CSV activity log is stored as io_monitor.csv under Scoop's persist directory and is preserved across updates and uninstallation."
+    ],
+    "persist": "io_monitor.csv"
+}

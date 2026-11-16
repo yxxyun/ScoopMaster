@@ -1,0 +1,43 @@
+{
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+    "version": "0.2.0-beta.4",
+    "description": "Per-process Windows file I/O monitor with kernel ETW capture, a live TUI, SQLite history, alerts, and export.",
+    "homepage": "https://github.com/berki6/WatchFS",
+    "license": "Apache-2.0",
+    "url": "https://github.com/berki6/WatchFS/archive/refs/tags/v0.2.0-beta.4.zip",
+    "hash": "5166f6b8f5fe4d9809dbbf7a2f5dd3b75e8995dfaf473d20a1aaeb0391a7b4b8",
+    "extract_dir": "WatchFS-0.2.0-beta.4",
+    "depends": [
+        "python"
+    ],
+    "pre_install": [
+        "$launcher = @('@echo off','setlocal','set \"PYTHONPATH=%~dp0site-packages;%PYTHONPATH%\"','set \"WATCHFS_DATA=%~dp0data\"','pushd \"%~dp0data\"','python.exe -m watchfs.cli.main %*','set \"exitcode=%ERRORLEVEL%\"','popd','exit /b %exitcode%') -join [Environment]::NewLine",
+        "Set-Content -LiteralPath (Join-Path $dir 'watchfs.cmd') -Value $launcher -Encoding ASCII",
+        "New-Item -ItemType Directory -Path (Join-Path $dir 'data') -Force | Out-Null"
+    ],
+    "post_install": [
+        "$packages = Join-Path $dir 'site-packages'",
+        "New-Item -ItemType Directory -Path $packages -Force | Out-Null",
+        "$python = (Get-Command python.exe -ErrorAction Stop).Source",
+        "$project = \"$($dir)[pywintrace,pyetwkit]\"",
+        "& $python -m pip install --disable-pip-version-check --no-warn-script-location --target $packages $project",
+        "if ($LASTEXITCODE -ne 0) { throw \"WatchFS dependency installation failed with exit code $LASTEXITCODE.\" }"
+    ],
+    "bin": "watchfs.cmd",
+    "persist": "data",
+    "checkver": {
+        "url": "https://raw.githubusercontent.com/berki6/WatchFS/main/docs/contributing.md",
+        "regex": "Current beta:\\*\\* `v(?<version>\\d+\\.\\d+\\.\\d+-beta\\.\\d+)`"
+    },
+    "autoupdate": {
+        "url": "https://github.com/berki6/WatchFS/archive/refs/tags/v$version.zip",
+        "extract_dir": "WatchFS-$version",
+        "hash": {
+            "mode": "download"
+        }
+    },
+    "notes": [
+        "Live kernel ETW capture requires an elevated terminal. The command-line database, configuration files, and session metadata are kept under the persisted data directory.",
+        "Python and the pywintrace/pyetwkit runtime dependencies are installed inside the Scoop version directory. This is a prerelease beta."
+    ]
+}

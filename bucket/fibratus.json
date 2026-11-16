@@ -1,0 +1,49 @@
+{
+    "##": "Installer Type: MSI / Windows service",
+    "version": "3.1.1",
+    "description": "Windows endpoint security sensor for real-time kernel telemetry, threat detection, memory scanning, and forensics.",
+    "homepage": "https://fibratus.io/",
+    "license": "Apache-2.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/rabbitstack/fibratus/releases/download/v3.1.1/fibratus-3.1.1-amd64.msi#/fibratus.msi_",
+            "hash": "d30003c8b7631d204e5b293965d3bf8e0f0f80f99ca0141f90782e39279b48f2"
+        }
+    },
+    "pre_install": "if (!(is_admin)) { error \"$app requires administrator rights to $cmd\"; break }",
+    "installer": {
+        "script": [
+            "$msi = Join-Path $dir 'fibratus.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw \"Fibratus MSI not found: $msi\" }",
+            "$log = Join-Path $dir 'fibratus-msi-install.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/i', \"`\"$msi`\"\", '/qn', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010)) { throw \"Fibratus installation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
+    "pre_uninstall": "if (!(is_admin)) { error \"$app requires administrator rights to $cmd\"; break }",
+    "uninstaller": {
+        "script": [
+            "$msi = Join-Path $dir 'fibratus.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw \"Fibratus MSI not found: $msi. Refusing to remove Scoop files while Windows Installer registration may remain.\" }",
+            "$log = Join-Path $dir 'fibratus-msi-uninstall.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/x', \"`\"$msi`\"\", '/qn', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010)) { throw \"Fibratus uninstallation failed with exit code $($process.ExitCode). Log: $log\" }",
+            "$service = Get-Service -Name 'Fibratus' -ErrorAction SilentlyContinue",
+            "if ($null -ne $service) { throw 'Fibratus Windows service is still registered after uninstallation.' }"
+        ]
+    },
+    "checkver": {
+        "github": "https://github.com/rabbitstack/fibratus"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/rabbitstack/fibratus/releases/download/v$version/fibratus-$version-amd64.msi#/fibratus.msi_",
+                "hash": {
+                    "mode": "github"
+                }
+            }
+        }
+    },
+    "notes": "Nonportable by design. Requires an elevated Scoop session. The official MSI installs the Fibratus Windows service under the protected %ProgramFiles%\\Fibratus\\Bin directory, runs it as LocalSystem with automatic startup, and adds that Bin directory to the machine-wide PATH. No Scoop shim is needed; reopen terminals after installation to pick up the PATH change. Do not redirect the service executable into the user-writable Scoop directory."
+}
