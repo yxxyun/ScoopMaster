@@ -1,0 +1,43 @@
+{
+    "version": "5.1.1020",
+    "description": "Windows disk analysis and data inspection utility for analyzing drives and storage contents.",
+    "homepage": "https://www.oo-software.com/en/oodiskcommander",
+    "license": "Shareware",
+    "url": "https://package.oo-software.com/winget/diskcommander/5.1.1020/oodiskcommander_5.1.1020_premium_eng_x64.msi#/setup.msi_",
+    "hash": "f87ad3816874e80498a1aad811aafdf533484080da64563976711791031ad41f",
+    "installer": {
+        "script": [
+            "$msi = Join-Path $dir 'setup.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw ('O&O DiskCommander Premium MSI was not found: ' + $msi) }",
+            "$log = Join-Path $dir 'oo-diskcommander-install.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/i', \"`\"$msi`\"\", '/qn', 'REBOOT=ReallySuppress', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -Verb RunAs -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010)) { throw \"O&O DiskCommander Premium installation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$msi = Join-Path $dir 'setup.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw ('O&O DiskCommander Premium MSI was not found: ' + $msi) }",
+            "$installer = New-Object -ComObject WindowsInstaller.Installer",
+            "$database = $installer.OpenDatabase($msi, 0)",
+            "$view = $database.OpenView(\"SELECT Value FROM Property WHERE Property='ProductCode'\")",
+            "$view.Execute()",
+            "$record = $view.Fetch()",
+            "if ($null -eq $record) { throw 'Could not read ProductCode from the retained MSI.' }",
+            "$productCode = [string]$record.StringData(1)",
+            "$view.Close()",
+            "if ($productCode -notmatch '^\\{[0-9A-Fa-f-]{36}\\}$') { throw ('Unexpected MSI ProductCode: ' + $productCode) }",
+            "$log = Join-Path $dir 'oo-diskcommander-uninstall.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/x', $productCode, '/qn', 'REBOOT=ReallySuppress', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -Verb RunAs -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010, 1605)) { throw \"O&O DiskCommander Premium uninstallation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
+    "checkver": {
+        "url": "https://www.oo-software.com/en/download/current/oodiskcommander",
+        "regex": "Build\\s+(?<version>\\d+\\.\\d+\\.\\d+)"
+    },
+    "autoupdate": {
+        "url": "https://package.oo-software.com/winget/diskcommander/$version/oodiskcommander_$version_premium_eng_x64.msi#/setup.msi_"
+    },
+    "notes": "Nonportable: installs through O&O's official per-machine MSI package and registers Start Menu shortcuts and Windows integration. Administrator approval is required. Scoop retains the original MSI in its version directory so its ProductCode remains available for native Windows Installer removal."
+}

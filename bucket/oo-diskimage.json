@@ -1,0 +1,43 @@
+{
+    "version": "23.2.26060",
+    "description": "Windows disk imaging and backup utility for creating and restoring complete system and disk images.",
+    "homepage": "https://www.oo-software.com/en/diskimage-backup-your-data",
+    "license": "Shareware",
+    "url": "https://package.oo-software.com/winget/diskimage/23.2.26060/oodiskimage_23.2.26060_premium_eng_x64.msi#/setup.msi_",
+    "hash": "a137231f9dbc5f86b0936d3f34bc7815b5795d2029ebe39c61ff85752dda0672",
+    "installer": {
+        "script": [
+            "$msi = Join-Path $dir 'setup.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw ('O&O DiskImage Premium MSI was not found: ' + $msi) }",
+            "$log = Join-Path $dir 'oo-diskimage-install.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/i', \"`\"$msi`\"\", '/qn', 'REBOOT=ReallySuppress', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -Verb RunAs -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010)) { throw \"O&O DiskImage Premium installation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$msi = Join-Path $dir 'setup.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw ('O&O DiskImage Premium MSI was not found: ' + $msi) }",
+            "$installer = New-Object -ComObject WindowsInstaller.Installer",
+            "$database = $installer.OpenDatabase($msi, 0)",
+            "$view = $database.OpenView(\"SELECT Value FROM Property WHERE Property='ProductCode'\")",
+            "$view.Execute()",
+            "$record = $view.Fetch()",
+            "if ($null -eq $record) { throw 'Could not read ProductCode from the retained MSI.' }",
+            "$productCode = [string]$record.StringData(1)",
+            "$view.Close()",
+            "if ($productCode -notmatch '^\\{[0-9A-Fa-f-]{36}\\}$') { throw ('Unexpected MSI ProductCode: ' + $productCode) }",
+            "$log = Join-Path $dir 'oo-diskimage-uninstall.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/x', $productCode, '/qn', 'REBOOT=ReallySuppress', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -Verb RunAs -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010, 1605)) { throw \"O&O DiskImage Premium uninstallation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
+    "checkver": {
+        "url": "https://www.oo-software.com/en/download/current/oodiskimage",
+        "regex": "Build\\s+(?<version>\\d+\\.\\d+\\.\\d+)"
+    },
+    "autoupdate": {
+        "url": "https://package.oo-software.com/winget/diskimage/$version/oodiskimage_$version_premium_eng_x64.msi#/setup.msi_"
+    },
+    "notes": "Nonportable: installs the OODiskImagePremiumService Windows service through O&O's official MSI package. Installation and removal require administrator approval; a restart may be requested. Scoop retains the original MSI in its version directory so its ProductCode remains available for native Windows Installer removal."
+}

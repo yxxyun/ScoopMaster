@@ -1,0 +1,43 @@
+{
+    "version": "22.0.26169",
+    "description": "Secure data deletion utility for permanently erasing files, folders, and storage devices.",
+    "homepage": "https://www.oo-software.com/en/safeerase-hard-drive-data-secure-deletion",
+    "license": "Shareware",
+    "url": "https://package.oo-software.com/winget/safeerase/22.0.26169/oosafeerase_22.0.26169_pro_eng_x64.msi#/setup.msi_",
+    "hash": "04c9294b2f691989bf04118910a9fa10e4d03833cefc717bb39df7a111ccd8ec",
+    "installer": {
+        "script": [
+            "$msi = Join-Path $dir 'setup.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw ('O&O SafeErase Professional MSI was not found: ' + $msi) }",
+            "$log = Join-Path $dir 'oo-safeerase-install.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/i', \"`\"$msi`\"\", '/qn', 'REBOOT=ReallySuppress', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -Verb RunAs -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010)) { throw \"O&O SafeErase Professional installation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$msi = Join-Path $dir 'setup.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw ('O&O SafeErase Professional MSI was not found: ' + $msi) }",
+            "$installer = New-Object -ComObject WindowsInstaller.Installer",
+            "$database = $installer.OpenDatabase($msi, 0)",
+            "$view = $database.OpenView(\"SELECT Value FROM Property WHERE Property='ProductCode'\")",
+            "$view.Execute()",
+            "$record = $view.Fetch()",
+            "if ($null -eq $record) { throw 'Could not read ProductCode from the retained MSI.' }",
+            "$productCode = [string]$record.StringData(1)",
+            "$view.Close()",
+            "if ($productCode -notmatch '^\\{[0-9A-Fa-f-]{36}\\}$') { throw ('Unexpected MSI ProductCode: ' + $productCode) }",
+            "$log = Join-Path $dir 'oo-safeerase-uninstall.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/x', $productCode, '/qn', 'REBOOT=ReallySuppress', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -Verb RunAs -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010, 1605)) { throw \"O&O SafeErase Professional uninstallation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
+    "checkver": {
+        "url": "https://www.oo-software.com/en/download/current/oosafeerasepro",
+        "regex": "Build\\s+(?<version>\\d+\\.\\d+\\.\\d+)"
+    },
+    "autoupdate": {
+        "url": "https://package.oo-software.com/winget/safeerase/$version/oosafeerase_$version_pro_eng_x64.msi#/setup.msi_"
+    },
+    "notes": "Nonportable: installs the OOSafeEraseAgent Windows service through O&O's official MSI package. Installation and removal require administrator approval; a restart may be requested. Scoop retains the original MSI in its version directory so its ProductCode remains available for native Windows Installer removal."
+}

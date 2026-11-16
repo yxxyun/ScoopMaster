@@ -1,0 +1,59 @@
+{
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+    "version": "1.7.1",
+    "description": "Modern Windows media player built on mpv and WinUI, with HDR, subtitles, playlists, shaders, and Anime4K.",
+    "homepage": "https://github.com/henzfdev/HC-Player",
+    "license": "GPL-3.0-or-later",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/henzfdev/HC-Player/releases/download/v1.7.1/HC_Player_1.7.1_x64_Setup.exe",
+            "hash": "2273176f445c7d606f65164f93580829505b5727f572345b0f3c4e8c14af7e52"
+        }
+    },
+    "installer": {
+        "args": [
+            "/VERYSILENT",
+            "/SUPPRESSMSGBOXES",
+            "/NORESTART",
+            "/SP-",
+            "/DIR=\"$dir\""
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$uninstaller = Get-ChildItem -LiteralPath $dir -Filter 'unins*.exe' -File | Select-Object -First 1",
+            "if (-not $uninstaller) { throw 'HC Player Inno Setup uninstaller was not found in the Scoop version directory.' }",
+            "$process = Start-Process -FilePath $uninstaller.FullName -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -WorkingDirectory $dir -Wait -PassThru",
+            "if ($process.ExitCode -ne 0) { throw ('HC Player uninstaller exited with code {0}.' -f $process.ExitCode) }"
+        ]
+    },
+    "shortcuts": [
+        [
+            "HC Player.exe",
+            "HC Player"
+        ]
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/henzfdev/HC-Player/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "^v(?<version>[\\d.]+)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/henzfdev/HC-Player/releases/download/v$version/HC_Player_$version_x64_Setup.exe"
+            }
+        },
+        "hash": {
+            "mode": "json",
+            "url": "https://api.github.com/repos/henzfdev/HC-Player/releases/tags/v$version",
+            "jp": "$.assets[?(@.name == '$basename')].digest"
+        }
+    },
+    "##": "Installer Type: Inno Setup",
+    "notes": [
+        "Nonportable: runs the official Inno Setup installer silently and registers the application's Windows integration; the extracted {app} files alone do not include the portable.flag required for portable mode.",
+        "The installed build stores application data under %LOCALAPPDATA%\\HC Player. The official uninstaller is invoked silently by Scoop.",
+        "The upstream installer is unsigned; Windows SmartScreen may warn on first launch."
+    ]
+}

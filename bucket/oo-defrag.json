@@ -1,0 +1,58 @@
+{
+    "version": "32.1.26138",
+    "description": "Windows disk defragmentation and optimization utility with a background agent service.",
+    "homepage": "https://www.oo-software.com/en/products/oodefrag",
+    "license": "Shareware",
+    "architecture": {
+        "64bit": {
+            "url": "https://package.oo-software.com/winget/defrag/32.1.26138/oodefrag_32.1.26138_pro_eng_x64.msi#/setup.msi_",
+            "hash": "567ff36c6dc10462acf5a29cb48397ef913f6c4fb54d13bd7027b7d73cb20f2e"
+        },
+        "arm64": {
+            "url": "https://package.oo-software.com/winget/defrag/32.1.26138/oodefrag_32.1.26138_pro_eng_arm64.msi#/setup.msi_",
+            "hash": "c79871736ad40ebfa9c965f98582f47b034a47a651f4f4e31c40a1ba7c95ec3a"
+        }
+    },
+    "installer": {
+        "script": [
+            "$msi = Join-Path $dir 'setup.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw ('O&O Defrag MSI was not found: ' + $msi) }",
+            "$log = Join-Path $dir 'oo-defrag-install.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/i', \"`\"$msi`\"\", '/qn', 'REBOOT=ReallySuppress', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -Verb RunAs -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010)) { throw \"O&O Defrag installation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$msi = Join-Path $dir 'setup.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw ('O&O Defrag MSI was not found: ' + $msi) }",
+            "$installer = New-Object -ComObject WindowsInstaller.Installer",
+            "$database = $installer.OpenDatabase($msi, 0)",
+            "$view = $database.OpenView(\"SELECT Value FROM Property WHERE Property='ProductCode'\")",
+            "$view.Execute()",
+            "$record = $view.Fetch()",
+            "if ($null -eq $record) { throw 'Could not read ProductCode from the retained MSI.' }",
+            "$productCode = [string]$record.StringData(1)",
+            "$view.Close()",
+            "if ($productCode -notmatch '^\\{[0-9A-Fa-f-]{36}\\}$') { throw ('Unexpected MSI ProductCode: ' + $productCode) }",
+            "$log = Join-Path $dir 'oo-defrag-uninstall.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/x', $productCode, '/qn', 'REBOOT=ReallySuppress', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -Verb RunAs -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010, 1605)) { throw \"O&O Defrag uninstallation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
+    "checkver": {
+        "url": "https://www.oo-software.com/en/download/current/oodefragpro",
+        "regex": "Version:\\s*(?<version>\\d+\\.\\d+\\.\\d+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://package.oo-software.com/winget/defrag/$version/oodefrag_$version_pro_eng_x64.msi#/setup.msi_"
+            },
+            "arm64": {
+                "url": "https://package.oo-software.com/winget/defrag/$version/oodefrag_$version_pro_eng_arm64.msi#/setup.msi_"
+            }
+        }
+    },
+    "notes": "Nonportable: installs O&O Defrag's system-wide background agent service. Installation and removal require administrator approval; a restart may be required. Scoop retains the original MSI in its version directory so its ProductCode remains available for native Windows Installer removal."
+}

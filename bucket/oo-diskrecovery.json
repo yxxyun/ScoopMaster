@@ -1,0 +1,43 @@
+{
+    "version": "14.0.17",
+    "description": "Windows data recovery utility for recovering deleted files and data from damaged file systems.",
+    "homepage": "https://www.oo-software.com/en/products/oodiskrecovery",
+    "license": "Shareware",
+    "url": "https://package.oo-software.com/winget/diskrecovery/14.0.17/oodiskrecovery_14.0.17_eng_x64.msi#/setup.msi_",
+    "hash": "a9bd2dfd64129b695aa62985b24d404043e9731a77869982c20df9134b5e9348",
+    "installer": {
+        "script": [
+            "$msi = Join-Path $dir 'setup.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw ('O&O DiskRecovery MSI was not found: ' + $msi) }",
+            "$log = Join-Path $dir 'oo-diskrecovery-install.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/i', \"`\"$msi`\"\", '/qn', 'REBOOT=ReallySuppress', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -Verb RunAs -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010)) { throw \"O&O DiskRecovery installation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$msi = Join-Path $dir 'setup.msi_'",
+            "if (!(Test-Path -LiteralPath $msi -PathType Leaf)) { throw ('O&O DiskRecovery MSI was not found: ' + $msi) }",
+            "$installer = New-Object -ComObject WindowsInstaller.Installer",
+            "$database = $installer.OpenDatabase($msi, 0)",
+            "$view = $database.OpenView(\"SELECT Value FROM Property WHERE Property='ProductCode'\")",
+            "$view.Execute()",
+            "$record = $view.Fetch()",
+            "if ($null -eq $record) { throw 'Could not read ProductCode from the retained MSI.' }",
+            "$productCode = [string]$record.StringData(1)",
+            "$view.Close()",
+            "if ($productCode -notmatch '^\\{[0-9A-Fa-f-]{36}\\}$') { throw ('Unexpected MSI ProductCode: ' + $productCode) }",
+            "$log = Join-Path $dir 'oo-diskrecovery-uninstall.log'",
+            "$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/x', $productCode, '/qn', 'REBOOT=ReallySuppress', '/norestart', '/L*V', \"`\"$log`\"\") -Wait -PassThru -Verb RunAs -ErrorAction Stop",
+            "if ($process.ExitCode -notin @(0, 3010, 1605)) { throw \"O&O DiskRecovery uninstallation failed with exit code $($process.ExitCode). Log: $log\" }"
+        ]
+    },
+    "checkver": {
+        "url": "https://www.oo-software.com/en/download/current/oodiskrecovery",
+        "regex": "Build\\s+(?<version>\\d+\\.\\d+\\.\\d+)"
+    },
+    "autoupdate": {
+        "url": "https://package.oo-software.com/winget/diskrecovery/$version/oodiskrecovery_$version_eng_x64.msi#/setup.msi_"
+    },
+    "notes": "Nonportable: uses O&O's official per-machine Windows Installer package and registers the application with Windows. Scoop uninstall removes the MSI ProductCode. Administrator approval is required; a restart may be requested. Scoop retains the original MSI in its version directory so its ProductCode remains available for native Windows Installer removal."
+}
