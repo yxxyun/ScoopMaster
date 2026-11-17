@@ -1,0 +1,56 @@
+{
+    "version": "1.2.2",
+    "description": "Free infinite canvas for notes, nested boards, and visual project planning.",
+    "homepage": "https://oddinote-web.vercel.app",
+    "license": {
+        "identifier": "Apache-2.0",
+        "url": "https://github.com/Neuroxcx1/Odinote/blob/main/LICENSE"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Neuroxcx1/Odinote/releases/download/v1.2.2/Oddinote-Setup-1.2.2.exe#/dl.7z",
+            "hash": "016bf1b50a456543ff47ec9afa0af47b9b5f38cf28f07d91d6eb936a7d1133b5"
+        }
+    },
+    "pre_install": [
+        "$payload = Join-Path $dir '$PLUGINSDIR\\app-64.7z'",
+        "if (!(Test-Path -LiteralPath $payload -PathType Leaf)) { throw 'The embedded Electron app-64.7z payload was not found in the NSIS package.' }",
+        "Expand-7zipArchive $payload $dir"
+    ],
+    "post_install": [
+        "if (!(Test-Path -LiteralPath (Join-Path $dir 'Odinote.exe') -PathType Leaf)) { throw 'Odinote.exe was not extracted into the Scoop version directory.' }",
+        "Remove-Item -LiteralPath (Join-Path $dir '$PLUGINSDIR'), (Join-Path $dir '$R0'), (Join-Path $dir 'Uninstall Odinote.exe') -Recurse -Force -ErrorAction SilentlyContinue"
+    ],
+    "bin": [
+        [
+            "Odinote.exe",
+            "odinote"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "Odinote.exe",
+            "Oddinote"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/Neuroxcx1/Odinote",
+        "regex": "v(?<version>[\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Neuroxcx1/Odinote/releases/download/v$version/Oddinote-Setup-$version.exe#/dl.7z",
+                "hash": {
+                    "url": "https://api.github.com/repos/Neuroxcx1/Odinote/releases/tags/v$version",
+                    "jsonpath": "$.assets[?(@.name == 'Oddinote-Setup-$version.exe')].digest"
+                }
+            }
+        }
+    },
+    "notes": [
+        "Scoop extracts the official NSIS package and its embedded app-64.7z payload; the vendor installer routine is not executed.",
+        "The application stores its user data in the normal per-user Electron data directory, outside the Scoop version directory.",
+        "The extracted copy does not contain the vendor uninstall marker, which prevents its background updater from silently installing a separate copy outside Scoop. Update this package with Scoop (scoop update odinote); do not use the in-app installer update action."
+    ]
+}

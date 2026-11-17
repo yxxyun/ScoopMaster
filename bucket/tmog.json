@@ -1,21 +1,16 @@
 {
+    "##": "Why here? Testing. See if checkver and autoupdate mechanism keeps working.",
     "version": "1.1.1",
     "description": "Task Manager by retired Microsoft engineer Dave Plummer",
     "homepage": "https://www.tmog.org",
     "license": "Proprietary",
-    "notes": [
-        "Settings are stored in '$persist_dir\\Task Manager' and linked from '%LOCALAPPDATA%\\TMOG\\Task Manager'.",
-        "The built-in 'Replace Windows Task Manager' option only works from an all-users install in Program Files.",
-        "To set it for this install run: & '$dir\\replace-taskmgr.ps1'",
-        "To undo it run: & '$dir\\replace-taskmgr.ps1' -Disable"
-    ],
     "architecture": {
         "64bit": {
-            "url": "https://www.tmog.org/rtm/downloads/TMOG-Task-Manager-Setup-1.1.1-0-x64-cff04508eeb0.exe",
+            "url": "https://www.tmog.org/rtm/downloads/TMOG-Task-Manager-Setup.exe",
             "hash": "cff04508eeb081b4d952e4adf348b35612baa93d538c59f857b812ca6a4f5e8f"
         },
         "arm64": {
-            "url": "https://www.tmog.org/rtm/downloads/TMOG-Task-Manager-Setup-1.1.1-0-arm64-383ac3cb8592.exe",
+            "url": "https://www.tmog.org/rtm/downloads/TMOG-Task-Manager-Setup-arm64.exe",
             "hash": "383ac3cb8592779e972b6fcc57f3012968a83e12cfbd5570dee540cdbbc6fca4"
         }
     },
@@ -31,36 +26,6 @@
             "Task Manager.exe",
             "Task Manager TMOG"
         ]
-    ],
-    "post_install": [
-        "# Keep settings in the persist dir and link the folder the app reads from to it",
-        "$data = \"$env:LOCALAPPDATA\\TMOG\\Task Manager\"",
-        "$target = \"$persist_dir\\Task Manager\"",
-        "ensure (Split-Path $data) | Out-Null",
-        "ensure $target | Out-Null",
-        "$item = Get-Item $data -Force -ErrorAction SilentlyContinue",
-        "if ($item -and $item.LinkType) {",
-        "    $item.Delete()",
-        "} elseif ($item) {",
-        "    Copy-Item \"$data\\*\" $target -Recurse -Force -ErrorAction Stop",
-        "    Remove-Item $data -Recurse -Force",
-        "}",
-        "New-Item -ItemType Junction -Path $data -Target $target | Out-Null",
-        "# Optional helper to replace Windows Task Manager, see notes",
-        "$helper = \"$bucketsdir\\$bucket\\scripts\\tmog\\replace-taskmgr.ps1\"",
-        "if ($bucket -and (Test-Path $helper)) { Copy-Item $helper $dir }"
-    ],
-    "pre_uninstall": [
-        "# Undo the Task Manager replacement so taskmgr.exe is not left pointing at a removed app",
-        "if ($cmd -eq 'uninstall' -and (Test-Path \"$dir\\replace-taskmgr.ps1\")) {",
-        "    $ifeo = Get-Item 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\taskmgr.exe' -ErrorAction SilentlyContinue",
-        "    if ($ifeo -and \"$($ifeo.GetValue('TMOG.Debugger'))\".Contains(\"\\apps\\$app\\\")) { & \"$dir\\replace-taskmgr.ps1\" -Disable }",
-        "}",
-        "$data = \"$env:LOCALAPPDATA\\TMOG\\Task Manager\"",
-        "$item = Get-Item $data -Force -ErrorAction SilentlyContinue",
-        "if ($item -and $item.LinkType) { $item.Delete() }",
-        "$parent = Split-Path $data",
-        "if ((Test-Path $parent) -and !(Get-ChildItem $parent -Force)) { Remove-Item $parent -Force }"
     ],
     "post_uninstall": [
         "# Inform of leftover directories if any was found",
@@ -78,27 +43,21 @@
         "}"
     ],
     "checkver": {
-        "script": [
-            "# Each architecture has its own release manifest pointing at an immutable, versioned installer",
-            "$x64 = Invoke-RestMethod -Uri 'https://www.tmog.org/rtm/downloads/release-windows.json'",
-            "$arm64 = Invoke-RestMethod -Uri 'https://www.tmog.org/rtm/downloads/release-windows-arm64.json'",
-            "if ($x64.version -eq $arm64.version) {",
-            "    Write-Output ('{0} {1} {2}' -f $x64.version, $x64.versionedArtifact, $arm64.versionedArtifact)",
-            "}"
-        ],
-        "regex": "([\\d.]+) \\S*/downloads/(?<x64>\\S+) \\S*/downloads/(?<arm64>\\S+)"
+        "url": "https://www.tmog.org/rtm/downloads/release-windows-arm64.json",
+        "jsonpath": "$.version",
+        "regex": "([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://www.tmog.org/rtm/downloads/$matchX64",
+                "url": "https://www.tmog.org/rtm/downloads/TMOG-Task-Manager-Setup.exe",
                 "hash": {
                     "url": "https://www.tmog.org/rtm/downloads/release-windows.json",
                     "jsonpath": "$.sha256"
                 }
             },
             "arm64": {
-                "url": "https://www.tmog.org/rtm/downloads/$matchArm64",
+                "url": "https://www.tmog.org/rtm/downloads/TMOG-Task-Manager-Setup-arm64.exe",
                 "hash": {
                     "url": "https://www.tmog.org/rtm/downloads/release-windows-arm64.json",
                     "jsonpath": "$.sha256"
