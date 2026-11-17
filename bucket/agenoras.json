@@ -1,0 +1,62 @@
+{
+    "version": "0.1.9",
+    "description": "Desktop email, calendar, contacts and task manager",
+    "homepage": "https://github.com/ciegolink/agenoras",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/ciegolink/agenoras/releases/download/v0.1.9/Agenoras-Setup.exe#/dl.7z",
+            "hash": "6825846c798f236c9c029442c66e7633c0c48d1788b8916f2cd46fb07036170a"
+        }
+    },
+    "pre_install": [
+        "$scoopRoot = if (-not [string]::IsNullOrWhiteSpace($env:SCOOP)) { $env:SCOOP } else { Join-Path $env:USERPROFILE 'scoop' }",
+        "$appRoot = Join-Path $scoopRoot 'apps\\agenoras'",
+        "$appVersionDir = Get-ChildItem -LiteralPath $appRoot -Directory -Force -ErrorAction Stop | Where-Object { $_.Name -ne 'current' } | Sort-Object CreationTimeUtc -Descending | Select-Object -First 1",
+        "if (-not $appVersionDir) { throw 'Could not locate the new Agenoras Scoop version directory.' }",
+        "$appDir = $appVersionDir.FullName",
+        "$payload = Join-Path $appDir '$PLUGINSDIR\\app-64.7z'",
+        "if (-not (Test-Path -LiteralPath $payload -PathType Leaf)) { throw 'Agenoras nested app-64.7z payload was not found in the NSIS extraction.' }",
+        "$sevenZip = (Get-Command 7z.exe -ErrorAction Stop).Source",
+        "& $sevenZip x $payload \"-o$appDir\" -y -bd",
+        "if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath (Join-Path $appDir 'Agenoras.exe') -PathType Leaf)) { throw 'Could not extract the Agenoras application payload.' }",
+        "$data = Join-Path $appDir 'data'",
+        "New-Item -ItemType Directory -Path $data -Force | Out-Null",
+        "$launcher = Join-Path $appDir 'Agenoras-portable.cmd'",
+        "$launcherContent = [string]::Join([Environment]::NewLine, @('@echo off', 'setlocal', 'set \"APPDATA=%~dp0data\\Roaming\"', 'set \"LOCALAPPDATA=%~dp0data\\Local\"', 'if not exist \"%APPDATA%\" mkdir \"%APPDATA%\"', 'if not exist \"%LOCALAPPDATA%\" mkdir \"%LOCALAPPDATA%\"', 'start \"\" /D \"%~dp0\" \"%~dp0Agenoras.exe\" %*', ''))",
+        "[System.IO.File]::WriteAllText($launcher, $launcherContent, [System.Text.Encoding]::ASCII)",
+        "Remove-Item -LiteralPath (Join-Path $appDir '$PLUGINSDIR') -Recurse -Force",
+        "Remove-Item -LiteralPath (Join-Path $appDir '$R0') -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item -LiteralPath (Join-Path $appDir 'dl.7z') -Force -ErrorAction SilentlyContinue"
+    ],
+    "bin": [
+        [
+            "Agenoras-portable.cmd",
+            "agenoras"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "Agenoras-portable.cmd",
+            "Agenoras"
+        ]
+    ],
+    "persist": "data",
+    "checkver": {
+        "url": "https://api.github.com/repos/ciegolink/agenoras/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "^v(?<version>[\\d.]+)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/ciegolink/agenoras/releases/download/v$version/Agenoras-Setup.exe#/dl.7z"
+            }
+        }
+    },
+    "notes": [
+        "The official Windows release is an NSIS installer containing a nested app-64.7z archive. Scoop extracts both layers with 7-Zip; the installer is not executed.",
+        "The portable launcher redirects APPDATA and LOCALAPPDATA into the app data folder. Scoop persists this folder under persist\\agenoras\\data across upgrades.",
+        "The original NSIS installer registers Agenoras as a Windows mail app and mailto protocol handler. This portable manifest intentionally does not write those registry associations."
+    ]
+}
