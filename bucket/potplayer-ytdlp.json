@@ -1,0 +1,87 @@
+{
+    "version": "260906",
+    "description": "PotPlayer extension that parses webpage URLs into playable streams with yt-dlp",
+    "homepage": "https://github.com/hgcat-360/PotPlayer-Extension_yt-dlp",
+    "license": "GPL-3.0-only",
+    "depends": [
+        "potplayer",
+        "yt-dlp"
+    ],
+    "suggest": {
+        "JavaScript runtime for YouTube": "deno",
+        "ffmpeg": "ffmpeg"
+    },
+    "url": "https://github.com/hgcat-360/PotPlayer-Extension_yt-dlp/archive/refs/tags/260906.zip",
+    "hash": "bf4d7e2d0a10141ac9df3feb1bc9e0c43a5445620e09ae42c8f460d43a1ae972",
+    "extract_dir": "PotPlayer-Extension_yt-dlp-260906",
+    "installer": {
+        "script": [
+            "$pot = appdir 'potplayer' $global",
+            "if (-not (Test-Path \"$pot\\current\")) { error 'potplayer is not installed'; exit 1 }",
+            "$scriptDir = \"$pot\\current\\Extension\\Media\\PlayParse\"",
+            "New-Item -ItemType Directory -Force -Path $scriptDir | Out-Null",
+            "$files = @(",
+            "    'MediaPlayParse - yt-dlp.as',",
+            "    'MediaPlayParse - yt-dlp.ico',",
+            "    'MediaPlayParse - yt-dlp #1.ico',",
+            "    'MediaPlayParse - yt-dlp #2.ico',",
+            "    'yt-dlp_default.ini',",
+            "    'yt-dlp_playlist.jpg',",
+            "    'yt-dlp_radio1.jpg',",
+            "    'yt-dlp_radio2.jpg'",
+            ")",
+            "foreach ($name in $files) {",
+            "    Copy-Item -LiteralPath \"$dir\\$name\" -Destination \"$scriptDir\\$name\" -Force",
+            "}",
+            "$ytdlp = \"$((appdir 'yt-dlp' $global))\\current\"",
+            "if (-not (Test-Path \"$ytdlp\\yt-dlp.exe\")) { warn \"yt-dlp.exe not found at $ytdlp\" }",
+            "$ini = \"$scriptDir\\yt-dlp.ini\"",
+            "if (-not (Test-Path -LiteralPath $ini)) {",
+            "    [System.IO.File]::WriteAllText($ini, \"`r`n[MAINTENANCE]`r`nytdlp_location=$ytdlp`r`n\")",
+            "    info \"Created yt-dlp.ini pointing at $ytdlp\"",
+            "} else {",
+            "    $text = [System.IO.File]::ReadAllText($ini)",
+            "    if ($text -match '(?m)^ytdlp_location=') {",
+            "        info 'yt-dlp.ini already sets ytdlp_location; left unchanged'",
+            "    } else {",
+            "        if ($text -notmatch '(?m)^\\[MAINTENANCE\\]') { $text = $text.TrimEnd() + \"`r`n`r`n[MAINTENANCE]`r`n\" }",
+            "        $text = [regex]::Replace($text, '(?m)^(\\[MAINTENANCE\\]\\r?\\n)', \"`$1ytdlp_location=$ytdlp`r`n\", 1)",
+            "        [System.IO.File]::WriteAllText($ini, $text)",
+            "        info \"Added ytdlp_location=$ytdlp to existing yt-dlp.ini\"",
+            "    }",
+            "}",
+            "info 'Reload extensions in PotPlayer: Preferences (F5) > Extensions > Media Playlist/Playitem > Reload files'"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$scriptDir = \"$((appdir 'potplayer' $global))\\current\\Extension\\Media\\PlayParse\"",
+            "if (Test-Path $scriptDir) {",
+            "    @( ",
+            "        'MediaPlayParse - yt-dlp.as',",
+            "        'MediaPlayParse - yt-dlp.ico',",
+            "        'MediaPlayParse - yt-dlp #1.ico',",
+            "        'MediaPlayParse - yt-dlp #2.ico',",
+            "        'yt-dlp_default.ini',",
+            "        'yt-dlp_playlist.jpg',",
+            "        'yt-dlp_radio1.jpg',",
+            "        'yt-dlp_radio2.jpg'",
+            "    ) | ForEach-Object {",
+            "        Remove-Item -LiteralPath \"$scriptDir\\$_\" -Force -ErrorAction SilentlyContinue",
+            "    }",
+            "}",
+            "info 'User config yt-dlp.ini was kept. Reload PotPlayer extensions to drop yt-dlp from the list.'"
+        ]
+    },
+    "notes": [
+        "脚本装进 Scoop 版 potplayer 的 Extension\\Media\\PlayParse（该目录已 persist，升级 potplayer 不会丢）。需要 PotPlayer 260114 或更新。",
+        "yt-dlp.exe 不复制进 PotPlayer：安装时把 yt-dlp.ini 的 ytdlp_location 指到 apps\\yt-dlp\\current。已有 ytdlp_location 的配置不会被改写；卸载保留 yt-dlp.ini。",
+        "YouTube 需要 deno，偶发解析挂起时需要 ffmpeg；两者都是 suggest，不会自动安装。装好后在 PotPlayer 里：偏好设置 (F5) > 扩展功能 > 媒体播放列表/播放项 > 重新加载文件。",
+        "扩展自带的 yt-dlp 自动更新默认关闭。开启后它会改写 ytdlp_location 目录里的 yt-dlp.exe，下一次 scoop update yt-dlp 会把它盖回 Scoop 版本。"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/hgcat-360/PotPlayer-Extension_yt-dlp/archive/refs/tags/$version.zip",
+        "extract_dir": "PotPlayer-Extension_yt-dlp-$version"
+    }
+}
