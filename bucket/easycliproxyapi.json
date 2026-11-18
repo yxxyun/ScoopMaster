@@ -1,43 +1,70 @@
 {
-    "version": "0.3.112",
-    "description": "A portable desktop GUI for CLIProxyAPI: core lifecycle, OAuth, provider aggregation, and agent client configuration.",
+    "version": "0.3.113",
+    "description": "Cross-platform GUI desktop management client for CLIProxyAPI",
     "homepage": "https://github.com/router-for-me/EasyCLIProxyAPI",
     "license": "MIT",
-    "notes": [
-        "Portable Windows ZIP. Runtime data next to EasyCLIProxyAPI.exe is persisted by Scoop:",
-        "  config.toml, oauth, usage-records, cpa-core",
-        "cpa-core is persisted as a directory so core config.yaml and an installed core survive upgrades. Scoop upgrades copy the new bundled core archive into persist.",
-        "Prefer Scoop to update this package. The in-app updater writes into the current version directory and can fight Scoop.",
-        "Requires WebView2 Runtime (preinstalled on Windows 10/11)."
-    ],
+    "suggest": {
+        "Microsoft Edge WebView2": "extras/webview2"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/router-for-me/EasyCLIProxyAPI/releases/download/v0.3.112/EasyCLIProxyAPI-v0.3.112-Windows-amd64.zip",
-            "hash": "b29f527596729288148ace5cf8d53bcc9716efdbd3100cacd16f20b39798fd8f",
-            "extract_dir": "EasyCLIProxyAPI-v0.3.112-Windows-amd64"
+            "url": "https://github.com/router-for-me/EasyCLIProxyAPI/releases/download/v0.3.113/EasyCLIProxyAPI-v0.3.113-Windows-amd64.zip",
+            "hash": "9fe23e69707a429bc557e7a2992f69cd4cebf1eb1817d90582ec1aa83dc509dd",
+            "extract_dir": "EasyCLIProxyAPI-v0.3.113-Windows-amd64"
         },
         "arm64": {
-            "url": "https://github.com/router-for-me/EasyCLIProxyAPI/releases/download/v0.3.112/EasyCLIProxyAPI-v0.3.112-Windows-aarch64.zip",
-            "hash": "c1c50ee76e7184ea729a0c7b79f2723d2e52efc5bb877b4eb8847816563aaf8b",
-            "extract_dir": "EasyCLIProxyAPI-v0.3.112-Windows-aarch64"
+            "url": "https://github.com/router-for-me/EasyCLIProxyAPI/releases/download/v0.3.113/EasyCLIProxyAPI-v0.3.113-Windows-aarch64.zip",
+            "hash": "2c66f68c6ea8f4b22684c80ede271c51ccc41641f630a0f106102752a0bb58fe",
+            "extract_dir": "EasyCLIProxyAPI-v0.3.113-Windows-aarch64"
         }
     },
     "pre_install": [
-        "if (!(Test-Path \"$persist_dir\\config.toml\")) {",
-        "    New-Item -ItemType File -Path \"$dir\\config.toml\" -Force | Out-Null",
+        "$portableManifest = Get-Content -LiteralPath \"$dir\\portable-app.json\" -Raw | ConvertFrom-Json",
+        "$portableManifest.autoUpdate = $false",
+        "",
+        "[System.IO.File]::WriteAllText(\"$dir\\portable-app.json\", ($portableManifest | ConvertTo-Json -Depth 10))",
+        "$defaults = @{",
+        "    'config.toml' = ''",
+        "    'theme-selection.json' = '{\"version\":1,\"selectedId\":\"light\"}'",
+        "    'privacy-mode.json' = 'false'",
+        "    'usage-view-preferences.json' = '{}'",
+        "    'skill-states.json' = '{}'",
+        "    'mcp-servers.json' = '[]'",
+        "}",
+        "foreach ($file in $defaults.Keys) {",
+        "    if (!(Test-Path -LiteralPath \"$persist_dir\\$file\") -and !(Test-Path -LiteralPath \"$dir\\$file\")) {",
+        "        $defaults[$file] | Set-Content -LiteralPath \"$dir\\$file\" -Encoding Ascii -ErrorAction Stop",
+        "    }",
+        "}",
+        "if (!(Test-Path \"$persist_dir\\cpa-core\\config.yaml\")) {",
+        "    Get-Item \"$dir\\cpa-core\\CLIProxyAPI_*.zip\" | Expand-7zipArchive -DestinationPath \"$dir\\cpa-core\" -Switches 'config.example.yaml'",
+        "    $config = Get-Content \"$dir\\cpa-core\\config.example.yaml\" -Raw -Encoding UTF8",
+        "    # Add EasyCLIProxyAPI defaults",
+        "    $config = $config -replace '(?m)^  host:[^\\r\\n]*', '  host: 127.0.0.1'",
+        "    $config = $config -replace '(?m)^  api-keys:\\r?\\n(?:    - [^\\r\\n]*\\r?\\n)+', \"  api-keys:`n    - '123456'`n\"",
+        "    $config = $config -replace '(?m)^  auth-dir:[^\\r\\n]*', '  auth-dir: ../oauth'",
+        "    $config = $config -replace '(?m)^    usage-statistics-enabled:[^\\r\\n]*', '    usage-statistics-enabled: true'",
+        "    $config = $config -replace '(?m)^  session-affinity-ttl:[^\\r\\n]*', '  session-affinity-ttl: \"\"'",
+        "    $config = $config -replace '(?m)^requests:\\r?$', \"requests:`n  streaming: {bootstrap-retries: 0}\"",
+        "    [System.IO.File]::WriteAllText(\"$dir\\cpa-core\\config.yaml\", $config, (New-Object System.Text.UTF8Encoding $false))",
         "}"
     ],
-    "post_install": [
-        "$originalCore = Join-Path $dir 'cpa-core.original'",
-        "if (Test-Path $originalCore) {",
-        "    $persistCore = Join-Path $persist_dir 'cpa-core'",
-        "    New-Item -ItemType Directory -Path $persistCore -Force | Out-Null",
-        "    Get-ChildItem -LiteralPath $originalCore -File -ErrorAction SilentlyContinue | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $persistCore $_.Name) -Force }",
-        "    Remove-Item -LiteralPath $originalCore -Recurse -Force -ErrorAction SilentlyContinue",
-        "    info 'Merged new bundled CLIProxyAPI core archive into persist\\cpa-core'",
+    "pre_uninstall": [
+        "# File saves can replace the file, which can break Scoop's hardlink.",
+        "foreach ($file in $manifest.persist) {",
+        "    $source = Get-Item -LiteralPath \"$dir\\$file\" -ErrorAction SilentlyContinue",
+        "    $target = Join-Path $persist_dir $file",
+        "    if (!$source) { continue }",
+        "    if (!$source.PSIsContainer) {",
+        "        New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force -ErrorAction Stop | Out-Null",
+        "        $content = [System.IO.File]::ReadAllBytes($source.FullName)",
+        "        [System.IO.File]::WriteAllBytes($target, $content)",
+        "    } elseif (!$source.LinkType) {",
+        "        New-Item -ItemType Directory -Path $target -Force -ErrorAction Stop | Out-Null",
+        "        Get-ChildItem -LiteralPath $source.FullName -Force | Copy-Item -Destination $target -Recurse -Force -ErrorAction Stop",
+        "    }",
         "}"
     ],
-    "bin": "EasyCLIProxyAPI.exe",
     "shortcuts": [
         [
             "EasyCLIProxyAPI.exe",
@@ -45,10 +72,18 @@
         ]
     ],
     "persist": [
+        "agents",
         "config.toml",
+        "theme-selection.json",
+        "themes",
         "oauth",
         "usage-records",
-        "cpa-core"
+        "cpa-core\\config.yaml",
+        "privacy-mode.json",
+        "usage-view-preferences.json",
+        "skill-states.json",
+        "mcp-servers.json",
+        "agent-usage"
     ],
     "checkver": {
         "github": "https://github.com/router-for-me/EasyCLIProxyAPI"
@@ -63,11 +98,6 @@
                 "url": "https://github.com/router-for-me/EasyCLIProxyAPI/releases/download/v$version/EasyCLIProxyAPI-v$version-Windows-aarch64.zip",
                 "extract_dir": "EasyCLIProxyAPI-v$version-Windows-aarch64"
             }
-        },
-        "hash": {
-            "url": "https://api.github.com/repos/router-for-me/EasyCLIProxyAPI/releases/tags/v$version",
-            "jsonpath": "$.assets[?(@.name == '$basename')].digest",
-            "regex": "sha256:(.*)"
         }
     }
 }

@@ -1,6 +1,6 @@
 {
-    "##": "Strata Terminal + CUDA engine (Windows x64). Two archives are unpacked into the app dir: the Control runtime (flat, no top-level folder) and the engine tarball into components\\engine\\<version>-windows-x86_64-cuda-cuda13. pre_install writes bin\\strata-cuda.cmd, which exports STRATA_COMPONENTS_DIR and STRATA_ENGINE_BACKEND so the runtime resolves its engine from this package instead of %LOCALAPPDATA%\\Strata\\components. Asset names embed the Control version (0.1.59) while the release tag is v0.2.13, so autoupdate is deliberately omitted: bump version, url, hash and extract_to together.",
-    "version": "0.2.13",
+    "##": "Strata Terminal + CUDA engine (Windows x64). One release tag (Version, e.g. 0.2.13) carries three lockstep version numbers: the Strata app/release version, the Control runtime version (asset strata-control-<ctrl>, e.g. 0.1.59.1) and the inference engine version (asset strata-engine-<eng>-windows-x86_64-cuda-cuda13). This package downloads BOTH the Control runtime (flat, no top-level folder) and the engine tarball (into components\\engine\\<eng>-windows-x86_64-cuda-cuda13) so they always install and update together. pre_install writes bin\\strata-cuda.cmd exporting STRATA_COMPONENTS_DIR / STRATA_ENGINE_BACKEND. checkver reads the signed strata-feed.json and returns release+control+engine versions and asset urls/hashes at once; autoupdate rewrites both url[]/hash[] plus extract_to together on the next scoop update.",
+    "version": "0.2.15",
     "description": "Strata 终端版 + CUDA 推理引擎（NVIDIA，含 sm_120 / RTX 50 系）：一条命令装好控制端与引擎，模型文件另存",
     "homepage": "https://github.com/Niko1221/Strata",
     "license": {
@@ -9,6 +9,7 @@
     },
     "notes": [
         "引擎与控制端都装在本包目录内（apps\\strata-cuda\\<version>），shim 名称为 strata-cuda；不写系统环境变量",
+        "版本对应：manifest 的 Version（如 0.2.13）是 Strata 的发布/应用版本；同包内的控制端(control)与 CUDA 推理引擎(engine)各自带内部版本（如 0.2.13 = control 0.1.59.1 + engine 0.1.59）。三者随同一发布锁步更新，本清单同时下载控制端与引擎，scoop 升级时二者一起换",
         "本包使用 cuda13 变体（sm_75/80/86/89/120）；更老的驱动或 sm_60/61/70 请改用 cuda12 变体（同一 release，文件名替换 cuda-cuda13 → cuda-cuda12）",
         "模型（GGUF）不随包分发：先自行准备模型，再用 start-model-visible.ps1 启动",
         "启动：start-model-visible.ps1 -Backend cuda（或直接运行 strata-cuda）",
@@ -17,25 +18,47 @@
     "architecture": {
         "64bit": {
             "url": [
-                "https://github.com/Niko1221/Strata/releases/download/v0.2.13/strata-control-0.1.59-windows-x86_64.zip",
-                "https://github.com/Niko1221/Strata/releases/download/v0.2.13/strata-engine-0.1.59-windows-x86_64-cuda-cuda13.tar.gz"
+                "https://github.com/Niko1221/Strata/releases/download/v0.2.15/strata-control-0.1.61-windows-x86_64.zip",
+                "https://github.com/Niko1221/Strata/releases/download/v0.2.14/strata-engine-0.1.60-windows-x86_64-cuda-cuda13.tar.gz"
             ],
             "hash": [
-                "c81f6800094942a5e750c7d93f348062bc16484f946ea83b0c0d2f8c91c44e87",
-                "3f071a7ccbbf3dcdefed8bff777896d8dd0b580417a078154a7d2c2402ec4158"
+                "cf03e68347921f805325553b2147754cfecb6911b931ba78518fd9728a6fbb7b",
+                "a54cc75a84aa7b93839c330197bdc35395f6fcc5ee31e25008f380558da5b18c"
             ]
         }
     },
     "extract_to": [
         ".",
-        "components\\engine\\0.1.59-windows-x86_64-cuda-cuda13"
+        "components\\engine\\0.1.60-windows-x86_64-cuda-cuda13"
     ],
     "pre_install": "$c = @('@echo off','setlocal','rem Strata (CUDA / NVIDIA) - Scoop build: the engine lives inside this package.','set \"STRATA_COMPONENTS_DIR=%~dp0..\\components\"','set \"STRATA_ENGINE_BACKEND=cuda\"','call \"%~dp0strata.cmd\" %*','exit /b %ERRORLEVEL%'); New-Item -ItemType Directory -Force -Path (Join-Path $dir 'bin') | Out-Null; Set-Content -LiteralPath (Join-Path $dir 'bin\\strata-cuda.cmd') -Value $c -Encoding Ascii",
-    "bin": [
-        "bin\\strata-cuda.cmd"
-    ],
+    "bin": "bin\\strata-cuda.cmd",
     "checkver": {
-        "url": "https://github.com/Niko1221/Strata/releases/latest/download/strata-feed.json",
-        "jsonpath": "$.app.version"
+        "script": [
+            "$ErrorActionPreference = 'Stop'",
+            "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12",
+            "$u = 'https://github.com/Niko1221/Strata/releases/latest/download/strata-feed.json'",
+            "$f = Invoke-RestMethod -Uri $u -UseBasicParsing",
+            "$v = $f.app.version",
+            "$c = @($f.control.packages | Where-Object { $_.platform -eq 'windows-x86_64' })[0]",
+            "$e = @($f.engine.packages | Where-Object { $_.platform -eq 'windows-x86_64' -and $_.variant -eq 'cuda13' })[0]",
+            "$cu = if ($c.url -match '^https?://') { $c.url } else { 'https://github.com/Niko1221/Strata/releases/download/v' + $v + '/' + $c.url }",
+            "'version=' + $v + ';ctrlurl=' + $cu + ';engurl=' + $e.url + ';engver=' + $e.version"
+        ],
+        "regex": "^version=(?<version>[^;]+);ctrlurl=(?<ctrlurl>[^;]+);engurl=(?<engurl>[^;]+);engver=(?<engver>[^;]+)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": [
+                    "$matchCtrlurl",
+                    "$matchEngurl"
+                ]
+            }
+        },
+        "extract_to": [
+            ".",
+            "components\\engine\\$matchEngver-windows-x86_64-cuda-cuda13"
+        ]
     }
 }

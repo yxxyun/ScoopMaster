@@ -1,13 +1,29 @@
 {
     "version": "1.1.0",
-    "description": "System-tray launcher for managing and running Windows batch scripts.",
+    "description": "A system-tray launcher for managing and running Windows batch scripts.",
     "homepage": "https://github.com/Jayich-Lab/tray-launcher",
     "license": "MIT",
-    "depends": [
-        "python"
-    ],
+    "depends": "python",
     "url": "https://github.com/Jayich-Lab/tray-launcher/archive/refs/tags/v1.1.0.zip",
-    "bin": "venv\\Scripts\\launcher.exe",
+    "hash": "e2361626d9775b0f01c49396cb1f02f565142bd96070292cc782f3ee1ddfd735",
+    "pre_install": [
+        "$projectFile = Get-ChildItem -LiteralPath $dir -Filter 'pyproject.toml' -Recurse -File | Select-Object -First 1",
+        "if ($null -eq $projectFile) { throw 'Could not find the tray-launcher pyproject.toml file in the extracted source archive.' }",
+        "$source = $projectFile.DirectoryName",
+        "$venv = Join-Path $dir 'venv'",
+        "& python -m venv $venv",
+        "if ($LASTEXITCODE -ne 0) { throw 'Failed to create the Python virtual environment.' }",
+        "$venvPython = Join-Path $venv 'Scripts\\python.exe'",
+        "if (-not (Test-Path -LiteralPath $venvPython -PathType Leaf)) { throw 'The Python virtual environment was created without Scripts\\python.exe.' }",
+        "& $venvPython -m pip install --disable-pip-version-check --no-cache-dir $source",
+        "if ($LASTEXITCODE -ne 0) { throw 'Failed to install tray-launcher and its Python dependencies.' }"
+    ],
+    "bin": [
+        [
+            "venv\\Scripts\\launcher.exe",
+            "tray-launcher"
+        ]
+    ],
     "shortcuts": [
         [
             "venv\\Scripts\\launcher.exe",
@@ -16,22 +32,10 @@
         ]
     ],
     "checkver": {
-        "url": "https://api.github.com/repos/Jayich-Lab/tray-launcher/releases/latest",
-        "jsonpath": "$.tag_name",
+        "github": "https://github.com/Jayich-Lab/tray-launcher",
         "regex": "^v([\\d.]+)$"
     },
     "autoupdate": {
         "url": "https://github.com/Jayich-Lab/tray-launcher/archive/refs/tags/v$version.zip"
-    },
-    "pre_install": [
-        "$source = Get-ChildItem -LiteralPath $dir -Filter 'pyproject.toml' -Recurse -File | Select-Object -First 1 -ExpandProperty DirectoryName",
-        "if (-not $source) { throw 'Could not find the tray-launcher source directory.' }",
-        "$venv = Join-Path $dir 'venv'",
-        "& python -m venv $venv",
-        "if ($LASTEXITCODE -ne 0) { throw 'Failed to create the Python virtual environment.' }",
-        "$venvPython = Join-Path $venv 'Scripts\\python.exe'",
-        "& $venvPython -m pip install --disable-pip-version-check --no-cache-dir $source",
-        "if ($LASTEXITCODE -ne 0) { throw 'Failed to install tray-launcher and its Python dependencies.' }"
-    ],
-    "hash": "e2361626d9775b0f01c49396cb1f02f565142bd96070292cc782f3ee1ddfd735"
+    }
 }

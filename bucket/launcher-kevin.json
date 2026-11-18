@@ -1,6 +1,6 @@
 {
     "version": "1.2.0",
-    "description": "Windows desktop component for the Launcher Android app, providing local-network notes and shared-file access (Kevin Loggenberg)",
+    "description": "Windows companion for the Launcher Android app, providing local-network notes and shared-file access.",
     "homepage": "https://kevlog.co.za/projects/launcher/",
     "license": "Unknown",
     "architecture": {
@@ -14,11 +14,7 @@
         "$launcherLines = @(",
         "    '@echo off',",
         "    'setlocal',",
-        "    'set \"LOCALAPPDATA=%~dp0data\\Local\"',",
-        "    'set \"APPDATA=%~dp0data\\Roaming\"',",
         "    'set \"DOTNET_BUNDLE_EXTRACT_BASE_DIR=%~dp0data\\dotnet\"',",
-        "    'if not exist \"%LOCALAPPDATA%\" mkdir \"%LOCALAPPDATA%\"',",
-        "    'if not exist \"%APPDATA%\" mkdir \"%APPDATA%\"',",
         "    'if not exist \"%DOTNET_BUNDLE_EXTRACT_BASE_DIR%\" mkdir \"%DOTNET_BUNDLE_EXTRACT_BASE_DIR%\"',",
         "    'cd /d \"%~dp0\"',",
         "    '\"%~dp0LauncherCompanion.exe\" %*',",
@@ -44,10 +40,47 @@
         "regex": "<Version>(?<version>[\\d.]+)</Version>"
     },
     "notes": [
-        "The official Windows executable is published as a self-contained win-x64 single-file .NET application. Scoop downloads the executable directly and does not run an installer.",
-        "The launcher redirects LOCALAPPDATA to data\\Local and DOTNET_BUNDLE_EXTRACT_BASE_DIR to data\\dotnet. The application's server certificate, stored under %LOCALAPPDATA%\\LauncherCompanion, is therefore kept in Scoop's persistent data directory.",
-        "Keep the Launcher console window open while the phone is connected. Closing the window stops the local server.",
-        "The downloaded LauncherCompanion.exe is not Authenticode-signed. No LICENSE file or license declaration was found in the upstream repository; the manifest therefore marks the license as Unknown.",
-        "The upstream download uses an opaque, per-upload file identifier rather than a version-derived URL. checkver reads the application version from the upstream project file, but autoupdate is intentionally omitted because a future download URL cannot be derived safely."
+        "The official Windows download is a self-contained win-x64 .NET single-file executable; Scoop downloads it directly and does not run an installer.",
+        "The app stores its server certificate under %LOCALAPPDATA%\\LauncherCompanion. A guarded junction maps that exact folder to Scoop's persistent data\\LauncherCompanion directory; Scoop removes the junction on uninstall but retains the persisted data.",
+        "The launcher sets DOTNET_BUNDLE_EXTRACT_BASE_DIR to data\\dotnet so .NET single-file native-library extraction is kept in Scoop's persistent data.",
+        "Keep the Launcher Companion console window open while the phone is connected; closing it stops the local server.",
+        "The executable is not Authenticode-signed. No LICENSE file or license declaration was found upstream, so the manifest uses license Unknown.",
+        "The publisher's download URL contains an opaque per-upload identifier. The upstream project file provides a valid version source for checkver, but no safe version-derived download URL is available for autoupdate."
+    ],
+    "post_install": [
+        "$appData = Join-Path $env:LOCALAPPDATA 'LauncherCompanion'",
+        "$persistData = Join-Path $persist_dir 'data\\LauncherCompanion'",
+        "New-Item -ItemType Directory -Path (Split-Path -Parent $appData) -Force | Out-Null",
+        "New-Item -ItemType Directory -Path $persistData -Force | Out-Null",
+        "if (Test-Path -LiteralPath $appData) {",
+        "  $appDataItem = Get-Item -LiteralPath $appData -Force",
+        "  if (($appDataItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {",
+        "    $actualTarget = [string]$appDataItem.Target",
+        "    if ([string]::IsNullOrWhiteSpace($actualTarget) -or [IO.Path]::GetFullPath($actualTarget) -ine [IO.Path]::GetFullPath($persistData)) { throw 'LauncherCompanion LocalAppData path is already a reparse point with an unexpected or unknown target; leaving it unchanged.' }",
+        "  } else {",
+        "    $sourceItems = @(Get-ChildItem -LiteralPath $appData -Force)",
+        "    $targetItems = @(Get-ChildItem -LiteralPath $persistData -Force)",
+        "    if ($targetItems.Count -eq 0) {",
+        "      foreach ($entry in $sourceItems) { Move-Item -LiteralPath $entry.FullName -Destination $persistData }",
+        "      Remove-Item -LiteralPath $appData -Force",
+        "    } elseif ($sourceItems.Count -eq 0) {",
+        "      Remove-Item -LiteralPath $appData -Force",
+        "    } else { throw 'Both LauncherCompanion LocalAppData and Scoop persistent data contain files; neither was overwritten.' }",
+        "  }",
+        "}",
+        "if (-not (Test-Path -LiteralPath $appData)) { New-Item -ItemType Junction -Path $appData -Target $persistData | Out-Null }",
+        "$junction = Get-Item -LiteralPath $appData -Force",
+        "$junctionTarget = [string]$junction.Target",
+        "if (($junction.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0 -or [string]::IsNullOrWhiteSpace($junctionTarget) -or [IO.Path]::GetFullPath($junctionTarget) -ine [IO.Path]::GetFullPath($persistData)) { throw 'LauncherCompanion LocalAppData junction does not resolve to Scoop persistent data.' }"
+    ],
+    "pre_uninstall": [
+        "$appData = Join-Path $env:LOCALAPPDATA 'LauncherCompanion'",
+        "$persistData = Join-Path $persist_dir 'data\\LauncherCompanion'",
+        "$appDataItem = Get-Item -LiteralPath $appData -Force -ErrorAction SilentlyContinue",
+        "if ($null -ne $appDataItem -and (($appDataItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0)) {",
+        "  $actualTarget = [string]$appDataItem.Target",
+        "  if ([string]::IsNullOrWhiteSpace($actualTarget) -or [IO.Path]::GetFullPath($actualTarget) -ine [IO.Path]::GetFullPath($persistData)) { throw 'Refusing to remove the LauncherCompanion LocalAppData reparse point because its target is not the Scoop persistent folder.' }",
+        "  Remove-Item -LiteralPath $appData -Force",
+        "}"
     ]
 }

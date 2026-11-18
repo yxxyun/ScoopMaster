@@ -1,19 +1,82 @@
 {
-    "version": "9.5.6",
-    "description": "Play your favorite games in a borderless window; no more time consuming alt-tabs",
-    "homepage": "https://github.com/Codeusa/Borderless-Gaming",
-    "license": "GPL-2.0",
-    "url": "https://github.com/Codeusa/Borderless-Gaming/releases/download/9.5.6/BorderlessGaming9.5.6_admin_setup.exe",
-    "hash": "250d2d883cb9f5a05a60be5b74191ca357489686a979cf7832fcb4c5f0522eda",
+    "version": "9.6.0",
+    "description": "Runs windowed games as borderless fullscreen windows, so Alt-Tab is instant. Legacy free edition, final release.",
+    "homepage": "https://legacy.borderlessgam.ing",
+    "license": {
+        "identifier": "GPL-2.0-only",
+        "url": "https://github.com/andrewmd5/Borderless-Gaming/blob/HEAD/LICENSE"
+    },
+    "notes": [
+        "This is the legacy edition: 9.6.0 is its final release and it gets no more updates.",
+        "The maintained rewrite (10.x) is paid and sold only on Steam (app 388080); it is not in this package.",
+        "",
+        "Needs .NET Framework 4.8 (built into Windows 10 1903 and newer).",
+        "Settings, the language files and logs live in %APPDATA%\\Andrew Sampson\\Borderless Gaming, outside the Scoop folder:",
+        "they survive updates and are kept on uninstall (delete that folder by hand if you want them gone).",
+        "A copy installed with the upstream setup uses the same folder, so moving to Scoop keeps your window list.",
+        "",
+        "'Run on startup' creates the scheduled task 'BorderlessGaming' (highest privileges) pointing at the Scoop copy;",
+        "'scoop uninstall' removes it when it points into this package's folder (from an elevated shell, if Windows asks)."
+    ],
+    "url": "https://legacy.borderlessgam.ing/BorderlessGaming9.6_admin_setup.exe",
+    "hash": "f8026c1b7e78c80e8e85ddbbfe96f76cae6fc0bf3d09fb06a85c68aefadc8a6a",
     "innosetup": true,
+    "pre_install": [
+        "# The upstream Inno Setup installer (also used by Chocolatey) would be a second copy outside Scoop.",
+        "$roots = 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+        "$setupCopy = $roots | ForEach-Object { Get-ItemProperty \"$_\\Borderless Gaming_is1\" -ErrorAction SilentlyContinue } | Select-Object -First 1",
+        "if ($setupCopy) {",
+        "  error \"Borderless Gaming is already installed outside Scoop ($($setupCopy.InstallLocation)). Remove it first in Settings > Apps; your settings in %APPDATA%\\Andrew Sampson\\Borderless Gaming stay either way. This attempt left a failed install behind: the next 'scoop install' cleans it up, or run 'scoop uninstall $app'.\"",
+        "  break",
+        "}",
+        "",
+        "# A fresh install stops if Borderless Gaming runs from anywhere (scripts/common/Test-AppBusy.ps1).",
+        "# Updates are checked in pre_uninstall, which Scoop runs before it removes the old version.",
+        "if ($cmd -eq 'install') {",
+        "  $busyCheck = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\common\\Test-AppBusy.ps1'",
+        "  if (!(Test-Path -LiteralPath $busyCheck)) { error \"Cannot check whether $app is in use: '$busyCheck' is missing.\"; break }",
+        "  $busy = @(& $busyCheck -ProcessName 'BorderlessGaming')",
+        "  if ($busy) { error \"$app is running. Close it (tray icon > Exit) and try again:`n  $($busy -join \"`n  \")\"; break }",
+        "}"
+    ],
+    "pre_uninstall": [
+        "# 'scoop update' and 'scoop uninstall' stop here, before anything is removed, while Borderless Gaming runs.",
+        "$busyCheck = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\common\\Test-AppBusy.ps1'",
+        "# Without the helper (e.g. the bucket was removed) only warn: uninstalling must stay possible.",
+        "if (!(Test-Path -LiteralPath $busyCheck)) { warn \"Cannot check whether $app is in use: '$busyCheck' is missing.\"; return }",
+        "$busy = @(& $busyCheck -ProcessName 'BorderlessGaming')",
+        "if ($busy) { error \"$app is running. Close it (tray icon > Exit) and try again:`n  $($busy -join \"`n  \")\"; break }"
+    ],
+    "uninstaller": {
+        "script": [
+            "# Only on 'scoop uninstall': the 'Run on startup' task points at 'current', which stays valid across updates.",
+            "if ($cmd -ne 'uninstall') { return }",
+            "$task = Get-ScheduledTask -TaskName 'BorderlessGaming' -TaskPath '\\' -ErrorAction SilentlyContinue",
+            "if (!$task) { return }",
+            "$appRoot = Split-Path $dir",
+            "$ours = @($task.Actions | Where-Object { $_.Execute -and $_.Execute.Trim('\"').StartsWith(\"$appRoot\\\", [StringComparison]::OrdinalIgnoreCase) })",
+            "if (!$ours) { info \"The scheduled task 'BorderlessGaming' starts another copy ($($task.Actions[0].Execute)); left as it is.\"; return }",
+            "try { Unregister-ScheduledTask -InputObject $task -Confirm:$false -ErrorAction Stop; info \"Removed the 'Run on startup' task 'BorderlessGaming'.\" }",
+            "catch { warn \"Could not remove the scheduled task 'BorderlessGaming' (it runs with highest privileges). From an elevated shell: Unregister-ScheduledTask BorderlessGaming\" }"
+        ]
+    },
     "shortcuts": [
         [
             "BorderlessGaming.exe",
             "Borderless Gaming"
         ]
     ],
-    "checkver": "github",
+    "checkver": {
+        "script": [
+            "# The legacy site names the setup after the short version (9.6 for 9.6.0); pad it to three parts like the git tags.",
+            "$page = (Invoke-WebRequest -Uri 'https://legacy.borderlessgam.ing/' -UseBasicParsing).Content",
+            "if ($page -notmatch 'BorderlessGaming(?<file>\\d+(?:\\.\\d+)+)_admin_setup\\.exe') { throw 'No setup link on legacy.borderlessgam.ing' }",
+            "$parts = @($Matches.file.Split('.')) + @('0', '0')",
+            "\"$($parts[0..2] -join '.') $($Matches.file)\""
+        ],
+        "regex": "(?<version>[\\d.]+) (?<file>[\\d.]+)"
+    },
     "autoupdate": {
-        "url": "https://github.com/Codeusa/Borderless-Gaming/releases/download/$version/BorderlessGaming$version_admin_setup.exe"
+        "url": "https://legacy.borderlessgam.ing/BorderlessGaming$matchFile_admin_setup.exe"
     }
 }
