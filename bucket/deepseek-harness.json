@@ -1,22 +1,30 @@
 {
-    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
     "version": "0.2.2-rc.4",
-    "description": "DeepSeek official desktop client for the Harness agent runtime, supporting background tasks, local file access and plugin management.",
-    "homepage": "https://www.deepseek.com/download",
+    "description": "Official DeepSeek Harness desktop application for AI agents, coding, research and task automation.",
+    "homepage": "https://www.deepseek.com/en/harness/",
     "license": "MIT",
     "architecture": {
         "64bit": {
             "url": "https://download.deepseek.com/desktop/dsh-latest-windows-x64.exe#/dl.7z",
-            "hash": "786c9b26050c35b62c7be6a01dee2541dc1c2c5d9bd5f2dbe77beeeb8d50704e",
-            "installer": {
-                "script": [
-                    "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\" -Removal",
-                    "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\Uninstall DeepSeek Harness.exe\" -Recurse -Force -ErrorAction SilentlyContinue"
-                ]
-            }
+            "hash": "786c9b26050c35b62c7be6a01dee2541dc1c2c5d9bd5f2dbe77beeeb8d50704e"
         }
     },
-    "bin": "resources/runtime/cli/bin/dsh.cmd",
+    "depends": "7zip",
+    "post_install": [
+        "$payloads = @(Get-ChildItem -LiteralPath $dir -Filter 'app-64.7z' -File -Recurse)",
+        "if ($payloads.Count -ne 1) { throw ('Expected one app-64.7z payload; found {0}.' -f $payloads.Count) }",
+        "$archive = $payloads[0].FullName",
+        "$sevenZip = (Get-Command '7z.exe' -ErrorAction Stop).Source",
+        "& $sevenZip x $archive \"-o$dir\" -y -bd",
+        "if ($LASTEXITCODE -ne 0) { throw ('7-Zip failed to extract app-64.7z (exit code {0}).' -f $LASTEXITCODE) }",
+        "$mainExe = Join-Path $dir 'DeepSeek Harness.exe'",
+        "if (-not (Test-Path -LiteralPath $mainExe -PathType Leaf)) { throw 'DeepSeek Harness.exe was not found after extracting the application payload.' }",
+        "Remove-Item -LiteralPath $archive -Force",
+        "$pluginDir = Join-Path $dir '$PLUGINSDIR'",
+        "if (Test-Path -LiteralPath $pluginDir -PathType Container) { Remove-Item -LiteralPath $pluginDir -Recurse -Force }",
+        "$uninstaller = Join-Path $dir 'Uninstall DeepSeek Harness.exe'",
+        "if (Test-Path -LiteralPath $uninstaller -PathType Leaf) { Remove-Item -LiteralPath $uninstaller -Force }"
+    ],
     "shortcuts": [
         [
             "DeepSeek Harness.exe",
@@ -24,14 +32,19 @@
         ]
     ],
     "checkver": {
-        "url": "https://github.com/deepseek-ai/deepseek-harness/releases",
-        "regex": "(?:/releases/tag/|^)dsh-v([\\d.]+(?:-rc\\.\\d+)?)(?![\\w.-])"
+        "url": "https://api.github.com/repos/deepseek-ai/deepseek-harness/releases?per_page=1",
+        "jsonpath": "$[0].tag_name",
+        "regex": "dsh-v([0-9][0-9A-Za-z.+-]*)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://download.deepseek.com/desktop/dsh-latest-windows-x64.exe#/dl.7z"
+                "url": "https://download.deepseek.com/desktop/dsh-latest-windows-x64.exe#/dl.7z",
+                "hash": {
+                    "mode": "download"
+                }
             }
         }
-    }
+    },
+    "notes": "The official NSIS setup contains a nested app-64.7z archive. Scoop extracts both layers into the version directory without running the installer. The 7zip dependency is used for the second extraction. The desktop package includes its own Node.js and Python runtimes."
 }

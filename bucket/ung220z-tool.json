@@ -1,0 +1,48 @@
+{
+    "version": "26590ca2abcf9095bcb96dd3ec926a368e1526cd",
+    "description": "UNG220Z（九联/Unionman 中国移动光猫）凭据提取工具：经 Telnet 读取设备配置库，找回 Web/Telnet/PPPoE/WiFi/root 口令，仅限自有设备",
+    "homepage": "https://github.com/Hut-hzf/ung220z-tool",
+    "license": "MIT",
+    "depends": "python312",
+    "url": "https://github.com/Hut-hzf/ung220z-tool/archive/26590ca2abcf9095bcb96dd3ec926a368e1526cd.zip",
+    "hash": "2e09d7a6742f7edcaeeeccee3c5332cf6fa68de94445e31292fc733ae7d19b7b",
+    "extract_dir": "ung220z-tool-26590ca2abcf9095bcb96dd3ec926a368e1526cd",
+    "persist": "logs",
+    "installer": {
+        "script": [
+            "$wrapper = Join-Path $dir 'bin\\ung220z.cmd'",
+            "$null = New-Item -ItemType Directory -Path (Split-Path $wrapper) -Force",
+            "$content = @(",
+            "    '@echo off',",
+            "    'cd /d \"%~dp0..\\logs\" || exit /b 1',",
+            "    'set \"PY=\"',",
+            "    'for %%P in (python312 python3 python) do (',",
+            "    '    if not defined PY (',",
+            "    '        where /q %%P && set \"PY=%%P\"',",
+            "    '    )',",
+            "    ')',",
+            "    'if not defined PY (',",
+            "    '    echo [ung220z] Python interpreter not found. Run: scoop install python312',",
+            "    '    exit /b 9009',",
+            "    ')',",
+            "    '\"%PY%\" \"%~dp0..\\ung220z.py\" %*'",
+            ")",
+            "Set-Content -Path $wrapper -Value $content -Encoding Ascii"
+        ]
+    },
+    "bin": "bin\\ung220z.cmd",
+    "notes": [
+        "需与光猫管理网段互通（默认 192.168.1.1，需 80 与 23 端口可达），仅限自有设备用于找回密码、迁移配置或安全自查。",
+        "口令以明文打印到屏幕，并写入 <persist>\\ung220z-tool\\logs 下的日志文件；该目录升级与卸载（不带 -p）都会保留，请勿提交到 git 或分享。",
+        "root 口令比对依赖 openssl（scoop install openssl）；未安装时只输出 /etc/shadow 中的哈希。",
+        "用法：ung220z [-i 192.168.1.1] [-u user] [-p 密码] [--telnet-password 口令] [--no-browser] [--unlock]"
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/Hut-hzf/ung220z-tool/commits/main",
+        "jsonpath": "$.sha"
+    },
+    "autoupdate": {
+        "url": "https://github.com/Hut-hzf/ung220z-tool/archive/$version.zip",
+        "extract_dir": "ung220z-tool-$version"
+    }
+}

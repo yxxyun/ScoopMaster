@@ -1,0 +1,52 @@
+{
+    "version": "0.3.0-beta.8",
+    "description": "Desktop workspace for SSH, Telnet, serial connections, SFTP, terminals, and network maps.",
+    "homepage": "https://github.com/chighladze/netrix-desktop",
+    "license": "MIT",
+    "notes": [
+        "This package extracts the official NSIS installer into the Scoop version directory. The installer itself is not executed, so its NSIS hooks are not run.",
+        "Microsoft Edge WebView2 Runtime must already be installed. The original installer includes a WebView2 installer and installs the runtime when missing; this Scoop extraction intentionally does not install system components. Install the Microsoft Evergreen WebView2 Runtime separately if Netrix does not start: https://developer.microsoft.com/microsoft-edge/webview2/",
+        "The upstream v0.3.0-beta.8 release is unsigned. Windows may display an unknown-publisher warning.",
+        "The current upstream Windows release provides an x64 installer; this manifest does not advertise x86 or ARM64 builds."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/chighladze/netrix-releases/releases/download/v0.3.0-beta.8/Netrix_0.3.0-beta.8_x64-setup.exe#/dl.7z",
+            "hash": "58f92df91599640f90e8ef9e7713f00eb346bebbb3732a9738d8879b2f7004dc"
+        }
+    },
+    "post_install": [
+        "foreach ($path in @('$PLUGINSDIR', '$TEMP')) {",
+        "    $target = Join-Path $dir $path",
+        "    if (Test-Path -LiteralPath $target) {",
+        "        Remove-Item -LiteralPath $target -Recurse -Force",
+        "    }",
+        "}",
+        "$uninstallerStub = Join-Path $dir 'uninstall.exe'",
+        "if ((Test-Path -LiteralPath $uninstallerStub) -and (Get-Item -LiteralPath $uninstallerStub).Length -eq 0) {",
+        "    Remove-Item -LiteralPath $uninstallerStub -Force",
+        "}"
+    ],
+    "shortcuts": [
+        [
+            "netrix.exe",
+            "Netrix"
+        ]
+    ],
+    "checkver": {
+        "github": "https://api.github.com/repos/chighladze/netrix-releases/releases?per_page=100",
+        "jsonpath": "$[0].tag_name",
+        "regex": "v(?<version>[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/chighladze/netrix-releases/releases/download/v$version/Netrix_$version_x64-setup.exe#/dl.7z",
+                "hash": {
+                    "url": "https://github.com/chighladze/netrix-releases/releases/download/v$version/installer-hashes.sha256",
+                    "find": "(?i)([0-9a-f]{64})\\s+.*Netrix_$version_x64-setup\\.exe"
+                }
+            }
+        }
+    }
+}
