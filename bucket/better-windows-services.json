@@ -1,0 +1,57 @@
+{
+    "version": "0.5.0",
+    "description": "GUI Windows service manager with searchable inventory, previewed changes, service history, and configuration-drift snapshots.",
+    "homepage": "https://betterwindowsservices.donislawdev.com/",
+    "license": "GPL-3.0-or-later",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/donislawdev/BetterWindowsServices/releases/download/v0.5.0/BetterWindowsServices-win-x64.zip",
+            "hash": "a96423ac6f1574c479a8d5cdd6b5d892fe00099519f51a689e8395c4bee750a2"
+        }
+    },
+    "extract_dir": "BetterWindowsServices",
+    "pre_install": [
+        "$dataDir = Join-Path $dir 'data\\Roaming'",
+        "New-Item -ItemType Directory -Path $dataDir -Force | Out-Null",
+        "$launcher = Join-Path $dir 'BetterWindowsServices-launch.cmd'",
+        "$launcherLines = @(",
+        "    '@echo off',",
+        "    'setlocal',",
+        "    'set \"APPDATA=%~dp0data\\Roaming\"',",
+        "    'set \"DOTNET_BUNDLE_EXTRACT_BASE_DIR=%~dp0data\\dotnet\"',",
+        "    'start \"\" /D \"%~dp0\" \"%~dp0BetterWindowsServices.exe\" %*',",
+        "    'exit /b 0'",
+        ")",
+        "[System.IO.File]::WriteAllLines($launcher, $launcherLines, [System.Text.Encoding]::ASCII)"
+    ],
+    "bin": [
+        [
+            "BetterWindowsServices-launch.cmd",
+            "better-windows-services"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "BetterWindowsServices-launch.cmd",
+            "Better Windows Services"
+        ]
+    ],
+    "persist": "data",
+    "checkver": {
+        "github": "https://github.com/donislawdev/BetterWindowsServices",
+        "regex": "^v(?<version>[\\d.]+)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/donislawdev/BetterWindowsServices/releases/download/v$version/BetterWindowsServices-win-x64.zip"
+            }
+        }
+    },
+    "notes": [
+        "This manifest installs the official self-contained x64 GUI ZIP; it does not run the vendor MSI installer. The archive is extracted from its BetterWindowsServices folder.",
+        "The launcher redirects APPDATA to the persisted data\\Roaming folder, keeping bws-preferences.json in Scoop's persistent data directory across updates.",
+        "For unelevated launches, the launcher sets DOTNET_BUNDLE_EXTRACT_BASE_DIR to the persisted data\\dotnet folder instead of Windows TEMP. When elevated, the application's startup security check relaunches it with native libraries extracted under its ACL-protected %ProgramData%\\BetterWindowsServices directory before WPF starts.",
+        "Windows 10 version 1809 or Windows Server 2019 and later, x64. Reading and reviewing service information does not require elevation; applying service changes requires an elevated session."
+    ]
+}

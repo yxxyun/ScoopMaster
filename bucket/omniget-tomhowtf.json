@@ -1,0 +1,73 @@
+{
+    "version": "0.10.1",
+    "description": "Desktop download manager and local MCP server for downloads, media, files, chats, and developer tools.",
+    "homepage": "https://getomniget.com",
+    "license": "GPL-3.0-only",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/tonhowtf/omniget/releases/download/v0.10.1/omniget_0.10.1_x64-portable.exe",
+            "hash": "fc4211fe1c311382e4c835b0c7e20c4f43152e5b5e6dcf39e9f1553ab33df3e4"
+        }
+    },
+    "pre_install": [
+        "$persistRoot = Split-Path -Parent $persist_dir",
+        "$legacyPersistDir = Join-Path $persistRoot 'omniget'",
+        "$legacyDataDir = Join-Path $legacyPersistDir 'data'",
+        "$forkPersistDir = Join-Path $persistRoot 'omniget-openselena'",
+        "$forkDataDir = Join-Path $forkPersistDir 'data'",
+        "$splitMigrationMarker = Join-Path $legacyPersistDir '.kirobucket-omniget-fork-data-migrated'",
+        "$renameMigrationMarker = Join-Path $legacyPersistDir '.kirobucket-omniget-tomhowtf-data-migrated'",
+        "$newPackageDataDir = Join-Path $persist_dir 'data'",
+        "if (-not (Test-Path -LiteralPath $renameMigrationMarker -PathType Leaf)) {",
+        "    $runningApps = @(Get-Process -Name 'omniget','libreget' -ErrorAction SilentlyContinue)",
+        "    if ($runningApps.Count -gt 0) { throw 'Close OmniGet/LibreGet before migrating the old persisted data.' }",
+        "    if (Test-Path -LiteralPath $legacyDataDir -PathType Container) {",
+        "        if (Test-Path -LiteralPath $splitMigrationMarker -PathType Leaf) {",
+        "            if (Test-Path -LiteralPath $newPackageDataDir) { throw 'Both the old OmniGet data folder and the new omniget-tomhowtf data folder exist. Back them up and reconcile them before installing.' }",
+        "            New-Item -ItemType Directory -Path $persist_dir -Force | Out-Null",
+        "            Move-Item -LiteralPath $legacyDataDir -Destination $newPackageDataDir",
+        "        } else {",
+        "            if (Test-Path -LiteralPath $forkDataDir) { throw 'Both the legacy OmniGet folder and the renamed LibreGet data folder exist. Back them up and reconcile them before installing.' }",
+        "            New-Item -ItemType Directory -Path $forkPersistDir -Force | Out-Null",
+        "            Move-Item -LiteralPath $legacyDataDir -Destination $forkDataDir",
+        "        }",
+        "    }",
+        "    New-Item -ItemType Directory -Path $legacyPersistDir -Force | Out-Null",
+        "    New-Item -ItemType File -Path $renameMigrationMarker -Force | Out-Null",
+        "}",
+        "$portableExe = Get-ChildItem -LiteralPath $dir -Filter 'omniget_*_x64-portable.exe' -File | Select-Object -First 1",
+        "if ($null -eq $portableExe) { throw 'The official OmniGet portable executable was not found.' }",
+        "Rename-Item -LiteralPath $portableExe.FullName -NewName 'OmniGet.exe'",
+        "New-Item -ItemType File -Path (Join-Path $dir 'portable.txt') -Force | Out-Null"
+    ],
+    "post_install": "if (!(Test-Path -LiteralPath (Join-Path $dir 'OmniGet.exe') -PathType Leaf)) { throw 'OmniGet.exe was not installed in the Scoop version directory.' }",
+    "persist": "data",
+    "shortcuts": [
+        [
+            "OmniGet.exe",
+            "OmniGet"
+        ]
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/tonhowtf/omniget/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "^v(?<version>[\\d.]+)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/tonhowtf/omniget/releases/download/v$version/omniget_$version_x64-portable.exe",
+                "hash": {
+                    "url": "https://api.github.com/repos/tonhowtf/omniget/releases/tags/v$version",
+                    "jsonpath": "$.assets[?(@.name == 'omniget_$version_x64-portable.exe')].digest"
+                }
+            }
+        }
+    },
+    "notes": [
+        "Creates portable.txt beside OmniGet.exe so the application stores its settings, database, cookies, WebView2 data, and downloaded tools in the Scoop-persisted data directory.",
+        "When upgrading from the former 'omniget' package name, uninstall that package first. The first install distinguishes the previous LibreGet data from original OmniGet data using the migration marker created by the preceding bucket version, then moves the data to the correct package persist directory.",
+        "If the previous fork-data migration marker is present, persist\\omniget\\data is moved to persist\\omniget-tomhowtf\\data. Otherwise, legacy fork data is moved to persist\\omniget-openselena\\data.",
+        "Use 'scoop update omniget-tomhowtf' for updates. The application also has an in-app updater, but that updater is not managed by Scoop."
+    ]
+}
