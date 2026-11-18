@@ -1,0 +1,78 @@
+{
+    "version": "20.0.1.47",
+    "description": "Apple Mobile Device Support (AMDS) from the iTunes installer, without iTunes: the 'Apple Mobile Device Service' (Apple's usbmuxd) that iTunes, iloader, Impactor and similar tools use to reach an iPhone/iPad.",
+    "homepage": "https://support.apple.com/106372",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.apple.com/legal/sla/"
+    },
+    "notes": [
+        "Global install only, from an elevated (admin) shell: scoop install -g Apple-Mobile-Device-Support",
+        "Updates and uninstall need admin too.",
+        "",
+        "AMDS is a per-machine MSI: it installs into Program Files\\Common Files\\Apple, not into the Scoop folder,",
+        "and shows up in Settings > Apps. Scoop keeps only the MSI and runs msiexec on install, update and uninstall.",
+        "If AMDS is already installed (by iTunes or earlier), an older one is upgraded and a same or newer one is",
+        "only taken over: Scoop tracks it from then on. Services that depend on AMDS are paused during the update.",
+        "'scoop uninstall' leaves AMDS in place while iTunes is installed, because iTunes needs it.",
+        "",
+        "AMDS has no USB driver. If Windows sees the iPhone/iPad only as a camera/MTP device, install the driver:",
+        "  scoop install gesu/Apple-Mobile-Drivers-Installer   (then run it as administrator)",
+        "",
+        "msiexec logs: install.log / uninstall.log in the app folder."
+    ],
+    "url": "https://secure-appldnld.apple.com/itunes12/142-28289-20261026-6acff6c8-72eb-4045-84eb-fd35239ac645/iTunes64Setup.exe#/dl.7z",
+    "hash": "221a24203f6182b7dc0e18055b1e9338a0c3c992c7fefe6b3be0460caf29db4d",
+    "pre_install": [
+        "if (!(is_admin)) { error 'AMDS is a per-machine MSI with a Windows service: run this from an elevated shell.'; break }",
+        "if (!$global) { error \"AMDS is installed for the whole machine; install it globally: scoop install -g $app\"; break }",
+        "# Keep only the AMDS MSI; iTunes itself (~175 MB) is not needed.",
+        "Remove-Item \"$dir\\iTunes64.msi\", \"$dir\\SetupAdmin.exe\" -Force -ErrorAction SilentlyContinue",
+        "$msi = \"$dir\\AppleMobileDeviceSupport64.msi\"",
+        "if (!(Test-Path $msi)) { error \"AppleMobileDeviceSupport64.msi is missing from the iTunes installer.\"; break }",
+        "$signature = Get-AuthenticodeSignature $msi",
+        "if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'O=Apple Inc\\.') {",
+        "    error \"AppleMobileDeviceSupport64.msi is not signed by Apple ($($signature.Status)).\"",
+        "    break",
+        "}"
+    ],
+    "installer": {
+        "script": [
+            "$tool = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\apple-mobile-device-support\\Invoke-Amds.ps1'",
+            "try {",
+            "    info (& $tool -Action Install -MsiPath \"$dir\\AppleMobileDeviceSupport64.msi\" -Version $version -LogPath \"$dir\\install.log\")",
+            "} catch {",
+            "    error $_.Exception.Message",
+            "    break",
+            "}"
+        ]
+    },
+    "pre_uninstall": "if (!(is_admin)) { error 'AMDS is a per-machine MSI: run this from an elevated shell.'; break }",
+    "uninstaller": {
+        "script": [
+            "# On update the new version's installer upgrades the MSI in place; only a real uninstall removes it.",
+            "if ($cmd -ne 'uninstall') { return }",
+            "$tool = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\apple-mobile-device-support\\Invoke-Amds.ps1'",
+            "try {",
+            "    info (& $tool -Action Uninstall -LogPath \"$dir\\uninstall.log\")",
+            "} catch {",
+            "    error $_.Exception.Message",
+            "    break",
+            "}"
+        ]
+    },
+    "suggest": {
+        "USB driver": "gesu/Apple-Mobile-Drivers-Installer"
+    },
+    "checkver": {
+        "script": [
+            "# The version is the AMDS MSI's own; the script downloads iTunes only when Apple's link points to a new release.",
+            "$tool = Join-Path $Dir '..\\scripts\\apple-mobile-device-support\\Get-AmdsRelease.ps1'",
+            "& $tool -CurrentUrl $json.url -CurrentVersion $json.version"
+        ],
+        "regex": "^([\\d.]+) https://secure-appldnld\\.apple\\.com/itunes12/(?<path>[^/\\s]+)/iTunes64Setup\\.exe$"
+    },
+    "autoupdate": {
+        "url": "https://secure-appldnld.apple.com/itunes12/$matchPath/iTunes64Setup.exe#/dl.7z"
+    }
+}

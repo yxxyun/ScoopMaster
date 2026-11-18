@@ -1,45 +1,49 @@
 {
-  "version": "17.0.18",
-  "description": "OCCT is a comprehensive stability testing software suite.",
-  "homepage": "https://www.ocbase.com/occt/personal",
-  "license": {
-    "identifier": "Proprietary",
-    "url": "https://www.ocbase.com/support/faq-licensing"
-  },
-  "architecture": {
-    "64bit": {
-      "url": "https://dl.ocbase.com/per/stable/OCCT.exe",
-      "hash": "fe25337ced25c71bb20a8cf039b22b3ac06fbbbe4c256de0a1fea7ac30f1a716"
-    }
-  },
-  "pre_install": "$null = if (!(Test-Path \"$persist_dir$($cfg = '/OCCT.config.json')\")) { Set-Content \"$dir$cfg\" '{\"CheckForUpdates\":\"Disabled\",\"EnableSound\":false,\"AllowOcbaseUpload\":false}' -NoNewline }",
-  "persist": "OCCT.config.json",
-  "shortcuts": [
-    [
-      "OCCT.exe",
-      "OCCT"
-    ]
-  ],
-  "checkver": {
-    "script": [
-      "try {",
-      "    $null = (Invoke-WebRequest $url).Content -cmatch '/_next/static/([^/]+)/_buildManifest\\.js'",
-      "    $Matches[1],",
-      "    (Invoke-RestMethod \"https://www.ocbase.com/_next/data/$($Matches[1])/download.json\").pageProps.occtReleasesWindows[0].stable.release.version.versionStr -join ' '",
-      "}",
-      "catch { '' }"
+    "version": "17.1.12",
+    "description": "Stability check and stress test tool: CPU, memory, GPU, VRAM, power supply and storage tests, benchmarks and hardware monitoring.",
+    "homepage": "https://www.ocbase.com/occt-personal-use",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.ocbase.com/eula"
+    },
+    "notes": [
+        "OCCT Personal is free for personal use only; using it at work needs a paid edition (see ocbase.com).",
+        "Runs as administrator: Windows shows a UAC prompt on every start.",
+        "On start it unpacks its test programs (about 400 MB) into a temporary folder.",
+        "Settings (OCCT.config.json) are kept in $persist_dir and survive updates.",
+        "",
+        "Do not accept OCCT's own update offer: it would replace OCCT.exe inside the Scoop version folder.",
+        "Turn off 'Check for updates' in OCCT's settings and update with 'scoop update OCCT' instead."
     ],
-    "regex": "\\A(?<buildid>[^/ ]+) ([\\d.]+)\\Z"
-  },
-  "autoupdate": {
-    "architecture": {
-      "64bit": {
-        "url": "https://dl.ocbase.com/per/stable/OCCT.exe",
+    "url": "https://www.ocbase.com/download/edition:Personal/version:17.1.12/os:Windows#/OCCT.exe",
+    "hash": "abaaf651c97ea4ce092c51685128ee43987cfd1da7d48ee96693196c2006559a",
+    "pre_install": [
+        "# OCCT keeps its settings in OCCT.config.json next to OCCT.exe. It is copied in here and back out",
+        "# in pre_uninstall (which also runs on update) instead of persisted: a hardlink would break if OCCT replaces the file.",
+        "if (Test-Path \"$persist_dir\\OCCT.config.json\") { Copy-Item \"$persist_dir\\OCCT.config.json\" \"$dir\\OCCT.config.json\" -Force }"
+    ],
+    "bin": "OCCT.exe",
+    "shortcuts": [
+        [
+            "OCCT.exe",
+            "OCCT"
+        ]
+    ],
+    "pre_uninstall": [
+        "if (Test-Path \"$dir\\OCCT.config.json\") {",
+        "  New-Item -ItemType Directory -Path $persist_dir -Force | Out-Null",
+        "  Copy-Item \"$dir\\OCCT.config.json\" \"$persist_dir\\OCCT.config.json\" -Force",
+        "}"
+    ],
+    "checkver": {
+        "url": "https://www.ocbase.com/download-personal",
+        "regex": "Download OCCT Personal v(?:<!-- -->)?([\\d.]+)"
+    },
+    "autoupdate": {
+        "url": "https://www.ocbase.com/download/edition:Personal/version:$version/os:Windows#/OCCT.exe",
         "hash": {
-          "url": "https://www.ocbase.com/_next/data/$matchBuildid/download.json",
-          "jsonpath": "$.pageProps.occtReleasesWindows[0].stable.release.checksum"
+            "url": "https://www.ocbase.com/download-personal",
+            "regex": "\"versionStr\":\"$version\"\\},\"edition\":\"Personal\",\"checksum\":\"$sha256\""
         }
-      }
     }
-  }
 }

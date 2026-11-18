@@ -1,0 +1,97 @@
+{
+    "version": "1.1.1",
+    "description": "Oriel Notch desktop overlay, managed through the official per-user installer.",
+    "homepage": "https://github.com/Niix-x/Oriel-Releases",
+    "license": "Proprietary",
+    "url": "https://github.com/Niix-x/Oriel-Releases/releases/download/v1.1.1/OrielSetup-1.1.1.exe",
+    "hash": "808ec378fcc90c8ae90ace3628596d8819ae728796a1229ff0cf5505ceb8d954",
+    "installer": {
+        "script": [
+            "$installDir = Join-Path $env:LOCALAPPDATA 'Programs\\Oriel'",
+            "if (Test-Path -LiteralPath $installDir -PathType Container) { throw \"An existing Oriel installation was found at $installDir. Uninstall it manually before installing this Scoop package.\" }",
+            "$existingRegistryRoots = @('HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall')",
+            "$registeredOriel = @()",
+            "foreach ($registryRoot in $existingRegistryRoots) {",
+            "  if (Test-Path -LiteralPath $registryRoot) {",
+            "    foreach ($key in (Get-ChildItem -LiteralPath $registryRoot -ErrorAction SilentlyContinue)) {",
+            "      $entry = Get-ItemProperty -LiteralPath $key.PSPath -ErrorAction SilentlyContinue",
+            "      if ([string]$entry.DisplayName -match '(?i)^Oriel(?:\\s|$)') { $registeredOriel += $key.Name }",
+            "    }",
+            "  }",
+            "}",
+            "if ($registeredOriel.Count -gt 0) { throw \"An existing Oriel uninstall registration was found: $($registeredOriel -join '; '). Uninstall it manually before using this Scoop package.\" }",
+            "$setup = Join-Path -Path $dir -ChildPath 'OrielSetup-1.1.1.exe'",
+            "if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) { throw 'Oriel setup executable was not found in the Scoop version directory.' }",
+            "$process = Start-Process -FilePath $setup -ArgumentList @('--silent') -PassThru -WindowStyle Hidden",
+            "if (-not $process.WaitForExit(45000)) { Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue; throw 'Oriel setup timed out after 45 seconds.' }",
+            "if ($process.ExitCode -ne 0) { throw \"Oriel setup exited with code $($process.ExitCode).\" }",
+            "$appExe = Join-Path $installDir 'oriel.exe'",
+            "$uninstaller = Join-Path $installDir 'uninstall.exe'",
+            "if (-not (Test-Path -LiteralPath $appExe -PathType Leaf)) { throw \"Oriel executable was not found at $appExe.\" }",
+            "if (-not (Test-Path -LiteralPath $uninstaller -PathType Leaf)) { throw \"Oriel uninstaller was not found at $uninstaller.\" }",
+            "$linkPath = Join-Path $dir 'oriel-managed'",
+            "if (Test-Path -LiteralPath $linkPath) { throw \"Refusing to overwrite existing managed link: $linkPath\" }",
+            "New-Item -ItemType Junction -Path $linkPath -Target $installDir | Out-Null",
+            "if (-not (Test-Path -LiteralPath (Join-Path $linkPath 'oriel.exe') -PathType Leaf)) { throw 'The managed Oriel junction does not resolve to oriel.exe.' }"
+        ]
+    },
+    "bin": "oriel-managed\\oriel.exe",
+    "shortcuts": [
+        [
+            "oriel-managed\\oriel.exe",
+            "Oriel"
+        ]
+    ],
+    "uninstaller": {
+        "script": [
+            "$installDir = Join-Path $env:LOCALAPPDATA 'Programs\\Oriel'",
+            "$uninstaller = Join-Path $installDir 'uninstall.exe'",
+            "$appExe = Join-Path $installDir 'oriel.exe'",
+            "$regExe = Join-Path $env:WINDIR 'System32\\reg.exe'",
+            "if (-not (Test-Path -LiteralPath $uninstaller -PathType Leaf)) { throw \"Registered Oriel uninstaller not found: $uninstaller\" }",
+            "if (-not (Test-Path -LiteralPath $regExe -PathType Leaf)) { throw 'Windows reg.exe was not found.' }",
+            "$process = Start-Process -FilePath $uninstaller -ArgumentList @('--uninstall', '--silent') -PassThru -WindowStyle Hidden",
+            "if (-not $process.WaitForExit(45000)) { Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue; throw 'Oriel uninstaller timed out after 45 seconds with --silent.' }",
+            "if ($process.ExitCode -ne 0) { throw \"Oriel uninstaller exited with code $($process.ExitCode).\" }",
+            "$registryRoots = @('HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall')",
+            "$deadline = [DateTime]::UtcNow.AddSeconds(30)",
+            "$stableSince = $null",
+            "$registryHits = @()",
+            "do {",
+            "  $registryHits = @()",
+            "  foreach ($registryRoot in $registryRoots) {",
+            "    $queryOutput = @(& $regExe query $registryRoot /s /f $installDir /d 2>$null | ForEach-Object { \"$_\" })",
+            "    $queryExit = $LASTEXITCODE",
+            "    if ($queryExit -eq 0) { $registryHits += $queryOutput }",
+            "  }",
+            "  $appStillExists = Test-Path -LiteralPath $appExe -PathType Leaf",
+            "  if (-not $appStillExists -and $registryHits.Count -eq 0) {",
+            "    if ($null -eq $stableSince) { $stableSince = [DateTime]::UtcNow }",
+            "    if (([DateTime]::UtcNow - $stableSince).TotalSeconds -ge 5) { break }",
+            "  } else {",
+            "    $stableSince = $null",
+            "  }",
+            "  Start-Sleep -Milliseconds 500",
+            "} while ([DateTime]::UtcNow -lt $deadline)",
+            "if ($appStillExists) { throw 'Oriel application executable remains after waiting for the uninstaller.' }",
+            "if ($registryHits.Count -gt 0) { throw \"Oriel uninstall registry data still references the install directory: $($registryHits -join '; ')\" }",
+            "if ($null -eq $stableSince -or ([DateTime]::UtcNow - $stableSince).TotalSeconds -lt 5) { throw 'Oriel uninstall state did not remain absent for five continuous seconds within 30 seconds.' }",
+            "$remainingFiles = @()",
+            "if (Test-Path -LiteralPath $installDir -PathType Container) { $remainingFiles = @(Get-ChildItem -LiteralPath $installDir -File -Recurse -Force -ErrorAction SilentlyContinue) }",
+            "$unexpectedFiles = @($remainingFiles | Where-Object { $_.FullName -ne $uninstaller })",
+            "if ($unexpectedFiles.Count -gt 0) { throw \"Unexpected files remain in Oriel install directory: $($unexpectedFiles.FullName -join '; ')\" }",
+            "if (Test-Path -LiteralPath $installDir) { Remove-Item -LiteralPath $installDir -Recurse -Force }",
+            "if (Test-Path -LiteralPath $installDir) { throw \"Oriel install directory remains after cleanup: $installDir\" }"
+        ]
+    },
+    "notes": "Non-portable package: the official setup installs Oriel into %LOCALAPPDATA%\\Programs\\Oriel. Scoop manages that per-user installation through a junction and the registered uninstaller. Existing Oriel installations are detected and must be uninstalled before installing this package. Use Scoop as the update authority if Oriel's built-in updater is enabled.",
+    "checkver": {
+        "github": "https://github.com/Niix-x/Oriel-Releases"
+    },
+    "autoupdate": {
+        "url": "https://github.com/Niix-x/Oriel-Releases/releases/download/v$version/OrielSetup-$version.exe",
+        "hash": {
+            "mode": "github"
+        }
+    }
+}

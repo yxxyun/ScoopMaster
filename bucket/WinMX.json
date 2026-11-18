@@ -1,0 +1,97 @@
+{
+    "version": "3.54b4",
+    "description": "Classic P2P file sharing and chat client (Frontcode, 2005) for the WinMX Peer Network, with the WinMX Community Patch 1.0 that reconnects it.",
+    "homepage": "https://patch.winmxconex.com",
+    "license": "Freeware",
+    "notes": [
+        "Not portable and not silent: this runs the community setup (WinMX 3.54 Beta 4 + Community Patch 1.0)",
+        "in its own wizard; finish it yourself. Install and uninstall from an elevated (admin) shell.",
+        "",
+        "WinMX is abandoned since 2005; the network is kept alive by its users. The patch replaces",
+        "OLEDLG.DLL in the WinMX folder so that WinMX connects to the community caches instead of the old",
+        "Frontcode servers. Antivirus programs may flag that DLL for the same reason.",
+        "",
+        "Settings and the shared library (*.dat) live in the WinMX folder chosen in the wizard.",
+        "Program Files is read-only for normal users: either run WinMX as administrator, or pick a folder",
+        "outside it in the wizard (e.g. C:\\WinMX). Otherwise Windows silently redirects the *.dat files to",
+        "%LOCALAPPDATA%\\VirtualStore, where WinMX's uninstaller does not remove them.",
+        "Scoop links that folder as 'Winmx' inside its app folder and adds a WinMX shortcut to 'Scoop Apps';",
+        "the setup's own desktop, Start menu and Quick Launch shortcuts are optional in the wizard.",
+        "Only 'scoop uninstall WinMX' removes WinMX from the system; it opens WinMX's own uninstaller,",
+        "which deletes every file in the WinMX folder, settings and the shared library list included. Back up the *.dat files first if you need them.",
+        "",
+        "A fresh install stops if WinMX Community Patch is already installed without Scoop. To let Scoop take over",
+        "that copy, run $env:GESU_ALLOW_EXISTING = '1' in the same shell and install again."
+    ],
+    "url": "https://download.winmxconex.com/Winmx%203.54.exe#/setup.exe",
+    "hash": "2618c275205e82a1afcc05dd8c3a696e24254e3197b924f02f7fec892e138cef",
+    "pre_install": [
+        "if (!(is_admin)) { error \"$app setup writes to Program Files and HKLM: run this from an elevated shell.\"; break }",
+        "# A fresh 'scoop install' must not silently take over a copy installed without Scoop.",
+        "$roots = 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+        "$existing = $roots | ForEach-Object { Get-ItemProperty \"$_\\Winmx Community 1\" -ErrorAction SilentlyContinue } | Select-Object -First 1",
+        "# A fresh install stops if the app is running or its data files are in use (scripts/common/Test-AppBusy.ps1).",
+        "# Updates are checked in pre_uninstall, which Scoop runs before it removes the old version.",
+        "if ($cmd -eq 'install') {",
+        "  $installDir = if ($existing) { Split-Path $existing.UninstallString.Trim('\"') }",
+        "  $busyCheck = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\common\\Test-AppBusy.ps1'",
+        "  if (!(Test-Path -LiteralPath $busyCheck)) { error \"Cannot check whether $app is in use: '$busyCheck' is missing.\"; break }",
+        "  $busy = @(& $busyCheck -ProcessName 'WinMX' -Path $installDir)",
+        "  if ($busy) { error \"$app is in use. Close it (and anything holding its files open) and try again:`n  $($busy -join \"`n  \")\"; break }",
+        "}",
+        "if (($cmd -eq 'install') -and $existing -and ($env:GESU_ALLOW_EXISTING -ne '1')) {",
+        "  error \"$($existing.DisplayName) is already installed on this system. Uninstall it first, or run `$env:GESU_ALLOW_EXISTING = '1' and install again to let Scoop install over it and manage it from now on.\"",
+        "  break",
+        "}"
+    ],
+    "pre_uninstall": [
+        "# 'scoop update' and 'scoop uninstall' stop here, before anything is removed, if the app is running",
+        "# or its data files are in use (scripts/common/Test-AppBusy.ps1).",
+        "$roots = 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+        "$entry = $roots | ForEach-Object { Get-ItemProperty \"$_\\Winmx Community 1\" -ErrorAction SilentlyContinue } | Select-Object -First 1",
+        "$installDir = if ($entry) { Split-Path $entry.UninstallString.Trim('\"') }",
+        "$busyCheck = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\common\\Test-AppBusy.ps1'",
+        "# Without the helper (e.g. the bucket was removed) only warn: uninstalling must stay possible.",
+        "if (!(Test-Path -LiteralPath $busyCheck)) { warn \"Cannot check whether $app is in use: '$busyCheck' is missing.\"; return }",
+        "$busy = @(& $busyCheck -ProcessName 'WinMX' -Path $installDir)",
+        "if ($busy) { error \"$app is in use. Close it (and anything holding its files open) and try again:`n  $($busy -join \"`n  \")\"; break }"
+    ],
+    "installer": {
+        "script": [
+            "Write-Host 'Finish the WinMX setup wizard that opens now.' -ForegroundColor Yellow",
+            "$setup = Start-Process \"$dir\\setup.exe\" -Wait -PassThru",
+            "if ($setup.ExitCode -ne 0) { error \"WinMX setup exited with code $($setup.ExitCode).\"; break }",
+            "Remove-Item \"$dir\\setup.exe\" -Force",
+            "# The wizard lets the user pick any folder: find it through the uninstall entry and link it into $dir,",
+            "# so that 'shortcuts' (which Scoop resolves inside $dir) can point at WinMX.exe.",
+            "$roots = 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+            "$entry = $roots | ForEach-Object { Get-ItemProperty \"$_\\Winmx Community 1\" -ErrorAction SilentlyContinue } | Select-Object -First 1",
+            "if (!$entry) { warn 'WinMX Community Patch was not found among installed programs; no Scoop shortcut was made.'; return }",
+            "$installDir = Split-Path $entry.UninstallString.Trim('\"')",
+            "if (!(Test-Path \"$installDir\\WinMX.exe\")) { warn \"WinMX.exe was not found in $installDir; no Scoop shortcut was made.\"; return }",
+            "New-Item -ItemType Junction -Path \"$dir\\Winmx\" -Target $installDir | Out-Null"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if (!(is_admin)) { error \"$app was installed into Program Files and HKLM: run this from an elevated shell.\"; break }",
+            "# Remove only the junction, never what it points to, before Scoop deletes $dir.",
+            "if (Test-Path \"$dir\\Winmx\") { [System.IO.Directory]::Delete(\"$dir\\Winmx\") }",
+            "if ($cmd -ne 'uninstall') { return }",
+            "$roots = 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+            "$entry = $roots | ForEach-Object { Get-ItemProperty \"$_\\Winmx Community 1\" -ErrorAction SilentlyContinue } | Select-Object -First 1",
+            "if (!$entry) { warn 'WinMX Community Patch was not found among installed programs; nothing to remove.'; return }",
+            "Write-Host 'Finish the WinMX uninstaller that opens now.' -ForegroundColor Yellow",
+            "$installDir = Split-Path $entry.UninstallString.Trim('\"')",
+            "Start-Process $entry.UninstallString.Trim('\"') -Wait",
+            "# The uninstaller empties the folder but leaves the folder itself.",
+            "if ((Test-Path $installDir) -and !(Get-ChildItem $installDir -Force)) { Remove-Item $installDir -Force }"
+        ]
+    },
+    "shortcuts": [
+        [
+            "Winmx\\WinMX.exe",
+            "WinMX"
+        ]
+    ]
+}

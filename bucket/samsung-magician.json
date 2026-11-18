@@ -1,27 +1,75 @@
 {
-    "homepage": "https://www.samsung.com/semiconductor/minisite/ssd/product/consumer/magician/",
-    "description": "Tool for managing Samsung SSDs.",
-    "license": {
-        "identifier": "Freeware, LGPL-2.1, MIT,...",
-        "url": "https://www.samsung.com/semiconductor/global.semi.static/Open_Source_Announcement_v1.0.pdf"
-    },
-    "version": "6.1.0",
-    "url": "https://s3.ap-northeast-2.amazonaws.com/global.semi.static/SAMSUNG_SSD_v6_1_0_200310/SW/675B9E5CD0C5F99B41D766B27C8E0055C3909ECE3AA2FB6B74A2A1EAC1BAC402/Samsung_Magician_Installer.zip",
-    "hash": "9daeed4fdd5b4492442c706ee71d305b00824e716415fb616235e00174403dfd",
+    "version": "9.0.2.500",
+    "description": "Samsung SSD and memory card toolkit: firmware updates, drive health, benchmark, secure erase and performance settings.",
+    "homepage": "https://semiconductor.samsung.com/consumer-storage/magician/",
+    "license": "Freeware",
+    "notes": [
+        "Not portable and not silent: Samsung's installer refuses silent mode on purpose and asks",
+        "whether you live in a GDPR country or Brazil. Scoop opens the setup wizard; finish it yourself.",
+        "Install, update and uninstall from an elevated (admin) shell.",
+        "",
+        "The installer adds the SamsungMagicianSVC service, the magdrv kernel driver, a scheduled task",
+        "'SamsungMagician' that starts Magician at logon, and may switch the Windows power plan.",
+        "",
+        "Scoop links the install folder as 'SamsungMagician' inside its app folder and adds a Samsung Magician shortcut to 'Scoop Apps'.",
+        "Magician can update itself; prefer 'scoop update Samsung-Magician' so Scoop knows the installed version.",
+        "Only 'scoop uninstall Samsung-Magician' removes Magician from the system.",
+        "",
+        "A fresh install stops if Samsung Magician is already installed without Scoop. To let Scoop take over that copy,",
+        "run $env:GESU_ALLOW_EXISTING = '1' in the same shell and install again."
+    ],
+    "url": "https://downloadcenter.samsung.com/content/SW/202609/20260915101727932/Samsung_Magician_Installer_Official_9.0.2.500.exe#/setup.exe",
+    "hash": "645cc9f19e411645cc3d8c862359b8a41c8cc53c7b1c1d262c25caed67f46624",
+    "pre_install": [
+        "if (!(is_admin)) { error \"$app installs a driver and a service: run this from an elevated shell.\"; break }",
+        "# A fresh 'scoop install' must not silently take over a copy installed without Scoop; 'scoop update' is not affected.",
+        "$roots = 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+        "$existing = $roots | ForEach-Object { Get-ItemProperty \"$_\\{29AE3F9F-7158-4ca7-B1ED-28A73ECDB215}_is1\" -ErrorAction SilentlyContinue } | Select-Object -First 1",
+        "if (($cmd -eq 'install') -and $existing -and ($env:GESU_ALLOW_EXISTING -ne '1')) {",
+        "  error \"$($existing.DisplayName) ($($existing.DisplayVersion)) is already installed on this system. Uninstall it first, or run `$env:GESU_ALLOW_EXISTING = '1' and install again to let Scoop install over it and manage it from now on.\"",
+        "  break",
+        "}"
+    ],
     "installer": {
-        "script": "Expand-InnoArchive $dir\\Samsung_Magician_Installer.exe -Removal"
+        "script": [
+            "Write-Host 'Samsung Magician does not allow silent installation: finish the setup wizard that opens now.' -ForegroundColor Yellow",
+            "$setup = Start-Process \"$dir\\setup.exe\" -ArgumentList '/SP-' -Wait -PassThru",
+            "if ($setup.ExitCode -ne 0) { error \"Samsung Magician setup exited with code $($setup.ExitCode) (2 or 5: cancelled).\"; break }",
+            "Remove-Item \"$dir\\setup.exe\" -Force",
+            "# Inno Setup records the folder as InstallLocation in its uninstall entry.",
+            "$roots = 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+            "$entry = $roots | ForEach-Object { Get-ItemProperty \"$_\\{29AE3F9F-7158-4ca7-B1ED-28A73ECDB215}_is1\" -ErrorAction SilentlyContinue } | Select-Object -First 1",
+            "$installDir = $entry.InstallLocation",
+            "# Link the install folder into $dir, so that 'shortcuts' (which Scoop resolves inside $dir) can point at it.",
+            "if (!$installDir -or !(Test-Path \"$installDir\\SamsungMagician.exe\")) { warn \"SamsungMagician.exe was not found in the Samsung Magician install folder ($installDir); no Scoop shortcut was made.\"; return }",
+            "New-Item -ItemType Junction -Path \"$dir\\SamsungMagician\" -Target $installDir.TrimEnd('\\') | Out-Null"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if (!(is_admin)) { error \"$app runs a driver and a service: run this from an elevated shell.\"; break }",
+            "# Remove only the junction to the install folder, never what it points to, before Scoop deletes $dir.",
+            "if (Test-Path \"$dir\\SamsungMagician\") { [System.IO.Directory]::Delete(\"$dir\\SamsungMagician\") }",
+            "# On update the new installer upgrades in place; only a real uninstall removes the app.",
+            "if ($cmd -ne 'uninstall') { return }",
+            "$id = '{29AE3F9F-7158-4ca7-B1ED-28A73ECDB215}_is1'",
+            "$roots = 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+            "$entry = $roots | ForEach-Object { Get-ItemProperty \"$_\\$id\" -ErrorAction SilentlyContinue } | Select-Object -First 1",
+            "if (!$entry) { warn 'Samsung Magician was not found among installed programs; nothing to remove.'; return }",
+            "Start-Process $entry.UninstallString.Trim('\"') -ArgumentList @('/SILENT', '/NORESTART') -Wait"
+        ]
+    },
+    "checkver": {
+        "url": "https://www.samsung.com/uk/support/model/MZ-VAP8T0BW/",
+        "regex": "\"filePath\":\"(?<path>SW/\\d+/\\d+)/Samsung_Magician_Installer_Official_([\\d.]+)\\.exe\""
+    },
+    "autoupdate": {
+        "url": "https://downloadcenter.samsung.com/content/$matchPath/Samsung_Magician_Installer_Official_$version.exe#/setup.exe"
     },
     "shortcuts": [
         [
-            "SamsungMagician.exe",
+            "SamsungMagician\\SamsungMagician.exe",
             "Samsung Magician"
         ]
-    ],
-    "checkver": {
-        "regex": "(?<Wholeurl>https:\\/\\/[\\w\\d-.\\/]+SAMSUNG_SSD_v(?<major>\\d+)_(?<minor>\\d+)_(?<patch>\\d+)[\\w\\d-.\\/]+\\/Samsung_Magician_Installer\\.zip)",
-        "replace": "${major}.${minor}.${patch}"
-    },
-    "autoupdate": {
-        "url": "$matchWholeurl"
-    }
+    ]
 }

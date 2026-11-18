@@ -1,0 +1,63 @@
+{
+    "version": "3.36",
+    "description": "Disk defragmenter and optimizer: puts folders at the start of the disk and big, rarely used files (SpaceHogs) at the end, or sorts files by name, size or date.",
+    "homepage": "https://portableapps.com/apps/utilities/jkdefrag_portable",
+    "license": {
+        "identifier": "GPL-2.0-or-later",
+        "url": "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html"
+    },
+    "notes": [
+        "JkDefrag 3.36 (2008) by Jeroen Kessels, the last open source version; its successor MyDefrag is closed source.",
+        "Not developed since; written for Windows XP and Vista, it works through the standard Windows defragmentation API.",
+        "The files come from PortableApps.com's JkDefrag Portable 3.36 Rev 2, without its launcher.",
+        "",
+        "Command: 'jkdefrag' (JkDefrag64.exe on 64-bit Windows), from an elevated terminal, e.g.",
+        "  jkdefrag -a 7 -u \"D:\\Archive\\*\" D:",
+        "Without a drive it processes ALL fixed drives. Options: -a (action), -u (SpaceHogs mask), -e (exclude mask), -l (log file).",
+        "",
+        "The 'JkDefrag' shortcut in Scoop Apps opens PortableApps.com's small GUI (pick drives, then Analyze, Defragment",
+        "or Defragment and Optimize). The shortcut is set to run as administrator: started without admin rights,",
+        "the GUI restarts itself elevated in C:\\Windows\\System32 and then cannot find JkDefrag. 'scoop reset' recreates",
+        "the shortcut without that setting; run 'scoop update JkDefrag -f' afterwards to set it again.",
+        "Some antivirus programs flag JkDefragGUI.exe because it is a compiled AutoIt script."
+    ],
+    "url": "https://downloads.sourceforge.net/project/portableapps/JkDefrag%20Portable/JkDefragPortable_3.36_Rev_2.paf.exe#/dl.7z",
+    "hash": "bc14dead89d55e50e5f4828f84b654a1a4b16a1badf0b000fac45fd2cbb6a1e8",
+    "extract_dir": "App\\JkDefrag",
+    "architecture": {
+        "64bit": {
+            "bin": [
+                [
+                    "JkDefrag64.exe",
+                    "jkdefrag"
+                ]
+            ]
+        },
+        "32bit": {
+            "bin": [
+                [
+                    "JkDefrag.exe",
+                    "jkdefrag"
+                ]
+            ]
+        }
+    },
+    "shortcuts": [
+        [
+            "JkDefragGUI.exe",
+            "JkDefrag"
+        ]
+    ],
+    "post_install": [
+        "# JkDefragGUI.exe uses #RequireAdmin and finds JkDefrag(64).exe and its languages folder relative to the",
+        "# working folder. Started without admin rights, it restarts itself elevated in System32 and fails, so the",
+        "# shortcut gets the 'Run as administrator' flag (SLDF_RUNAS_USER, 0x2000 in LinkFlags at offset 0x14),",
+        "# which elevates it at once and keeps the shortcut's working folder.",
+        "$lnk = Join-Path (shortcut_folder $global) 'JkDefrag.lnk'",
+        "if (Test-Path $lnk) {",
+        "  $bytes = [IO.File]::ReadAllBytes($lnk)",
+        "  $bytes[0x15] = $bytes[0x15] -bor 0x20",
+        "  [IO.File]::WriteAllBytes($lnk, $bytes)",
+        "}"
+    ]
+}

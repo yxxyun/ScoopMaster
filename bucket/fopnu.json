@@ -1,39 +1,66 @@
 {
-    "version": "1.68-1",
-    "description": "Fopnu is a New and Powerful P2P File Sharing System.",
-    "homepage": "https://www.fopnu.com/",
-    "url": "https://download2.fopnu.com/download/fopnu-1.68-1.portable.zip",
-    "hash": "8eaa96b9c12785b73ec3b2a9ba7bde5d1fac08b1c3c1df5834bffa2033bddd33",
-    "extract_dir": "Fopnu_portable",
+    "version": "1.68",
+    "description": "Decentralized P2P file sharing: search other users' shared libraries, browse their folders, chat rooms and private messages, no central server.",
+    "homepage": "https://www.fopnu.com",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://github.com/Gesugao-san/scoop-bucket/blob/HEAD/licenses/Fopnu.txt"
+    },
+    "notes": [
+        "Not portable: Fopnu rewrites its .dat files, which would break Scoop's persist.",
+        "Settings, the library and transfers live in %APPDATA%\\fopnu, survive updates and are kept on uninstall.",
+        "If Fopnu offers a new version, update with 'scoop update Fopnu' instead of running its installer."
+    ],
     "architecture": {
         "64bit": {
-            "installer": {
-                "script": "Remove-Item \"$dir\\fopnu_Linux*\", \"$dir\\fopnu_Windows32bit.exe\" -Force -Recurse"
-            },
-            "shortcuts": [
-                [
-                    "fopnu_Windows64bit.exe",
-                    "Fopnu"
-                ]
-            ]
+            "url": "https://download2.fopnu.com/download/fopnu-1.68-1.win64-install.exe#/dl.7z",
+            "hash": "0bdfe08456266779b487096eeb12715c7037bb6ad11408f187c8a386c62311ca"
         },
         "32bit": {
-            "installer": {
-                "script": "Remove-Item \"$dir\\fopnu_Linux*\", \"$dir\\fopnu_Windows64bit.exe\" -Force -Recurse"
-            },
-            "shortcuts": [
-                [
-                    "fopnu_Windows32bit.exe",
-                    "Fopnu"
-                ]
-            ]
+            "url": "https://download2.fopnu.com/download/fopnu-1.68-1.win32-install.exe#/dl.7z",
+            "hash": "794bcd7177f105c3cbd07a344246dea6e8128a9d1cb1c644e59bccca85f87e86"
         }
     },
+    "pre_install": [
+        "# A fresh install stops if the app is running or its data files are in use (scripts/common/Test-AppBusy.ps1).",
+        "# Updates are checked in pre_uninstall, which Scoop runs before it removes the old version.",
+        "if ($cmd -eq 'install') {",
+        "  $busyCheck = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\common\\Test-AppBusy.ps1'",
+        "  if (!(Test-Path -LiteralPath $busyCheck)) { error \"Cannot check whether $app is in use: '$busyCheck' is missing.\"; break }",
+        "  $busy = @(& $busyCheck -ProcessName 'fopnu' -Path \"$env:APPDATA\\fopnu\")",
+        "  if ($busy) { error \"$app is in use. Close it (and anything holding its files open) and try again:`n  $($busy -join \"`n  \")\"; break }",
+        "}",
+        "# The installer is a small stub with fopnu.exe as a bzip2 resource; 7-Zip unpacks it as '<id>~'.",
+        "Get-ChildItem \"$dir\\*~\" | Select-Object -First 1 | Rename-Item -NewName 'fopnu.exe'"
+    ],
+    "pre_uninstall": [
+        "# 'scoop update' and 'scoop uninstall' stop here, before anything is removed, if the app is running",
+        "# or its data files are in use (scripts/common/Test-AppBusy.ps1).",
+        "$busyCheck = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\common\\Test-AppBusy.ps1'",
+        "# Without the helper (e.g. the bucket was removed) only warn: uninstalling must stay possible.",
+        "if (!(Test-Path -LiteralPath $busyCheck)) { warn \"Cannot check whether $app is in use: '$busyCheck' is missing.\"; return }",
+        "$busy = @(& $busyCheck -ProcessName 'fopnu' -Path \"$env:APPDATA\\fopnu\")",
+        "if ($busy) { error \"$app is in use. Close it (and anything holding its files open) and try again:`n  $($busy -join \"`n  \")\"; break }"
+    ],
+    "bin": "fopnu.exe",
+    "shortcuts": [
+        [
+            "fopnu.exe",
+            "Fopnu"
+        ]
+    ],
     "checkver": {
-        "url": "https://www.fopnu.com/download/portable.html",
-        "regex": "/download/fopnu-([\\d.-]+).portable"
+        "url": "https://www.fopnu.com/download/windows64.html",
+        "regex": "fopnu-([\\d.]+)-(?<build>\\d+)\\.win64-install\\.exe"
     },
     "autoupdate": {
-        "url": "https://download2.fopnu.com/download/fopnu-$version.portable.zip"
+        "architecture": {
+            "64bit": {
+                "url": "https://download2.fopnu.com/download/fopnu-$version-$matchBuild.win64-install.exe#/dl.7z"
+            },
+            "32bit": {
+                "url": "https://download2.fopnu.com/download/fopnu-$version-$matchBuild.win32-install.exe#/dl.7z"
+            }
+        }
     }
 }

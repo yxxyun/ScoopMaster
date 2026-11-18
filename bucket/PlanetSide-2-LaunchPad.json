@@ -1,0 +1,88 @@
+{
+    "version": "2026.05.26",
+    "description": "Daybreak LaunchPad for PlanetSide 2: installs, patches and starts the game without Steam.",
+    "homepage": "https://www.planetside2.com",
+    "license": "Freeware",
+    "notes": [
+        "Not portable: runs Daybreak's installer (it also installs the VC++ runtimes and the DirectX web setup).",
+        "Install, update and uninstall from an elevated (admin) shell; the installer opens its own wizard,",
+        "where you can pick the game folder (default C:\\Users\\Public\\Daybreak Game Company\\Installed Games\\PlanetSide 2).",
+        "LaunchPad downloads the game (tens of GB) after you log in, and keeps itself and the game up to date.",
+        "The package version is the date Daybreak published PS2_setup.exe; 'scoop update' reruns the installer,",
+        "which finds the existing copy and offers Reinstall / Repair.",
+        "Scoop links the game folder as 'LaunchPad' inside its app folder and adds a 'PlanetSide 2 LaunchPad' shortcut to 'Scoop Apps'.",
+        "",
+        "Stops if PlanetSide 2 is installed in Steam (that is the PlanetSide-2 package), or if a standalone copy",
+        "was installed without Scoop; to let Scoop take over that copy, run $env:GESU_ALLOW_EXISTING = '1' and install again."
+    ],
+    "url": "https://launch.daybreakgames.com/installer/PS2_setup.exe#/setup.exe",
+    "hash": "a4d1e12e2ff22c5db931aaa0161b609d76ceb78d85e42c4caf4ce69dd4753676",
+    "pre_install": [
+        "if (!(is_admin)) { error 'The PlanetSide 2 installer needs admin rights: run this from an elevated shell.'; break }",
+        "$roots = 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+        "$standalone = Get-ChildItem $roots -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -like 'DGC-PlanetSide 2*' -or $_.PSChildName -eq 'PlanetSide 2' } | Get-ItemProperty -ErrorAction SilentlyContinue | Where-Object { \"$($_.InstallLocation)$($_.UninstallString)\" -notlike '*\\steamapps\\*' } | Select-Object -First 1",
+        "$steamApp = Get-ItemProperty 'HKCU:\\Software\\Valve\\Steam\\Apps\\218230' -ErrorAction SilentlyContinue",
+        "$inSteam = ($steamApp.Installed -eq 1) -or [bool](Get-ChildItem $roots -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'Steam App 218230' })",
+        "if ($inSteam) { error 'PlanetSide 2 is installed in Steam; use that copy (package PlanetSide-2) or remove it in Steam first, so there is only one copy of the game.'; break }",
+        "# A fresh 'scoop install' must not silently take over a copy installed without Scoop; 'scoop update' is not affected.",
+        "if (($cmd -eq 'install') -and $standalone -and ($env:GESU_ALLOW_EXISTING -ne '1')) {",
+        "  error \"$($standalone.DisplayName) is already installed on this system. Uninstall it first, or run `$env:GESU_ALLOW_EXISTING = '1' and install again to let Scoop manage it from now on.\"",
+        "  break",
+        "}"
+    ],
+    "installer": {
+        "script": [
+            "Write-Host 'Finish the PlanetSide 2 setup wizard that opens now.' -ForegroundColor Yellow",
+            "$setup = Start-Process \"$dir\\setup.exe\" -Wait -PassThru",
+            "if ($setup.ExitCode -ne 0) { error \"PlanetSide 2 setup exited with code $($setup.ExitCode) (1 or 2: cancelled or aborted).\"; break }",
+            "Remove-Item \"$dir\\setup.exe\" -Force",
+            "# The wizard lets the user pick any folder: find it through the uninstall entry (LaunchPad.exe sits next to Uninstaller.exe).",
+            "$roots = 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+            "$standalone = Get-ChildItem $roots -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -like 'DGC-PlanetSide 2*' -or $_.PSChildName -eq 'PlanetSide 2' } | Get-ItemProperty -ErrorAction SilentlyContinue | Where-Object { \"$($_.InstallLocation)$($_.UninstallString)\" -notlike '*\\steamapps\\*' } | Select-Object -First 1",
+            "$installDir = $standalone.InstallLocation",
+            "if ((!$installDir -or !(Test-Path \"$installDir\\LaunchPad.exe\")) -and ($standalone.UninstallString -match '^\"?([^\"]+?\\.exe)')) { $installDir = Split-Path $Matches[1] }",
+            "# Link the install folder into $dir, so that 'shortcuts' (which Scoop resolves inside $dir) can point at it.",
+            "if (!$installDir -or !(Test-Path \"$installDir\\LaunchPad.exe\")) { warn \"LaunchPad.exe was not found in the PlanetSide 2 install folder ($installDir); no Scoop shortcut was made.\"; return }",
+            "New-Item -ItemType Junction -Path \"$dir\\LaunchPad\" -Target $installDir.TrimEnd('\\') | Out-Null"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if (!(is_admin)) { error 'The PlanetSide 2 uninstaller needs admin rights: run this from an elevated shell.'; break }",
+            "# Remove only the junction to the install folder, never what it points to, before Scoop deletes $dir.",
+            "if (Test-Path \"$dir\\LaunchPad\") { [System.IO.Directory]::Delete(\"$dir\\LaunchPad\") }",
+            "# On update the installer repairs the existing copy; only a real uninstall removes the game.",
+            "if ($cmd -ne 'uninstall') { return }",
+            "$roots = 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+            "$standalone = Get-ChildItem $roots -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -like 'DGC-PlanetSide 2*' -or $_.PSChildName -eq 'PlanetSide 2' } | Get-ItemProperty -ErrorAction SilentlyContinue | Where-Object { \"$($_.InstallLocation)$($_.UninstallString)\" -notlike '*\\steamapps\\*' } | Select-Object -First 1",
+            "if (!$standalone) { warn 'The standalone PlanetSide 2 was not found among installed programs; nothing to remove.'; return }",
+            "if ($standalone.UninstallString -match '^\"([^\"]+)\"\\s*(.*)$') { $exe = $Matches[1]; $exeArgs = $Matches[2] } else { $exe = $standalone.UninstallString; $exeArgs = '' }",
+            "if ($exeArgs) { Start-Process $exe -ArgumentList $exeArgs } else { Start-Process $exe }",
+            "Write-Host 'The PlanetSide 2 uninstaller has opened; finish it there.' -ForegroundColor Yellow"
+        ]
+    },
+    "checkver": {
+        "script": [
+            "# The download URL has no version; use the date Daybreak published the file.",
+            "# Some networks drop part of the connections to this CDN, so retry with a fresh connection each time.",
+            "$uri = 'https://launch.daybreakgames.com/installer/PS2_setup.exe'",
+            "$response = $null",
+            "foreach ($attempt in 1..5) {",
+            "  try { $response = Invoke-WebRequest -Method Head -Uri $uri -UseBasicParsing -DisableKeepAlive -TimeoutSec 30; break }",
+            "  catch { if ($attempt -eq 5) { throw }; Start-Sleep -Seconds 2 }",
+            "}",
+            "$published = [DateTimeOffset]::ParseExact(\"$($response.Headers['Last-Modified'])\", 'r', [Globalization.CultureInfo]::InvariantCulture)",
+            "$published.UtcDateTime.ToString('yyyy.MM.dd', [Globalization.CultureInfo]::InvariantCulture)"
+        ],
+        "regex": "([\\d.]+)"
+    },
+    "autoupdate": {
+        "url": "https://launch.daybreakgames.com/installer/PS2_setup.exe#/setup.exe"
+    },
+    "shortcuts": [
+        [
+            "LaunchPad\\LaunchPad.exe",
+            "PlanetSide 2 LaunchPad"
+        ]
+    ]
+}

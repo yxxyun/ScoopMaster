@@ -1,0 +1,70 @@
+{
+    "version": "1.42",
+    "description": "Anonymous P2P file sharing and chat over Tor hidden services, with a built-in Tor client; can host your own .onion site.",
+    "homepage": "https://darkmx.app",
+    "license": "Freeware",
+    "notes": [
+        "DarkMX runs its own Tor client and does not need a separate Tor install.",
+        "Tor Browser is only needed to open .onion sites, including the one DarkMX can host for you.",
+        "",
+        "Not portable: DarkMX rewrites its config files, which would break Scoop's persist.",
+        "Settings live in %APPDATA%\\darkmx, survive updates and are kept on uninstall.",
+        "The upstream zip starts in standalone mode (config next to the exe); the manifest removes",
+        "darkmx_standalone_mode.txt, because Scoop puts every version in a new folder."
+    ],
+    "suggest": {
+        "Tor Browser": "extras/tor-browser"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://download.darkmx.app/darkmx-1.42-win64.zip",
+            "hash": "7771c877bab6c9f981fdaba1c558bbfee79011672d63b7b66230cc9e94e104ba"
+        },
+        "32bit": {
+            "url": "https://download.darkmx.app/darkmx-1.42-win32.zip",
+            "hash": "9babeb509903e3501663131e3bfcf4d184edc16eb3a78a06bb101a23b486350b"
+        }
+    },
+    "extract_dir": "DarkMX",
+    "pre_install": [
+        "# A fresh install stops if the app is running or its data files are in use (scripts/common/Test-AppBusy.ps1).",
+        "# Updates are checked in pre_uninstall, which Scoop runs before it removes the old version.",
+        "if ($cmd -eq 'install') {",
+        "  $busyCheck = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\common\\Test-AppBusy.ps1'",
+        "  if (!(Test-Path -LiteralPath $busyCheck)) { error \"Cannot check whether $app is in use: '$busyCheck' is missing.\"; break }",
+        "  $busy = @(& $busyCheck -ProcessName 'darkmx' -Path \"$env:APPDATA\\darkmx\")",
+        "  if ($busy) { error \"$app is in use. Close it (and anything holding its files open) and try again:`n  $($busy -join \"`n  \")\"; break }",
+        "}",
+        "Remove-Item \"$dir\\darkmx_standalone_mode.txt\" -Force -ErrorAction SilentlyContinue"
+    ],
+    "pre_uninstall": [
+        "# 'scoop update' and 'scoop uninstall' stop here, before anything is removed, if the app is running",
+        "# or its data files are in use (scripts/common/Test-AppBusy.ps1).",
+        "$busyCheck = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\common\\Test-AppBusy.ps1'",
+        "# Without the helper (e.g. the bucket was removed) only warn: uninstalling must stay possible.",
+        "if (!(Test-Path -LiteralPath $busyCheck)) { warn \"Cannot check whether $app is in use: '$busyCheck' is missing.\"; return }",
+        "$busy = @(& $busyCheck -ProcessName 'darkmx' -Path \"$env:APPDATA\\darkmx\")",
+        "if ($busy) { error \"$app is in use. Close it (and anything holding its files open) and try again:`n  $($busy -join \"`n  \")\"; break }"
+    ],
+    "bin": "darkmx.exe",
+    "shortcuts": [
+        [
+            "darkmx.exe",
+            "DarkMX"
+        ]
+    ],
+    "checkver": {
+        "url": "https://darkmx.app/",
+        "regex": "darkmx-([\\d.]+)-win64\\.zip"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://download.darkmx.app/darkmx-$version-win64.zip"
+            },
+            "32bit": {
+                "url": "https://download.darkmx.app/darkmx-$version-win32.zip"
+            }
+        }
+    }
+}

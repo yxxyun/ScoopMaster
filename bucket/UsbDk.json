@@ -1,0 +1,89 @@
+{
+    "version": "1.0.22",
+    "description": "UsbDk (USB Development Kit): filter driver and library that give user-mode programs exclusive access to any USB device without replacing its driver. libusb uses it as a backend (MTKClient, QEMU, SPICE).",
+    "homepage": "https://github.com/daynix/UsbDk",
+    "license": "Apache-2.0",
+    "notes": [
+        "Not portable: this runs the official MSI (UsbDk Runtime Libraries, Red Hat) into Program Files. It adds the",
+        "UsbDk filter driver to the USB stack and UsbDkHelper.dll to System32, where libusb looks for it.",
+        "Install, update and uninstall from an elevated (admin) shell. If the installer asks for a reboot, reboot.",
+        "",
+        "x64 and x86 only: there is no ARM64 driver, and an x64 kernel driver cannot run on ARM64 Windows.",
+        "",
+        "Upstream's last release is 1.0.22 from 17 March 2020. If a newer Windows refuses to load the driver",
+        "(e.g. Memory integrity), or USB devices misbehave, 'scoop uninstall UsbDk' removes it again.",
+        "",
+        "Scoop links the install folder as 'UsbDk' inside its app folder; the command UsbDkController",
+        "(-n lists devices) comes from there. There is no window, so no shortcut in 'Scoop Apps'.",
+        "Only 'scoop uninstall UsbDk' removes the driver from the system.",
+        "",
+        "A fresh install stops if UsbDk is already installed without Scoop. To let Scoop take over that copy,",
+        "run $env:GESU_ALLOW_EXISTING = '1' in the same shell and install again."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/daynix/UsbDk/releases/download/v1.00-22/UsbDk_1.0.22_x64.msi#/setup.msi_",
+            "hash": "91f6f695e1e13c656024e6d3b55620bf08d8835ef05ee0496935ba6bb62466a5"
+        },
+        "32bit": {
+            "url": "https://github.com/daynix/UsbDk/releases/download/v1.00-22/UsbDk_1.0.22_x86.msi#/setup.msi_",
+            "hash": "278c58e0d8d33eba7de51f8cbee78b09f9f3c0ee1c7aae601fd77c7ec69e28ef"
+        }
+    },
+    "pre_install": [
+        "if (!(is_admin)) { error \"$app installs a driver: run this from an elevated shell.\"; break }",
+        "# Scoop falls back to the x64 package on ARM64, but a kernel driver must match the OS architecture.",
+        "if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { error \"$app has no ARM64 driver.\"; break }"
+    ],
+    "installer": {
+        "script": [
+            "$roots = 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+            "$findEntry = { Get-ChildItem $roots -ErrorAction SilentlyContinue | Get-ItemProperty -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq 'UsbDk Runtime Libraries' -and $_.PSChildName -match '^\\{[0-9A-Fa-f-]{36}\\}$' } | Select-Object -First 1 }",
+            "# Do not adopt a copy installed outside Scoop, or 'scoop uninstall' would remove it; updates are fine.",
+            "if ($cmd -eq 'install' -and (& $findEntry) -and $env:GESU_ALLOW_EXISTING -ne '1') {",
+            "    error \"UsbDk is already installed without Scoop. Set `$env:GESU_ALLOW_EXISTING = '1' to let Scoop take it over.\"",
+            "    break",
+            "}",
+            "# The MSI removes an older version itself (RemoveExistingProducts) and installs the driver with UsbDkInstHelper.",
+            "$proc = Start-Process msiexec.exe -ArgumentList @('/i', \"`\"$dir\\setup.msi_`\"\", '/qn', '/norestart', '/l*v', \"`\"$dir\\install.log`\"\") -Wait -PassThru",
+            "# 3010: installed, a reboot is needed to finish.",
+            "if ($proc.ExitCode -notin 0, 3010) { error \"msiexec failed with exit code $($proc.ExitCode); see $dir\\install.log.\"; break }",
+            "if ($proc.ExitCode -eq 3010) { warn 'Reboot to finish installing the UsbDk driver.' }",
+            "$installDir = (& $findEntry).InstallLocation",
+            "if (!$installDir) { $installDir = \"$env:ProgramFiles\\UsbDk Runtime Library\" }",
+            "# Link the install folder into $dir, so that 'bin' (which Scoop resolves inside $dir) can point at it.",
+            "if (!(Test-Path \"$installDir\\UsbDkController.exe\")) { warn \"UsbDkController.exe was not found in $installDir; the command UsbDkController will not work.\"; return }",
+            "New-Item -ItemType Junction -Path \"$dir\\UsbDk\" -Target $installDir.TrimEnd('\\') | Out-Null"
+        ]
+    },
+    "bin": "UsbDk\\UsbDkController.exe",
+    "uninstaller": {
+        "script": [
+            "if (!(is_admin)) { error \"$app removes a driver: run this from an elevated shell.\"; break }",
+            "# Remove only the junction to the install folder, never what it points to, before Scoop deletes $dir.",
+            "if (Test-Path \"$dir\\UsbDk\") { [System.IO.Directory]::Delete(\"$dir\\UsbDk\") }",
+            "# On update the new MSI upgrades in place; only a real uninstall removes the driver.",
+            "if ($cmd -ne 'uninstall') { return }",
+            "$roots = 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+            "$entry = Get-ChildItem $roots -ErrorAction SilentlyContinue | Get-ItemProperty -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq 'UsbDk Runtime Libraries' -and $_.PSChildName -match '^\\{[0-9A-Fa-f-]{36}\\}$' } | Select-Object -First 1",
+            "if (!$entry) { warn 'UsbDk was not found among installed programs; nothing to remove.'; return }",
+            "$proc = Start-Process msiexec.exe -ArgumentList @('/x', $entry.PSChildName, '/qn', '/norestart') -Wait -PassThru",
+            "if ($proc.ExitCode -notin 0, 3010) { warn \"msiexec could not remove UsbDk (exit code $($proc.ExitCode)); remove 'UsbDk Runtime Libraries' in Apps.\" }",
+            "if ($proc.ExitCode -eq 3010) { warn 'Reboot to finish removing the UsbDk driver.' }"
+        ]
+    },
+    "checkver": {
+        "url": "https://api.github.com/repos/daynix/UsbDk/releases/latest",
+        "regex": "\"tag_name\":\\s*\"(?<tag>v[\\d.]+-\\d+)\"[\\s\\S]*?UsbDk_(?<version>[\\d.]+)_x64\\.msi"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/daynix/UsbDk/releases/download/$matchTag/UsbDk_$version_x64.msi#/setup.msi_"
+            },
+            "32bit": {
+                "url": "https://github.com/daynix/UsbDk/releases/download/$matchTag/UsbDk_$version_x86.msi#/setup.msi_"
+            }
+        }
+    }
+}

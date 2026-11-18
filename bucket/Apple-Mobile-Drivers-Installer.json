@@ -1,0 +1,48 @@
+{
+    "version": "2024.03.29",
+    "description": "Installs Apple's USB and Mobile Device Ethernet (tethering) drivers from the Microsoft Update Catalog, plus Apple Mobile Device Support from iTunes.",
+    "homepage": "https://github.com/NelloKudo/Apple-Mobile-Drivers-Installer",
+    "license": {
+        "identifier": "GPL-3.0-only",
+        "url": "https://github.com/NelloKudo/Apple-Mobile-Drivers-Installer/blob/HEAD/LICENSE.md"
+    },
+    "notes": [
+        "This installs only the script. To install the drivers, run it from an elevated (administrator) PowerShell:",
+        "  AppleDrivInstaller",
+        "Or use the 'Apple Mobile Drivers Installer' shortcut in Scoop Apps, which asks for admin rights itself.",
+        "Each run downloads iTunes (~200 MB) from apple.com to install AppleMobileDeviceSupport64.msi,",
+        "then installs the driver .inf files from Microsoft's Update Catalog with pnputil.",
+        "Reconnect the device afterwards; a reboot may be needed.",
+        "",
+        "Scoop does not track the drivers: 'scoop uninstall' removes only the script, the drivers stay installed."
+    ],
+    "url": "https://raw.githubusercontent.com/NelloKudo/Apple-Mobile-Drivers-Installer/17d011200084eee699e01df482caca02d2a4cd54/AppleDrivInstaller.ps1",
+    "hash": "7635503069e3510af357aac804b522c1b3ec486126d4e06764b24e3bc3e3a0a3",
+    "pre_install": [
+        "# Start menu shortcuts cannot ask for elevation by themselves, so the shortcut points to a small",
+        "# launcher that opens AppleDrivInstaller.ps1 in an elevated PowerShell window that stays open.",
+        "$launcher = @(",
+        "  '@ECHO OFF',",
+        "  ':: Opens AppleDrivInstaller.ps1 in an elevated PowerShell window that stays open.',",
+        "  ':: Created by the Apple-Mobile-Drivers-Installer package of the gesu Scoop bucket.',",
+        "  'SET \"SCRIPT=%~dp0AppleDrivInstaller.ps1\"',",
+        "  'powershell -NoProfile -ExecutionPolicy Bypass -Command \"Start-Process powershell -Verb RunAs -ArgumentList (''-NoProfile -ExecutionPolicy Bypass -NoExit -File \\\"'' + $env:SCRIPT + ''\\\"'')\"'",
+        ")",
+        "Set-Content \"$dir\\AppleDrivInstaller-Admin.cmd\" -Value $launcher -Encoding Ascii"
+    ],
+    "bin": "AppleDrivInstaller.ps1",
+    "shortcuts": [
+        [
+            "AppleDrivInstaller-Admin.cmd",
+            "Apple Mobile Drivers Installer"
+        ]
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/NelloKudo/Apple-Mobile-Drivers-Installer/commits?path=AppleDrivInstaller.ps1&per_page=1",
+        "regex": "\"sha\":\\s*\"(?<sha>[0-9a-f]{40})\"[\\s\\S]*?\"date\":\\s*\"(?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})",
+        "replace": "${year}.${month}.${day}"
+    },
+    "autoupdate": {
+        "url": "https://raw.githubusercontent.com/NelloKudo/Apple-Mobile-Drivers-Installer/$matchSha/AppleDrivInstaller.ps1"
+    }
+}

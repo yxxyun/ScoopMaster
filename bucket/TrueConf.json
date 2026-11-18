@@ -1,0 +1,64 @@
+{
+    "version": "8.5.5.173",
+    "description": "Video conferencing client for TrueConf Server and TrueConf Online: calls, group conferences, chats, screen sharing.",
+    "homepage": "https://trueconf.com/downloads/windows.html",
+    "license": "Proprietary",
+    "notes": [
+        "Portable: the files are unpacked from the official MSI, without running it. Compared to the MSI this skips",
+        "the Windows Firewall rules (Windows asks on the first call instead), the autostart entry and the desktop shortcut.",
+        "The trueconf:// links are registered for the current user (all users with -g) and point to Scoop's 'current' folder.",
+        "",
+        "Accounts, chats and settings live in %LOCALAPPDATA%\\TrueConf\\Client, survive updates and are kept on uninstall.",
+        "If a TrueConf Server offers to update the client, decline: it would install a second copy into Program Files.",
+        "Update with 'scoop update TrueConf' instead."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://trueconf.com/download/client/windows/trueconf_client_x64.msi?v=8.5.5.173#/TrueConf.msi",
+            "hash": "1c64a819fe6aae92bbaf949bbebb1ccd614c7a7ad39eee912a192ed0037be2b0"
+        },
+        "32bit": {
+            "url": "https://trueconf.com/download/client/windows/trueconf_client_x86.msi?v=8.5.5.173#/TrueConf.msi",
+            "hash": "388288d08e9f4d9e2e43d1c9b03bd47d4bda50947d97f30bdf2ff1cff942f598"
+        }
+    },
+    "extract_dir": "TrueConf\\Client",
+    "bin": "TrueConf.exe",
+    "shortcuts": [
+        [
+            "TrueConf.exe",
+            "TrueConf"
+        ]
+    ],
+    "post_install": [
+        "# Register trueconf:// links, as the MSI does: for the current user, or for all users on a global install.",
+        "$key = if ($global) { 'HKLM:\\Software\\Classes\\trueconf' } else { 'HKCU:\\Software\\Classes\\trueconf' }",
+        "New-Item -Path \"$key\\shell\\open\\command\" -Force | Out-Null",
+        "New-Item -Path \"$key\\DefaultIcon\" -Force | Out-Null",
+        "Set-ItemProperty -Path $key -Name '(default)' -Value 'URL:TrueConf'",
+        "Set-ItemProperty -Path $key -Name 'URL Protocol' -Value ''",
+        "Set-ItemProperty -Path \"$key\\DefaultIcon\" -Name '(default)' -Value \"`\"$dir\\TrueConf.exe`\",0\"",
+        "Set-ItemProperty -Path \"$key\\shell\\open\\command\" -Name '(default)' -Value \"`\"$dir\\TrueConf.exe`\" trueconf %1\""
+    ],
+    "pre_uninstall": [
+        "# Remove the trueconf:// registration only on uninstall, and only if it still points to this Scoop copy.",
+        "if ($cmd -ne 'uninstall') { return }",
+        "$key = if ($global) { 'HKLM:\\Software\\Classes\\trueconf' } else { 'HKCU:\\Software\\Classes\\trueconf' }",
+        "$command = (Get-ItemProperty -Path \"$key\\shell\\open\\command\" -ErrorAction SilentlyContinue).'(default)'",
+        "if ($command -like \"*\\apps\\$app\\*\") { Remove-Item -Path $key -Recurse -Force }"
+    ],
+    "checkver": {
+        "url": "https://trueconf.com/downloads/windows.html",
+        "regex": "trueconf_client_x64\\.msi\\?v=([\\d.]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://trueconf.com/download/client/windows/trueconf_client_x64.msi?v=$version#/TrueConf.msi"
+            },
+            "32bit": {
+                "url": "https://trueconf.com/download/client/windows/trueconf_client_x86.msi?v=$version#/TrueConf.msi"
+            }
+        }
+    }
+}

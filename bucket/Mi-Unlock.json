@@ -1,0 +1,51 @@
+{
+    "version": "7.6.727.43",
+    "description": "Mi Unlock (Mi Flash Unlock): Xiaomi's official tool to unlock the bootloader of Xiaomi, Redmi and POCO phones. English build.",
+    "homepage": "https://www.miui.com/unlock/",
+    "license": "Freeware",
+    "notes": [
+        "Mi Unlock only finishes what Xiaomi has allowed: on HyperOS, first apply in the Xiaomi Community app",
+        "(Me > Unlock bootloader), then bind the account on the phone (Developer options > Mi Unlock status,",
+        "over mobile data). Until both are done the tool refuses or shows a waiting time.",
+        "Unlocking erases all data on the phone.",
+        "",
+        "This is the English build (miflash_unlock_en_*.zip). Do not swap in the Chinese one",
+        "(miflash_unlock_<version>.zip without '_en'): its config/app_info points to the China region.",
+        "The bundled fastboot.exe and Xiaomi USB driver installer stay in the app folder, off the PATH.",
+        "That Xiaomi driver lists only Xiaomi and Google USB IDs: phones on MediaTek (VID_0E8D, e.g. PID_201C in",
+        "fastboot) stay 'Android' with a yellow mark in Device Manager and Mi Unlock does not see them. Install the",
+        "suggested Google-USB-Driver and bind 'Android Bootloader Interface' to that device by hand (see its notes).",
+        "config.ini and history.ini are copied to the persist folder on update and uninstall.",
+        "Decline the tool's own update offer: update with 'scoop update Mi-Unlock'."
+    ],
+    "suggest": {
+        "Fastboot driver": "Google-USB-Driver"
+    },
+    "url": "https://cdn.cnbj1.fds.api.mi-img.com/flash-tool/miflash_unlock_en_7.6.727.43.zip",
+    "hash": "6bb390bddaaff3e75a6a2b1ecafa3f49bf6e4d93747302a6870698fb26285a32",
+    "pre_install": [
+        "# Mi Unlock writes config.ini and history.ini next to its exe. They are copied in here and back out in",
+        "# pre_uninstall (which also runs on update) instead of persisted: a hardlink would break if a file is replaced.",
+        "foreach ($f in 'config.ini', 'history.ini') { if (Test-Path \"$persist_dir\\$f\") { Copy-Item \"$persist_dir\\$f\" \"$dir\\$f\" -Force } }"
+    ],
+    "pre_uninstall": [
+        "foreach ($f in 'config.ini', 'history.ini') {",
+        "    if (!(Test-Path \"$dir\\$f\")) { continue }",
+        "    New-Item -ItemType Directory -Path $persist_dir -Force | Out-Null",
+        "    Copy-Item \"$dir\\$f\" \"$persist_dir\\$f\" -Force",
+        "}"
+    ],
+    "shortcuts": [
+        [
+            "miflash_unlock.exe",
+            "Mi Unlock"
+        ]
+    ],
+    "checkver": {
+        "url": "https://www.miui.com/unlock/download.html",
+        "regex": "miflash_unlock_([\\d.]+)\\.zip"
+    },
+    "autoupdate": {
+        "url": "https://cdn.cnbj1.fds.api.mi-img.com/flash-tool/miflash_unlock_en_$version.zip"
+    }
+}

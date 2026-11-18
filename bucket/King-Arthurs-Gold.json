@@ -1,0 +1,120 @@
+{
+    "version": "2024.05.02",
+    "description": "Free-to-play 2D multiplayer build-and-fight game from Transhuman Design. Installs through Steam (app 219830) or as the standalone client from kag2d.com.",
+    "homepage": "https://kag2d.com",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://kag2d.com/en/terms/eula"
+    },
+    "notes": [
+        "Steam or standalone: if Steam is installed, 'scoop install' asks whether to install the game through Steam",
+        "(Y/Enter, or no answer within 30 seconds) or as the standalone client (N). Without Steam it installs the standalone client.",
+        "To choose without the question (e.g. in UniGetUI), run $env:GESU_KAG_SOURCE = 'steam' or 'standalone' first.",
+        "The choice is kept for 'scoop update'; a new 'scoop install' asks again.",
+        "",
+        "Through Steam: Steam's install dialog opens and Steam downloads and updates the game; 'scoop uninstall' asks Steam to remove it.",
+        "Standalone: portable, unpacked from the official MSI (no admin rights). The game updates itself from kag2d.com on start,",
+        "and keeps its settings (*.cfg) and screenshots in its own folder, so the whole folder is persisted:",
+        "$persist_dir\\KAG survives updates and 'scoop uninstall'; 'scoop uninstall --purge' deletes it.",
+        "Multiplayer needs a free kag2d.com account (Steam users get one automatically).",
+        "",
+        "The 'King-Arthurs-Gold' command and the 'King Arthur's Gold' shortcut in Scoop Apps start the chosen copy."
+    ],
+    "suggest": {
+        "Microsoft Visual C++ Redistributables (x86)": "extras/vcredist2022"
+    },
+    "url": "https://dl.kag2d.com/kag-win32-client-release.msi",
+    "hash": "8a0c2dd2714d1ae61eea4660850b42faa74f36fd35a19fc8be9e464e410d1669",
+    "extract_dir": "KAG",
+    "extract_to": "KAG",
+    "pre_install": [
+        "# The kag2d.com installer (outside Scoop) would be a second copy, and its uninstaller deletes its whole folder.",
+        "$roots = 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+        "$msiCopy = Get-ChildItem $roots -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -notlike 'Steam App *' } | Get-ItemProperty -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq \"King Arthur's Gold\" } | Select-Object -First 1",
+        "if ($msiCopy) { error \"King Arthur's Gold is already installed from kag2d.com's installer ($($msiCopy.InstallLocation)). Remove it first in Settings > Apps; its uninstaller deletes that whole folder, so copy your *.cfg files and Screenshots out of it first if you need them.\"; break }"
+    ],
+    "installer": {
+        "script": [
+            "$modeFile = \"$persist_dir\\source.txt\"",
+            "$steamExe = (Get-ItemProperty 'HKCU:\\Software\\Valve\\Steam' -ErrorAction SilentlyContinue).SteamExe",
+            "$inSteam = (Get-ItemProperty 'HKCU:\\Software\\Valve\\Steam\\Apps\\219830' -ErrorAction SilentlyContinue).Installed -eq 1",
+            "# Where the game comes from, first match wins: the variable, the earlier choice (update only), Steam's copy, no Steam, the question.",
+            "$source = $env:GESU_KAG_SOURCE",
+            "if (!$source -and ($cmd -ne 'install') -and (Test-Path $modeFile)) { $source = (Get-Content $modeFile -TotalCount 1).Trim() }",
+            "if (!$source -and $inSteam) { $source = 'steam'; info \"King Arthur's Gold is already installed in Steam; Scoop keeps track of that copy.\" }",
+            "if (!$source -and !$steamExe) { $source = 'standalone' }",
+            "if (!$source) {",
+            "  # One key press; Enter or no answer within 30 seconds means Steam. Without a console (input redirected) the default is used at once.",
+            "  $choices = @{ 'y' = 'steam'; \"`r\" = 'steam'; 'n' = 'standalone' }",
+            "  Write-Host \"Steam is installed. Install King Arthur's Gold through Steam? [Y/n] \" -ForegroundColor Yellow -NoNewline",
+            "  $deadline = (Get-Date).AddSeconds(30)",
+            "  try {",
+            "    while (!$source -and ((Get-Date) -lt $deadline)) {",
+            "      if (![Console]::KeyAvailable) { Start-Sleep -Milliseconds 200; continue }",
+            "      $source = $choices[\"$([Console]::ReadKey($true).KeyChar)\".ToLowerInvariant()]",
+            "    }",
+            "  } catch { }",
+            "  if (!$source) { $source = 'steam' }",
+            "  Write-Host $source",
+            "}",
+            "if ($source -notin 'steam', 'standalone') { error \"GESU_KAG_SOURCE must be 'steam' or 'standalone', not '$source'.\"; break }",
+            "if (($source -eq 'steam') -and !$steamExe) { error 'Steam is not installed. Install it first (scoop install extras/steam), sign in, then try again; or install the standalone client.'; break }",
+            "New-Item -ItemType Directory -Path $persist_dir -Force | Out-Null",
+            "Set-Content -Path $modeFile -Value $source -Encoding Ascii",
+            "Copy-Item \"$dir\\KAG\\KAG.ico\" \"$dir\\KAG.ico\"",
+            "# The command behind 'bin' and the shortcut, written for the chosen copy.",
+            "$launchers = @{",
+            "  'steam' = @(':: Starts King Arthur''s Gold through Steam (app 219830).', 'START \"\" \"steam://rungameid/219830\"')",
+            "  'standalone' = @(':: Starts the standalone King Arthur''s Gold client; it updates itself from kag2d.com first.', 'START \"\" /D \"%~dp0KAG\" \"%~dp0KAG\\KAG.exe\" %*')",
+            "}",
+            "$lines = @('@ECHO OFF') + $launchers[$source][0] + ':: Written by the King-Arthurs-Gold package of the gesu Scoop bucket.' + $launchers[$source][1] + ''",
+            "[IO.File]::WriteAllText(\"$dir\\King-Arthurs-Gold.cmd\", ($lines -join \"`r`n\") + \"`r`n\")",
+            "# An earlier standalone copy in persist already has the newest files (it updates itself): keep it, drop the unpacked one.",
+            "if (($source -eq 'standalone') -and (Test-Path \"$persist_dir\\KAG\\KAG.exe\")) { Remove-Item \"$dir\\KAG\" -Recurse -Force }",
+            "if ($source -eq 'standalone') { return }",
+            "# Steam keeps its own copy: drop the unpacked client ('persist' then links an empty KAG folder).",
+            "Remove-Item \"$dir\\KAG\" -Recurse -Force",
+            "if ($inSteam) { return }",
+            "Start-Process 'steam://install/219830'",
+            "Write-Host \"Steam opened its install dialog for King Arthur's Gold: choose a library there. The download continues in Steam.\" -ForegroundColor Yellow"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if ($cmd -ne 'uninstall') { return }",
+            "$modeFile = \"$persist_dir\\source.txt\"",
+            "$source = if (Test-Path $modeFile) { (Get-Content $modeFile -TotalCount 1).Trim() } else { '' }",
+            "if ($source -ne 'steam') { info \"The standalone game stays in $persist_dir\\KAG; 'scoop uninstall --purge' deletes it.\"; return }",
+            "Start-Process 'steam://uninstall/219830'",
+            "Write-Host \"Steam asks you to confirm removing King Arthur's Gold; the game files are deleted only after you confirm.\" -ForegroundColor Yellow"
+        ]
+    },
+    "bin": "King-Arthurs-Gold.cmd",
+    "shortcuts": [
+        [
+            "King-Arthurs-Gold.cmd",
+            "King Arthur's Gold",
+            "",
+            "KAG.ico"
+        ]
+    ],
+    "persist": "KAG",
+    "checkver": {
+        "script": [
+            "# The download URL has no version, and the game updates itself; use the date THD published the MSI.",
+            "# kag2d.com sometimes drops a connection, so retry with a fresh one each time.",
+            "$uri = 'https://dl.kag2d.com/kag-win32-client-release.msi'",
+            "$response = $null",
+            "foreach ($attempt in 1..5) {",
+            "  try { $response = Invoke-WebRequest -Method Head -Uri $uri -UseBasicParsing -DisableKeepAlive -TimeoutSec 30; break }",
+            "  catch { if ($attempt -eq 5) { throw }; Start-Sleep -Seconds 2 }",
+            "}",
+            "$published = [DateTimeOffset]::ParseExact(\"$($response.Headers['Last-Modified'])\", 'r', [Globalization.CultureInfo]::InvariantCulture)",
+            "$published.UtcDateTime.ToString('yyyy.MM.dd', [Globalization.CultureInfo]::InvariantCulture)"
+        ],
+        "regex": "([\\d.]+)"
+    },
+    "autoupdate": {
+        "url": "https://dl.kag2d.com/kag-win32-client-release.msi"
+    }
+}

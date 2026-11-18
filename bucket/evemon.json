@@ -1,12 +1,28 @@
 {
-    "version": "4.2.2",
+    "version": "5.0.1.20261117.2123",
+    "description": "Character monitor and skill planner for EVE Online: skills, training queues, assets, market orders, industry jobs, mail and notifications for several characters.",
     "homepage": "https://github.com/mgoeppner/evemon",
-    "license": "GPL-2.0-only",
-    "description": "Lightweight, easy-to-use standalone Windows application designed to assist you in keeping track of your EVE Online character progression",
-    "url": "https://github.com/mgoeppner/evemon/releases/download/4.2.2/EVEMon-binaries-4.2.2.zip",
-    "hash": "35fe49eab245280dc86db64fa2f08d43e44988b948a611d6c87bd484ead321d1",
-    "extract_dir": "EVEMon",
-    "bin": "EVEMon.exe",
+    "license": {
+        "identifier": "GPL-2.0-only",
+        "url": "https://github.com/mgoeppner/evemon/blob/HEAD/LICENSE"
+    },
+    "notes": [
+        "Settings, characters and ESI logins live in %APPDATA%\\EVEMon, outside the Scoop folder:",
+        "they survive updates and are kept on uninstall.",
+        "",
+        "The last two parts of the version are the upload time (UTC) of the installer: upstream rebuilds",
+        "and re-uploads EVEMon-<version>.msi under the same version after its weekly game data updates.",
+        "EVEMon downloads game data updates by itself, so you do not need to update for those.",
+        "",
+        "EVEMon 5.0 ships its own .NET 8 runtime. .NET 8 reached end of support on 10 November 2026;",
+        "this build gets no more .NET security fixes until upstream moves to a newer .NET.",
+        "",
+        "Leave the IGB server (Options > General) off, or at least not public: in public mode it listens",
+        "on all interfaces and shows your characters' data to anyone on the network."
+    ],
+    "url": "https://github.com/mgoeppner/evemon/releases/download/v5.0.1/EVEMon-5.0.1.msi",
+    "hash": "6781382c6426e63c982a8cf4612bec17821b7fcd2e6874686b52e1d55f2a2c50",
+    "extract_dir": "PFiles64\\EVEMon",
     "shortcuts": [
         [
             "EVEMon.exe",
@@ -14,10 +30,20 @@
         ]
     ],
     "checkver": {
-        "github": "https://github.com/mgoeppner/evemon",
-        "regex": "tag/([\\w.-]+)"
+        "script": [
+            "# The version on main is what the next installer will carry; the upload time of that installer",
+            "# tells re-uploads under the same version apart.",
+            "$assembly = (Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/mgoeppner/evemon/main/SharedAssemblyInfo.cs').Content",
+            "if ($assembly -notmatch 'AssemblyInformationalVersion\\(\"([\\d.]+)\"\\)') { return }",
+            "$headers = @{}",
+            "$token = Get-GitHubToken",
+            "if ($token) { $headers['Authorization'] = \"token $token\" }",
+            "(Invoke-WebRequest -UseBasicParsing -Headers $headers \"https://api.github.com/repos/mgoeppner/evemon/releases/tags/v$($Matches[1])\").Content"
+        ],
+        "regex": "\"name\":\\s*\"EVEMon-(?<base>[\\d.]+)\\.msi\"[\\s\\S]*?\"updated_at\":\\s*\"(?<y>\\d{4})-(?<m>\\d\\d)-(?<d>\\d\\d)T(?<hh>\\d\\d):(?<mm>\\d\\d)",
+        "replace": "${base}.${y}${m}${d}.${hh}${mm}"
     },
     "autoupdate": {
-        "url": "https://github.com/mgoeppner/evemon/releases/download/$version/EVEMon-binaries-$version.zip"
+        "url": "https://github.com/mgoeppner/evemon/releases/download/v$matchBase/EVEMon-$matchBase.msi"
     }
 }

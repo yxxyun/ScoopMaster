@@ -1,0 +1,49 @@
+{
+    "version": "0.2.0",
+    "description": "Xray and sing-box desktop client with EasyTier and Tailscale mesh",
+    "homepage": "https://github.com/zuoxinyu/xrose",
+    "license": "GPL-3.0-or-later",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/zuoxinyu/xrose/releases/download/v0.2.0/Xrose-0.2.0-windows-amd64-full.zip",
+            "hash": "8a705b775012c66d9eb1b0cb3866ba773a973f8ab2ba87b0851046de964f3cae"
+        },
+        "arm64": {
+            "url": "https://github.com/zuoxinyu/xrose/releases/download/v0.2.0/Xrose-0.2.0-windows-arm64-full.zip",
+            "hash": "f1d6117e831b815b19c3f5b871b015a6b084dde906dffe7669daa3d628e9a8b7"
+        }
+    },
+    "pre_install": [
+        "New-Item -ItemType Directory -Force -Path $dir | Out-Null",
+        "@('@echo off', 'setlocal', 'if not defined XROSE_HOME set \"XROSE_HOME=%~dp0XroseData\"', '\"%~dp0resources\\xrose-seed\\xrose-cli.exe\" %*') | Set-Content -Path \"$dir\\xrose-cli.cmd\" -Encoding Ascii"
+    ],
+    "bin": [
+        "Xrose.exe",
+        "xrose-cli.cmd"
+    ],
+    "shortcuts": [
+        [
+            "Xrose.exe",
+            "Xrose"
+        ]
+    ],
+    "persist": "XroseData",
+    "post_install": [
+        "$proc = Start-Process -FilePath \"$dir\\Xrose.exe\" -ArgumentList '--prepare-resources' -Wait -PassThru",
+        "if ($proc.ExitCode -ne 0) { Write-Warning \"Xrose resource preparation exited with code $($proc.ExitCode)\" }"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/zuoxinyu/xrose/releases/download/v$version/Xrose-$version-windows-amd64-full.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/zuoxinyu/xrose/releases/download/v$version/Xrose-$version-windows-arm64-full.zip"
+            }
+        },
+        "hash": {
+            "url": "$baseurl/SHA256SUMS"
+        }
+    }
+}

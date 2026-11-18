@@ -1,0 +1,48 @@
+{
+    "version": "steam",
+    "description": "Free-to-play massively multiplayer first-person shooter. This package installs and removes it through Steam (app 218230); Steam keeps it updated.",
+    "homepage": "https://store.steampowered.com/app/218230/PlanetSide_2/",
+    "license": "Freeware",
+    "notes": [
+        "Steam does the work: 'scoop install' opens Steam's install dialog (pick the library there) and the download",
+        "continues in Steam after Scoop finishes; 'scoop uninstall' asks Steam to remove the game, and Steam asks you to confirm.",
+        "Steam updates the game itself, so this package has no versions to update.",
+        "The 'PlanetSide-2' command and the 'PlanetSide 2' shortcut in Scoop Apps start the game through Steam (steam://rungameid/218230).",
+        "",
+        "If PlanetSide 2 is already in your Steam library and installed, Scoop just starts keeping track of it.",
+        "Stops if the standalone copy (Daybreak LaunchPad, package PlanetSide-2-LaunchPad) is installed: one copy of the game is enough."
+    ],
+    "url": "https://raw.githubusercontent.com/Gesugao-san/scoop-bucket/2400428e869c8b3573716a95cb57fe067eb565a5/scripts/planetside-2/PlanetSide-2.cmd",
+    "hash": "514bf6124ba776525355cf39a2d530614c107eed1fff8149d4d29c5888f9b0ff",
+    "pre_install": [
+        "$steamExe = (Get-ItemProperty 'HKCU:\\Software\\Valve\\Steam' -ErrorAction SilentlyContinue).SteamExe",
+        "if (!$steamExe) { error 'Steam is not installed. Install it first (scoop install extras/steam, or from store.steampowered.com), sign in, then try again.'; break }",
+        "$roots = 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+        "$standalone = Get-ChildItem $roots -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -like 'DGC-PlanetSide 2*' -or $_.PSChildName -eq 'PlanetSide 2' } | Get-ItemProperty -ErrorAction SilentlyContinue | Where-Object { \"$($_.InstallLocation)$($_.UninstallString)\" -notlike '*\\steamapps\\*' } | Select-Object -First 1",
+        "if ($standalone) { error \"The standalone PlanetSide 2 ($($standalone.DisplayName)) is installed. Remove it first (scoop uninstall PlanetSide-2-LaunchPad, or Settings > Apps), so there is only one copy of the game.\"; break }"
+    ],
+    "installer": {
+        "script": [
+            "$roots = 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+            "$steamApp = Get-ItemProperty 'HKCU:\\Software\\Valve\\Steam\\Apps\\218230' -ErrorAction SilentlyContinue",
+            "$inSteam = ($steamApp.Installed -eq 1) -or [bool](Get-ChildItem $roots -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'Steam App 218230' })",
+            "if ($inSteam) { info 'PlanetSide 2 is already installed in Steam; Scoop keeps track of it from now on.'; return }",
+            "Start-Process 'steam://install/218230'",
+            "Write-Host 'Steam opened its install dialog for PlanetSide 2: choose a library there. The download continues in Steam.' -ForegroundColor Yellow"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if ($cmd -ne 'uninstall') { return }",
+            "Start-Process 'steam://uninstall/218230'",
+            "Write-Host 'Steam asks you to confirm removing PlanetSide 2; the game files are deleted only after you confirm.' -ForegroundColor Yellow"
+        ]
+    },
+    "bin": "PlanetSide-2.cmd",
+    "shortcuts": [
+        [
+            "PlanetSide-2.cmd",
+            "PlanetSide 2"
+        ]
+    ]
+}

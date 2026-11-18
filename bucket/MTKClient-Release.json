@@ -1,0 +1,120 @@
+{
+    "version": "2.1.4.1",
+    "description": "MTKClient (latest release, not main): MediaTek reverse engineering and flashing tool. Reads and writes flash over BROM, preloader and DA, unlocks seccfg (bootloader), dumps keys and RPMB.",
+    "homepage": "https://github.com/bkerler/mtkclient",
+    "license": {
+        "identifier": "GPL-3.0-only",
+        "url": "https://github.com/bkerler/mtkclient/blob/HEAD/LICENSE"
+    },
+    "notes": [
+        "Latest upstream release, not main: v2.1.4.1 from 18 March 2026. gesu/MTKClient tracks main and has fixes",
+        "this release lacks, among them a safer 'da seccfg unlock' (this release's unlock can brick some devices).",
+        "Only one of MTKClient and MTKClient-Release can be installed: both add the same commands (mtk, mtk_gui, ...). Installing one while the other is installed stops.",
+        "",
+        "Install needs internet access: uv downloads a private Python 3.14 (x64, also on ARM64, because the bundled",
+        "libusb is x64 only) into the app folder, and the packages pinned in upstream's uv.lock from PyPI.",
+        "",
+        "USB driver: Windows binds MediaTek's BROM/preloader port (VID_0E8D, PID_0003 or PID_2000) to a serial driver,",
+        "which libusb cannot open. Either bind WinUSB to it with Zadig (suggested gesu/Zadig), or install UsbDk",
+        "(suggested gesu/UsbDk): mtkclient falls back to it on 'Access denied' and keeps the serial driver.",
+        "",
+        "'mtk fs' (mount partitions) needs the WinFsp driver: see the suggested nonportable/winfsp-np.",
+        "",
+        "mtkclient writes 'logs' (log.txt and the per-device hwparam keys) into the current folder. The MTKClient shortcut",
+        "in Scoop Apps starts the GUI where that folder is persisted; 'mtk' from a console writes into the console's folder.",
+        "",
+        "Writing, erasing and 'da seccfg unlock' change the device and can brick it; unlocking also wipes userdata.",
+        "Back up first (mtk rl), and use --critical only if you know your device needs it."
+    ],
+    "depends": "uv",
+    "suggest": {
+        "WinFsp": "nonportable/winfsp-np",
+        "USB access": [
+            "gesu/UsbDk",
+            "gesu/Zadig"
+        ]
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/bkerler/mtkclient/archive/refs/tags/v2.1.4.1.zip",
+            "hash": "2971f4074e99667af72d90f4ae53633fc1aa93179bd185e387689449f237cd7a"
+        },
+        "arm64": {
+            "url": "https://github.com/bkerler/mtkclient/archive/refs/tags/v2.1.4.1.zip",
+            "hash": "2971f4074e99667af72d90f4ae53633fc1aa93179bd185e387689449f237cd7a"
+        }
+    },
+    "extract_dir": "mtkclient-2.1.4.1",
+    "pre_install": [
+        "# MTKClient adds the same commands (mtk, mtk_gui, ...): only one of the two may be installed.",
+        "if ($cmd -eq 'install' -and (installed 'MTKClient')) { error \"$app conflicts with MTKClient, which is installed. Run 'scoop uninstall MTKClient' first.\"; break }"
+    ],
+    "installer": {
+        "script": [
+            "# There is no Windows build: uv installs the source from $dir with the dependency versions pinned in",
+            "# upstream's uv.lock into a virtual environment in the app folder, on a private Python kept there too, so",
+            "# updates of Scoop's own python cannot break it. The Python is x64 also on ARM64 (runs emulated), because",
+            "# the libusb-1.0.dll bundled with mtkclient is x64 only and PySide6 has no 32-bit build.",
+            "$uv = \"$(appdir uv $global)\\current\\uv.exe\"",
+            "$vars = @{",
+            "    UV_PYTHON_INSTALL_DIR      = \"$dir\\python\"",
+            "    UV_PROJECT_ENVIRONMENT     = \"$dir\\venv\"",
+            "    UV_PYTHON_INSTALL_BIN      = '0'",
+            "    UV_PYTHON_INSTALL_REGISTRY = '0'",
+            "}",
+            "foreach ($v in $vars.Keys) { Set-Item \"env:$v\" $vars[$v] }",
+            "try {",
+            "    # --no-editable: the console scripts import mtkclient.mtk, which exists only in the built wheel.",
+            "    & $uv sync --project \"$dir\" --frozen --no-dev --no-editable --managed-python --python cpython-3.14-windows-x86_64-none",
+            "    if ($LASTEXITCODE) { throw \"uv sync failed with exit code $LASTEXITCODE\" }",
+            "} finally {",
+            "    foreach ($v in $vars.Keys) { Remove-Item \"env:$v\" -ErrorAction SilentlyContinue }",
+            "}",
+            "New-Item -ItemType Directory -Path \"$dir\\venv\\Scripts\\logs\" -Force | Out-Null"
+        ]
+    },
+    "bin": [
+        "venv\\Scripts\\mtk.exe",
+        "venv\\Scripts\\mtk_gui.exe",
+        [
+            "venv\\Scripts\\stage2.exe",
+            "mtk_stage2"
+        ],
+        [
+            "venv\\Scripts\\da_parser.exe",
+            "mtk_da_parser"
+        ],
+        [
+            "venv\\Scripts\\brom_to_offs.exe",
+            "mtk_brom_to_offs"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "venv\\Scripts\\mtk_gui.exe",
+            "MTKClient (release)",
+            "",
+            "mtkclient\\icon.ico"
+        ]
+    ],
+    "persist": [
+        [
+            "venv\\Scripts\\logs",
+            "logs"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/bkerler/mtkclient"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/bkerler/mtkclient/archive/refs/tags/v$version.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/bkerler/mtkclient/archive/refs/tags/v$version.zip"
+            }
+        },
+        "extract_dir": "mtkclient-$version"
+    }
+}
