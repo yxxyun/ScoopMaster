@@ -1,28 +1,78 @@
 {
     "version": "5.3.0",
-    "description": "Windows software for sharing locally connected USB devices to other machines, including Hyper-V guests and WSL 2. ",
+    "description": "Share locally connected USB devices with other machines, including WSL 2.",
     "homepage": "https://github.com/dorssel/usbipd-win",
     "license": "GPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": " https://github.com/dorssel/usbipd-win/releases/download/v5.3.0/usbipd-win_5.3.0_x64.msi",
+            "url": "https://github.com/dorssel/usbipd-win/releases/download/v5.3.0/usbipd-win_5.3.0_x64.msi#/usbipd-win.msi.bin",
             "hash": "1c984914aec944de19b64eff232421439629699f8138e3ddc29301175bc6d938"
         },
         "arm64": {
-            "url": "https://github.com/dorssel/usbipd-win/releases/download/v5.3.0/usbipd-win_5.3.0_arm64.msi",
+            "url": "https://github.com/dorssel/usbipd-win/releases/download/v5.3.0/usbipd-win_5.3.0_arm64.msi#/usbipd-win.msi.bin",
             "hash": "efd7c4eb99b144c1623e616064a7b262f83d0994b0d7fde16c95d4b07528b24d"
         }
     },
-    "extract_dir": "PFiles64\\usbipd-win",
-    "bin": "usbipd.exe",
-    "checkver": "github",
+    "pre_install": [
+        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+        "if (Test-Path 'HKLM:\\SOFTWARE\\usbipd-win') { throw 'An existing system installation was detected. Uninstall it before installing with Scoop.' }"
+    ],
+    "installer": {
+        "script": [
+            "$msi = Join-Path $dir 'usbipd-win.msi.bin'",
+            "$p = Start-Process msiexec.exe -ArgumentList @('/i', ('\"' + $msi + '\"'), '/qn', '/norestart', ('APPLICATIONFOLDER=\"' + $dir + '\"')) -Wait -PassThru",
+            "if ($p.ExitCode -notin @(0, 3010)) { throw \"usbipd-win MSI installation failed with exit code $($p.ExitCode).\" }",
+            "if ($p.ExitCode -eq 3010) { warn 'A restart is required to complete installation.' }",
+            "foreach ($name in @('Devices', 'Policy')) {",
+            "    $backup = Join-Path $persist_dir \"$name.reg\"",
+            "    if (Test-Path $backup) {",
+            "        & reg.exe import $backup /reg:64 | Out-Null",
+            "        if ($LASTEXITCODE -ne 0) { throw \"Failed to restore $backup; the backup was retained.\" }",
+            "        Remove-Item $backup -Force",
+            "    }",
+            "}"
+        ]
+    },
+    "pre_uninstall": [
+        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }"
+    ],
+    "uninstaller": {
+        "script": [
+            "$service = Get-Service usbipd -ErrorAction SilentlyContinue",
+            "if ($service -and $service.Status -ne 'Stopped') { Stop-Service usbipd -Force -ErrorAction Stop; $service.WaitForStatus('Stopped', [TimeSpan]::FromSeconds(30)) }",
+            "New-Item -ItemType Directory -Path $persist_dir -Force | Out-Null",
+            "foreach ($name in @('Devices', 'Policy')) {",
+            "    $key = \"HKLM\\SOFTWARE\\usbipd-win\\$name\"",
+            "    $backup = Join-Path $persist_dir \"$name.reg\"",
+            "    if (!(Test-Path \"Registry::$key\")) { throw \"Registry key $key is missing; refusing to overwrite the backup.\" }",
+            "    if ($name -eq 'Devices' -and (Get-ChildItem \"Registry::$key\" | Where-Object { Test-Path (Join-Path $_.PSPath 'Attached') })) { throw 'A device is still attached; detach all devices before uninstalling.' }",
+            "    $temp = Join-Path $persist_dir \"$name.pending.reg\"",
+            "    & reg.exe export $key $temp /y | Out-Null",
+            "    if ($LASTEXITCODE -ne 0) { throw \"Failed to back up $key; uninstall aborted.\" }",
+            "}",
+            "foreach ($name in @('Devices', 'Policy')) { Move-Item (Join-Path $persist_dir \"$name.pending.reg\") (Join-Path $persist_dir \"$name.reg\") -Force }",
+            "$msi = Join-Path $dir 'usbipd-win.msi.bin'",
+            "$p = Start-Process msiexec.exe -ArgumentList @('/x', ('\"' + $msi + '\"'), '/qn', '/norestart') -Wait -PassThru",
+            "if ($p.ExitCode -notin @(0, 3010)) { throw \"usbipd-win MSI uninstall failed with exit code $($p.ExitCode).\" }",
+            "if ($p.ExitCode -eq 3010) { warn 'A restart is required to complete uninstallation.' }"
+        ]
+    },
+    "notes": [
+        "Install, update and uninstall from an elevated PowerShell session. The MSI installs system-wide drivers, a service and a firewall rule.",
+        "The MSI manages PATH. Open a new terminal after installation.",
+        "Device bindings and policy live in HKLM, not in configuration files. Scoop backs them up to its persist directory during uninstall and restores them on reinstall; active USB connections are not preserved.",
+        "Uninstalling restores the original drivers of force-bound devices. These devices may need to be force-bound again after reinstalling."
+    ],
+    "checkver": {
+        "github": "https://github.com/dorssel/usbipd-win"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": " https://github.com/dorssel/usbipd-win/releases/download/v$version/usbipd-win_$version_x64.msi"
+                "url": "https://github.com/dorssel/usbipd-win/releases/download/v$version/usbipd-win_$version_x64.msi#/usbipd-win.msi.bin"
             },
             "arm64": {
-                "url": "https://github.com/dorssel/usbipd-win/releases/download/v$version/usbipd-win_$version_arm64.msi"
+                "url": "https://github.com/dorssel/usbipd-win/releases/download/v$version/usbipd-win_$version_arm64.msi#/usbipd-win.msi.bin"
             }
         }
     }
