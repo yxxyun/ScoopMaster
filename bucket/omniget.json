@@ -1,66 +1,29 @@
 {
-    "version": "0.16.6",
-    "description": "Universal downloader and media player: video, audio, images, courses and torrents from 1,800+ sites, with 36 course platforms and 158 offline study and media tools.",
-    "homepage": "https://omniget.nav.bd/",
-    "license": "GPL-3.0-only",
+    "version": "1.0.1",
+    "description": "Fast, modern media downloader with GUI and CLI support",
+    "homepage": "https://github.com/tonhowtf/omniget",
+    "license": "GPL-3.0-or-later",
     "architecture": {
         "64bit": {
-            "url": [
-                "https://github.com/OpenSelena/omniget/releases/download/v0.16.6/omniget_0.16.6_x64-portable.exe",
-                "https://github.com/OpenSelena/omniget/releases/download/v0.16.6/omniget-chrome-extension-v0.16.6.zip"
-            ],
-            "hash": [
-                "5db562c2532a19161424444fdc2e2822eff4fe8f9f9f087135cf08dd00fd2241",
-                "ea0f35dba60cfb61b633726d790dfc8cc14c0c1639e1b940faa7c82d2e64f5e4"
-            ]
+            "url": "https://github.com/tonhowtf/omniget/releases/download/v1.0.1/omniget_1.0.1_x64-portable.exe#/omniget.exe",
+            "hash": "be4dfb9c37df93d84dc92d846531880a6777e6c8b0ec0a883304b097f8e56703"
         }
     },
-    "extract_to": "extension",
-    "pre_install": [
-        "$ErrorActionPreference = 'Stop'",
-        "# 上游便携版文件名带版本号，重命名后 bin/快捷方式不随版本变化（url 是数组，$fname 也是数组，所以按通配符取）",
-        "$exe = Get-ChildItem \"$dir\\omniget_*_x64-portable.exe\" | Select-Object -First 1",
-        "if (-not $exe) { abort 'omniget_*_x64-portable.exe not found in $dir' }",
-        "Move-Item -Force $exe.FullName \"$dir\\OmniGet.exe\""
-    ],
-    "bin": "OmniGet.exe",
+    "bin": "omniget.exe",
     "shortcuts": [
         [
-            "OmniGet.exe",
+            "omniget.exe",
             "OmniGet"
         ]
     ],
-    "persist": "data",
-    "post_install": [
-        "$ErrorActionPreference = 'Stop'",
-        "# 便携模式标记：程序据此把数据目录设为 $dir\\data（junction 到 persist\\omniget\\data），此处幂等重跑",
-        "if (-not (Test-Path \"$dir\\portable.txt\")) {",
-        "    New-Item -ItemType File -Path \"$dir\\portable.txt\" -Force | Out-Null",
-        "    info '[Portable Mode]: Created portable.txt, app data lives in persist\\omniget\\data'",
-        "}"
-    ],
     "checkver": {
-        "github": "https://github.com/OpenSelena/omniget"
+        "github": "https://github.com/tonhowtf/omniget"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": [
-                    "https://github.com/OpenSelena/omniget/releases/download/v$version/omniget_$version_x64-portable.exe",
-                    "https://github.com/OpenSelena/omniget/releases/download/v$version/omniget-chrome-extension-v$version.zip"
-                ]
+                "url": "https://github.com/tonhowtf/omniget/releases/download/v$version/omniget_$version_x64-portable.exe#/omniget.exe"
             }
         }
-    },
-    "notes": [
-        "浏览器扩展来自 release 里的 omniget-chrome-extension-v<版本>.zip，本清单已解到 <安装目录>\\extension（在 current 链接下，升级后路径不变，且随应用版本一起更新）；官方 Windows 便携 exe 本身不含扩展文件（上游 #310），所以设置页「浏览器扩展」里的「导出扩展」按钮在这个版本不可用，Chrome 一行会显示 Unavailable，不必再手动去 Releases 下载解压。",
-        "扩展安装：Chrome / Edge / Brave 打开 chrome://extensions → 右上角开启「开发者模式」→「加载已解压的扩展程序」→ 选 apps\\omniget\\current\\extension；Firefox 打开 about:debugging#/runtime/this-firefox →「临时载入附加组件」→ 选同一目录下的 manifest.json（上游尚未发布到 AMO，重启浏览器后需要重新载入）。",
-        "扩展配对：扩展默认连 http://127.0.0.1:47720（端口在 47720-47729 间自动扫描）；在应用里 设置 → 浏览器扩展 → 点「配对」会开一个约 120 秒的一次性窗口，扩展在该窗口内轮询 /v1/pair 拿到令牌即完成配对。",
-        "便携模式：安装时由 post_install 在安装目录写入 portable.txt，程序据此把数据目录设为 <安装目录>\\data，并把 WebView2 的用户数据目录指到 data\\webview；persist 再把 data 接到 persist\\omniget\\data（junction）。设置、SQLite 历史、插件、Cookie、以及程序自动下载的 yt-dlp/FFmpeg/gallery-dl（data\\tools、data\\bin）都在其中，升级与卸载（不带 -p）都不会丢。",
-        "三种入口（开始菜单快捷方式、OmniGet shim、直接运行 apps\\omniget\\current\\OmniGet.exe）读同一份数据；便携模式下不会在 %APPDATA% 或 %LOCALAPPDATA% 生成 com.openselena.omniget 数据目录，也不写浏览器的 native messaging 注册（旧版遗留的会被程序自动清理）。",
-        "应用内更新会在 Scoop 之外装出第二份副本：设置页的检查更新下载的是官方 NSIS 安装包（latest.json 的 windows 条目指向 OmniGet_<版本>_x64-setup.exe），它会按自己的逻辑安装到用户目录。请始终用 scoop update omniget 升级。",
-        "便携模式下程序禁用「开机自启」（代码直接返回，不写 HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run）；首次运行会把 omniget:// 协议处理程序注册到当前用户，路径取实际启动所用的 exe——从快捷方式或 shim 启动时即 current 链接，升级后仍有效。",
-        "首次以便携模式启动时，若 data\\settings.json 不存在，会从 %APPDATA%\\com.openselena.omniget\\settings.json 复制一份设置过来（仅设置，不含历史数据库），便于从旧的非 Scoop 安装迁移偏好。",
-        "下载目录默认是系统下载文件夹（可在设置中改），不与 Scoop 安装目录相关；程序依赖 WebView2 运行时（Windows 11 与较新的 Windows 10 自带，缺失时应用无法启动）。"
-    ]
+    }
 }

@@ -1,66 +1,83 @@
 {
-    "version": "1.20.4-5015-g9416bbcab0d7",
-    "description": "Sony PlayStation Portable (PSP) emulator",
+    "version": "1.20.4-5015",
+    "description": "Development builds of a PlayStation Portable emulator.",
     "homepage": "https://www.ppsspp.org",
-    "license": "GPL-2.0-or-later",
+    "license": "GPL-2.0-only",
+    "persist": "memstick",
     "architecture": {
         "64bit": {
             "url": "https://builds.ppsspp.org/builds/v1.20.4-5015-g9416bbcab0d7/ppsspp_win_v1.20.4-5015-g9416bbcab0d7.zip",
             "hash": "645636d7dda136969cce5b8eebf9328ecde78fad53147f1841b504756fae1ebc",
+            "bin": [
+                [
+                    "PPSSPPWindows64.exe",
+                    "ppsspp-dev"
+                ]
+            ],
             "shortcuts": [
                 [
                     "PPSSPPWindows64.exe",
-                    "Sony PlayStation Portable [psp][ppsspp] (dev)"
+                    "PPSSPP-DEV"
                 ]
             ]
         },
         "32bit": {
             "url": "https://builds.ppsspp.org/builds/v1.20.4-5015-g9416bbcab0d7/ppsspp_win_v1.20.4-5015-g9416bbcab0d7.zip",
             "hash": "645636d7dda136969cce5b8eebf9328ecde78fad53147f1841b504756fae1ebc",
+            "bin": [
+                [
+                    "PPSSPPWindows.exe",
+                    "ppsspp-dev"
+                ]
+            ],
             "shortcuts": [
                 [
                     "PPSSPPWindows.exe",
-                    "Sony PlayStation Portable [psp][ppsspp] (dev)"
+                    "PPSSPP-DEV"
                 ]
             ]
         },
         "arm64": {
             "url": "https://builds.ppsspp.org/builds/v1.20.4-5015-g9416bbcab0d7/PPSSPPWindowsARM64_v1.20.4-5015-g9416bbcab0d7.zip",
             "hash": "77c251ae967355c8f794ffddb03e58273959a7dc62a2dc5b1595063a70fe4a47",
+            "bin": [
+                [
+                    "PPSSPPWindowsARM64.exe",
+                    "ppsspp-dev"
+                ]
+            ],
             "shortcuts": [
                 [
                     "PPSSPPWindowsARM64.exe",
-                    "Sony PlayStation Portable [psp][ppsspp] (dev)"
+                    "PPSSPP-DEV"
                 ]
             ]
         }
     },
-    "pre_install": [
-        "if (!(Test-Path \"$persist_dir\")) {",
-        "   New-item \"$persist_dir\" -ItemType Directory | Out-Null",
-        "   New-item \"$persist_dir\\memstick\" -ItemType Directory | Out-Null",
-        "}"
-    ],
-    "persist": [
-        "memstick",
-        "assets",
-        "demos"
-    ],
     "checkver": {
-        "url": "https://builds.ppsspp.org/meta/history.json",
-        "regex": "ppsspp_win_v(?<version>[\\d.]+)-(?<build>[\\d]+)-g(?<commit>[\\da-fA-F]+)\\.zip",
-        "replace": "${version}-${build}-g${commit}"
+        "url": "https://builds.ppsspp.org/meta/history-20.json",
+        "regex": "^v(?<version>\\d+(?:\\.\\d+)+-\\d+)-(?<build>g[0-9a-f]+)$",
+        "script": [
+            "if ($page -notmatch '^\\s*\\[') { return }",
+            "try { $builds = ConvertFrom-Json -InputObject $page -ErrorAction Stop } catch { return }",
+            "foreach ($entry in $builds) {",
+            "    if ($entry.description -cnotmatch '^v\\d+(?:\\.\\d+)+-\\d+-g[0-9a-f]+$') { continue }",
+            "    $tag = $entry.description",
+            "    if ($entry.builds.Windows -ccontains \"ppsspp_win_$tag.zip\" -and",
+            "        $entry.builds.WindowsARM64 -ccontains \"PPSSPPWindowsARM64_$tag.zip\") { return $tag }",
+            "}"
+        ]
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://builds.ppsspp.org/builds/v$matchVersion-$matchBuild-g$matchCommit/ppsspp_win_v$matchVersion-$matchBuild-g$matchCommit.zip"
+                "url": "https://builds.ppsspp.org/builds/v$version-$matchBuild/ppsspp_win_v$version-$matchBuild.zip"
             },
             "32bit": {
-                "url": "https://builds.ppsspp.org/builds/v$matchVersion-$matchBuild-g$matchCommit/ppsspp_win_v$matchVersion-$matchBuild-g$matchCommit.zip"
+                "url": "https://builds.ppsspp.org/builds/v$version-$matchBuild/ppsspp_win_v$version-$matchBuild.zip"
             },
             "arm64": {
-                "url": "https://builds.ppsspp.org/builds/v$matchVersion-$matchBuild-g$matchCommit/PPSSPPWindowsARM64_v$matchVersion-$matchBuild-g$matchCommit.zip"
+                "url": "https://builds.ppsspp.org/builds/v$version-$matchBuild/PPSSPPWindowsARM64_v$version-$matchBuild.zip"
             }
         }
     }

@@ -1,0 +1,35 @@
+{
+    "version": "0.1.0",
+    "description": "Organizes files in the Downloads folder with dry-run previews, duplicate detection, undo history, and optional automatic sorting.",
+    "homepage": "https://github.com/ahmeto55/DropTidy",
+    "license": "Unknown",
+    "url": "https://github.com/ahmeto55/DropTidy/releases/download/v0.1.0/DropTidy_0.1.0_x64_en-US.msi",
+    "hash": "04bd817dd1cf9bceca450db006b2662d0c22eddca5de4474ca80a4e032cb1fda",
+    "persist": "data",
+    "shortcuts": [
+        [
+            "droptidy.exe",
+            "DropTidy"
+        ]
+    ],
+    "post_install": "$appDataPath = Join-Path $env:APPDATA 'com.droptidy.app'; $persistDataPath = Join-Path $persist_dir 'data'; if (-not (Test-Path -LiteralPath $persistDataPath -PathType Container)) { New-Item -ItemType Directory -Path $persistDataPath -Force | Out-Null }; if (Test-Path -LiteralPath $appDataPath) { $existing = Get-Item -LiteralPath $appDataPath -Force; if (($existing.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { if ($existing.LinkType -eq 'Junction' -and [IO.Path]::GetFullPath([string]$existing.Target) -ieq [IO.Path]::GetFullPath($persistDataPath)) { return }; throw ('Refusing to replace an existing reparse point at ' + $appDataPath) }; $appItems = @(Get-ChildItem -LiteralPath $appDataPath -Force); $persistItems = @(Get-ChildItem -LiteralPath $persistDataPath -Force); if ($appItems.Count -gt 0 -and $persistItems.Count -gt 0) { throw ('Both ' + $appDataPath + ' and ' + $persistDataPath + ' contain data; refusing to overwrite either location.') }; if ($appItems.Count -gt 0) { $appItems | Move-Item -Destination $persistDataPath }; Remove-Item -LiteralPath $appDataPath -Force }; New-Item -ItemType Junction -Path $appDataPath -Target $persistDataPath | Out-Null",
+    "post_uninstall": "$appDataPath = Join-Path $env:APPDATA 'com.droptidy.app'; $persistDataPath = Join-Path $persist_dir 'data'; if (Test-Path -LiteralPath $appDataPath) { $existing = Get-Item -LiteralPath $appDataPath -Force; if (($existing.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -and $existing.LinkType -eq 'Junction' -and [IO.Path]::GetFullPath([string]$existing.Target) -ieq [IO.Path]::GetFullPath($persistDataPath)) { $removeCommand = 'rmdir \"' + $appDataPath + '\"'; & $env:ComSpec /d /c $removeCommand; if ($LASTEXITCODE -ne 0) { throw ('Failed to remove the DropTidy AppData junction; cmd exit code: ' + $LASTEXITCODE) } } }",
+    "checkver": {
+        "github": "https://github.com/ahmeto55/DropTidy",
+        "regex": "v([\\d.]+)"
+    },
+    "autoupdate": {
+        "url": "https://github.com/ahmeto55/DropTidy/releases/download/v$version/DropTidy_$version_x64_en-US.msi",
+        "hash": {
+            "url": "https://api.github.com/repos/ahmeto55/DropTidy/releases/tags/v$version",
+            "find": "\"name\"\\s*:\\s*\"DropTidy_$version_x64_en-US\\.msi\"[\\s\\S]*?\"digest\"\\s*:\\s*\"sha256:($sha256)\""
+        }
+    },
+    "notes": [
+        "Scoop extracts the official MSI payload instead of running the installer.",
+        "DropTidy stores its SQLite database and settings under %APPDATA%\\com.droptidy.app; this manifest redirects that directory into Scoop's persisted data folder.",
+        "The upstream repository does not currently declare an SPDX license or include a recognized license file.",
+        "The MSI archive workflow verifies the payload with msiexec /a and confirms that PFiles/DropTidy contains the shortcut target."
+    ],
+    "extract_dir": "PFiles/DropTidy"
+}

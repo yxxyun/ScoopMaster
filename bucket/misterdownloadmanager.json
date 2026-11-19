@@ -1,70 +1,62 @@
 {
     "version": "0.5.2",
-    "description": "Fast, resumable download manager with browser integration, video and torrent support, and an MCP server.",
-    "homepage": "https://misterdownloadmanager.com",
-    "license": "GPL-3.0-only",
-    "suggest": {
-        "ffmpeg": "ffmpeg",
-        "yt-dlp": "yt-dlp",
-        "gallery-dl": "gallery-dl"
+    "description": "misterdownloadmanager: The ultimate open-source, clean-room download manager written from scratch in pure Rust for Windows, Mac, and Linux",
+    "homepage": "https://misterdownloadmanager.com/",
+    "license": {
+        "identifier": "GPL-3.0 license",
+        "url": "https://github.com/anefzaoui/misterdownloadmanager/tree/main#GPL-3.0-1-ov-file"
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/anefzaoui/misterdownloadmanager/releases/download/v0.5.2/MisterDownloadManager-0.5.2-x64.zip",
-            "hash": "703c1676c90e34869dfd8e7fb675e06c9093bb5e23db92232a6a7534a50b9f63",
-            "extract_dir": "MisterDownloadManager-0.5.2-x64"
+            "url": "https://github.com/anefzaoui/misterdownloadmanager/releases/download/v0.5.2/MisterDownloadManager-0.5.2-setup.exe",
+            "hash": "a8c9586fd6e9c6385e3b85242bb658e029be1b9d81ed0911200e272c380ec31d"
         }
+    },
+    "innosetup": true,
+    "installer": {
+        "script": [
+            "# handle runtime cache",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:APPDATA\\misterdownloadmanager\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\misterdownloadmanager\"",
+            "Remove-Module -Name AppsUtils"
+        ]
     },
     "bin": [
         [
-            "misterdownloadmanager-cli.exe",
-            "mdm"
+            "misterdownloadmanager.exe",
+            "MisterDownloadManager"
         ],
-        "misterdownloadmanager-cli.exe",
-        "misterdownloadmanager-mcp.exe",
-        "misterdownloadmanager.exe"
+        [
+            "misterdownloadmanager-cli.exe",
+            "misterdownloadmanager-cli"
+        ]
     ],
     "shortcuts": [
         [
             "misterdownloadmanager.exe",
-            "Mister Download Manager"
+            "MisterDownloadManager"
         ]
     ],
-    "post_install": [
-        "$ErrorActionPreference = 'Stop'",
-        "& \"$dir\\misterdownloadmanager-nmhost.exe\" --register",
-        "if ($LASTEXITCODE -ne 0) { warn 'native messaging host 注册失败，浏览器扩展将无法接管下载' }"
-    ],
-    "pre_uninstall": [
-        "$ErrorActionPreference = 'Stop'",
-        "if (Get-Process 'misterdownloadmanager' -ErrorAction SilentlyContinue) {",
-        "    & \"$dir\\misterdownloadmanager.exe\" /exit",
-        "    Start-Sleep -Seconds 2",
-        "}",
-        "if (Test-Path \"$dir\\misterdownloadmanager-nmhost.exe\") {",
-        "    & \"$dir\\misterdownloadmanager-nmhost.exe\" --unregister | Out-Null",
-        "}"
-    ],
     "checkver": {
-        "github": "https://github.com/anefzaoui/misterdownloadmanager"
+        "github": "https://api.github.com/repos/anefzaoui/misterdownloadmanager/releases",
+        "jp": "$[0].tag_name",
+        "regex": "v([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/anefzaoui/misterdownloadmanager/releases/download/v$version/MisterDownloadManager-$version-x64.zip",
-                "extract_dir": "MisterDownloadManager-$version-x64"
+                "url": "https://github.com/anefzaoui/misterdownloadmanager/releases/download/v$version/MisterDownloadManager-$version-setup.exe"
             }
         },
         "hash": {
             "url": "$baseurl/SHA256SUMS.txt"
         }
-    },
-    "notes": [
-        "浏览器集成已在安装时自动注册（HKCU，无需管理员），覆盖 Chrome / Chromium / Edge / Brave 等 Chromium 浏览器与 Firefox / Zen 等；升级或卸载时会自动重新注册、反注册。",
-        "还需要给浏览器装扩展：Chrome / Edge / Brave / Opera / Vivaldi 到 Chrome 应用商店安装「Mister Download Manager」，Firefox 到 addons.mozilla.org 安装。商店不可用时，在扩展页开启开发者模式 → 加载已解压的扩展 → 选 <安装目录>\\current\\extension\\chromium；Firefox 用 <安装目录>\\current\\extension\\mdm-firefox.xpi。",
-        "视频与图片站下载依赖 ffmpeg、yt-dlp、gallery-dl：scoop install ffmpeg yt-dlp gallery-dl，或在应用内 Helpers 里由 MDM 自行安装。",
-        "下载列表、设置、主题与日志保存在 %APPDATA%\\misterdownloadmanager（不在 Scoop 安装目录），升级与卸载都不会删除；要彻底清理请手动删除该目录（密码存在 Windows 凭据管理器）。",
-        "升级或卸载前会自动尝试关闭正在运行的 MDM；若提示文件被占用，请先手动退出 MDM（托盘图标 → Tasks → Exit）。",
-        "官方另有 portable.zip 便携版（配置放 data 目录，可整体搬走），但便携模式无法注册浏览器集成，故本清单使用 x64.zip。"
-    ]
+    }
 }

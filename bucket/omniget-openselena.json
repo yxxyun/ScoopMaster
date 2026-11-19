@@ -1,52 +1,74 @@
 {
-  "version": "0.16.6",
-  "description": "Official repository of OmniGet - Open-source download manager for courses (Udemy/Hotmart), YouTube, music & 1,800+ sites. Built with Tauri 2.0, Rust & Svelte.",
-  "homepage": "https://omniget.nav.bd/",
-  "license": {
-    "identifier": "GPL-3.0 license",
-    "url": "https://github.com/OpenSelena/omniget#GPL-3.0-1-ov-file"
-  },
-  "architecture": {
-    "64bit": {
-      "url": "https://github.com/OpenSelena/omniget/releases/download/v0.16.6/omniget_0.16.6_x64-setup.exe",
-      "hash": "bdf7e09ca65fd25f2efd8ec37686c36b48b15b6e75cc815977237abad3bf8177",
-      "pre_install": "Remove-Item \"$dir\\`$*\", \"$dir\\uninst*\" -Force -Recurse"
-    }
-  },
-  "installer": {
-    "script": [
-      "# handle runtime cache",
-      "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
-      "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:LOCALAPPDATA\\com.openselena.omniget\"",
-      "Mount-ExternalRuntimeData -Source \"$persist_dir\\userdata\" -Target \"$env:APPDATA\\com.openselena.omniget\"",
-      "Remove-Module -Name AppsUtils"
-    ]
-  },
-  "uninstaller": {
-    "script": [
-      "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
-      "Dismount-ExternalRuntimeData -Target \"$env:LOCALAPPDATA\\com.openselena.omniget\"",
-      "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\com.openselena.omniget\"",
-      "Remove-Module -Name AppsUtils"
-    ]
-  },
-  "bin": "omniget.exe",
-  "shortcuts": [
-    [
-      "omniget.exe",
-      "omniget"
-    ]
-  ],
-  "checkver": {
-    "github": "https://api.github.com/repos/OpenSelena/omniget/releases",
-    "jp": "$[0].tag_name",
-    "regex": "v([\\d.]+)"
-  },
-  "autoupdate": {
+    "version": "0.16.6",
+    "description": "Independent LibreGet fork of OmniGet with course, video, music, and social-platform downloads plus built-in media tools.",
+    "homepage": "https://github.com/OpenSelena/libreget",
+    "license": "GPL-3.0-only",
     "architecture": {
-      "64bit": {
-        "url": "https://github.com/OpenSelena/omniget/releases/download/v$version/omniget_$version_x64-setup.exe"
-      }
-    }
-  }
+        "64bit": {
+            "url": "https://github.com/OpenSelena/libreget/releases/download/v0.16.6/omniget_0.16.6_x64-portable.exe",
+            "hash": "5db562c2532a19161424444fdc2e2822eff4fe8f9f9f087135cf08dd00fd2241"
+        }
+    },
+    "pre_install": [
+        "$persistRoot = Split-Path -Parent $persist_dir",
+        "$legacyPersistDir = Join-Path $persistRoot 'omniget'",
+        "$legacyDataDir = Join-Path $legacyPersistDir 'data'",
+        "$migrationMarker = Join-Path $legacyPersistDir '.kirobucket-omniget-fork-data-migrated'",
+        "$scoopRoot = Split-Path -Parent $persistRoot",
+        "$legacyCurrent = Join-Path $scoopRoot 'apps\\omniget\\current'",
+        "$newDataDir = Join-Path $persist_dir 'data'",
+        "if (-not (Test-Path -LiteralPath $migrationMarker -PathType Leaf)) {",
+        "    if (Test-Path -LiteralPath $legacyCurrent) { throw \"Uninstall the previous 'omniget' package first with 'scoop uninstall omniget'. Its persisted data will be moved automatically when you install 'omniget-openselena'.\" }",
+        "    $runningApps = @(Get-Process -Name 'omniget','libreget' -ErrorAction SilentlyContinue)",
+        "    if ($runningApps.Count -gt 0) { throw 'Close OmniGet/LibreGet before migrating the old persisted data.' }",
+        "    if (Test-Path -LiteralPath $legacyDataDir -PathType Container) {",
+        "        if (Test-Path -LiteralPath $newDataDir) { throw 'Both old and renamed LibreGet data folders exist. Back up and reconcile them before installing.' }",
+        "        New-Item -ItemType Directory -Path $persist_dir -Force | Out-Null",
+        "        Move-Item -LiteralPath $legacyDataDir -Destination $newDataDir",
+        "    }",
+        "    New-Item -ItemType Directory -Path $legacyPersistDir -Force | Out-Null",
+        "    New-Item -ItemType File -Path $migrationMarker -Force | Out-Null",
+        "}",
+        "$portableExe = Get-ChildItem -LiteralPath $dir -File | Where-Object { $_.Name -match '^(omniget|libreget)_.*_x64-portable\\.exe$' } | Select-Object -First 1",
+        "if ($null -eq $portableExe) { throw 'The LibreGet Windows x64 portable executable was not found.' }",
+        "Rename-Item -LiteralPath $portableExe.FullName -NewName 'LibreGet.exe'",
+        "New-Item -ItemType File -Path (Join-Path $dir 'portable.txt') -Force | Out-Null"
+    ],
+    "post_install": "if (!(Test-Path -LiteralPath (Join-Path $dir 'LibreGet.exe') -PathType Leaf)) { throw 'LibreGet.exe was not installed in the Scoop version directory.' }",
+    "persist": "data",
+    "shortcuts": [
+        [
+            "LibreGet.exe",
+            "LibreGet"
+        ]
+    ],
+    "checkver": {
+        "script": [
+            "$release = Invoke-RestMethod -Uri 'https://api.github.com/repos/OpenSelena/libreget/releases/latest' -Headers @{ 'User-Agent' = 'kirobucket-checkver' } -TimeoutSec 30 -ErrorAction Stop",
+            "$portableAssets = @($release.assets | Where-Object { $_.name -match '^(omniget|libreget)_[\\d.]+_x64-portable\\.exe$' })",
+            "if ($portableAssets.Count -eq 0) { throw 'Latest LibreGet release has no Windows x64 portable executable.' }",
+            "$asset = $portableAssets | Sort-Object @{ Expression = { if ($_.name -like 'libreget_*') { 0 } else { 1 } } }, name | Select-Object -First 1",
+            "$assetMatch = [regex]::Match([string]$asset.name, '^(?:omniget|libreget)_(?<version>[\\d.]+)_x64-portable\\.exe$')",
+            "if (-not $assetMatch.Success) { throw 'Could not parse the LibreGet portable asset version.' }",
+            "Write-Output \"$($assetMatch.Groups['version'].Value) $($asset.name)\""
+        ],
+        "regex": "^(?<version>[\\d.]+) (?<asset>[\\w.-]+)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/OpenSelena/libreget/releases/download/v$version/$matchAsset",
+                "hash": {
+                    "url": "https://api.github.com/repos/OpenSelena/libreget/releases/tags/v$version",
+                    "jsonpath": "$.assets[?(@.name == '$matchAsset')].digest"
+                }
+            }
+        }
+    },
+    "notes": [
+        "Creates portable.txt beside LibreGet.exe so settings, databases, cookies, plugins, caches, downloader tools, and WebView2 data are stored in the Scoop-persisted data directory.",
+        "The package name 'omniget-openselena' preserves the independent OpenSelena fork while 'omniget' is reserved for the original tonhowtf project.",
+        "The first install migrates the former persist\\omniget\\data folder here when it exists. Close and uninstall the previous 'omniget' package first; Scoop retains its persist directory during uninstall.",
+        "Use 'scoop update omniget-openselena' for updates rather than the in-app updater, so Scoop retains control of the installed version."
+    ]
 }
