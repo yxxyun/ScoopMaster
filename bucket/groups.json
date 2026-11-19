@@ -1,0 +1,451 @@
+{
+    "$comment": "Single source of truth for the Heitorgkk bucket. bucket/*.json, scripts/install.ps1 and the README tool table are derived from / validated against this file. Run 'python tools/catalog.py generate' after editing.",
+    "bucket": {
+        "name": "Heitorgkk",
+        "url": "https://github.com/Heitorgkk/scoop-bucket"
+    },
+    "buckets": {
+        "main": "https://github.com/ScoopInstaller/Main",
+        "extras": "https://github.com/ScoopInstaller/Extras",
+        "java": "https://github.com/ScoopInstaller/Java"
+    },
+    "claudeMarketplaces": {
+        "claude-plugins-official": "anthropics/claude-plugins-official",
+        "anthropic-agent-skills": "anthropics/skills",
+        "ponytail": "DietrichGebert/ponytail",
+        "context-mode": "mksglu/context-mode"
+    },
+    "groups": {
+        "main": {
+            "title": "Essential Development Tools",
+            "description": "Essential development tools: GitHub CLI, Git, Node.js LTS, Temurin JDK LTS, rustup, MSYS2 (GNU toolchain for Rust) and Docker CLI/Engine.",
+            "tools": [
+                {
+                    "name": "gh",
+                    "source": "scoop",
+                    "package": "main/gh",
+                    "command": "gh",
+                    "summary": "GitHub CLI",
+                    "homepage": "https://cli.github.com/"
+                },
+                {
+                    "name": "git",
+                    "source": "scoop",
+                    "package": "main/git",
+                    "command": "git",
+                    "summary": "Git for Windows (portable)",
+                    "homepage": "https://gitforwindows.org/"
+                },
+                {
+                    "name": "nodejs",
+                    "source": "scoop",
+                    "package": "main/nodejs-lts",
+                    "command": "node",
+                    "summary": "Node.js, current LTS line (includes npm)",
+                    "homepage": "https://nodejs.org/"
+                },
+                {
+                    "name": "jdk",
+                    "source": "scoop",
+                    "package": "java/temurin-lts-jdk",
+                    "command": "java",
+                    "summary": "Eclipse Temurin JDK, latest LTS (sets JAVA_HOME)",
+                    "homepage": "https://adoptium.net/",
+                    "requirements": "x64 build only; runs under emulation on Windows 11 ARM64."
+                },
+                {
+                    "name": "rustup",
+                    "source": "scoop",
+                    "package": "main/rustup",
+                    "command": "rustup",
+                    "summary": "Rust toolchain manager (MSVC host by default)",
+                    "homepage": "https://rustup.rs/",
+                    "requirements": "The MSVC toolchain needs Microsoft C++ Build Tools (MSVC + Windows SDK), installed separately. Without them, install.ps1 sets up the GNU toolchain with MSYS2 (see msys2)."
+                },
+                {
+                    "name": "msys2",
+                    "source": "scoop",
+                    "package": "main/msys2",
+                    "command": "msys2",
+                    "summary": "MSYS2 with the MINGW64 gcc toolchain, wired to rustup's stable-x86_64-pc-windows-gnu",
+                    "homepage": "https://www.msys2.org/",
+                    "requirements": "install.ps1 initialises MSYS2, installs mingw-w64-x86_64-gcc/pkgconf with pacman, appends mingw64\\bin to the user PATH and installs the GNU Rust toolchain (made the default only when MSVC Build Tools are absent). 'scoop update msys2' drops pacman packages: re-run install.ps1 afterwards. x64 only.",
+                    "integration": "msys2-rust"
+                },
+                {
+                    "name": "docker",
+                    "source": "scoop",
+                    "package": "main/docker",
+                    "command": "docker",
+                    "summary": "Docker CLI + Docker Engine (dockerd) for Windows containers. NOT Docker Desktop",
+                    "homepage": "https://www.docker.com/",
+                    "requirements": "dockerd only runs Windows containers and needs the Windows 'Containers' feature; registering the service (dockerd --register-service) needs an elevated shell. The CLI can talk to any remote/WSL Linux engine. x64 only."
+                },
+                {
+                    "name": "vscode",
+                    "source": "scoop",
+                    "package": "extras/vscode",
+                    "command": "code",
+                    "summary": "Visual Studio Code editor (portable, per user)",
+                    "homepage": "https://code.visualstudio.com/",
+                    "requirements": "Scoop's notes ('scoop info vscode') show the .reg files that add 'Open with Code' to Explorer and register file associations."
+                }
+            ]
+        },
+        "ai": {
+            "title": "AI & Coding Agents",
+            "description": "AI coding agents and assistants: Claude Code, Codex CLI and OpenCode CLI (Claude Desktop, ChatGPT Desktop and Gemini CLI are installed by scripts/install.ps1).",
+            "tools": [
+                {
+                    "name": "claude-code",
+                    "source": "scoop",
+                    "package": "main/claude-code",
+                    "command": "claude",
+                    "summary": "Claude Code CLI (official Anthropic native binary)",
+                    "homepage": "https://code.claude.com/",
+                    "requirements": "Needs Git for Windows (Git Bash); provided by the main group."
+                },
+                {
+                    "name": "claude-gui",
+                    "source": "winget",
+                    "package": "Anthropic.Claude",
+                    "summary": "Claude Desktop, official Anthropic installer",
+                    "homepage": "https://claude.com/download",
+                    "requirements": "WinGet, or (with -NoWinGet / when WinGet is unavailable) MSIX sideloading. Windows 10 2004 (19041) or later.",
+                    "direct": {
+                        "type": "msix",
+                        "url": {
+                            "x64": "https://claude.ai/api/desktop/win32/x64/msix/latest/redirect",
+                            "arm64": "https://claude.ai/api/desktop/win32/arm64/msix/latest/redirect"
+                        },
+                        "appxName": "Claude",
+                        "signer": "Anthropic",
+                        "uninstallKey": "AnthropicClaude"
+                    }
+                },
+                {
+                    "name": "gemini-cli",
+                    "source": "npm",
+                    "package": "@google/gemini-cli",
+                    "command": "gemini",
+                    "summary": "Google Gemini CLI (official npm package)",
+                    "homepage": "https://github.com/google-gemini/gemini-cli",
+                    "requirements": "Node.js 20+ / npm. install.ps1 installs main/nodejs-lts first when npm is missing.",
+                    "requires": [
+                        "main/nodejs-lts"
+                    ]
+                },
+                {
+                    "name": "codex",
+                    "source": "scoop",
+                    "package": "main/codex",
+                    "command": "codex",
+                    "summary": "OpenAI Codex CLI",
+                    "homepage": "https://github.com/openai/codex"
+                },
+                {
+                    "name": "chatgpt-gui",
+                    "source": "winget",
+                    "package": "OpenAI.ChatGPT",
+                    "summary": "ChatGPT Desktop, official OpenAI MSIX",
+                    "homepage": "https://chatgpt.com/download",
+                    "requirements": "WinGet, or (with -NoWinGet / when WinGet is unavailable) MSIX sideloading. Windows 10 2004 (19041) or later.",
+                    "direct": {
+                        "type": "msix",
+                        "url": {
+                            "x64": "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-x64.msix",
+                            "arm64": "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-arm64.msix"
+                        },
+                        "appxName": "OpenAI.Codex",
+                        "publisher": "CN=50BDFD77-8903-4850-9FFE-6E8522F64D5B"
+                    }
+                },
+                {
+                    "name": "opencode",
+                    "source": "scoop",
+                    "package": "main/opencode",
+                    "command": "opencode",
+                    "summary": "OpenCode CLI (v2; not the desktop app)",
+                    "homepage": "https://opencode.ai/",
+                    "requirements": "v2 config is incompatible with v1; see https://opencode.ai/docs/migrate-v1/."
+                }
+            ]
+        },
+        "terminal": {
+            "title": "Terminal & CLI",
+            "description": "Terminal and CLI tools: Windows Terminal, Oh My Posh, ripgrep, fastfetch, fzf, bat and lazygit.",
+            "tools": [
+                {
+                    "name": "windows-terminal",
+                    "source": "scoop",
+                    "package": "extras/windows-terminal",
+                    "command": "wt",
+                    "summary": "Windows Terminal (portable)",
+                    "homepage": "https://github.com/microsoft/terminal"
+                },
+                {
+                    "name": "oh-my-posh",
+                    "source": "scoop",
+                    "package": "main/oh-my-posh",
+                    "command": "oh-my-posh",
+                    "summary": "Prompt theme engine",
+                    "homepage": "https://ohmyposh.dev/",
+                    "requirements": "Enable it in your shell profile; see https://ohmyposh.dev/docs/installation/prompt. A Nerd Font is recommended."
+                },
+                {
+                    "name": "ripgrep",
+                    "source": "scoop",
+                    "package": "main/ripgrep",
+                    "command": "rg",
+                    "summary": "Fast recursive text search",
+                    "homepage": "https://github.com/BurntSushi/ripgrep"
+                },
+                {
+                    "name": "fastfetch",
+                    "source": "scoop",
+                    "package": "main/fastfetch",
+                    "command": "fastfetch",
+                    "summary": "System information tool",
+                    "homepage": "https://github.com/fastfetch-cli/fastfetch"
+                },
+                {
+                    "name": "fzf",
+                    "source": "scoop",
+                    "package": "main/fzf",
+                    "command": "fzf",
+                    "summary": "Command-line fuzzy finder",
+                    "homepage": "https://github.com/junegunn/fzf"
+                },
+                {
+                    "name": "bat",
+                    "source": "scoop",
+                    "package": "main/bat",
+                    "command": "bat",
+                    "summary": "cat clone with syntax highlighting",
+                    "homepage": "https://github.com/sharkdp/bat"
+                },
+                {
+                    "name": "lazygit",
+                    "source": "scoop",
+                    "package": "extras/lazygit",
+                    "command": "lazygit",
+                    "summary": "Terminal UI for git",
+                    "homepage": "https://github.com/jesseduffield/lazygit"
+                }
+            ]
+        },
+        "utilities": {
+            "title": "Windows Utilities",
+            "description": "Windows utilities: Everything, PowerToys, ShareX, 7-Zip and LocalSend.",
+            "tools": [
+                {
+                    "name": "everything",
+                    "source": "scoop",
+                    "package": "extras/everything",
+                    "command": "everything",
+                    "summary": "Instant file search by name",
+                    "homepage": "https://www.voidtools.com/"
+                },
+                {
+                    "name": "powertoys",
+                    "source": "scoop",
+                    "package": "extras/powertoys",
+                    "summary": "Microsoft PowerToys",
+                    "homepage": "https://github.com/microsoft/PowerToys"
+                },
+                {
+                    "name": "sharex",
+                    "source": "scoop",
+                    "package": "extras/sharex",
+                    "command": "sharex",
+                    "summary": "Screenshot and screen capture",
+                    "homepage": "https://getsharex.com/",
+                    "requirements": "x64 build only; runs under emulation on Windows 11 ARM64."
+                },
+                {
+                    "name": "7zip",
+                    "source": "scoop",
+                    "package": "main/7zip",
+                    "command": "7z",
+                    "summary": "File archiver",
+                    "homepage": "https://www.7-zip.org/"
+                },
+                {
+                    "name": "localsend",
+                    "source": "scoop",
+                    "package": "extras/localsend",
+                    "command": "localsend",
+                    "summary": "Local network file sharing",
+                    "homepage": "https://localsend.org/"
+                }
+            ]
+        },
+        "claude-extensions": {
+            "title": "Claude Code Plugins & Skills",
+            "description": "Claude Code plugins from the official Anthropic marketplaces and personal skills from this repository (installed by scripts/install.ps1; the metapackage installs Claude Code itself).",
+            "requires": [
+                "main/claude-code",
+                "main/git"
+            ],
+            "tools": [
+                {
+                    "name": "commit-commands",
+                    "source": "claude-plugin",
+                    "package": "commit-commands@claude-plugins-official",
+                    "summary": "Slash commands for commit, push and PR workflows",
+                    "homepage": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/commit-commands"
+                },
+                {
+                    "name": "feature-dev",
+                    "source": "claude-plugin",
+                    "package": "feature-dev@claude-plugins-official",
+                    "summary": "Guided feature development with explorer/architect/reviewer agents",
+                    "homepage": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/feature-dev"
+                },
+                {
+                    "name": "code-review",
+                    "source": "claude-plugin",
+                    "package": "code-review@claude-plugins-official",
+                    "summary": "Multi-agent pull request review",
+                    "homepage": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-review"
+                },
+                {
+                    "name": "pr-review-toolkit",
+                    "source": "claude-plugin",
+                    "package": "pr-review-toolkit@claude-plugins-official",
+                    "summary": "Specialised PR review agents (tests, errors, types, comments)",
+                    "homepage": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/pr-review-toolkit"
+                },
+                {
+                    "name": "security-guidance",
+                    "source": "claude-plugin",
+                    "package": "security-guidance@claude-plugins-official",
+                    "summary": "Security warnings and review for edited code",
+                    "homepage": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/security-guidance"
+                },
+                {
+                    "name": "claude-md-management",
+                    "source": "claude-plugin",
+                    "package": "claude-md-management@claude-plugins-official",
+                    "summary": "Audit and improve CLAUDE.md files",
+                    "homepage": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/claude-md-management"
+                },
+                {
+                    "name": "skill-creator",
+                    "source": "claude-plugin",
+                    "package": "skill-creator@claude-plugins-official",
+                    "summary": "Create, improve and evaluate skills",
+                    "homepage": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/skill-creator"
+                },
+                {
+                    "name": "frontend-design",
+                    "source": "claude-plugin",
+                    "package": "frontend-design@claude-plugins-official",
+                    "summary": "Production-grade frontend/UI design guidance",
+                    "homepage": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/frontend-design"
+                },
+                {
+                    "name": "document-skills",
+                    "source": "claude-plugin",
+                    "package": "document-skills@anthropic-agent-skills",
+                    "summary": "Excel, Word, PowerPoint and PDF skills",
+                    "homepage": "https://github.com/anthropics/skills"
+                },
+                {
+                    "name": "scoop-windows",
+                    "source": "claude-skill",
+                    "package": "claude/skills/scoop-windows",
+                    "summary": "Personal skill: how this machine installs tools (Scoop, Heitorgkk bucket, npm, WinGet)",
+                    "homepage": "https://github.com/Heitorgkk/scoop-bucket/tree/main/claude/skills/scoop-windows"
+                }
+            ]
+        },
+        "claude-tools": {
+            "title": "Claude Code Token & Context Tools",
+            "description": "Claude Code token/context savers: RTK, Graphify, Headroom MCP, Ponytail and Context Mode, installed and wired into Claude Code by scripts/install.ps1 or scripts/setup-claude.ps1 (the metapackage installs uv, RTK, Claude Code and Git).",
+            "requires": [
+                "main/claude-code",
+                "main/git"
+            ],
+            "tools": [
+                {
+                    "name": "uv",
+                    "source": "scoop",
+                    "package": "main/uv",
+                    "command": "uv",
+                    "summary": "Python package and tool manager (installs Graphify and Headroom, and Python 3.13)",
+                    "homepage": "https://docs.astral.sh/uv/"
+                },
+                {
+                    "name": "rtk",
+                    "source": "scoop",
+                    "package": "main/rtk",
+                    "command": "rtk",
+                    "summary": "RTK: rewrites shell commands to cut LLM token use; global Claude Code hook via 'rtk init -g'",
+                    "homepage": "https://www.rtk-ai.app/",
+                    "requirements": "install.ps1 runs 'rtk init -g --auto-patch --no-trust-filters' (PreToolUse hook + ~/.claude/RTK.md). The optional rtk-proxy is not set up. x64 only.",
+                    "integration": "rtk"
+                },
+                {
+                    "name": "graphify",
+                    "source": "uv-tool",
+                    "package": "graphifyy",
+                    "command": "graphify",
+                    "python": "3.13",
+                    "summary": "Graphify: code knowledge graph for agents; installs its Claude Code skill ('graphify install')",
+                    "homepage": "https://github.com/Graphify-Labs/graphify",
+                    "requirements": "Installed with 'uv tool install' (skipped when graphify is already on PATH from pip). Build a project graph on demand with /graphify . inside Claude Code.",
+                    "requires": [
+                        "main/uv"
+                    ],
+                    "integration": "graphify"
+                },
+                {
+                    "name": "headroom",
+                    "source": "uv-tool",
+                    "package": "headroom-ai[mcp]",
+                    "command": "headroom",
+                    "python": "3.13",
+                    "summary": "Headroom: context compression; registers its MCP server in Claude Code ('headroom mcp install')",
+                    "homepage": "https://github.com/headroomlabs-ai/headroom",
+                    "requirements": "Only the MCP server is configured (--agent claude). The proxy (headroom proxy, ANTHROPIC_BASE_URL) is never started or set; enable it yourself if you want it. Check the live connection with /mcp.",
+                    "requires": [
+                        "main/uv"
+                    ],
+                    "integration": "headroom-mcp"
+                },
+                {
+                    "name": "ponytail",
+                    "source": "claude-plugin",
+                    "package": "ponytail@ponytail",
+                    "summary": "Ponytail: 'lazy senior dev' mode (YAGNI, stdlib first, smallest working change)",
+                    "homepage": "https://github.com/DietrichGebert/ponytail",
+                    "requirements": "Its task board writes a CSV row per turn to ~/.config/ponytail/band/ (option 'ledger'); the webhook is off unless you set one with 'claude plugin configure'."
+                },
+                {
+                    "name": "context-mode",
+                    "source": "claude-plugin",
+                    "package": "context-mode@context-mode",
+                    "summary": "Context Mode: sandboxed execution, FTS5 search and session continuity to save context",
+                    "homepage": "https://github.com/mksglu/context-mode",
+                    "requirements": "Its MCP server runs on Node.js (main/nodejs-lts is installed when missing). Diagnose with /ctx-doctor inside Claude Code.",
+                    "requires": [
+                        "main/nodejs-lts"
+                    ]
+                }
+            ]
+        },
+        "all": {
+            "title": "Complete Environment",
+            "description": "Complete environment: every Heitorgkk group (main, ai, terminal, utilities, claude-extensions, claude-tools).",
+            "includes": [
+                "main",
+                "ai",
+                "terminal",
+                "utilities",
+                "claude-extensions",
+                "claude-tools"
+            ]
+        }
+    }
+}

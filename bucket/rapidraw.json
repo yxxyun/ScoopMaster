@@ -1,24 +1,14 @@
 {
+    "##": "ltguillaume/schep",
     "version": "1.7.0",
-    "description": "An AI-powered RAW image editor with depth masking and inpainting",
+    "description": "A beautiful, non-destructive, and GPU-accelerated RAW image editor built with performance in mind. Portable.",
     "homepage": "https://github.com/CyberTimon/RapidRAW",
-    "license": "Freeware",
+    "license": "AGPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/CyberTimon/RapidRAW/releases/download/v1.7.0/01_RapidRAW_v1.7.0_windows_x64.exe",
+            "url": "https://github.com/CyberTimon/RapidRAW/releases/download/v1.7.0/01_RapidRAW_v1.7.0_windows_x64.exe#/dl.7z",
             "hash": "ad8dce5e3ad2cb8a710bd7cc30dcf99a0445648fceb20e56e343ed194c3541d0"
-        },
-        "arm64": {
-            "url": "https://github.com/CyberTimon/RapidRAW/releases/download/v1.7.0/01_RapidRAW_v1.7.0_windows-11-arm_arm64.exe",
-            "hash": "dfa27c2fea6e08b6ba344d7e22b9bb0f65b1dd6fd74be0601136cbc62a0ea1cc"
         }
-    },
-    "installer": {
-        "script": [
-            "Expand-7zipArchive -Path \"$dir\\$fname\" -Removal",
-            "Remove-Item \"$dir\\uninstall.exe\" -Force -ErrorAction SilentlyContinue",
-            "Remove-Item \"$dir\\`$PLUGINSDIR\" -Force -Recurse -ErrorAction SilentlyContinue"
-        ]
     },
     "shortcuts": [
         [
@@ -26,14 +16,31 @@
             "RapidRAW"
         ]
     ],
+    "post_install": [
+        "'AppData', 'LocalAppData' | ForEach-Object {",
+        "    $data = [Environment]::GetEnvironmentVariable($_) +\"\\io.github.CyberTimon.RapidRAW\"",
+        "    if (-not (Test-Path \"$data\\*\")) {",
+        "        Remove-Item \"$data\" 2>$null",
+        "        if (-not (Test-Path \"$persist_dir\\$_\")) {",
+        "            New-Item -ItemType Directory -Path \"$persist_dir\\$_\" >$null",
+        "        }",
+        "        New-DirectoryJunction \"$data\" \"$persist_dir\\$_\" >$null",
+        "    }",
+        "}"
+    ],
+    "post_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    'AppData', 'LocalAppData' | ForEach-Object {",
+        "        $data = Get-Item ([Environment]::GetEnvironmentVariable($_) +\"\\io.github.CyberTimon.RapidRAW\")",
+        "        if (\"$($data.Target)\" -eq \"$persist_dir\\$_\") { $data.Delete() }",
+        "    }",
+        "}"
+    ],
     "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/CyberTimon/RapidRAW/releases/download/v$version/01_RapidRAW_v$version_windows_x64.exe"
-            },
-            "arm64": {
-                "url": "https://github.com/CyberTimon/RapidRAW/releases/download/v$version/01_RapidRAW_v$version_windows-11-arm_arm64.exe"
+                "url": "https://github.com/CyberTimon/RapidRAW/releases/download/v$version/01_RapidRAW_v$version_windows_x64.exe#/dl.7z"
             }
         }
     }
