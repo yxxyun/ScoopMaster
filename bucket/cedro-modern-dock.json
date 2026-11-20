@@ -12,6 +12,25 @@
             "Cedro Modern Dock"
         ]
     ],
+    "persist": "data",
+    "post_install": [
+        "$appDataPath = Join-Path $env:APPDATA 'CedroModernDock'",
+        "$persistDataPath = Join-Path $persist_dir 'data'",
+        "if (-not (Test-Path -LiteralPath $persistDataPath -PathType Container)) { New-Item -ItemType Directory -Path $persistDataPath -Force | Out-Null }",
+        "if (Test-Path -LiteralPath $appDataPath) {",
+        "    $existing = Get-Item -LiteralPath $appDataPath -Force",
+        "    if (($existing.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {",
+        "        if ($existing.LinkType -eq 'Junction' -and [IO.Path]::GetFullPath([string]$existing.Target) -ieq [IO.Path]::GetFullPath($persistDataPath)) { return }",
+        "        throw ('Refusing to replace an existing reparse point at ' + $appDataPath)",
+        "    }",
+        "    $appItems = @(Get-ChildItem -LiteralPath $appDataPath -Force)",
+        "    $persistItems = @(Get-ChildItem -LiteralPath $persistDataPath -Force)",
+        "    if ($appItems.Count -gt 0 -and $persistItems.Count -gt 0) { throw ('Both ' + $appDataPath + ' and ' + $persistDataPath + ' contain data; refusing to merge or overwrite either location.') }",
+        "    if ($appItems.Count -gt 0) { $appItems | Move-Item -Destination $persistDataPath }",
+        "    Remove-Item -LiteralPath $appDataPath -Force",
+        "}",
+        "New-Item -ItemType Junction -Path $appDataPath -Target $persistDataPath | Out-Null"
+    ],
     "checkver": {
         "url": "https://api.github.com/repos/Cedro-Software/cedro-modern-dock/releases/latest",
         "jsonpath": "$.tag_name",
@@ -19,8 +38,28 @@
         "replace": "${tag}.0"
     },
     "autoupdate": {
-        "url": "https://github.com/Cedro-Software/cedro-modern-dock/releases/download/Version-$matchTag/CedroModernDock-$version-x64.msi#/dl.msi"
+        "url": "https://github.com/Cedro-Software/cedro-modern-dock/releases/download/Version-$matchTag/CedroModernDock-$version-x64.msi#/dl.msi",
+        "hash": {
+            "url": "https://api.github.com/repos/Cedro-Software/cedro-modern-dock/releases/tags/Version-$matchTag",
+            "regex": "\"name\"\\s*:\\s*\"CedroModernDock-$version-x64\\.msi\"[\\s\\S]*?\"digest\"\\s*:\\s*\"sha256:([a-f0-9]{64})\""
+        }
     },
+    "notes": [
+        "Scoop extracts the MSI payload with its built-in MSI extractor; the vendor installer is not executed.",
+        "Configuration, custom themes, icon cache, and crash logs from %APPDATA%\\CedroModernDock are redirected to Scoop's persistent data directory."
+    ],
+    "post_uninstall": [
+        "$appDataPath = Join-Path $env:APPDATA 'CedroModernDock'",
+        "$persistDataPath = Join-Path $persist_dir 'data'",
+        "if (Test-Path -LiteralPath $appDataPath) {",
+        "    $existing = Get-Item -LiteralPath $appDataPath -Force",
+        "    if (($existing.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -and $existing.LinkType -eq 'Junction' -and [IO.Path]::GetFullPath([string]$existing.Target) -ieq [IO.Path]::GetFullPath($persistDataPath)) {",
+        "        $removeCommand = 'rmdir \"' + $appDataPath + '\"'",
+        "        & $env:ComSpec /d /c $removeCommand",
+        "        if ($LASTEXITCODE -ne 0) { throw ('Failed to remove the Cedro Modern Dock AppData junction; cmd exit code: ' + $LASTEXITCODE) }",
+        "    }",
+        "}"
+    ],
     "pre_install": [
         "$exe = Get-ChildItem -LiteralPath $dir -Filter 'CedroModernDock.exe' -File -Recurse | Select-Object -First 1",
         "if ($null -eq $exe) { throw 'CedroModernDock.exe was not found in the extracted MSI payload.' }",
