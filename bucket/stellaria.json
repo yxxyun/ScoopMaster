@@ -1,0 +1,130 @@
+{
+    "version": "1.1.0",
+    "description": "Material You desktop shell for Windows 11, built on Zebar.",
+    "homepage": "https://github.com/SMIDR76/stellaria-windows",
+    "license": "GPL-3.0-only",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/SMIDR76/stellaria-windows/releases/download/v1.1.0/Stellaria-1.1.0-portable.zip",
+            "hash": "1efb9ec379182f61fbc89d4ca6ba2c279c9a34e2c0f90eb8013506d054c66b2b"
+        }
+    },
+    "depends": "extras/zebar",
+    "pre_install": "if ($global) { throw 'Stellaria uses per-user Windows integration and cannot be installed globally with Scoop.' }",
+    "post_install": [
+        "$ErrorActionPreference = 'Stop'",
+        "$profilePath = [Environment]::GetFolderPath('UserProfile')",
+        "$appRoot = Join-Path $profilePath '.stellaria'",
+        "$zebarRoot = Join-Path $profilePath '.glzr\\zebar'",
+        "$statePath = Join-Path $appRoot '.scoop-links.json'",
+        "$zebarCurrent = Join-Path $scoopdir 'apps\\zebar\\current'",
+        "$currentApp = Join-Path $scoopdir 'apps\\stellaria\\current'",
+        "if (-not (Test-Path -LiteralPath (Join-Path $zebarCurrent 'zebar.exe'))) { throw 'The Scoop Zebar dependency is missing zebar.exe.' }",
+        "$links = @(",
+        "    @{ Path = (Join-Path $zebarRoot 'stellaria'); Target = (Join-Path $currentApp 'pack') },",
+        "    @{ Path = (Join-Path $appRoot 'bin'); Target = (Join-Path $currentApp 'bin') },",
+        "    @{ Path = (Join-Path $appRoot 'registry'); Target = (Join-Path $currentApp 'registry') }",
+        ")",
+        "$previous = $null",
+        "if (Test-Path -LiteralPath $statePath) { $previous = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json }",
+        "$compatPath = Join-Path $profilePath 'scoop\\apps\\zebar\\current'",
+        "$scoopRoot = [IO.Path]::GetFullPath($scoopdir).TrimEnd('\\')",
+        "$profileScoopRoot = [IO.Path]::GetFullPath((Join-Path $profilePath 'scoop')).TrimEnd('\\')",
+        "$compatNeeded = $scoopRoot -ine $profileScoopRoot",
+        "$compatOwned = $false",
+        "if ($compatNeeded) {",
+        "    if (Test-Path -LiteralPath $compatPath) {",
+        "        $compatItem = Get-Item -LiteralPath $compatPath -Force",
+        "        if (-not (Test-Path -LiteralPath (Join-Path $compatPath 'zebar.exe'))) { throw 'A conflicting path already exists at the default Scoop Zebar location.' }",
+        "        $compatOwned = [bool]($previous -and $previous.CompatibilityZebarLink -and ($compatItem.Attributes -band [IO.FileAttributes]::ReparsePoint))",
+        "    } else {",
+        "        $compatOwned = $true",
+        "    }",
+        "}",
+        "foreach ($entry in $links) {",
+        "    if (Test-Path -LiteralPath $entry.Path) {",
+        "        $item = Get-Item -LiteralPath $entry.Path -Force",
+        "        if (-not ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw \"Refusing to replace existing user data at $($entry.Path). Remove the previous non-Scoop Stellaria installation first.\" }",
+        "        if (-not $previous) { throw \"Refusing to take over an existing junction without a Scoop ownership marker: $($entry.Path)\" }",
+        "    }",
+        "}",
+        "New-Item -ItemType Directory -Path $appRoot, $zebarRoot -Force | Out-Null",
+        "$created = @()",
+        "try {",
+        "    foreach ($entry in $links) {",
+        "        if (-not (Test-Path -LiteralPath $entry.Path)) {",
+        "            New-Item -ItemType Junction -Path $entry.Path -Target $entry.Target | Out-Null",
+        "            $created += $entry.Path",
+        "        }",
+        "    }",
+        "    if ($compatNeeded -and -not (Test-Path -LiteralPath $compatPath)) {",
+        "        New-Item -ItemType Directory -Path (Split-Path -Parent $compatPath) -Force | Out-Null",
+        "        New-Item -ItemType Junction -Path $compatPath -Target $zebarCurrent | Out-Null",
+        "        $created += $compatPath",
+        "    }",
+        "    $state = @{ Links = @($links | ForEach-Object { @{ Path = $_.Path; Target = $_.Target } }); CompatibilityZebarLink = [bool]$compatOwned; CompatibilityZebarPath = $compatPath; CompatibilityZebarTarget = $zebarCurrent }",
+        "    $temporaryState = \"$statePath.tmp\"",
+        "    [IO.File]::WriteAllText($temporaryState, ($state | ConvertTo-Json -Compress), (New-Object System.Text.UTF8Encoding($false)))",
+        "    Move-Item -LiteralPath $temporaryState -Destination $statePath -Force",
+        "} catch {",
+        "    foreach ($path in $created) {",
+        "        if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force }",
+        "    }",
+        "    throw",
+        "}"
+    ],
+    "pre_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    $profilePath = [Environment]::GetFolderPath('UserProfile')",
+        "    $appRoot = Join-Path $profilePath '.stellaria'",
+        "    $statePath = Join-Path $appRoot '.scoop-links.json'",
+        "    if (Test-Path -LiteralPath $statePath) {",
+        "        $state = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json",
+        "        foreach ($entry in @($state.Links)) {",
+        "            $path = [string]$entry.Path",
+        "            if (Test-Path -LiteralPath $path) {",
+        "                $item = Get-Item -LiteralPath $path -Force",
+        "                $itemTarget = [string]$item.Target",
+        "                $expectedTarget = [string]$entry.Target",
+        "                if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -and ([IO.Path]::GetFullPath($itemTarget).TrimEnd('\\') -ieq [IO.Path]::GetFullPath($expectedTarget).TrimEnd('\\'))) { Remove-Item -LiteralPath $path -Force }",
+        "                else { Write-Warning \"Leaving a path that no longer matches the Scoop-owned junction: $path\" }",
+        "            }",
+        "        }",
+        "        if ($state.CompatibilityZebarLink -and (Test-Path -LiteralPath $state.CompatibilityZebarPath)) {",
+        "            $item = Get-Item -LiteralPath $state.CompatibilityZebarPath -Force",
+        "            $itemTarget = [string]$item.Target",
+        "            $expectedTarget = [string]$state.CompatibilityZebarTarget",
+        "            if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -and ([IO.Path]::GetFullPath($itemTarget).TrimEnd('\\') -ieq [IO.Path]::GetFullPath($expectedTarget).TrimEnd('\\'))) { Remove-Item -LiteralPath $state.CompatibilityZebarPath -Force }",
+        "            else { Write-Warning 'Leaving the compatibility Zebar junction because its target changed.' }",
+        "        }",
+        "        Remove-Item -LiteralPath $statePath -Force",
+        "    }",
+        "}"
+    ],
+    "shortcuts": [
+        [
+            "bin\\stellaria-launcher.exe",
+            "Stellaria"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/SMIDR76/stellaria-windows"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/SMIDR76/stellaria-windows/releases/download/v$version/Stellaria-$version-portable.zip",
+                "hash": {
+                    "url": "https://github.com/SMIDR76/stellaria-windows/releases/download/v$version/SHA256SUMS.txt",
+                    "find": "$sha256\\s+$basename"
+                }
+            }
+        }
+    },
+    "notes": [
+        "Stellaria's program files remain inside Scoop. Zebar is installed from extras/zebar.",
+        "Scoop creates only the required junctions; it does not enable Stellaria, register logon tasks, or change the taskbar during installation.",
+        "The source application still stores its user settings and logs under %APPDATA% and %LOCALAPPDATA%; those data folders are not redirected into Scoop.",
+        "Open Stellaria and use its Installation page when you are ready to activate the shell."
+    ]
+}

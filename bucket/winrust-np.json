@@ -1,0 +1,50 @@
+{
+    "version": "0.4.1",
+    "description": "Administrator-level Windows shell replacement with a native taskbar, file manager, search, and system utilities.",
+    "homepage": "https://github.com/Lemxy/WinRust",
+    "license": "Unknown",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Lemxy/WinRust/releases/download/v0.4.1/WinRust.exe",
+            "hash": "1b516d0247c74a53e0518c3bb70f77b1035582de20248ad1146f2bf02604cce8"
+        }
+    },
+    "shortcuts": [
+        [
+            "WinRust.exe",
+            "WinRust"
+        ]
+    ],
+    "pre_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    $exe = Join-Path $dir 'WinRust.exe'",
+        "    if (!(is_admin)) {",
+        "        $process = Start-Process -FilePath $exe -ArgumentList 'rollback --yes' -Verb RunAs -Wait -PassThru",
+        "        $exitCode = $process.ExitCode",
+        "    } else {",
+        "        & $exe rollback --yes",
+        "        $exitCode = $LASTEXITCODE",
+        "    }",
+        "    if ($exitCode -ne 0) {",
+        "        throw \"WinRust rollback failed with exit code $exitCode. Scoop will keep WinRust installed until the cleanup errors are resolved.\"",
+        "    }",
+        "}"
+    ],
+    "checkver": {
+        "github": "https://github.com/Lemxy/WinRust"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Lemxy/WinRust/releases/download/v$version/WinRust.exe"
+            }
+        }
+    },
+    "##": "Installer Type: EXE",
+    "notes": [
+        "Nonportable: WinRust.exe declares requireAdministrator. Launching it can install selected components under Program Files and change the Windows shell, services, registry, and Start Menu integration; the launcher itself remains in the Scoop app directory.",
+        "Scoop uninstall runs WinRust.exe rollback --yes with UAC elevation and stops removal if rollback fails. The hook is restricted to the uninstall command, so Scoop upgrades do not roll back the installed WinRust components.",
+        "The upstream purge feature permanently removes selected built-in Windows apps. Those removals cannot be restored by WinRust rollback or by uninstalling this Scoop manifest.",
+        "The upstream executable is not code-signed; Windows SmartScreen may display a warning."
+    ]
+}

@@ -1,0 +1,82 @@
+{
+    "version": "1.0.0-beta.1",
+    "description": "Windows 11 shell replacement with a macOS-style top menu bar, Dynamic Island, and floating dock.",
+    "homepage": "https://github.com/nurikhsanuddin/nixandeck",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/nurikhsanuddin/nixandeck/releases/download/v1.0.0-beta.1/NixanDeck-Windows11-x64.zip",
+            "hash": "97c275417e4ee3355241ee015a5dde4753358b44f9f4e4b15bf101bb31fe5af8"
+        }
+    },
+    "pre_install": [
+        "$certPath = Join-Path $dir 'NixanDeck.cer'",
+        "$msixPath = Join-Path $dir 'NixanDeck.msix'",
+        "if (!(Test-Path -LiteralPath $certPath -PathType Leaf)) { throw 'NixanDeck.cer was not found in the official release ZIP.' }",
+        "if (!(Test-Path -LiteralPath $msixPath -PathType Leaf)) { throw 'NixanDeck.msix was not found in the official release ZIP.' }",
+        "$launcher = Join-Path $dir 'NixanDeck.cmd'",
+        "$launcherContent = @(",
+        "    '@echo off',",
+        "    'powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"$p = Get-AppxPackage -Name ''NixanDeck'' | Select-Object -First 1; if ($null -eq $p) { Write-Error ''NixanDeck is not installed for this Windows account.''; exit 1 }; Start-Process -FilePath explorer.exe -ArgumentList (''shell:AppsFolder\\'' + $p.PackageFamilyName + ''!NixanDeckApp'')\"'",
+        ")",
+        "[System.IO.File]::WriteAllLines($launcher, $launcherContent, [System.Text.Encoding]::ASCII)"
+    ],
+    "post_install": [
+        "$certPath = Join-Path $dir 'NixanDeck.cer'",
+        "$msixPath = Join-Path $dir 'NixanDeck.msix'",
+        "$cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($certPath)",
+        "if ($cert.Subject -ne 'CN=NixanDeck') { throw \"Unexpected NixanDeck signing certificate subject: $($cert.Subject)\" }",
+        "$store = [System.Security.Cryptography.X509Certificates.X509Store]::new('TrustedPeople', 'LocalMachine')",
+        "$store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)",
+        "try {",
+        "    $trusted = @($store.Certificates | Where-Object { $_.Thumbprint -eq $cert.Thumbprint }).Count -gt 0",
+        "} finally {",
+        "    $store.Close()",
+        "}",
+        "if (-not $trusted) {",
+        "    if (!(is_admin)) { throw \"$app requires an elevated PowerShell session to trust its self-signed MSIX certificate in LocalMachine\\TrustedPeople.\" }",
+        "    $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)",
+        "    try {",
+        "        $trusted = @($store.Certificates | Where-Object { $_.Thumbprint -eq $cert.Thumbprint }).Count -gt 0",
+        "        if (-not $trusted) { $store.Add($cert) }",
+        "    } finally {",
+        "        $store.Close()",
+        "    }",
+        "}",
+        "if ($PSVersionTable.PSVersion.Major -ge 6) { Import-Module Appx -UseWindowsPowerShell 3>$null -ErrorAction Stop }",
+        "Add-AppxPackage -Path $msixPath -ForceUpdateFromAnyVersion -ErrorAction Stop"
+    ],
+    "shortcuts": [
+        [
+            "NixanDeck.cmd",
+            "NixanDeck"
+        ]
+    ],
+    "pre_uninstall": [
+        "if ($PSVersionTable.PSVersion.Major -ge 6) { Import-Module Appx -UseWindowsPowerShell 3>$null -ErrorAction Stop }",
+        "$packages = @(Get-AppxPackage -Name 'NixanDeck' -ErrorAction SilentlyContinue)",
+        "foreach ($package in $packages) { Remove-AppxPackage -Package $package.PackageFullName -ErrorAction Stop }"
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/nurikhsanuddin/nixandeck/releases?per_page=1",
+        "regex": "\"tag_name\"\\s*:\\s*\"v([\\w.-]+)\""
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/nurikhsanuddin/nixandeck/releases/download/v$version/NixanDeck-Windows11-x64.zip",
+                "hash": {
+                    "url": "https://api.github.com/repos/nurikhsanuddin/nixandeck/releases/tags/v$version",
+                    "regex": "\"name\"\\s*:\\s*\"NixanDeck-Windows11-x64\\.zip\"[\\s\\S]*?\"digest\"\\s*:\\s*\"sha256:([a-f0-9]{64})\""
+                }
+            }
+        }
+    },
+    "##": "Installer Type: MSIX",
+    "notes": [
+        "Nonportable: installs the signed MSIX application package and trusts the publisher's self-signed certificate in the computer-wide LocalMachine\\TrustedPeople store; administrator rights are required when that certificate is not already trusted.",
+        "The MSIX app is registered for the current Windows user and its application payload is managed by Windows, not kept as a runnable portable app in the Scoop version directory. Requires Windows 11 x64.",
+        "Scoop creates a NixanDeck Start Menu shortcut that opens the registered AppsFolder application. The pre_uninstall hook removes the current user's MSIX registration.",
+        "The publisher certificate is intentionally left in LocalMachine\\TrustedPeople after uninstall, matching the established Scoop Extras MSIX approach. Remove the NixanDeck certificate manually from the computer's Trusted People store only when no other NixanDeck package registration needs it."
+    ]
+}
