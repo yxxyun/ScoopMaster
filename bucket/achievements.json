@@ -1,0 +1,43 @@
+{
+    "version": "1.3.3",
+    "description": "A desktop application that monitors running games and displays animated achievement notifications",
+    "homepage": "https://pserban93.github.io/Achievements-Docs/",
+    "license": "MIT",
+    "notes": "Installs to 'C:\\Program Files\\Achievements' via an NSIS installer - install from an elevated (Administrator) terminal.",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/PSerban93/Achievements/releases/download/1.3.3/Achievements-Setup-1.3.3.exe",
+            "hash": "d1b7c882a310dc97925d69b7ca50864b05bf01a597a8b4c3e0eebe3093553b4d"
+        }
+    },
+    "installer": {
+        "script": [
+            "Start-Process -FilePath \"$dir\\Achievements-Setup-$version.exe\" -ArgumentList '/S' -Wait",
+            "$achExe = 'C:\\Program Files\\Achievements\\Achievements.exe'",
+            "$achDeadline = (Get-Date).AddMinutes(5)",
+            "while ((Get-Date) -lt $achDeadline -and -not (Test-Path $achExe)) { Start-Sleep -Seconds 2 }",
+            "if (-not (Test-Path $achExe)) { throw 'Achievements installer did not complete' }"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Start-Process -FilePath 'C:\\Program Files\\Achievements\\Uninstall Achievements.exe' -ArgumentList '/S' -WorkingDirectory 'C:\\Program Files\\Achievements' -Wait",
+            "$achDir = 'C:\\Program Files\\Achievements'",
+            "$achDeadline = (Get-Date).AddMinutes(5)",
+            "while ((Get-Date) -lt $achDeadline -and (Test-Path $achDir)) { Start-Sleep -Seconds 2 }",
+            "if (Test-Path $achDir) { Remove-Item $achDir -Recurse -Force -ErrorAction SilentlyContinue }"
+        ]
+    },
+    "post_install": "Remove-Item \"$dir\\Achievements-Setup-$version.exe\" -Force -ErrorAction SilentlyContinue",
+    "bin": "C:\\Program Files\\Achievements\\Achievements.exe",
+    "checkver": {
+        "github": "https://github.com/PSerban93/Achievements"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/PSerban93/Achievements/releases/download/$version/Achievements-Setup-$version.exe"
+            }
+        }
+    }
+}

@@ -1,0 +1,53 @@
+{
+    "version": "1.4.2",
+    "description": "An LLM-powered video subtitle processing assistant, supporting speech recognition, subtitle segmentation, optimization, and translation.",
+    "homepage": "https://github.com/WEIFENG2333/VideoCaptioner",
+    "license": "GPL-3.0-only",
+    "depends": [
+        "main/uv",
+        "main/ffmpeg"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/WEIFENG2333/VideoCaptioner/releases/download/v1.4.2/videocaptioner-1.4.2.tar.gz",
+            "hash": "048b03c05dabf35e2821f62b8667415aa4f937e453389a15a56a936235cf4290",
+            "extract_dir": "videocaptioner-1.4.2"
+        }
+    },
+    "pre_install": [
+        "& uv python install --no-config --install-dir \"$dir\\python\" --no-bin --no-registry cpython@3.12",
+        "if ($LASTEXITCODE -ne 0) { throw 'Failed to download the private Python runtime.' }",
+        "$python = Get-ChildItem -LiteralPath \"$dir\\python\" -Directory -Filter \"cpython-3.12.*\" | Select-Object -First 1",
+        "Move-Item -LiteralPath $python.FullName -Destination \"$dir\\runtime\" -ErrorAction Stop",
+        "$pythonExe = \"$dir\\runtime\\python.exe\"",
+        "& uv export --project \"$dir\" --python \"$pythonExe\" --locked --no-dev --no-emit-project --output-file \"$dir\\requirements.txt\"",
+        "if ($LASTEXITCODE -ne 0) { throw 'Failed to export the upstream dependency lock.' }",
+        "& uv pip install --no-config --python \"$pythonExe\" --target \"$dir\\runtime\\Lib\\site-packages\" --link-mode copy --require-hashes --no-deps --requirements \"$dir\\requirements.txt\"",
+        "if ($LASTEXITCODE -ne 0) { throw 'Failed to install the Python dependencies.' }",
+        "Set-Content -LiteralPath \"$dir\\video-captioner.pyw\" -Encoding Ascii -Value @('from videocaptioner.ui.main import main', 'main()')"
+    ],
+    "shortcuts": [
+        [
+            "runtime\\pythonw.exe",
+            "VideoCaptioner",
+            "-E -s \"..\\video-captioner.pyw\""
+        ]
+    ],
+    "persist": [
+        "AppData",
+        "work-dir"
+    ],
+    "checkver": {
+        "github": "https://api.github.com/repos/WEIFENG2333/VideoCaptioner/releases/latest",
+        "jsonpath": "$.assets[?(@.name =~ /^videocaptioner-[\\d.]+\\.tar\\.gz$/)].browser_download_url",
+        "regex": "/releases/download/v([\\d.]+)/videocaptioner-\\1\\.tar\\.gz$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/WEIFENG2333/VideoCaptioner/releases/download/v$version/videocaptioner-$version.tar.gz",
+                "extract_dir": "videocaptioner-$version"
+            }
+        }
+    }
+}
