@@ -1,6 +1,6 @@
 {
-    "##": "Strata Terminal + CUDA engine (Windows x64). One release tag (Version, e.g. 0.2.13) carries three lockstep version numbers: the Strata app/release version, the Control runtime version (asset strata-control-<ctrl>, e.g. 0.1.59.1) and the inference engine version (asset strata-engine-<eng>-windows-x86_64-cuda-cuda13). This package downloads BOTH the Control runtime (flat, no top-level folder) and the engine tarball (into components\\engine\\<eng>-windows-x86_64-cuda-cuda13) so they always install and update together. pre_install writes bin\\strata-cuda.cmd exporting STRATA_COMPONENTS_DIR / STRATA_ENGINE_BACKEND. checkver reads the signed strata-feed.json and returns release+control+engine versions and asset urls/hashes at once; autoupdate rewrites both url[]/hash[] plus extract_to together on the next scoop update.",
-    "version": "0.2.15",
+    "##": "Strata Terminal + CUDA engine (Windows x64). One release tag (Version, e.g. 0.2.13) carries three lockstep version numbers: the Strata app/release version, the Control runtime version (asset strata-control-<ctrl>, e.g. 0.1.59.1) and the inference engine version (asset strata-engine-<eng>-windows-x86_64-cuda-cuda13). This package downloads BOTH the Control runtime (flat, no top-level folder) and the engine tarball (into components\\engine\\<eng>-windows-x86_64-cuda-cuda13) so they always install and update together. pre_install writes bin\\strata-cuda.cmd exporting STRATA_COMPONENTS_DIR / STRATA_ENGINE_BACKEND. checkver reads the signed strata-feed.json and returns release+control+engine versions and asset urls/hashes at once; autoupdate rewrites both url[]/hash[] plus extract_to together on the next scoop update. Both control and engine packages in the feed may carry a bare file name instead of a full URL (0.2.17+ does this for engine assets too), so checkver normalizes each url with \"if it is not http(s)://, prefix https://github.com/Niko1221/Strata/releases/download/v<app.version>/\".",
+    "version": "0.2.17",
     "description": "Strata 终端版 + CUDA 推理引擎（NVIDIA，含 sm_120 / RTX 50 系）：一条命令装好控制端与引擎，模型文件另存",
     "homepage": "https://github.com/Niko1221/Strata",
     "license": {
@@ -18,18 +18,18 @@
     "architecture": {
         "64bit": {
             "url": [
-                "https://github.com/Niko1221/Strata/releases/download/v0.2.15/strata-control-0.1.61-windows-x86_64.zip",
-                "https://github.com/Niko1221/Strata/releases/download/v0.2.14/strata-engine-0.1.60-windows-x86_64-cuda-cuda13.tar.gz"
+                "https://github.com/Niko1221/Strata/releases/download/v0.2.17/strata-control-0.1.63-windows-x86_64.zip",
+                "https://github.com/Niko1221/Strata/releases/download/v0.2.17/strata-engine-0.1.63-windows-x86_64-cuda-cuda13.tar.gz"
             ],
             "hash": [
-                "cf03e68347921f805325553b2147754cfecb6911b931ba78518fd9728a6fbb7b",
-                "a54cc75a84aa7b93839c330197bdc35395f6fcc5ee31e25008f380558da5b18c"
+                "2d7cb26aa0c36db65e0d71eafa048227a4098c4b0dd70423d507cdf8f7cba44d",
+                "fc9864851a3f76855f25ba5f5ff1eb42d46c3c6ed45c22534dc9910f20d9dc0f"
             ]
         }
     },
     "extract_to": [
         ".",
-        "components\\engine\\0.1.60-windows-x86_64-cuda-cuda13"
+        "components\\engine\\0.1.63-windows-x86_64-cuda-cuda13"
     ],
     "pre_install": "$c = @('@echo off','setlocal','rem Strata (CUDA / NVIDIA) - Scoop build: the engine lives inside this package.','set \"STRATA_COMPONENTS_DIR=%~dp0..\\components\"','set \"STRATA_ENGINE_BACKEND=cuda\"','call \"%~dp0strata.cmd\" %*','exit /b %ERRORLEVEL%'); New-Item -ItemType Directory -Force -Path (Join-Path $dir 'bin') | Out-Null; Set-Content -LiteralPath (Join-Path $dir 'bin\\strata-cuda.cmd') -Value $c -Encoding Ascii",
     "bin": "bin\\strata-cuda.cmd",
@@ -42,8 +42,9 @@
             "$v = $f.app.version",
             "$c = @($f.control.packages | Where-Object { $_.platform -eq 'windows-x86_64' })[0]",
             "$e = @($f.engine.packages | Where-Object { $_.platform -eq 'windows-x86_64' -and $_.variant -eq 'cuda13' })[0]",
+            "$eu = if ($e.url -match '^https?://') { $e.url } else { 'https://github.com/Niko1221/Strata/releases/download/v' + $v + '/' + $e.url }",
             "$cu = if ($c.url -match '^https?://') { $c.url } else { 'https://github.com/Niko1221/Strata/releases/download/v' + $v + '/' + $c.url }",
-            "'version=' + $v + ';ctrlurl=' + $cu + ';engurl=' + $e.url + ';engver=' + $e.version"
+            "'version=' + $v + ';ctrlurl=' + $cu + ';engurl=' + $eu + ';engver=' + $e.version"
         ],
         "regex": "^version=(?<version>[^;]+);ctrlurl=(?<ctrlurl>[^;]+);engurl=(?<engurl>[^;]+);engver=(?<engver>[^;]+)$"
     },

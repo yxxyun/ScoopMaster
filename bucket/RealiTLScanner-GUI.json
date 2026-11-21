@@ -1,0 +1,88 @@
+{
+    "version": "3.0",
+    "description": "RealiTLScanner GUI (EikeiDev): Windows interface for XTLS RealiTLScanner with scan modes for an IP, range or domain, a file or a web page, a live log, a results table with copy and CSV export, and automatic GeoIP downloads. Runs the scanner from gesu/RealiTLScanner.",
+    "homepage": "https://github.com/EikeiDev/RealiTLScanner-GUI",
+    "license": {
+        "identifier": "MPL-2.0",
+        "url": "https://github.com/EikeiDev/RealiTLScanner-GUI#-license"
+    },
+    "notes": [
+        "Needs the .NET Desktop Runtime 10 or newer (or 9). If it is missing: scoop install extras/windowsdesktop-runtime-lts",
+        "The command realitlscanner-gui and the 'RealiTLScanner GUI' shortcut start it on the newest installed runtime, since .NET 9 is out of support.",
+        "",
+        "The GUI runs the scanner from gesu/RealiTLScanner (instead of the 0.2.1 copy in the GUI's zip),",
+        "so 'scoop update RealiTLScanner' updates it for the GUI too.",
+        "Results: out.csv in the app folder, kept across updates (persist). Other relative names land in the",
+        "app folder of the current version and are lost on update: use a full path for those.",
+        "GeoIP: Country.mmdb in the app folder, copied from gesu/Loyalsoldier-GeoIP when installed; the GUI",
+        "itself downloads a new one from Loyalsoldier/geoip when it is older than 7 days."
+    ],
+    "depends": "gesu/RealiTLScanner",
+    "suggest": {
+        ".NET Desktop Runtime": "extras/windowsdesktop-runtime-lts",
+        "GeoIP database": "gesu/Loyalsoldier-GeoIP"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/EikeiDev/RealiTLScanner-GUI/releases/download/3.0/RealiTLScannerGUI_v3.0.zip",
+            "hash": "7bd0fcfe06d6d5bc5b45357739e33d2a13dd3cd9225b8f0d5d4b1df37b3ff58f"
+        }
+    },
+    "pre_install": [
+        "# out.csv is persisted; create it on the first install, or Scoop would persist a folder of that name.",
+        "if (!(Test-Path \"$persist_dir\\out.csv\")) { New-Item \"$dir\\out.csv\" -ItemType File -Force | Out-Null }"
+    ],
+    "installer": {
+        "script": [
+            "# The GUI looks for RealiTLScanner-windows-64.exe next to itself. Replace the bundled 0.2.1 with a Scoop shim",
+            "# (Scoop's own shim.exe and a .shim file) that runs gesu/RealiTLScanner through its 'current' folder.",
+            "Remove-Item \"$dir\\RealiTLScanner-windows-64.exe\" -Force",
+            "$scanner = Join-Path (appdir 'RealiTLScanner' $global) 'current\\RealiTLScanner.exe'",
+            "if (!(Test-Path $scanner)) { error \"RealiTLScanner is not installed in this scope ($scanner): scoop install $(if ($global) { '-g ' })gesu/RealiTLScanner\"; break }",
+            "$shimExe = get_shim_path",
+            "if (!$shimExe -or !(Test-Path $shimExe)) { error \"Scoop's shim.exe was not found ($shimExe).\"; break }",
+            "Copy-Item $shimExe \"$dir\\RealiTLScanner-windows-64.exe\" -Force",
+            "Write-Output \"path = `\"$scanner`\"\" | Out-UTF8File \"$dir\\RealiTLScanner-windows-64.shim\"",
+            "",
+            "# GeoIP: start with the database from gesu/Loyalsoldier-GeoIP if it is installed; the GUI refreshes it after 7 days.",
+            "$geo = Join-Path (appdir 'Loyalsoldier-GeoIP' $global) 'current\\Country.mmdb'",
+            "if (Test-Path $geo) { Copy-Item $geo \"$dir\\Country.mmdb\" -Force }",
+            "",
+            "# The shortcut opens this launcher, which lets the .NET 9 app run on a newer runtime.",
+            "$lines = @(",
+            "  '@ECHO OFF',",
+            "  ':: RealiTLScanner GUI: starts the GUI on the newest installed .NET Desktop Runtime.',",
+            "  ':: The GUI is built for .NET 9, which is out of support since 10 November 2026;',",
+            "  ':: DOTNET_ROLL_FORWARD=LatestMajor applies to this start only, not to other .NET apps.',",
+            "  ':: Written by the gesu Scoop bucket at install time.',",
+            "  'SET \"DOTNET_ROLL_FORWARD=LatestMajor\"',",
+            "  'START \"\" \"%~dp0RealiTLScannerGUI.exe\" %*',",
+            "  ''",
+            ")",
+            "[IO.File]::WriteAllText(\"$dir\\RealiTLScanner-GUI.cmd\", ($lines -join \"`r`n\") + \"`r`n\")"
+        ]
+    },
+    "bin": [
+        [
+            "RealiTLScanner-GUI.cmd",
+            "realitlscanner-gui"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "RealiTLScanner-GUI.cmd",
+            "RealiTLScanner GUI"
+        ]
+    ],
+    "persist": "out.csv",
+    "checkver": {
+        "github": "https://github.com/EikeiDev/RealiTLScanner-GUI"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/EikeiDev/RealiTLScanner-GUI/releases/download/$version/RealiTLScannerGUI_v$version.zip"
+            }
+        }
+    }
+}
