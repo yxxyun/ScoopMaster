@@ -1,0 +1,62 @@
+{
+    "version": "1.7.0",
+    "description": "Portable Windows file search and recovery utility with live results, deleted-file discovery, and restore support.",
+    "homepage": "https://fileferret.net/",
+    "license": "Freeware",
+    "url": "https://fileferret.net/download.php?f=FileFerret-Portable-1.7.0.exe",
+    "hash": "9196b7089e3d13c06604099e32a1c3a74f2c44cbd93868f2bdc8983d4405aa61",
+    "pre_install": [
+        "$source = Join-Path $dir 'download.php'",
+        "$target = Join-Path $dir ('FileFerret-Portable-' + $Manifest.version + '.exe')",
+        "if (Test-Path -LiteralPath $source -PathType Leaf) {",
+        "    $stream = [IO.File]::OpenRead($source)",
+        "    try {",
+        "        $header = [byte[]]::new(2)",
+        "        if ($stream.Read($header, 0, 2) -ne 2 -or $header[0] -ne 0x4D -or $header[1] -ne 0x5A) { throw 'Downloaded FileFerret payload is not a Windows PE executable.' }",
+        "    } finally { $stream.Dispose() }",
+        "    if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Force }",
+        "    Move-Item -LiteralPath $source -Destination $target",
+        "} elseif (-not (Test-Path -LiteralPath $target -PathType Leaf)) {",
+        "    throw 'Scoop did not place the FileFerret download in the expected app directory.'",
+        "}"
+    ],
+    "bin": [
+        [
+            "FileFerret-Portable-1.7.0.exe",
+            "FileFerret"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "FileFerret-Portable-1.7.0.exe",
+            "FileFerret"
+        ]
+    ],
+    "checkver": {
+        "url": "https://fileferret.net/en/download.html",
+        "regex": "Latest version\\s+([\\d.]+)"
+    },
+    "autoupdate": {
+        "url": "https://fileferret.net/download.php?f=FileFerret-Portable-$version.exe",
+        "hash": {
+            "url": "https://fileferret.net/en/download.html",
+            "regex": "(?is)FileFerret-Portable-[\\d.]+\\.exe.{0,2000}?gui/file/([a-f0-9]{64})"
+        },
+        "bin": [
+            [
+                "FileFerret-Portable-$version.exe",
+                "FileFerret"
+            ]
+        ],
+        "shortcuts": [
+            [
+                "FileFerret-Portable-$version.exe",
+                "FileFerret"
+            ]
+        ]
+    },
+    "notes": [
+        "This is the publisher's single-file portable build; it does not install the background service used by the regular installer.",
+        "The portable build requests Administrator rights when launched and scans the drives again on each run."
+    ]
+}
