@@ -1,29 +1,13 @@
 {
     "version": "0.2.2-rc.5",
-    "description": "Official DeepSeek Harness desktop application for AI agents, coding, research and task automation.",
-    "homepage": "https://www.deepseek.com/en/harness/",
+    "description": "DeepSeek Harness desktop app for agent tasks and plugins",
+    "homepage": "https://www.deepseek.com/harness/",
     "license": "MIT",
-    "architecture": {
-        "64bit": {
-            "url": "https://download.deepseek.com/desktop/dsh-latest-windows-x64.exe#/dl.7z",
-            "hash": "786c9b26050c35b62c7be6a01dee2541dc1c2c5d9bd5f2dbe77beeeb8d50704e"
-        }
-    },
-    "depends": "7zip",
-    "post_install": [
-        "$payloads = @(Get-ChildItem -LiteralPath $dir -Filter 'app-64.7z' -File -Recurse)",
-        "if ($payloads.Count -ne 1) { throw ('Expected one app-64.7z payload; found {0}.' -f $payloads.Count) }",
-        "$archive = $payloads[0].FullName",
-        "$sevenZip = (Get-Command '7z.exe' -ErrorAction Stop).Source",
-        "& $sevenZip x $archive \"-o$dir\" -y -bd",
-        "if ($LASTEXITCODE -ne 0) { throw ('7-Zip failed to extract app-64.7z (exit code {0}).' -f $LASTEXITCODE) }",
-        "$mainExe = Join-Path $dir 'DeepSeek Harness.exe'",
-        "if (-not (Test-Path -LiteralPath $mainExe -PathType Leaf)) { throw 'DeepSeek Harness.exe was not found after extracting the application payload.' }",
-        "Remove-Item -LiteralPath $archive -Force",
-        "$pluginDir = Join-Path $dir '$PLUGINSDIR'",
-        "if (Test-Path -LiteralPath $pluginDir -PathType Container) { Remove-Item -LiteralPath $pluginDir -Recurse -Force }",
-        "$uninstaller = Join-Path $dir 'Uninstall DeepSeek Harness.exe'",
-        "if (Test-Path -LiteralPath $uninstaller -PathType Leaf) { Remove-Item -LiteralPath $uninstaller -Force }"
+    "url": "https://download.deepseek.com/desktop/dsh-latest-windows-x64.exe#/dl.7z",
+    "hash": "013e28bc8c714749331308386d814108336851914d243aa6bcfd14de1ab30923",
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\Uninstall DeepSeek Harness.exe\" -Force -Recurse"
     ],
     "shortcuts": [
         [
@@ -32,19 +16,36 @@
         ]
     ],
     "checkver": {
-        "url": "https://api.github.com/repos/deepseek-ai/deepseek-harness/releases?per_page=1",
-        "jsonpath": "$[0].tag_name",
-        "regex": "dsh-v([0-9][0-9A-Za-z.+-]*)"
+        "script": [
+            "$url = 'https://download.deepseek.com/desktop/dsh-latest-windows-x64.exe'",
+            "$request = [System.Net.HttpWebRequest]::Create($url)",
+            "$request.AddRange(0, 2097151)",
+            "$request.Timeout = 30000",
+            "$request.ReadWriteTimeout = 30000",
+            "$response = $null",
+            "$tempFile = $null",
+            "try {",
+            "    $response = $request.GetResponse()",
+            "    if ([int]$response.StatusCode -ne 206) { throw \"Expected a partial download (HTTP 206), received $([int]$response.StatusCode)\" }",
+            "    if ($response.ContentLength -gt 2097152) { throw \"Version probe exceeded 2 MiB: $($response.ContentLength)\" }",
+            "    $tempFile = [System.IO.Path]::GetTempFileName()",
+            "    $output = [System.IO.File]::OpenWrite($tempFile)",
+            "    try { $response.GetResponseStream().CopyTo($output) } finally { $output.Dispose() }",
+            "    if ((Get-Item $tempFile).Length -gt 2097152) { throw 'Version probe exceeded 2 MiB' }",
+            "    $version = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($tempFile).ProductVersion",
+            "    if ($version -notmatch '^[\\d.]+(?:-[\\w.]+)?$') { throw \"Unexpected installer ProductVersion: $version\" }",
+            "    Write-Output $version",
+            "} finally {",
+            "    if ($response) { $response.Close() }",
+            "    if ($tempFile -and (Test-Path $tempFile)) { Remove-Item $tempFile -Force }",
+            "}"
+        ],
+        "regex": "(?<version>[\\d.]+(?:-[\\w.]+)?)"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://download.deepseek.com/desktop/dsh-latest-windows-x64.exe#/dl.7z",
-                "hash": {
-                    "mode": "download"
-                }
-            }
+        "url": "https://download.deepseek.com/desktop/dsh-latest-windows-x64.exe#/dl.7z",
+        "hash": {
+            "mode": "download"
         }
-    },
-    "notes": "The official NSIS setup contains a nested app-64.7z archive. Scoop extracts both layers into the version directory without running the installer. The 7zip dependency is used for the second extraction. The desktop package includes its own Node.js and Python runtimes."
+    }
 }
