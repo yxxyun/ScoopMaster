@@ -6,22 +6,17 @@
     "url": "https://github.com/Niix-x/Oriel-Releases/releases/download/v1.1.1/OrielSetup-1.1.1.exe",
     "hash": "808ec378fcc90c8ae90ace3628596d8819ae728796a1229ff0cf5505ceb8d954",
     "installer": {
+        "file": "OrielSetup.exe",
         "script": [
             "$installDir = Join-Path $env:LOCALAPPDATA 'Programs\\Oriel'",
-            "$setup = Join-Path -Path $dir -ChildPath $fname",
-            "if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) { throw \"Oriel setup executable was not found: $setup\" }",
-            "$process = Start-Process -FilePath $setup -PassThru -Wait -WorkingDirectory $dir",
-            "if ($process.ExitCode -ne 0) { throw \"Oriel guided setup exited with code $($process.ExitCode).\" }",
             "$appExe = Join-Path $installDir 'oriel.exe'",
             "$uninstaller = Join-Path $installDir 'uninstall.exe'",
-            "if (-not (Test-Path -LiteralPath $appExe -PathType Leaf)) { throw \"Oriel executable was not found at $appExe.\" }",
-            "if (-not (Test-Path -LiteralPath $uninstaller -PathType Leaf)) { throw \"Oriel uninstaller was not found at $uninstaller.\" }",
+            "if (-not (Test-Path -LiteralPath $appExe -PathType Leaf)) { throw \"Oriel executable was not found at $appExe. The guided setup may not have completed successfully.\" }",
+            "if (-not (Test-Path -LiteralPath $uninstaller -PathType Leaf)) { throw \"Oriel uninstaller was not found at $uninstaller. The guided setup may not have completed successfully.\" }",
             "$linkPath = Join-Path $dir 'oriel-managed'",
             "if (Test-Path -LiteralPath $linkPath) { throw \"Refusing to overwrite existing managed link: $linkPath\" }",
             "New-Item -ItemType Junction -Path $linkPath -Target $installDir | Out-Null",
-            "if (-not (Test-Path -LiteralPath (Join-Path $linkPath 'oriel.exe') -PathType Leaf)) { throw 'The managed Oriel junction does not resolve to oriel.exe.' }",
-            "Remove-Item -LiteralPath $setup -Force",
-            "if (Test-Path -LiteralPath $setup -PathType Leaf) { throw \"Oriel setup file remains in the Scoop version directory: $setup\" }"
+            "if (-not (Test-Path -LiteralPath (Join-Path $linkPath 'oriel.exe') -PathType Leaf)) { throw 'The managed Oriel junction does not resolve to oriel.exe.' }"
         ]
     },
     "bin": "oriel-managed\\oriel.exe",
@@ -73,7 +68,7 @@
             "if (Test-Path -LiteralPath $installDir) { throw \"Oriel install directory remains after cleanup: $installDir\" }"
         ]
     },
-    "notes": "Non-portable package: run Scoop from a normal, non-elevated PowerShell session. Scoop opens the official Oriel setup wizard without command-line switches and waits for you to complete it. The program is installed per-user in %LOCALAPPDATA%\\Programs\\Oriel; Scoop creates a Junction in its version directory for the shim and shortcut. User data remains in %APPDATA%\\Oriel and Windows Credential Manager. Remove any existing standalone Oriel installation before the first Scoop install. Disable Oriel's automatic update check in Settings > About to keep Scoop as the update authority.",
+    "notes": "Non-portable package: run Scoop from a normal, non-elevated PowerShell session. Scoop's native installer handler opens the official Oriel setup wizard without command-line switches, waits for it to exit, and removes the downloaded setup file after a successful exit. The pre_install hook renames the versioned download to the stable installer.file name required by Scoop. The program is installed per-user in %LOCALAPPDATA%\\Programs\\Oriel; Scoop creates a Junction in its version directory for the shim and shortcut. User data remains in %APPDATA%\\Oriel and Windows Credential Manager. Remove any existing standalone Oriel installation before the first Scoop install. Disable Oriel's automatic update check in Settings > About to keep Scoop as the update authority.",
     "checkver": {
         "github": "https://github.com/Niix-x/Oriel-Releases"
     },
@@ -96,6 +91,12 @@
         "    }",
         "  }",
         "}",
-        "if ($registeredOriel.Count -gt 0) { throw \"An existing Oriel uninstall registration was found: $($registeredOriel -join '; '). Uninstall it manually before using this Scoop package.\" }"
+        "if ($registeredOriel.Count -gt 0) { throw \"An existing Oriel uninstall registration was found: $($registeredOriel -join '; '). Uninstall it manually before using this Scoop package.\" }",
+        "$setup = Join-Path -Path $dir -ChildPath \"OrielSetup-$version.exe\"",
+        "if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) { throw \"Downloaded Oriel setup was not found: $setup\" }",
+        "$scoopInstaller = Join-Path -Path $dir -ChildPath 'OrielSetup.exe'",
+        "if (Test-Path -LiteralPath $scoopInstaller -PathType Leaf) { throw \"Refusing to overwrite existing installer file: $scoopInstaller\" }",
+        "Move-Item -LiteralPath $setup -Destination $scoopInstaller",
+        "if (-not (Test-Path -LiteralPath $scoopInstaller -PathType Leaf)) { throw 'Could not prepare the Scoop-managed Oriel installer file.' }"
     ]
 }

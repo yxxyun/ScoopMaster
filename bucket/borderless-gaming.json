@@ -26,7 +26,7 @@
         "$roots = 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
         "$setupCopy = $roots | ForEach-Object { Get-ItemProperty \"$_\\Borderless Gaming_is1\" -ErrorAction SilentlyContinue } | Select-Object -First 1",
         "if ($setupCopy) {",
-        "  error \"Borderless Gaming is already installed outside Scoop ($($setupCopy.InstallLocation)). Remove it first in Settings > Apps; your settings in %APPDATA%\\Andrew Sampson\\Borderless Gaming stay either way. This attempt left a failed install behind: the next 'scoop install' cleans it up, or run 'scoop uninstall $app'.\"",
+        "  error \"Borderless Gaming is already installed outside Scoop ($(($setupCopy.InstallLocation) -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%')). Remove it first in Settings > Apps; your settings in %APPDATA%\\Andrew Sampson\\Borderless Gaming stay either way. This attempt left a failed install behind: the next 'scoop install' cleans it up, or run 'scoop uninstall $app'.\"",
         "  break",
         "}",
         "",
@@ -34,7 +34,7 @@
         "# Updates are checked in pre_uninstall, which Scoop runs before it removes the old version.",
         "if ($cmd -eq 'install') {",
         "  $busyCheck = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\common\\Test-AppBusy.ps1'",
-        "  if (!(Test-Path -LiteralPath $busyCheck)) { error \"Cannot check whether $app is in use: '$busyCheck' is missing.\"; break }",
+        "  if (!(Test-Path -LiteralPath $busyCheck)) { error \"Cannot check whether $app is in use: '$($busyCheck -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%')' is missing.\"; break }",
         "  $busy = @(& $busyCheck -ProcessName 'BorderlessGaming')",
         "  if ($busy) { error \"$app is running. Close it (tray icon > Exit) and try again:`n  $($busy -join \"`n  \")\"; break }",
         "}"
@@ -43,7 +43,7 @@
         "# 'scoop update' and 'scoop uninstall' stop here, before anything is removed, while Borderless Gaming runs.",
         "$busyCheck = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\common\\Test-AppBusy.ps1'",
         "# Without the helper (e.g. the bucket was removed) only warn: uninstalling must stay possible.",
-        "if (!(Test-Path -LiteralPath $busyCheck)) { warn \"Cannot check whether $app is in use: '$busyCheck' is missing.\"; return }",
+        "if (!(Test-Path -LiteralPath $busyCheck)) { warn \"Cannot check whether $app is in use: '$($busyCheck -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%')' is missing.\"; return }",
         "$busy = @(& $busyCheck -ProcessName 'BorderlessGaming')",
         "if ($busy) { error \"$app is running. Close it (tray icon > Exit) and try again:`n  $($busy -join \"`n  \")\"; break }"
     ],
@@ -55,7 +55,7 @@
             "if (!$task) { return }",
             "$appRoot = Split-Path $dir",
             "$ours = @($task.Actions | Where-Object { $_.Execute -and $_.Execute.Trim('\"').StartsWith(\"$appRoot\\\", [StringComparison]::OrdinalIgnoreCase) })",
-            "if (!$ours) { info \"The scheduled task 'BorderlessGaming' starts another copy ($($task.Actions[0].Execute)); left as it is.\"; return }",
+            "if (!$ours) { info \"The scheduled task 'BorderlessGaming' starts another copy ($(($task.Actions[0].Execute) -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%')); left as it is.\"; return }",
             "try { Unregister-ScheduledTask -InputObject $task -Confirm:$false -ErrorAction Stop; info \"Removed the 'Run on startup' task 'BorderlessGaming'.\" }",
             "catch { warn \"Could not remove the scheduled task 'BorderlessGaming' (it runs with highest privileges). From an elevated shell: Unregister-ScheduledTask BorderlessGaming\" }"
         ]

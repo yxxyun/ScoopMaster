@@ -1,41 +1,52 @@
 {
+    "##": "Upstream renamed its release tags back to the app's real version (2.6.2 -> 2.2.0 on 2026-11-09) while keeping the same binaries, so the manifest tracks the release tag. The Windows asset embeds its own build version (PiliNara_windows_2.2.0+6231_x64_portable.zip) that cannot be rebuilt from $version, so checkver captures the real asset name as $matchAsset. This checkver must never throw: Scoop invokes checkver.script without try/catch, so an uncaught throw aborts the whole bucket-wide run, not just this app.",
     "version": "2.2.0",
-    "description": "PiliNara - 第三方BiliBili客户端 (BiliBili third-party client)",
+    "description": "A Flutter BiliBili desktop client forked from PiliPlus, with offline cache support",
     "homepage": "https://github.com/Starfallan/PiliNara",
     "license": "GPL-3.0-only",
+    "notes": "The app checks for updates at startup by default; disable it in the app settings if you prefer Scoop-managed updates.",
     "architecture": {
         "64bit": {
             "url": "https://github.com/Starfallan/PiliNara/releases/download/2.2.0/PiliNara_windows_2.2.0%2B6231_x64_portable.zip",
-            "hash": "609bca44f7c11707ecbac5f21d98cf5c11b7a74a1a6c07d6f006713865595c29",
-            "extract_dir": "PiliNara-Win"
+            "hash": "609bca44f7c11707ecbac5f21d98cf5c11b7a74a1a6c07d6f006713865595c29"
         }
     },
-    "installer": {
-        "script": [
-            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-            "New-PersistDirectory \"$env:APPDATA\\com.example.piliplus\" \"$persist_dir\\AppData\" -Migrate"
-        ]
-    },
+    "extract_dir": "PiliNara-Win",
     "shortcuts": [
         [
             "pilinara.exe",
             "PiliNara"
         ]
     ],
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App",
-        "Remove-Junction \"$env:APPDATA\\com.example.piliplus\""
+    "post_install": [
+        ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+        "New-PersistDirectory \"$env:APPDATA\\com.example\\PiliNara\" \"$persist_dir\\AppData\" -Migrate"
     ],
+    "uninstaller": {
+        "script": [
+            "$bucket = $install.bucket",
+            ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+            "Remove-Junction \"$env:APPDATA\\com.example\\PiliNara\"",
+            "Remove-EmptyDirectory \"$env:APPDATA\\com.example\""
+        ]
+    },
     "checkver": {
-        "url": "https://api.github.com/repos/Starfallan/PiliNara/releases/latest",
-        "regex": "\"tag_name\"\\s*:\\s*\"([^\"]+)\"[\\s\\S]*?PiliNara_windows_([\\d.]+)%2B(\\d+)_x64_portable\\.zip"
+        "script": [
+            "$headers = @{ 'User-Agent' = 'Scoop' }",
+            "$token = Get-GitHubToken",
+            "if ($token) { $headers['Authorization'] = \"Bearer $token\" }",
+            "$releases = try { Invoke-RestMethod -Headers $headers -Uri 'https://api.github.com/repos/Starfallan/PiliNara/releases?per_page=30' } catch { return }",
+            "$release = $releases | Where-Object { -not $_.draft -and -not $_.prerelease -and ($_.assets.name -match '^PiliNara_windows_[^_]+_x64_portable\\.zip$') } | Select-Object -First 1",
+            "if (-not $release) { return }",
+            "$asset = $release.assets | Where-Object { $_.name -match '^PiliNara_windows_[^_]+_x64_portable\\.zip$' } | Select-Object -First 1",
+            "Write-Output \"$($release.tag_name) $($asset.browser_download_url)\""
+        ],
+        "regex": "(?<version>[^\\s]+)\\shttps://github\\.com/Starfallan/PiliNara/releases/download/[^/]+/(?<asset>[^\\s]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/Starfallan/PiliNara/releases/download/$version/PiliNara_windows_$match2%2B$match3_x64_portable.zip"
+                "url": "https://github.com/Starfallan/PiliNara/releases/download/$version/$matchAsset"
             }
         }
     }

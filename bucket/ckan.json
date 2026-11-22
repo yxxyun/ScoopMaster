@@ -1,23 +1,82 @@
 {
     "version": "1.36.4",
-    "description": "The CKAN is a metadata repository and associated tools to allow you to find, install, and manage mods for Kerbal Space Program.",
+    "description": "CKAN (Comprehensive Kerbal Archive Network): mod manager for Kerbal Space Program. Finds, installs, updates and removes mods with their dependencies; GUI and command line. Self-contained .NET 10 build.",
     "homepage": "https://github.com/KSP-CKAN/CKAN",
     "license": {
-        "identifier": "Software",
-        "url": "https://github.com/KSP-CKAN/CKAN/blob/master/LICENSE.md"
+        "identifier": "MIT",
+        "url": "https://github.com/KSP-CKAN/CKAN/blob/HEAD/LICENSE.md"
     },
-    "url": "https://ghproxy.com/https://github.com/KSP-CKAN/CKAN/releases/download/v1.36.4/ckan.exe",
-    "hash": "94176d686473f905c7e64a2ef0a5a52e7194e02b7b8442b4ba7c941f10d589db",
-    "bin": "ckan.exe",
-    "shortcuts": [
+    "notes": [
+        "Self-contained .NET 10 build (ckan-windows.exe, upstream's recommendation for Windows): no framework needed,",
+        "follows the Windows dark theme. gesu/CKAN-NetFx is the small .NET Framework build; only one of the two can be installed.",
+        "",
+        "Update CKAN with 'scoop update CKAN': on the first start CKAN asks whether to check for its own updates",
+        "on launch; answer No. Its updater replaces the exe in the app folder behind Scoop's back.",
+        "",
+        "CKAN keeps its settings, the list of game instances and the download cache (it can grow to gigabytes)",
+        "in %LOCALAPPDATA%\\CKAN, and each game's list of installed mods in the CKAN folder inside the game folder.",
+        "'scoop uninstall -p' deletes neither. The cache folder and its size limit can be changed in CKAN's settings.",
+        "",
+        "Mod changes fail while the game runs: Windows locks the mods' DLLs. Close KSP first.",
+        "",
+        "CKAN refuses to start with administrator rights (an elevated shell, or any program when UAC is off).",
+        "The second shortcut, 'CKAN (--asroot)', starts it with --asroot, which skips that check. Files CKAN",
+        "then writes into the game folder belong to Administrators, so a non-elevated CKAN or KSP may not change them.",
+        "",
+        "ckan:// links: on the first start CKAN offers to register them for all users, which needs admin rights (UAC).",
+        "'scoop uninstall CKAN' removes them if they point to this copy (from an elevated shell, if they were registered for all users)."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/KSP-CKAN/CKAN/releases/download/v1.36.4/ckan-windows.exe",
+            "hash": "2b5ae365540766cd338e1b55bc82b696f7186d93a8bef647fa6825eaefa84656"
+        }
+    },
+    "pre_install": [
+        "# Both packages add the command 'ckan': only one of them may be installed.",
+        "if ($cmd -eq 'install' -and (installed 'CKAN-NetFx')) { error \"$app conflicts with CKAN-NetFx, which is installed. Run 'scoop uninstall CKAN-NetFx' first; CKAN's settings and caches in %LOCALAPPDATA%\\CKAN stay. Scoop has already put ${app} into its app folder: run 'scoop uninstall $app' or simply install again, which cleans that up.\"; break }",
+        "# The DEV-tools bucket's ksp-ckan adds the same command 'ckan'.",
+        "if ($cmd -eq 'install' -and (installed 'ksp-ckan')) { error \"$app conflicts with ksp-ckan (CKAN from another bucket), which is installed. Run 'scoop uninstall ksp-ckan' first; CKAN's settings and caches in %LOCALAPPDATA%\\CKAN stay. Scoop has already put ${app} into its app folder: run 'scoop uninstall $app' or simply install again, which cleans that up.\"; break }"
+    ],
+    "bin": [
         [
-            "ckan.exe",
+            "ckan-windows.exe",
             "ckan"
         ]
     ],
-    "checkver": "github",
-    "autoupdate": {
-        "url": "https://ghproxy.com/https://github.com/KSP-CKAN/CKAN/releases/download/v$version/ckan.exe"
+    "shortcuts": [
+        [
+            "ckan-windows.exe",
+            "CKAN"
+        ],
+        [
+            "ckan-windows.exe",
+            "CKAN (--asroot)",
+            "--asroot"
+        ]
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -ne 'uninstall') { return }",
+            "# CKAN registers ckan:// in HKCR, which lands in HKLM unless the key already exists for the current user.",
+            "# Remove it only if it points to this package's folder (trailing backslash: CKAN-NetFx's folder starts with the same name).",
+            "$appRoot = (Split-Path $dir) + '\\'",
+            "foreach ($key in 'HKCU:\\Software\\Classes\\ckan', 'HKLM:\\Software\\Classes\\ckan') {",
+            "  $command = (Get-ItemProperty \"$key\\shell\\open\\command\" -ErrorAction SilentlyContinue).'(default)'",
+            "  if (!$command -or ($command.IndexOf($appRoot, [StringComparison]::OrdinalIgnoreCase) -lt 0)) { continue }",
+            "  try { Remove-Item $key -Recurse -Force -ErrorAction Stop }",
+            "  catch { warn \"Could not remove the ckan:// link handler ($($key -replace ':', '')): run 'reg delete $($key -replace ':', '') /f' from an elevated shell.\" }",
+            "}"
+        ]
     },
-    "_from": "okibcn/ScoopMaster"
+    "checkver": {
+        "github": "https://github.com/KSP-CKAN/CKAN"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/KSP-CKAN/CKAN/releases/download/v$version/ckan-windows.exe"
+            }
+        }
+    }
 }

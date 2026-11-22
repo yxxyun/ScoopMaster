@@ -47,12 +47,12 @@
             "# The MSI removes an older version itself (RemoveExistingProducts) and installs the driver with UsbDkInstHelper.",
             "$proc = Start-Process msiexec.exe -ArgumentList @('/i', \"`\"$dir\\setup.msi_`\"\", '/qn', '/norestart', '/l*v', \"`\"$dir\\install.log`\"\") -Wait -PassThru",
             "# 3010: installed, a reboot is needed to finish.",
-            "if ($proc.ExitCode -notin 0, 3010) { error \"msiexec failed with exit code $($proc.ExitCode); see $dir\\install.log.\"; break }",
+            "if ($proc.ExitCode -notin 0, 3010) { error \"msiexec failed with exit code $($proc.ExitCode); see $($dir -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%')\\install.log.\"; break }",
             "if ($proc.ExitCode -eq 3010) { warn 'Reboot to finish installing the UsbDk driver.' }",
             "$installDir = (& $findEntry).InstallLocation",
             "if (!$installDir) { $installDir = \"$env:ProgramFiles\\UsbDk Runtime Library\" }",
             "# Link the install folder into $dir, so that 'bin' (which Scoop resolves inside $dir) can point at it.",
-            "if (!(Test-Path \"$installDir\\UsbDkController.exe\")) { warn \"UsbDkController.exe was not found in $installDir; the command UsbDkController will not work.\"; return }",
+            "if (!(Test-Path \"$installDir\\UsbDkController.exe\")) { warn \"UsbDkController.exe was not found in $($installDir -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%'); the command UsbDkController will not work.\"; return }",
             "New-Item -ItemType Junction -Path \"$dir\\UsbDk\" -Target $installDir.TrimEnd('\\') | Out-Null"
         ]
     },

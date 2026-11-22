@@ -5,8 +5,14 @@
     "license": "Apache-2.0",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/termilly/termilly/releases/download/v1.9.3/TermillySetup-1.9.3.exe",
-            "hash": "c8535a94a4df697031c87308d1e8babad37deea9a5afeb68eb08782a24a0af6e"
+            "url": [
+                "https://github.com/termilly/termilly/releases/download/v1.9.3/TermillySetup-1.9.3.exe",
+                "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/10.0.15/windowsdesktop-runtime-10.0.15-win-x64.zip"
+            ],
+            "hash": [
+                "c8535a94a4df697031c87308d1e8babad37deea9a5afeb68eb08782a24a0af6e",
+                "sha512:d82ee2e70f0c1ee7af3a908a944541993782aa80a3fd2b2e02a3fdf27edc81c0ad946f14a3fe34bae295f1b7a23f5d35a466239726e4457bb200de0344e077c4"
+            ]
         }
     },
     "installer": {
@@ -137,12 +143,24 @@
             "$mainExe = Join-Path $dir 'Termilly.exe'",
             "$cliExe = Join-Path $dir 'agent\\termilly.exe'",
             "if (-not (Test-Path -LiteralPath $mainExe -PathType Leaf)) { throw 'Termilly.exe is missing from the embedded app payload.' }",
+            "",
+            "$dotnetArchive = Join-Path $dir 'windowsdesktop-runtime-10.0.15-win-x64.zip'",
+            "$dotnetRoot = Join-Path $dir 'dotnet'",
+            "if (-not (Test-Path -LiteralPath $dotnetArchive -PathType Leaf)) { throw 'The portable .NET Desktop Runtime archive is missing.' }",
+            "Expand-Archive -LiteralPath $dotnetArchive -DestinationPath $dotnetRoot -Force",
+            "if (-not (Test-Path -LiteralPath (Join-Path $dotnetRoot 'dotnet.exe') -PathType Leaf) -or",
+            "    -not (Test-Path -LiteralPath (Join-Path $dotnetRoot 'shared\\Microsoft.WindowsDesktop.App') -PathType Container)) {",
+            "    throw 'The portable .NET 10 Desktop Runtime was not extracted correctly.'",
+            "}",
+            "",
             "if (-not (Test-Path -LiteralPath $cliExe -PathType Leaf)) { throw 'agent\\termilly.exe is missing from the embedded app payload.' }",
             "",
             "$binDir = Join-Path $dir 'bin'",
             "New-Item -ItemType Directory -Path $binDir -Force | Out-Null",
             "$wrapper = @'",
             "@echo off",
+            "for %%I in (\"%~dp0..\\dotnet\") do set \"DOTNET_ROOT=%%~fI\"",
+            "set \"DOTNET_ROOT_X64=%DOTNET_ROOT%\"",
             "set \"TERMILLY_DATA_DIR=%~dp0..\\data\"",
             "if \"%~1\"==\"\" (",
             "    start \"\" \"%~dp0..\\Termilly.exe\"",
@@ -153,6 +171,7 @@
             "[System.IO.File]::WriteAllText((Join-Path $binDir 'termilly.cmd'), $wrapper, [System.Text.Encoding]::ASCII)",
             "",
             "Remove-Item -LiteralPath $payloadZip -Force",
+            "Remove-Item -LiteralPath $dotnetArchive -Force",
             "Remove-Item -LiteralPath $setupPath -Force"
         ]
     },
@@ -170,8 +189,8 @@
         ]
     ],
     "notes": [
-        "The official setup's embedded app payload is extracted into the Scoop directory; the upstream installer is not run.",
-        "Requires the .NET 10 Desktop Runtime and Microsoft Edge WebView2 Runtime."
+        "Includes the .NET 10.0.15 Desktop Runtime locally; Termilly settings, logs and recordings are stored in Scoop's persistent data directory.",
+        "Requires the Microsoft Edge WebView2 Evergreen Runtime."
     ],
     "checkver": {
         "url": "https://api.github.com/repos/termilly/termilly/releases/latest",
@@ -180,12 +199,33 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/termilly/termilly/releases/download/v$version/TermillySetup-$version.exe",
-                "hash": {
-                    "url": "https://github.com/termilly/termilly/releases/download/v$version/SHA256SUMS",
-                    "find": "([a-fA-F\\d]{64})\\s+TermillySetup-$version\\.exe"
-                }
+                "url": [
+                    "https://github.com/termilly/termilly/releases/download/v$version/TermillySetup-$version.exe",
+                    "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/10.0.15/windowsdesktop-runtime-10.0.15-win-x64.zip"
+                ],
+                "hash": [
+                    {
+                        "url": "https://github.com/termilly/termilly/releases/download/v$version/SHA256SUMS",
+                        "find": "([a-fA-F\\d]{64})\\s+TermillySetup-$version\\.exe"
+                    },
+                    {}
+                ]
             }
         }
+    },
+    "post_install": {
+        "script": [
+            "$portableData = Join-Path $dir 'data'",
+            "New-Item -ItemType Directory -Path $portableData -Force | Out-Null",
+            "$settingsFile = Join-Path $portableData 'settings.json'",
+            "if (-not (Test-Path -LiteralPath $settingsFile -PathType Leaf)) {",
+            "    $settings = [ordered]@{",
+            "        version = 2",
+            "        logging = [ordered]@{ folder = (Join-Path $portableData 'logs') }",
+            "        recording = [ordered]@{ folder = (Join-Path $portableData 'recordings') }",
+            "    }",
+            "    $settings | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $settingsFile -Encoding UTF8",
+            "}"
+        ]
     }
 }

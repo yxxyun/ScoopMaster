@@ -35,7 +35,7 @@
         "if ($cmd -eq 'install') {",
         "  $installDir = if ($existing) { Split-Path $existing.UninstallString.Trim('\"') }",
         "  $busyCheck = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\common\\Test-AppBusy.ps1'",
-        "  if (!(Test-Path -LiteralPath $busyCheck)) { error \"Cannot check whether $app is in use: '$busyCheck' is missing.\"; break }",
+        "  if (!(Test-Path -LiteralPath $busyCheck)) { error \"Cannot check whether $app is in use: '$($busyCheck -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%')' is missing.\"; break }",
         "  $busy = @(& $busyCheck -ProcessName 'WinMX' -Path $installDir)",
         "  if ($busy) { error \"$app is in use. Close it (and anything holding its files open) and try again:`n  $($busy -join \"`n  \")\"; break }",
         "}",
@@ -52,7 +52,7 @@
         "$installDir = if ($entry) { Split-Path $entry.UninstallString.Trim('\"') }",
         "$busyCheck = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\common\\Test-AppBusy.ps1'",
         "# Without the helper (e.g. the bucket was removed) only warn: uninstalling must stay possible.",
-        "if (!(Test-Path -LiteralPath $busyCheck)) { warn \"Cannot check whether $app is in use: '$busyCheck' is missing.\"; return }",
+        "if (!(Test-Path -LiteralPath $busyCheck)) { warn \"Cannot check whether $app is in use: '$($busyCheck -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%')' is missing.\"; return }",
         "$busy = @(& $busyCheck -ProcessName 'WinMX' -Path $installDir)",
         "if ($busy) { error \"$app is in use. Close it (and anything holding its files open) and try again:`n  $($busy -join \"`n  \")\"; break }"
     ],
@@ -68,7 +68,7 @@
             "$entry = $roots | ForEach-Object { Get-ItemProperty \"$_\\Winmx Community 1\" -ErrorAction SilentlyContinue } | Select-Object -First 1",
             "if (!$entry) { warn 'WinMX Community Patch was not found among installed programs; no Scoop shortcut was made.'; return }",
             "$installDir = Split-Path $entry.UninstallString.Trim('\"')",
-            "if (!(Test-Path \"$installDir\\WinMX.exe\")) { warn \"WinMX.exe was not found in $installDir; no Scoop shortcut was made.\"; return }",
+            "if (!(Test-Path \"$installDir\\WinMX.exe\")) { warn \"WinMX.exe was not found in $($installDir -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%'); no Scoop shortcut was made.\"; return }",
             "New-Item -ItemType Junction -Path \"$dir\\Winmx\" -Target $installDir | Out-Null"
         ]
     },

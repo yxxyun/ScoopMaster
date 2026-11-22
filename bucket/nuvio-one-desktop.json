@@ -1,0 +1,63 @@
+{
+    "version": "0.1.345",
+    "description": "Unofficial Windows desktop media center for movies, series, live TV, and music.",
+    "homepage": "https://github.com/zoga2o3-ops/Nuvio-One-Desktop",
+    "license": "GPL-3.0-only",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/zoga2o3-ops/Nuvio-One-Desktop/releases/download/v0.1.345/NuvioOne-Windows-portable-0.1.345.zip",
+            "hash": "605844f3fb953a04dc27d37245a741d8f7b782f9fdd2003ae2959ee0b864696e"
+        }
+    },
+    "pre_install": [
+        "$launcher = @'",
+        "@echo off",
+        "setlocal",
+        "set \"APPDATA=%~dp0Roaming\"",
+        "set \"LOCALAPPDATA=%~dp0Local\"",
+        "pushd \"%~dp0\"",
+        "start \"\" \"%~dp0Nuvio One.exe\" %*",
+        "popd",
+        "'@",
+        "[System.IO.File]::WriteAllText((Join-Path $dir 'Nuvio One.cmd'), $launcher, [System.Text.Encoding]::ASCII)",
+        "if (-not (Test-Path -LiteralPath (Join-Path $dir 'Nuvio One.exe') -PathType Leaf)) { throw 'The official portable ZIP did not extract Nuvio One.exe into the expected application directory.' }"
+    ],
+    "persist": [
+        "Roaming",
+        "Local"
+    ],
+    "bin": [
+        [
+            "Nuvio One.cmd",
+            "nuvio-one"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "Nuvio One.cmd",
+            "Nuvio One"
+        ]
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/zoga2o3-ops/Nuvio-One-Desktop/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "^v(?<version>[0-9]+\\.[0-9]+\\.[0-9]+)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/zoga2o3-ops/Nuvio-One-Desktop/releases/download/v$version/NuvioOne-Windows-portable-$version.zip",
+                "hash": {
+                    "mode": "json",
+                    "url": "https://api.github.com/repos/zoga2o3-ops/Nuvio-One-Desktop/releases/latest",
+                    "jsonpath": "$.assets[?(@.name == 'NuvioOne-Windows-portable-$version.zip')].digest"
+                }
+            }
+        }
+    },
+    "notes": [
+        "Uses the official Windows portable ZIP. Application settings and cache are redirected to the Scoop persist directory through APPDATA and LOCALAPPDATA.",
+        "Use 'scoop update nuvio-one-desktop' for updates. Do not use the application's in-app updater when you want to keep the Scoop-managed portable installation; upstream's portable build updater installs the MSI.",
+        "Windows DPAPI protects some saved secrets for the current Windows user. Copying the persist folder to another Windows account or machine may make those encrypted values unreadable."
+    ]
+}

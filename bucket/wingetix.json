@@ -1,0 +1,41 @@
+{
+    "version": "1.1.1",
+    "description": "Windows GUI for managing software updates and system utilities through WinGet.",
+    "homepage": "https://github.com/joselyky/Wingetix",
+    "license": "Unknown",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/joselyky/Wingetix/releases/download/v1.1.1/Wingetix.1.1.1.exe#/dl.7z",
+            "hash": "bef8aacca5bed13919d8cd0fffe33084374e11efb8d39947fd97cda045307c03"
+        }
+    },
+    "pre_install": [
+        "$payload = Join-Path $dir '$PLUGINSDIR\\app-64.7z'",
+        "if (-not (Test-Path -LiteralPath $payload -PathType Leaf)) { throw 'Wingetix application payload archive was not found in the NSIS package.' }",
+        "Expand-7zipArchive $payload $dir -Removal",
+        "$mainExe = Join-Path $dir 'Wingetix.exe'",
+        "$appAsar = Join-Path $dir 'resources\\app.asar'",
+        "if (-not (Test-Path -LiteralPath $mainExe -PathType Leaf)) { throw 'Wingetix.exe was not found after extracting the nested application archive.' }",
+        "if (-not (Test-Path -LiteralPath $appAsar -PathType Leaf)) { throw 'resources\\app.asar was not found after extracting the nested application archive.' }"
+    ],
+    "post_install": "Remove-Item -LiteralPath (Join-Path $dir '$PLUGINSDIR') -Recurse -Force -ErrorAction SilentlyContinue",
+    "shortcuts": [
+        [
+            "Wingetix.exe",
+            "Wingetix"
+        ]
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/joselyky/Wingetix/releases/latest",
+        "jsonpath": "$.tag_name",
+        "regex": "^v(?<version>[\\d.]+)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/joselyky/Wingetix/releases/download/v$version/Wingetix.$version.exe#/dl.7z"
+            }
+        }
+    },
+    "notes": "Scoop extracts the official NSIS package and its embedded app-64.7z payload; the vendor installer is not executed. Wingetix requests administrator rights when launched and requires WinGet/App Installer to be available. The upstream LICENSE file is GPL-3.0 while package.json declares MIT, so the manifest license is Unknown pending upstream clarification."
+}

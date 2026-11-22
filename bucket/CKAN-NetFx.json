@@ -1,0 +1,73 @@
+{
+    "version": "1.36.4",
+    "description": "CKAN (Comprehensive Kerbal Archive Network): mod manager for Kerbal Space Program. Finds, installs, updates and removes mods with their dependencies; GUI and command line. Small build for .NET Framework 4.8.1 (also runs on Mono).",
+    "homepage": "https://github.com/KSP-CKAN/CKAN",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/KSP-CKAN/CKAN/blob/HEAD/LICENSE.md"
+    },
+    "notes": [
+        "Small build for .NET Framework 4.8.1 (ckan.exe, the one upstream ships for Mono), without the dark theme.",
+        "Windows 11 22H2 and later include .NET Framework 4.8.1; elsewhere, if CKAN does not start: scoop install -g gesu/NetFx-4.8.1",
+        "gesu/CKAN is the self-contained .NET 10 build that upstream recommends for Windows; only one of the two can be installed.",
+        "",
+        "Update CKAN with 'scoop update CKAN-NetFx': on the first start CKAN asks whether to check for its own updates",
+        "on launch; answer No. Its updater replaces the exe in the app folder behind Scoop's back.",
+        "",
+        "CKAN keeps its settings, the list of game instances and the download cache (it can grow to gigabytes)",
+        "in %LOCALAPPDATA%\\CKAN, and each game's list of installed mods in the CKAN folder inside the game folder.",
+        "'scoop uninstall -p' deletes neither. The cache folder and its size limit can be changed in CKAN's settings.",
+        "",
+        "Mod changes fail while the game runs: Windows locks the mods' DLLs. Close KSP first.",
+        "",
+        "CKAN refuses to start with administrator rights (an elevated shell, or any program when UAC is off).",
+        "The second shortcut, 'CKAN (.NET Framework, --asroot)', starts it with --asroot, which skips that check. Files CKAN",
+        "then writes into the game folder belong to Administrators, so a non-elevated CKAN or KSP may not change them.",
+        "",
+        "ckan:// links: on the first start CKAN offers to register them for all users, which needs admin rights (UAC).",
+        "'scoop uninstall CKAN-NetFx' removes them if they point to this copy (from an elevated shell, if they were registered for all users)."
+    ],
+    "suggest": {
+        ".NET Framework 4.8.1": "gesu/NetFx-4.8.1"
+    },
+    "url": "https://github.com/KSP-CKAN/CKAN/releases/download/v1.36.4/ckan.exe",
+    "hash": "7748082cdfcf2dbb5f502261b18afc85003193894c60427d04b0ac7a8dfef7de",
+    "pre_install": [
+        "# Both packages add the command 'ckan': only one of them may be installed.",
+        "if ($cmd -eq 'install' -and (installed 'CKAN')) { error \"$app conflicts with CKAN, which is installed. Run 'scoop uninstall CKAN' first; CKAN's settings and caches in %LOCALAPPDATA%\\CKAN stay. Scoop has already put ${app} into its app folder: run 'scoop uninstall $app' or simply install again, which cleans that up.\"; break }",
+        "# The DEV-tools bucket's ksp-ckan adds the same command 'ckan'.",
+        "if ($cmd -eq 'install' -and (installed 'ksp-ckan')) { error \"$app conflicts with ksp-ckan (CKAN from another bucket), which is installed. Run 'scoop uninstall ksp-ckan' first; CKAN's settings and caches in %LOCALAPPDATA%\\CKAN stay. Scoop has already put ${app} into its app folder: run 'scoop uninstall $app' or simply install again, which cleans that up.\"; break }"
+    ],
+    "bin": "ckan.exe",
+    "shortcuts": [
+        [
+            "ckan.exe",
+            "CKAN (.NET Framework)"
+        ],
+        [
+            "ckan.exe",
+            "CKAN (.NET Framework, --asroot)",
+            "--asroot"
+        ]
+    ],
+    "uninstaller": {
+        "script": [
+            "if ($cmd -ne 'uninstall') { return }",
+            "# CKAN registers ckan:// in HKCR, which lands in HKLM unless the key already exists for the current user.",
+            "# Remove it only if it points to this package's folder.",
+            "$appRoot = (Split-Path $dir) + '\\'",
+            "foreach ($key in 'HKCU:\\Software\\Classes\\ckan', 'HKLM:\\Software\\Classes\\ckan') {",
+            "  $command = (Get-ItemProperty \"$key\\shell\\open\\command\" -ErrorAction SilentlyContinue).'(default)'",
+            "  if (!$command -or ($command.IndexOf($appRoot, [StringComparison]::OrdinalIgnoreCase) -lt 0)) { continue }",
+            "  try { Remove-Item $key -Recurse -Force -ErrorAction Stop }",
+            "  catch { warn \"Could not remove the ckan:// link handler ($($key -replace ':', '')): run 'reg delete $($key -replace ':', '') /f' from an elevated shell.\" }",
+            "}"
+        ]
+    },
+    "checkver": {
+        "github": "https://github.com/KSP-CKAN/CKAN"
+    },
+    "autoupdate": {
+        "url": "https://github.com/KSP-CKAN/CKAN/releases/download/v$version/ckan.exe"
+    }
+}

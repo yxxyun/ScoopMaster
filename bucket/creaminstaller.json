@@ -1,35 +1,87 @@
 {
     "version": "5.2.0.0",
-    "description": "Automatically finds all installed Steam, Epic and Ubisoft games with their respective DLC-related DLL locations on the user's computer, parses SteamCMD, Steam Store and Epic Games Store for user-selected games' DLCs, then provides a very simple graphical interface utilizing the gathered information for the maintenance of DLC unlockers.",
+    "description": "Automatic DLC unlocker installer and configuration generator for Steam, Epic Games, and Ubisoft games.",
     "homepage": "https://github.com/FroggMaster/CreamInstaller",
-    "license": "GPL-3.0-only",
+    "license": {
+        "identifier": "GPL-3.0-only",
+        "url": "https://github.com/FroggMaster/CreamInstaller/blob/main/LICENSE"
+    },
     "architecture": {
         "64bit": {
             "url": "https://github.com/FroggMaster/CreamInstaller/releases/download/v5.2.0.0/CreamInstaller.exe",
             "hash": "ea9cef35fff2879bdc330b6ba5bc15b0033a186a1fe68a4a39a56d67fc96159b"
-        },
-        "32bit": {
-            "url": "https://github.com/FroggMaster/CreamInstaller/releases/download/v5.2.0.0/CreamInstaller.exe",
-            "hash": "ea9cef35fff2879bdc330b6ba5bc15b0033a186a1fe68a4a39a56d67fc96159b"
         }
     },
-    "bin": "CreamInstaller.exe",
+    "pre_install": [
+        "$targetPath = Join-Path ([Environment]::GetFolderPath('CommonApplicationData')) 'CreamInstaller'",
+        "$target = Get-Item -LiteralPath $targetPath -Force -ErrorAction SilentlyContinue",
+        "if ($target.LinkType -eq 'Junction' -and $target.Target.TrimEnd('\\') -eq $persist_dir) {",
+        "    [IO.Directory]::CreateDirectory($persist_dir) | Out-Null",
+        "    return",
+        "}",
+        "if (!$target) {",
+        "    $hadPersist = Test-Path -LiteralPath $persist_dir",
+        "    [IO.Directory]::CreateDirectory($persist_dir) | Out-Null",
+        "    try {",
+        "        New-Item -ItemType Junction -Path $targetPath -Target $persist_dir -ErrorAction Stop | Out-Null",
+        "    } catch {",
+        "        if (!$hadPersist) { [IO.Directory]::Delete($persist_dir) }",
+        "        throw",
+        "    }",
+        "    return",
+        "}",
+        "if (!$target.PSIsContainer -or ($target.Attributes -band [IO.FileAttributes]::ReparsePoint)) {",
+        "    throw \"Cannot migrate $targetPath because it is not a regular directory.\"",
+        "}",
+        "if (Test-Path -LiteralPath $persist_dir) {",
+        "    throw \"CreamInstaller data exists at both $targetPath and $persist_dir. Merge or back up the directories before retrying.\"",
+        "}",
+        "$migrationId = [guid]::NewGuid()",
+        "$stagingPath = \"$persist_dir.scoop-$migrationId\"",
+        "$backupPath = \"$targetPath.scoop-$migrationId\"",
+        "$backedUp = $false",
+        "$promoted = $false",
+        "try {",
+        "    $PSNativeCommandUseErrorActionPreference = $false",
+        "    $copyLog = robocopy.exe $targetPath $stagingPath /E /SJ /SL /R:0 /W:0 /NFL /NDL /NP",
+        "    if ($LASTEXITCODE -ge 8) {",
+        "        throw \"CreamInstaller data copy failed: $($copyLog -join [Environment]::NewLine)\"",
+        "    }",
+        "    [IO.Directory]::Move($targetPath, $backupPath)",
+        "    $backedUp = $true",
+        "    [IO.Directory]::Move($stagingPath, $persist_dir)",
+        "    $promoted = $true",
+        "    New-Item -ItemType Junction -Path $targetPath -Target $persist_dir -ErrorAction Stop | Out-Null",
+        "} catch {",
+        "    if ($backedUp) { [IO.Directory]::Move($backupPath, $targetPath) }",
+        "    if ($promoted) { [IO.Directory]::Move($persist_dir, $stagingPath) }",
+        "    throw",
+        "} finally {",
+        "    if ([IO.Directory]::Exists($stagingPath)) { [IO.Directory]::Delete($stagingPath, $true) }",
+        "}",
+        "try {",
+        "    [IO.Directory]::Delete($backupPath, $true)",
+        "} catch {",
+        "    Write-Warning \"CreamInstaller data was migrated. The original backup is still at $backupPath.\"",
+        "}"
+    ],
+    "post_uninstall": [
+        "$targetPath = Join-Path ([Environment]::GetFolderPath('CommonApplicationData')) 'CreamInstaller'",
+        "$target = Get-Item -LiteralPath $targetPath -Force -ErrorAction SilentlyContinue",
+        "if ($target.LinkType -eq 'Junction' -and $target.Target.TrimEnd('\\') -eq $persist_dir) {",
+        "    [IO.Directory]::Delete($targetPath)",
+        "}"
+    ],
     "shortcuts": [
         [
             "CreamInstaller.exe",
             "CreamInstaller"
         ]
     ],
-    "checkver": {
-        "url": "https://github.com/FroggMaster/CreamInstaller/releases/latest",
-        "regex": "/releases/tag/v([\\d.]+)"
-    },
+    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/FroggMaster/CreamInstaller/releases/download/v$version/CreamInstaller.exe"
-            },
-            "32bit": {
                 "url": "https://github.com/FroggMaster/CreamInstaller/releases/download/v$version/CreamInstaller.exe"
             }
         }

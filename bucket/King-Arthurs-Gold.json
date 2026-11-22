@@ -15,7 +15,7 @@
         "Through Steam: Steam's install dialog opens and Steam downloads and updates the game; 'scoop uninstall' asks Steam to remove it.",
         "Standalone: portable, unpacked from the official MSI (no admin rights). The game updates itself from kag2d.com on start,",
         "and keeps its settings (*.cfg) and screenshots in its own folder, so the whole folder is persisted:",
-        "$persist_dir\\KAG survives updates and 'scoop uninstall'; 'scoop uninstall --purge' deletes it.",
+        "%USERPROFILE%\\scoop\\persist\\King-Arthurs-Gold\\KAG survives updates and 'scoop uninstall'; 'scoop uninstall --purge' deletes it.",
         "Multiplayer needs a free kag2d.com account (Steam users get one automatically).",
         "",
         "The 'King-Arthurs-Gold' command and the 'King Arthur's Gold' shortcut in Scoop Apps start the chosen copy."
@@ -31,7 +31,7 @@
         "# The kag2d.com installer (outside Scoop) would be a second copy, and its uninstaller deletes its whole folder.",
         "$roots = 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
         "$msiCopy = Get-ChildItem $roots -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -notlike 'Steam App *' } | Get-ItemProperty -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq \"King Arthur's Gold\" } | Select-Object -First 1",
-        "if ($msiCopy) { error \"King Arthur's Gold is already installed from kag2d.com's installer ($($msiCopy.InstallLocation)). Remove it first in Settings > Apps; its uninstaller deletes that whole folder, so copy your *.cfg files and Screenshots out of it first if you need them.\"; break }"
+        "if ($msiCopy) { error \"King Arthur's Gold is already installed from kag2d.com's installer ($(($msiCopy.InstallLocation) -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%')). Remove it first in Settings > Apps; its uninstaller deletes that whole folder, so copy your *.cfg files and Screenshots out of it first if you need them.\"; break }"
     ],
     "installer": {
         "script": [
@@ -84,7 +84,7 @@
             "if ($cmd -ne 'uninstall') { return }",
             "$modeFile = \"$persist_dir\\source.txt\"",
             "$source = if (Test-Path $modeFile) { (Get-Content $modeFile -TotalCount 1).Trim() } else { '' }",
-            "if ($source -ne 'steam') { info \"The standalone game stays in $persist_dir\\KAG; 'scoop uninstall --purge' deletes it.\"; return }",
+            "if ($source -ne 'steam') { info \"The standalone game stays in $($persist_dir -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%')\\KAG; 'scoop uninstall --purge' deletes it.\"; return }",
             "Start-Process 'steam://uninstall/219830'",
             "Write-Host \"Steam asks you to confirm removing King Arthur's Gold; the game files are deleted only after you confirm.\" -ForegroundColor Yellow"
         ]
