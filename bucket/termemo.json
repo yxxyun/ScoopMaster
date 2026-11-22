@@ -1,0 +1,81 @@
+{
+    "version": "0.3.1",
+    "description": "Desktop library for organizing and saving shell commands in local workspaces.",
+    "homepage": "https://github.com/Renato1478/termemo",
+    "license": "Unknown",
+    "url": "https://github.com/Renato1478/termemo/releases/download/v0.3.1/Termemo_0.3.1_x64_en-US.msi#/dl.msi",
+    "hash": "80c0e451f561ca4dc755749ce76b7d21648b6700aeee8183ebfb6024a41c8b11",
+    "extract_dir": "PFiles/Termemo",
+    "persist": [
+        "data",
+        "local-data"
+    ],
+    "post_install": [
+        "$junctions = @(",
+        "    @{ Path = (Join-Path $env:APPDATA 'dev.commandpad.app'); Target = (Join-Path $persist_dir 'data') },",
+        "    @{ Path = (Join-Path $env:LOCALAPPDATA 'dev.commandpad.app'); Target = (Join-Path $persist_dir 'local-data') }",
+        ")",
+        "foreach ($junction in $junctions) {",
+        "    $path = [string]$junction.Path",
+        "    $target = [string]$junction.Target",
+        "    if (-not (Test-Path -LiteralPath $target -PathType Container)) {",
+        "        New-Item -ItemType Directory -Path $target -Force | Out-Null",
+        "    }",
+        "    $existing = Get-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue",
+        "    if ($null -ne $existing) {",
+        "        if (($existing.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {",
+        "            if ($existing.LinkType -eq 'Junction' -and [IO.Path]::GetFullPath([string]$existing.Target) -ieq [IO.Path]::GetFullPath($target)) { continue }",
+        "            throw ('Refusing to replace an unexpected reparse point at ' + $path)",
+        "        }",
+        "        if (-not $existing.PSIsContainer) { throw ('Expected an application data directory but found a file at ' + $path) }",
+        "        $sourceItems = @(Get-ChildItem -LiteralPath $path -Force)",
+        "        $targetItems = @(Get-ChildItem -LiteralPath $target -Force)",
+        "        if ($sourceItems.Count -gt 0 -and $targetItems.Count -gt 0) {",
+        "            throw ('Both ' + $path + ' and ' + $target + ' contain data; refusing to overwrite either location.')",
+        "        }",
+        "        if ($sourceItems.Count -gt 0) { $sourceItems | Move-Item -Destination $target }",
+        "        Remove-Item -LiteralPath $path -Force",
+        "    }",
+        "    New-Item -ItemType Junction -Path $path -Target $target | Out-Null",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$junctions = @(",
+        "    @{ Path = (Join-Path $env:APPDATA 'dev.commandpad.app'); Target = (Join-Path $persist_dir 'data') },",
+        "    @{ Path = (Join-Path $env:LOCALAPPDATA 'dev.commandpad.app'); Target = (Join-Path $persist_dir 'local-data') }",
+        ")",
+        "foreach ($junction in $junctions) {",
+        "    $path = [string]$junction.Path",
+        "    $target = [string]$junction.Target",
+        "    $existing = Get-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue",
+        "    if ($null -ne $existing -and",
+        "        ($existing.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -and",
+        "        $existing.LinkType -eq 'Junction' -and",
+        "        [IO.Path]::GetFullPath([string]$existing.Target) -ieq [IO.Path]::GetFullPath($target)) {",
+        "        $removeCommand = 'rmdir \"' + $path + '\"'",
+        "        & $env:ComSpec /d /c $removeCommand",
+        "        if ($LASTEXITCODE -ne 0) { throw ('Failed to remove the Termemo junction at ' + $path + '; cmd exit code: ' + $LASTEXITCODE) }",
+        "    }",
+        "}"
+    ],
+    "shortcuts": [
+        [
+            "termemo.exe",
+            "Termemo"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/Renato1478/termemo"
+    },
+    "autoupdate": {
+        "url": "https://github.com/Renato1478/termemo/releases/download/v$version/Termemo_$version_x64_en-US.msi#/dl.msi",
+        "hash": {
+            "url": "https://api.github.com/repos/Renato1478/termemo/releases/tags/v$version",
+            "jsonpath": "$.assets[?(@.name == 'Termemo_$version_x64_en-US.msi')].digest"
+        }
+    },
+    "notes": [
+        "Termemo's default workspace and application data under %APPDATA%\\dev.commandpad.app, and its WebView2 profile and localStorage under %LOCALAPPDATA%\\dev.commandpad.app, are linked to Scoop persist.",
+        "Workspaces explicitly created in another location remain there. Scoop extracts the MSI payload without running the vendor's Windows Installer registration routine."
+    ]
+}
