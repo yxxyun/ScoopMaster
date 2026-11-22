@@ -35,5 +35,18 @@
         "Before removing binaries, run obit uninstall --yes in the current project; data is kept by default.",
         "Close Obituary programs before upgrading. Keep obit.exe and obitd.exe in the same directory.",
         "The amd64 package also includes obit-gui.exe and requires WebView2 Runtime; arm64 includes only the CLI and daemon."
+    ],
+    "pre_uninstall": [
+        "try { Start-Process -FilePath (Join-Path $dir 'obit.exe') -ArgumentList 'daemon','stop' -WindowStyle Hidden -Wait -ErrorAction Stop } catch { Write-Warning $_ }",
+        "$current = Join-Path (Split-Path -Parent $dir) 'current'",
+        "Get-Process -Name obitd,obit-gui -ErrorAction Ignore | ForEach-Object {",
+        "    try {",
+        "        $exe = $_.ProcessName + '.exe'",
+        "        if ($_.Path -in @((Join-Path $dir $exe), (Join-Path $current $exe))) {",
+        "            Stop-Process -InputObject $_ -Force -ErrorAction Stop",
+        "            if (-not $_.WaitForExit(5000)) { Write-Warning ('Still running: ' + $exe) }",
+        "        }",
+        "    } catch { Write-Warning $_ }",
+        "}"
     ]
 }

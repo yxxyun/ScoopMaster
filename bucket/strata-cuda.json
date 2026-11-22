@@ -1,6 +1,6 @@
 {
     "##": "Strata Terminal + CUDA engine (Windows x64). One release tag (Version, e.g. 0.2.18) carries three lockstep version numbers: the Strata app/release version, the Control runtime version (asset strata-control-<ctrl>) and the inference engine version (asset strata-engine-<eng>-windows-x86_64-cuda-cuda13). This package installs the Control runtime (flat) and the engine tarball so they always update together. The engine has no top-level folder, so extract_to points at the constant components\\engine\\_incoming; pre_install then renames it to <version>-<platform>-<backend>[-<variant>] read from engine-component.json, and writes bin\\strata-<backend>.cmd exporting STRATA_COMPONENTS_DIR / STRATA_ENGINE_BACKEND. Keeping the release-versioned directory name lets Strata's own saved-config repair (cfg_paths._newest) find it. checkver reads the signed strata-feed.json and returns the app version plus the two asset basenames; autoupdate rebuilds both release URLs and lets Scoop take each sha256 from the GitHub API digest, so nothing in autoupdate depends on extract_to.",
-    "version": "0.2.18",
+    "version": "0.2.19",
     "description": "Strata 终端版 + CUDA 推理引擎（NVIDIA，含 sm_120 / RTX 50 系）：一条命令装好控制端与引擎，模型文件另存",
     "homepage": "https://github.com/Niko1221/Strata",
     "license": {
@@ -19,12 +19,12 @@
     "architecture": {
         "64bit": {
             "url": [
-                "https://github.com/Niko1221/Strata/releases/download/v0.2.18/strata-control-0.1.64-windows-x86_64.zip",
-                "https://github.com/Niko1221/Strata/releases/download/v0.2.18/strata-engine-0.1.64-windows-x86_64-cuda-cuda13.tar.gz"
+                "https://github.com/Niko1221/Strata/releases/download/v0.2.19/strata-control-0.1.65-windows-x86_64.zip",
+                "https://github.com/Niko1221/Strata/releases/download/v0.2.19/strata-engine-0.1.65-windows-x86_64-cuda-cuda13.tar.gz"
             ],
             "hash": [
-                "dce4ccaebcb6e68b369ac0cf95af19ea94b2946387c7220874142b9473dd5f10",
-                "da28bc553a938812c9e3455477510d79783fe819912e364013a580460254c288"
+                "e9848e0edf0d6ee6f0f3f98d520e7b2cc3a6267c82ab441d2b53f6de7f6ffce9",
+                "2d1891971799a3327d37a2ccbc01561baae18042d2bf6abd7c5715950e7bf0e9"
             ]
         }
     },
@@ -32,7 +32,30 @@
         ".",
         "components\\engine\\_incoming"
     ],
-    "pre_install": "$c = @('@echo off','setlocal','rem Strata (CUDA / NVIDIA) - Scoop build: the engine lives inside this package.','set \"STRATA_COMPONENTS_DIR=%~dp0..\\components\"','set \"STRATA_ENGINE_BACKEND=cuda\"','call \"%~dp0strata.cmd\" %*','exit /b %ERRORLEVEL%')\n$d = Join-Path $dir 'components\\engine'\n$i = Join-Path $d '_incoming'\n$mf = Join-Path $i 'engine-component.json'\nif (Test-Path -LiteralPath $mf) {\n  try {\n    $m = Get-Content -LiteralPath $mf -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json\n    $n = (@($m.version, $m.platform, $m.backend, $m.variant) | Where-Object { $_ } | ForEach-Object { [string]$_ }) -join '-'\n    if ($n -match '^\\d+(?:\\.\\d+)+-[A-Za-z0-9_]+-[A-Za-z0-9_]+') {\n      $t = Join-Path $d $n\n      if (Test-Path -LiteralPath $t) { Remove-Item -LiteralPath $t -Recurse -Force -ErrorAction Stop }\n      Rename-Item -LiteralPath $i -NewName $n -ErrorAction Stop\n      Write-Host ('strata: engine installed as components\\engine\\' + $n)\n    } else {\n      Write-Host ('strata: engine left in components\\engine\\_incoming (unexpected engine identity: ' + $n + ')')\n    }\n  } catch {\n    Write-Host ('strata: engine left in components\\engine\\_incoming (' + $_.Exception.Message + ')')\n  }\n}\nNew-Item -ItemType Directory -Force -Path (Join-Path $dir 'bin') | Out-Null\nSet-Content -LiteralPath (Join-Path $dir 'bin\\strata-cuda.cmd') -Value $c -Encoding Ascii",
+    "pre_install": [
+        "$c = @('@echo off','setlocal','rem Strata (CUDA / NVIDIA) - Scoop build: the engine lives inside this package.','set \"STRATA_COMPONENTS_DIR=%~dp0..\\components\"','set \"STRATA_ENGINE_BACKEND=cuda\"','call \"%~dp0strata.cmd\" %*','exit /b %ERRORLEVEL%')",
+        "$d = Join-Path $dir 'components\\engine'",
+        "$i = Join-Path $d '_incoming'",
+        "$mf = Join-Path $i 'engine-component.json'",
+        "if (Test-Path -LiteralPath $mf) {",
+        "try {",
+        "$m = Get-Content -LiteralPath $mf -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json",
+        "$n = (@($m.version, $m.platform, $m.backend, $m.variant) | Where-Object { $_ } | ForEach-Object { [string]$_ }) -join '-'",
+        "if ($n -match '^\\d+(?:\\.\\d+)+-[A-Za-z0-9_]+-[A-Za-z0-9_]+') {",
+        "$t = Join-Path $d $n",
+        "if (Test-Path -LiteralPath $t) { Remove-Item -LiteralPath $t -Recurse -Force -ErrorAction Stop }",
+        "Rename-Item -LiteralPath $i -NewName $n -ErrorAction Stop",
+        "Write-Host ('strata: engine installed as components\\engine\\' + $n)",
+        "} else {",
+        "Write-Host ('strata: engine left in components\\engine\\_incoming (unexpected engine identity: ' + $n + ')')",
+        "}",
+        "} catch {",
+        "Write-Host ('strata: engine left in components\\engine\\_incoming (' + $_.Exception.Message + ')')",
+        "}",
+        "}",
+        "New-Item -ItemType Directory -Force -Path (Join-Path $dir 'bin') | Out-Null",
+        "Set-Content -LiteralPath (Join-Path $dir 'bin\\strata-cuda.cmd') -Value $c -Encoding Ascii"
+    ],
     "bin": "bin\\strata-cuda.cmd",
     "checkver": {
         "script": [

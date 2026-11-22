@@ -1,16 +1,20 @@
 {
     "version": "1.2.0",
-    "description": "An HTTP/HTTPS capture and debugging tool built for collaboration with Agents. | 面向开发者与 AI Agent 的开源流量调试工作台",
+    "description": "面向开发者与 AI Agent 的开源流量调试工作台，可筛选业务异常、修改请求并分享排查现场",
     "homepage": "https://github.com/Yricky/proxycrab",
     "license": "MIT",
+    "notes": [
+        "ProxyCrab 是 MITM 代理工作台，抓包需要把系统或目标应用的代理指向本机监听端口",
+        "HTTPS 解密需要安装它自签的根证书，证书在应用内的证书管理里导出",
+        "数据目录：%APPDATA%\\me.yricky.proxycrab\\，内含 workspace（会话与请求记录）、skill-paths.json（技能安装路径）",
+        "本包将该目录持久化到 persist，并在原路径创建 Junction 指向 persist",
+        "工作区可在应用内切换到其它磁盘目录，切换后的目录不在本包的持久化范围内"
+    ],
     "architecture": {
         "64bit": {
             "url": "https://github.com/Yricky/proxycrab/releases/download/v1.2.0/proxy-crab-t_1.2.0_x64-setup.exe#/dl.7z",
-            "hash": "9ecdd89c8015912b6181ab2de315422cb4c9d21e794ce0acf6032d80ab3cdb39"
-        },
-        "arm64": {
-            "url": "https://github.com/Yricky/proxycrab/releases/download/v1.2.0/proxy-crab-t_1.2.0_arm64-setup.exe#/dl.7z",
-            "hash": "9f9b54e8a8c4b8968c137300e7a69d5239eebbbbbbb0d7193b34fdac9aecbb15"
+            "hash": "9ecdd89c8015912b6181ab2de315422cb4c9d21e794ce0acf6032d80ab3cdb39",
+            "pre_install": "Remove-Item \"$dir\\`$*\" -Force -Recurse -ErrorAction SilentlyContinue"
         }
     },
     "shortcuts": [
@@ -19,15 +23,45 @@
             "ProxyCrab"
         ]
     ],
-    "pre_install": "Remove-Item \"$dir\\uninst*\", \"$dir\\`$*\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "post_install": [
+        "$source = Join-Path $env:APPDATA 'me.yricky.proxycrab'",
+        "$target = Join-Path $persist_dir 'data'",
+        "ensure $target",
+        "",
+        "if (Test-Path $source) {",
+        "    $item = Get-Item -LiteralPath $source -Force",
+        "    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {",
+        "        Write-Host \"检测到已存在的联接点：$source，跳过创建\"",
+        "        return",
+        "    }",
+        "    if (-not $item.PSIsContainer) {",
+        "        throw \"配置路径已存在且不是目录：$source\"",
+        "    }",
+        "",
+        "    & robocopy $source $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+        "    if ($LASTEXITCODE -gt 7) {",
+        "        Write-Host \"迁移失败，保留原目录：$source\"",
+        "        return",
+        "    }",
+        "",
+        "    $backup = \"$source.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"",
+        "    try {",
+        "        Move-Item -LiteralPath $source -Destination $backup -Force",
+        "        Write-Host \"已备份原配置目录：$backup\"",
+        "    } catch {",
+        "        Write-Host \"无法重命名原目录：$source\"",
+        "        return",
+        "    }",
+        "}",
+        "",
+        "New-Item -Path $source -ItemType Junction -Value $target | Out-Null"
+    ],
+    "persist": "data",
     "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
                 "url": "https://github.com/Yricky/proxycrab/releases/download/v$version/proxy-crab-t_$version_x64-setup.exe#/dl.7z"
-            },
-            "arm64": {
-                "url": "https://github.com/Yricky/proxycrab/releases/download/v$version/proxy-crab-t_$version_arm64-setup.exe#/dl.7z"
             }
         }
     }
