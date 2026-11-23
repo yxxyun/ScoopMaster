@@ -1,0 +1,139 @@
+{
+    "version": "1.10.4",
+    "description": "zapret-discord-youtube (Flowseal): ready-made zapret strategies for Discord, YouTube and other blocked sites (general*.bat), domain and IP lists, and a service manager that installs a strategy as a Windows service and tests them all. winws.exe, cygwin1.dll and WinDivert come from their gesu packages.",
+    "homepage": "https://github.com/Flowseal/zapret-discord-youtube",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/Flowseal/zapret-discord-youtube/blob/HEAD/LICENSE.txt"
+    },
+    "notes": [
+        "Global install only, from an elevated (admin) shell: scoop install -g gesu/zapret-discord-youtube",
+        "",
+        "Scoop Apps: 'zapret-discord-youtube' opens Flowseal's service manager. Find a working strategy with",
+        "12. Run Tests, then make it start with Windows: 1. Install Service. First turn on secure DNS (DoH) in the",
+        "browser or in Windows 11, as upstream's README says.",
+        "The command zapret-discord-youtube does the same, plus: status, stop, start, update, sync, bundled on|off, folder.",
+        "",
+        "Updating: Scoop refuses while winws.exe runs from this package (the service too). 'zapret-discord-youtube",
+        "update' stops it, updates this package and its components, and starts the service again.",
+        "The service manager's own update check is off (it would download a zip): Scoop updates the package.",
+        "",
+        "winws.exe comes from gesu/zapret (newer than the one Flowseal tested the strategies with), cygwin1.dll from",
+        "gesu/Cygwin-Runtime, WinDivert from gesu/WinDivert or, if installed, gesu/WinDivert-hide. Flowseal's own pair",
+        "is kept in 'bundled': 'zapret-discord-youtube bundled on' switches winws.exe and cygwin1.dll to it.",
+        "",
+        "Kept across updates in %ProgramData%\\scoop\\persist\\zapret-discord-youtube: your lists (lists\\*-user.txt),",
+        "the Game Filter setting and the test results. Not kept: the IPSet Filter mode, 'Update IPSet List' and",
+        "'Replace active fakes' (they change files that come with each release); set them again after an update.",
+        "Edit the *-user.txt lists with an editor that saves in place (Notepad does); one that replaces the file",
+        "breaks the link to the persist folder.",
+        "",
+        "Antivirus programs often flag WinDivert as a risk tool; see the package page if yours quarantines it."
+    ],
+    "depends": [
+        "gesu/WinDivert",
+        "gesu/Cygwin-Runtime",
+        "gesu/zapret"
+    ],
+    "suggest": {
+        "Hide WinDivert from anti-cheats": "gesu/WinDivert-hide",
+        "Faster Telegram Desktop": "gesu/TG-WS-Proxy"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Flowseal/zapret-discord-youtube/releases/download/1.10.4/zapret-discord-youtube-1.10.4.zip",
+            "hash": "291af673bd0238506f9548e0e94ca0abf244000f4c9a06960544fb01c5f97b34"
+        }
+    },
+    "extract_dir": "zapret-discord-youtube-1.10.4",
+    "pre_install": [
+        "if (!$global) { error \"$app puts a driver or a service on the system, which runs as SYSTEM: install it globally, so that only administrators can change its files: scoop install -g gesu/$app\"; break }",
+        "if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { error \"$app has no ARM64 build: the WinDivert driver is x64 only (ARM64 Windows would need test signing).\"; break }",
+        "",
+        "# A 'zapret' service from another copy (Flowseal's zip unpacked elsewhere) would fight this one over the",
+        "# traffic, and this copy's service manager would replace it. Updates keep their own service.",
+        "$imagePath = (Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\zapret' -Name ImagePath -ErrorAction SilentlyContinue).ImagePath",
+        "$other = $imagePath -and $imagePath.TrimStart('\"') -notlike \"$(Split-Path $dir)\\*\"",
+        "if ($cmd -eq 'install' -and $other -and $env:GESU_ALLOW_EXISTING -ne '1') {",
+        "    error \"A 'zapret' service from another copy is installed: $($imagePath -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%')`nRemove it with that copy's service.bat (2. Remove Services), or set `$env:GESU_ALLOW_EXISTING = '1' and install again; this copy's 'Install Service' then replaces it.`nScoop has already put $app into its app folder: run 'scoop uninstall $app' or simply install again, which cleans that up.\"",
+        "    break",
+        "}",
+        "",
+        "# Flowseal's winws.exe and cygwin1.dll stay in 'bundled' ('zapret-discord-youtube bundled on');",
+        "# post_install puts the packages' files into bin. WinDivert in the release is upstream's 2.2.2, the same as gesu/WinDivert.",
+        "New-Item -ItemType Directory -Path \"$dir\\bundled\" -Force | Out-Null",
+        "Move-Item \"$dir\\bin\\winws.exe\", \"$dir\\bin\\cygwin1.dll\" -Destination \"$dir\\bundled\" -Force",
+        "",
+        "# Scoop updates the package; the service manager's update check would only open the download page.",
+        "Remove-Item \"$dir\\utils\\check_updates.enabled\" -Force -ErrorAction SilentlyContinue",
+        "",
+        "# Files the service manager creates on first use, with its own defaults: persisted, so they must exist",
+        "# (Scoop would make folders of them). game_filter.enabled with mode=disabled means the filter is off.",
+        "$userFiles = [ordered]@{",
+        "    'lists\\list-general-user.txt' = @('# Never leave this file empty', 'domain.example.abc')",
+        "    'lists\\list-exclude-user.txt' = @('domain.example.abc')",
+        "    'lists\\ipset-exclude-user.txt' = @('203.0.113.113/32')",
+        "    'utils\\game_filter.enabled' = @('mode=disabled', 'tcp=1024-65535', 'udp=1024-65535')",
+        "}",
+        "foreach ($file in $userFiles.Keys) {",
+        "    if (Test-Path \"$persist_dir\\$file\") { continue }",
+        "    [IO.File]::WriteAllText(\"$dir\\$file\", ($userFiles[$file] -join \"`r`n\") + \"`r`n\")",
+        "}",
+        "",
+        "# The zapret-discord-youtube command, its shortcut and the component copier (see the package page).",
+        "$bucketDir = Find-BucketDirectory -Name $bucket -Root",
+        "$sources = @('scripts\\zapret-discord-youtube\\ZapretDiscordYoutube.ps1', 'scripts\\zapret-discord-youtube\\zapret-discord-youtube.cmd', 'scripts\\zapret\\Sync-ZapretComponents.ps1') | ForEach-Object { Join-Path $bucketDir $_ }",
+        "$missing = @($sources | Where-Object { !(Test-Path -LiteralPath $_) })",
+        "if ($missing) { error \"$(Split-Path -Leaf $missing[0]) is missing from the bucket: install with 'scoop install -g gesu/zapret-discord-youtube'.\"; break }",
+        "Copy-Item -LiteralPath $sources -Destination $dir -Force"
+    ],
+    "post_install": [
+        "# winws.exe, cygwin1.dll and WinDivert into bin from their packages (scripts/zapret/Sync-ZapretComponents.ps1).",
+        "try {",
+        "    & \"$dir\\Sync-ZapretComponents.ps1\" -App $app -AppsDir (appsdir $global) -Strict | ForEach-Object { info $_ }",
+        "} catch {",
+        "    error $_.Exception.Message",
+        "    break",
+        "}"
+    ],
+    "pre_uninstall": [
+        "# 'scoop uninstall' removes this copy's 'zapret' service and WinDivert driver services first (Scoop runs",
+        "# this before its own check for running programs). On update Scoop has already refused if winws runs.",
+        "if ($cmd -ne 'uninstall') { return }",
+        "if (!(Test-Path \"$dir\\ZapretDiscordYoutube.ps1\")) { warn \"ZapretDiscordYoutube.ps1 is missing; remove the 'zapret' service with service.bat first if it is installed.\"; return }",
+        "& \"$dir\\ZapretDiscordYoutube.ps1\" cleanup"
+    ],
+    "bin": [
+        [
+            "ZapretDiscordYoutube.ps1",
+            "zapret-discord-youtube"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "zapret-discord-youtube.cmd",
+            "zapret-discord-youtube",
+            "",
+            "bundled\\winws.exe"
+        ]
+    ],
+    "persist": [
+        "lists\\list-general-user.txt",
+        "lists\\list-exclude-user.txt",
+        "lists\\ipset-exclude-user.txt",
+        "utils\\game_filter.enabled",
+        "utils\\test results",
+        "settings"
+    ],
+    "checkver": {
+        "github": "https://github.com/Flowseal/zapret-discord-youtube"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Flowseal/zapret-discord-youtube/releases/download/$version/zapret-discord-youtube-$version.zip"
+            }
+        },
+        "extract_dir": "zapret-discord-youtube-$version"
+    }
+}

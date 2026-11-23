@@ -1,0 +1,104 @@
+{
+    "version": "2.2.2-20261109.1438",
+    "description": "WinDivert, renamed so that games and anti-cheats that look for it by name miss it: bol-van's build from zapret-win-bundle, with the driver service 'Monkey' and the driver file Monkey64.sys. When installed, the zapret packages use it instead of WinDivert.",
+    "homepage": "https://github.com/bol-van/zapret-win-bundle/tree/master/windivert-hide",
+    "license": {
+        "identifier": "LGPL-3.0-only|GPL-2.0-only",
+        "url": "https://github.com/basil00/WinDivert/blob/HEAD/LICENSE"
+    },
+    "notes": [
+        "Global install only, from an elevated (admin) shell: scoop install -g gesu/WinDivert-hide",
+        "",
+        "While this is installed, gesu/zapret, gesu/zapret2 and gesu/zapret-discord-youtube use its WinDivert.dll and",
+        "Monkey64.sys instead of gesu/WinDivert's files (they are copied when this package is installed, updated",
+        "or uninstalled, while their winws is not running). Stop the bypass first, then install or uninstall this.",
+        "",
+        "It only helps against checks for a service named 'WinDivert' or a file named WinDivert64.sys. Checks for",
+        "the driver's device or anything else still find it (see README.txt in the app folder).",
+        "Monkey64.sys is an exact copy of WinDivert64.sys 2.2.2; WinDivert.dll is rebuilt by bol-van with small patches."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": [
+                "https://raw.githubusercontent.com/bol-van/zapret-win-bundle/6b4375fa04f6bd7017eec379e16e462d3ea8df66/windivert-hide/WinDivert.dll",
+                "https://raw.githubusercontent.com/bol-van/zapret-win-bundle/6b4375fa04f6bd7017eec379e16e462d3ea8df66/windivert-hide/Monkey64.sys",
+                "https://raw.githubusercontent.com/bol-van/zapret-win-bundle/6b4375fa04f6bd7017eec379e16e462d3ea8df66/windivert-hide/README.txt"
+            ],
+            "hash": [
+                "944368b7a6eb0a97701e152a9171267db66377cc31bde415ab5da22c7a09cc43",
+                "8da085332782708d8767bcace5327a6ec7283c17cfb85e40b03cd2323a90ddc2",
+                "0b07679648fa6cc0017563f2af1022c19171eb0bd736a567dad200e89704141c"
+            ]
+        }
+    },
+    "pre_install": [
+        "if (!$global) { error \"$app puts a driver or a service on the system, which runs as SYSTEM: install it globally, so that only administrators can change its files: scoop install -g gesu/$app\"; break }",
+        "if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { error \"$app has no ARM64 build: the WinDivert driver is x64 only (ARM64 Windows would need test signing).\"; break }",
+        "",
+        "# Data for other packages: the shortcut opens this micro-launcher, which says what it is for.",
+        "$lines = @(",
+        "  '@ECHO OFF',",
+        "  ':: WinDivert-hide: shows what the package holds and what it is for, then waits for a key.',",
+        "  ':: Written by the gesu Scoop bucket at install time.',",
+        "  ('ECHO WinDivert-hide ' + $version + ': WinDivert renamed to Monkey (bol-van/zapret-win-bundle).'),",
+        "  'ECHO Folder: %~dp0',",
+        "  'ECHO.',",
+        "  'ECHO   WinDivert.dll   rebuilt so that it loads Monkey64.sys as the service Monkey',",
+        "  'ECHO   Monkey64.sys    exact copy of WinDivert64.sys 2.2.2 (signed by its author)',",
+        "  'ECHO.',",
+        "  'ECHO While this package is installed, gesu/zapret, gesu/zapret2 and gesu/zapret-discord-youtube',",
+        "  'ECHO use these two files instead of gesu/WinDivert. It hides WinDivert only from programs that',",
+        "  'ECHO look for the service name WinDivert or the file name WinDivert64.sys.',",
+        "  'ECHO.',",
+        "  'TYPE \"%~dp0README.txt\"',",
+        "  'ECHO.',",
+        "  'PAUSE',",
+        "  ''",
+        ")",
+        "[IO.File]::WriteAllText(\"$dir\\WinDivert-hide.cmd\", ($lines -join \"`r`n\") + \"`r`n\")"
+    ],
+    "post_install": [
+        "# Copy the new files to the zapret packages that use them (scripts/zapret/Sync-ZapretComponents.ps1).",
+        "# A copy fails while that package's winws runs; 'zapret-discord-youtube sync' or 'scoop update -f' redo it.",
+        "$sync = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\zapret\\Sync-ZapretComponents.ps1'",
+        "if (Test-Path -LiteralPath $sync) { & $sync -AppsDir (appsdir $global) | ForEach-Object { info $_ } }"
+    ],
+    "pre_uninstall": [
+        "# A driver service registered from this app's folder (by windivertctl or the samples here) would keep",
+        "# pointing at deleted files: stop it, and on uninstall remove it. Services of other folders stay.",
+        "$appRoot = Split-Path $dir",
+        "foreach ($name in 'Monkey') {",
+        "    $imagePath = (Get-ItemProperty \"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\$name\" -Name ImagePath -ErrorAction SilentlyContinue).ImagePath",
+        "    if (!$imagePath -or ($imagePath -replace '^\\\\\\?\\?\\\\', '') -notlike \"$appRoot\\*\") { continue }",
+        "    sc.exe stop $name 2>&1 | Out-Null",
+        "    if ($cmd -eq 'uninstall') { sc.exe delete $name | Out-Null; info \"Removed the '$name' driver service.\" }",
+        "}"
+    ],
+    "post_uninstall": [
+        "# Without this package the zapret packages go back to gesu/WinDivert's files.",
+        "$sync = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\zapret\\Sync-ZapretComponents.ps1'",
+        "if ($cmd -eq 'uninstall' -and (Test-Path -LiteralPath $sync)) { & $sync -AppsDir (appsdir $global) | ForEach-Object { info $_ } }"
+    ],
+    "shortcuts": [
+        [
+            "WinDivert-hide.cmd",
+            "WinDivert hide"
+        ]
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/bol-van/zapret-win-bundle/commits?path=windivert-hide&per_page=1",
+        "regex": "\"sha\":\\s*\"(?<sha>[0-9a-f]{40})\"[\\s\\S]*?\"committer\":\\s*\\{[^}]*?\"date\":\\s*\"(?<y>\\d{4})-(?<m>\\d\\d)-(?<d>\\d\\d)T(?<hh>\\d\\d):(?<mm>\\d\\d)",
+        "replace": "2.2.2-${y}${m}${d}.${hh}${mm}"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": [
+                    "https://raw.githubusercontent.com/bol-van/zapret-win-bundle/$matchSha/windivert-hide/WinDivert.dll",
+                    "https://raw.githubusercontent.com/bol-van/zapret-win-bundle/$matchSha/windivert-hide/Monkey64.sys",
+                    "https://raw.githubusercontent.com/bol-van/zapret-win-bundle/$matchSha/windivert-hide/README.txt"
+                ]
+            }
+        }
+    }
+}

@@ -1,0 +1,111 @@
+{
+    "version": "72.13",
+    "description": "zapret (bol-van): DPI circumvention tool. On Windows this is winws.exe, which splits, fakes and reorders the first packets of TLS, QUIC, HTTP and UDP connections through WinDivert, plus mdig and ip2net. The engine of zapret-discord-youtube.",
+    "homepage": "https://github.com/bol-van/zapret",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/bol-van/zapret/blob/HEAD/docs/LICENSE.txt"
+    },
+    "notes": [
+        "Global install only, from an elevated (admin) shell: scoop install -g gesu/zapret",
+        "winws needs administrator rights. Commands: winws, mdig, ip2net. Scoop Apps: 'zapret' prints the options.",
+        "",
+        "cygwin1.dll and WinDivert come from gesu/Cygwin-Runtime and gesu/WinDivert (or gesu/WinDivert-hide): they are",
+        "copied here on install and whenever those packages update, unless winws is running then. Fake packets for",
+        "--dpi-desync-fake-* are in %ProgramData%\\scoop\\apps\\zapret\\current\\files\\fake",
+        "",
+        "Ready-made strategies and a service manager: gesu/zapret-discord-youtube. Docs: docs\\readme.md in the app folder.",
+        "Scoop refuses to update or uninstall zapret while winws.exe from its folder runs: stop it first."
+    ],
+    "depends": [
+        "gesu/WinDivert",
+        "gesu/Cygwin-Runtime"
+    ],
+    "suggest": {
+        "Hide WinDivert from anti-cheats": "gesu/WinDivert-hide"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/bol-van/zapret/releases/download/v72.13/zapret-v72.13.zip",
+            "hash": "c493e33a0dc4eba23a8686efdaba55f59755ad6ade3564aebd9d13f4c65e2e0c"
+        }
+    },
+    "extract_dir": "zapret-v72.13",
+    "pre_install": [
+        "if (!$global) { error \"$app puts a driver or a service on the system, which runs as SYSTEM: install it globally, so that only administrators can change its files: scoop install -g gesu/$app\"; break }",
+        "if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { error \"$app has no ARM64 build: the WinDivert driver is x64 only (ARM64 Windows would need test signing).\"; break }",
+        "",
+        "# Keep the Windows x64 programs (moved to the app folder) and the fake packets, docs;",
+        "# the rest of the release is for Linux, BSD, macOS and OpenWrt.",
+        "Get-ChildItem \"$dir\\binaries\\windows-x86_64\" | Move-Item -Destination $dir -Force",
+        "$keep = 'files', 'docs'",
+        "Get-ChildItem $dir -Directory | Where-Object { $_.Name -notin $keep } | Remove-Item -Recurse -Force",
+        "Get-ChildItem $dir -File | Where-Object { $_.Extension -notin '.exe', '.dll', '.sys' } | Remove-Item -Force",
+        "",
+        "# The 'zapret' shortcut opens this micro-launcher: winws.exe without arguments prints its options.",
+        "$lines = @(",
+        "  '@ECHO OFF',",
+        "  ':: zapret: says what winws.exe is and prints its options, then waits for a key.',",
+        "  ':: Written by the gesu Scoop bucket at install time.',",
+        "  ('ECHO zapret ' + $version + ' (bol-van): winws.exe, the Windows DPI circumvention engine.'),",
+        "  'ECHO It needs administrator rights; stop it with Ctrl+C. Strategies and a service manager:',",
+        "  'ECHO gesu/zapret-discord-youtube. Docs: %~dp0docs\\readme.md (English: readme.en.md)',",
+        "  'ECHO Fake packets: %~dp0files\\fake',",
+        "  'ECHO.',",
+        "  'ECHO -------------------------------------------------------------------------------',",
+        "  '\"%~dp0winws.exe\"',",
+        "  'ECHO.',",
+        "  'PAUSE',",
+        "  ''",
+        ")",
+        "[IO.File]::WriteAllText(\"$dir\\zapret.cmd\", ($lines -join \"`r`n\") + \"`r`n\")"
+    ],
+    "post_install": [
+        "# cygwin1.dll and WinDivert from their own packages (scripts/zapret/Sync-ZapretComponents.ps1).",
+        "$sync = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\zapret\\Sync-ZapretComponents.ps1'",
+        "if (!(Test-Path -LiteralPath $sync)) { warn \"Sync-ZapretComponents.ps1 is missing from the bucket; $app keeps the cygwin1.dll and WinDivert of its release.\"; return }",
+        "try {",
+        "    & $sync -App $app -AppsDir (appsdir $global) -Strict | ForEach-Object { info $_ }",
+        "} catch {",
+        "    error $_.Exception.Message",
+        "    break",
+        "}",
+        "# zapret-discord-youtube runs winws.exe from this package too.",
+        "& $sync -App 'zapret-discord-youtube' -AppsDir (appsdir $global) | ForEach-Object { info $_ }"
+    ],
+    "pre_uninstall": [
+        "# A driver service registered from this app's folder (by windivertctl or the samples here) would keep",
+        "# pointing at deleted files: stop it, and on uninstall remove it. Services of other folders stay.",
+        "$appRoot = Split-Path $dir",
+        "foreach ($name in 'WinDivert', 'WinDivert14', 'Monkey') {",
+        "    $imagePath = (Get-ItemProperty \"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\$name\" -Name ImagePath -ErrorAction SilentlyContinue).ImagePath",
+        "    if (!$imagePath -or ($imagePath -replace '^\\\\\\?\\?\\\\', '') -notlike \"$appRoot\\*\") { continue }",
+        "    sc.exe stop $name 2>&1 | Out-Null",
+        "    if ($cmd -eq 'uninstall') { sc.exe delete $name | Out-Null; info \"Removed the '$name' driver service.\" }",
+        "}"
+    ],
+    "bin": [
+        "winws.exe",
+        "mdig.exe",
+        "ip2net.exe"
+    ],
+    "shortcuts": [
+        [
+            "zapret.cmd",
+            "zapret",
+            "",
+            "winws.exe"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/bol-van/zapret"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/bol-van/zapret/releases/download/v$version/zapret-v$version.zip"
+            }
+        },
+        "extract_dir": "zapret-v$version"
+    }
+}

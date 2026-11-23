@@ -1,0 +1,105 @@
+{
+    "version": "3.11.0",
+    "description": "3X-UI: web panel for Xray-core with multi-user inbounds (VLESS, VMess, Trojan, Shadowsocks, WireGuard, Hysteria, TUIC, MASQUE, MTProto, AmneziaWG), traffic and expiry limits, subscriptions, a Telegram bot and multi-node management. Xray, mtg-multi and the geo files come from their own gesu packages.",
+    "homepage": "https://github.com/MHSanaei/3x-ui",
+    "license": {
+        "identifier": "GPL-3.0-only",
+        "url": "https://github.com/MHSanaei/3x-ui/blob/HEAD/LICENSE"
+    },
+    "notes": [
+        "Scoop Apps: '3X-UI' starts the panel in a console window; it runs while the window stays open.",
+        "Panel: http://localhost:2053/ by default. On the very first start the log prints a random user name and password, once.",
+        "Lost them? Stop the panel, then: 3x-ui setting -username NAME -password PASS. '3x-ui setting -show' prints port and path.",
+        "",
+        "Database, logs and the panel's bin folder are kept across updates in %USERPROFILE%\\scoop\\persist\\3X-UI (data, log, bin).",
+        "On each start the 3x-ui command copies Xray, mtg-multi and the geo files into bin from their gesu packages, so",
+        "'scoop update' updates them; an Xray version or geo file the panel downloads itself is replaced again on the next start.",
+        "Iran and Russia geo files: scoop install gesu/Chocolate4U-Iran-v2ray-rules gesu/runetfreedom-russia-v2ray-rules-dat",
+        "(until then the copies from the 3X-UI release are used).",
+        "",
+        "Windows Firewall asks on the first start: allow 3x-ui.exe and Xray for the networks clients connect from.",
+        "fail2ban (IP limit) and the bash menu (x-ui) exist only on Linux."
+    ],
+    "depends": [
+        "gesu/Xray-core",
+        "gesu/mtg-multi",
+        "gesu/Loyalsoldier-v2ray-rules-dat"
+    ],
+    "suggest": {
+        "Iran geo files (geoip_IR, geosite_IR)": "gesu/Chocolate4U-Iran-v2ray-rules",
+        "Russia geo files (geoip_RU, geosite_RU)": "gesu/runetfreedom-russia-v2ray-rules-dat",
+        "Self-signed certificates": "gesu/OpenSSL-Light",
+        "Database browser": "extras/sqlitebrowser"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/MHSanaei/3x-ui/releases/download/v3.11.0/x-ui-windows-amd64.zip",
+            "hash": "1cab1f8001dee6a2de4c4a15ec523bb8515c9160d68bbb3e7ca64a6fec5c6526"
+        }
+    },
+    "extract_dir": "x-ui",
+    "pre_install": [
+        "# A fresh install stops if a 3X-UI panel, its Xray or its mtg-multi is running anywhere, or the database is open",
+        "# (scripts/common/Test-AppBusy.ps1): a second panel would fight over port 2053. Updates are checked in pre_uninstall.",
+        "$bucketDir = Find-BucketDirectory -Name $bucket -Root",
+        "if ($cmd -eq 'install') {",
+        "  $busyCheck = Join-Path $bucketDir 'scripts\\common\\Test-AppBusy.ps1'",
+        "  if (!(Test-Path -LiteralPath $busyCheck)) { error \"Cannot check whether $app is in use: '$($busyCheck -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%')' is missing.\"; break }",
+        "  $busy = @(& $busyCheck -ProcessName '3x-ui', 'xray-windows-amd64', 'mtg-windows-amd64' -Path \"$persist_dir\\data\")",
+        "  if ($busy) { error \"$app is in use. Stop the panel (Ctrl+C in its window) and close anything holding its database open, then try again:`n  $($busy -join \"`n  \")`nScoop has already put $app into its app folder: run 'scoop uninstall $app' or simply install again, which cleans that up.\"; break }",
+        "}",
+        "",
+        "# The release's own copies of Xray, mtg and the geo files stay as a fallback: Start-3XUI.ps1 uses them only for",
+        "# a component whose package is not installed. 'bin' itself is the persisted folder the panel runs from.",
+        "Rename-Item \"$dir\\bin\" 'bundled'",
+        "# OpenSSL comes as an installer here; gesu/OpenSSL-Light is the same tool without running it.",
+        "Remove-Item \"$dir\\SSL\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "",
+        "# The 3x-ui command and the 3X-UI shortcut (see the package page).",
+        "$sources = 'Start-3XUI.ps1', '3X-UI.cmd' | ForEach-Object { Join-Path $bucketDir \"scripts\\3x-ui\\$_\" }",
+        "$missing = @($sources | Where-Object { !(Test-Path -LiteralPath $_) })",
+        "if ($missing) { error \"$(Split-Path -Leaf $missing[0]) is missing from the bucket: install with 'scoop install gesu/3X-UI'.\"; break }",
+        "Copy-Item -LiteralPath $sources -Destination $dir -Force"
+    ],
+    "pre_uninstall": [
+        "# 'scoop update' and 'scoop uninstall' stop here, before anything is removed, while the panel runs",
+        "# or its database is open (scripts/common/Test-AppBusy.ps1).",
+        "$busyCheck = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\common\\Test-AppBusy.ps1'",
+        "# Without the helper (e.g. the bucket was removed) only warn: uninstalling must stay possible.",
+        "if (!(Test-Path -LiteralPath $busyCheck)) { warn \"Cannot check whether $app is in use: '$($busyCheck -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%')' is missing.\"; return }",
+        "$busy = @(& $busyCheck -ProcessName '3x-ui', 'xray-windows-amd64', 'mtg-windows-amd64' -Path \"$persist_dir\\data\")",
+        "if ($busy) { error \"$app is in use. Stop the panel (Ctrl+C in its window) and try again:`n  $($busy -join \"`n  \")\"; break }"
+    ],
+    "bin": [
+        [
+            "Start-3XUI.ps1",
+            "3x-ui"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "3X-UI.cmd",
+            "3X-UI",
+            "",
+            "3x-ui.exe"
+        ]
+    ],
+    "persist": [
+        "bin",
+        "data",
+        "log"
+    ],
+    "checkver": {
+        "github": "https://github.com/MHSanaei/3x-ui"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/MHSanaei/3x-ui/releases/download/v$version/x-ui-windows-amd64.zip",
+                "hash": {
+                    "url": "$url.sha256"
+                }
+            }
+        }
+    }
+}

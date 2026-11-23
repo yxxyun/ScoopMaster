@@ -1,0 +1,68 @@
+{
+    "version": "3.6.12-1",
+    "description": "Cygwin runtime (cygwin1.dll) with Cygwin's own small tools, unpacked from the official 'cygwin' package without installing Cygwin. winws.exe and winws2.exe of the zapret packages need it.",
+    "homepage": "https://cygwin.com",
+    "license": {
+        "identifier": "LGPL-3.0-or-later",
+        "url": "https://cygwin.com/licensing.html"
+    },
+    "notes": [
+        "Only cygwin1.dll is used, by other packages: gesu/zapret, gesu/zapret2 and gesu/zapret-discord-youtube get",
+        "a copy next to their winws.exe each time this package is installed or updated (while winws is not running).",
+        "Nothing is added to PATH: Cygwin's tools here (ps, kill, mount, cygpath, ldd...) would hide Windows' own.",
+        "Scoop Apps: 'Cygwin Runtime' shows the version and the folder.",
+        "",
+        "Cygwin 3.5 and later need Windows 8.1 or newer (64-bit); zapret upstream ships Cygwin 3.4.10, which also",
+        "runs on Windows 7. For Windows 7, use zapret-discord-youtube's bundled pair: zapret-discord-youtube bundled on"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://mirrors.kernel.org/sourceware/cygwin/x86_64/release/cygwin/cygwin-3.6.12-1-x86_64.tar.xz",
+            "hash": "sha512:c2ceaed3f6fb6c52c30c3fc06fe0ace4b5d9c452dc0a20fd31ffbeb46fd3f98cdea82136ff2feb6d889cb56731336808925f93b85bd9315f5fd544848a2bc582"
+        }
+    },
+    "pre_install": [
+        "# Data for other packages: the shortcut opens this micro-launcher, which says what it is.",
+        "$lines = @(",
+        "  '@ECHO OFF',",
+        "  ':: Cygwin Runtime: shows the version and where cygwin1.dll is, then waits for a key.',",
+        "  ':: Written by the gesu Scoop bucket at install time.',",
+        "  ('ECHO Cygwin runtime ' + $version + ' (cygwin1.dll), unpacked from the official cygwin package.'),",
+        "  'ECHO.',",
+        "  'ECHO   %~dp0usr\\bin\\cygwin1.dll',",
+        "  'ECHO.',",
+        "  'ECHO gesu/zapret, gesu/zapret2 and gesu/zapret-discord-youtube copy it next to their winws.exe.',",
+        "  'ECHO Cygwin''s tools are in the same folder; they are not on PATH, so they do not hide Windows'' own.',",
+        "  'ECHO.',",
+        "  'PAUSE',",
+        "  ''",
+        ")",
+        "[IO.File]::WriteAllText(\"$dir\\Cygwin-Runtime.cmd\", ($lines -join \"`r`n\") + \"`r`n\")"
+    ],
+    "post_install": [
+        "# Copy the new files to the zapret packages that use them (scripts/zapret/Sync-ZapretComponents.ps1).",
+        "# A copy fails while that package's winws runs; 'zapret-discord-youtube sync' or 'scoop update -f' redo it.",
+        "$sync = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\zapret\\Sync-ZapretComponents.ps1'",
+        "if (Test-Path -LiteralPath $sync) { & $sync -AppsDir (appsdir $global) | ForEach-Object { info $_ } }"
+    ],
+    "shortcuts": [
+        [
+            "Cygwin-Runtime.cmd",
+            "Cygwin Runtime"
+        ]
+    ],
+    "checkver": {
+        "url": "https://mirrors.kernel.org/sourceware/cygwin/x86_64/setup.ini",
+        "regex": "@ cygwin\\n[\\s\\S]*?\\nversion: ([\\d.]+-\\d+)\\n"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://mirrors.kernel.org/sourceware/cygwin/x86_64/release/cygwin/cygwin-$version-x86_64.tar.xz",
+                "hash": {
+                    "url": "https://mirrors.kernel.org/sourceware/cygwin/x86_64/release/cygwin/sha512.sum"
+                }
+            }
+        }
+    }
+}

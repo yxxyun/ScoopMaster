@@ -1,0 +1,55 @@
+{
+    "##": "Windows 版上游只提供 electron-builder 的 NSIS 安装包（无 portable zip）。本清单不走安装器：pre_install 用 scoop 自带的 7-Zip 先解出安装包内层的 app-64.7z 再平铺到 $dir，得到与安装器完全一致的可移植布局，不写注册表、不建开始菜单/桌面快捷方式。",
+    "version": "0.7.0",
+    "description": "LearnHarness（学习型 Agent Harness，Electron 桌面端 + 本地 Next.js 服务）",
+    "homepage": "https://learnharness.ai",
+    "license": {
+        "identifier": "AGPL-3.0-only",
+        "url": "https://github.com/amosblomqvist/learnharness/blob/main/LICENSE"
+    },
+    "notes": [
+        "上游只在 Windows 提供 NSIS 安装包，本清单解出内层 app-64.7z 平铺安装，不运行安装器",
+        "安装包未经数字签名，首次启动 Windows SmartScreen 可能提示未知发布者",
+        "程序数据写在 %APPDATA%\\LearnHarness，自动更新器目录在 %LOCALAPPDATA%\\learnharness-updater（应用自身行为，不受 scoop 管理）",
+        "0.7.0 的 server payload 缺 @shikijs/core（上游 issue #897）：桌面窗口可正常打开，但内置 Next.js 首页 GET / 返回 500；官方安装器安装后表现相同，与本清单的解包方式无关，等上游修复"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/amosblomqvist/learnharness/releases/download/v0.7.0/LearnHarness-0.7.0-x64-setup.exe",
+            "hash": "8d99bf2ecd5bc65ae0cba877130fcad28942d46f8c8703c1fd21ced13e02dd82"
+        }
+    },
+    "pre_install": [
+        "$seven = Get-HelperPath -Helper 7zip",
+        "if (!$seven) { $seven = '7z' }",
+        "$setup = Join-Path $dir $fname",
+        "$inner = Join-Path $dir '_nsis'",
+        "& $seven x $setup \"-o$inner\" -y | Out-Null",
+        "& $seven x (Join-Path $inner '$PLUGINSDIR\\app-64.7z') \"-o$dir\" -y | Out-Null",
+        "Remove-Item $inner -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item $setup -Force -ErrorAction SilentlyContinue",
+        "if (!(Test-Path (Join-Path $dir 'LearnHarness.exe'))) { abort 'Failed to unpack LearnHarness payload.' }"
+    ],
+    "bin": [
+        [
+            "LearnHarness.exe",
+            "learnharness"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "LearnHarness.exe",
+            "LearnHarness"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/amosblomqvist/learnharness"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/amosblomqvist/learnharness/releases/download/v$version/LearnHarness-$version-x64-setup.exe"
+            }
+        }
+    }
+}

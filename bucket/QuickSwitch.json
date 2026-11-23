@@ -1,51 +1,58 @@
 {
-    "version": "20220421",
-    "description": "Uses opened file manager folders in File dialogs.",
-    "homepage": "https://github.com/fenchai23/QuickSwitch",
-    "license": "Unlicense",
-    "depends": "versions/autohotkey1.1",
-    "notes": [
-        "Start QuickSwitch with Windows by running:",
-        "reg import \"$dir\\add-startup.reg\""
-    ],
-    "url": "https://github.com/fenchai23/QuickSwitch/archive/refs/heads/main.zip",
-    "hash": "338dc3fab548b1a35ce8fc83bd5599b7c17ffe48745c42724f771cff18b2e60f",
-    "extract_dir": "QuickSwitch-main",
-    "pre_install": [
-        "Remove-Item \"$dir\\QuickSwitch.ini\"",
-        "@('[Preferences]', 'Always Auto Switch=1') | Set-Content \"$dir\\QuickSwitch.ini\" -Encoding Ascii",
-        "& \"$env:SCOOP\\apps\\autohotkey1.1\\current\\Compiler\\Ahk2Exe.exe\" /in \"$dir\\QuickSwitch.ahk\" /icon \"$dir\\res\\icon.ico\" /out \"$dir\\QuickSwitch.exe\""
-    ],
-    "post_install": [
-        "$shortcutPath = \"$env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs\\Scoop Apps\\QuickSwitch.lnk\"",
-        "$targetPath = \"$dir\\QuickSwitch.exe\"",
-        "$WshShell = New-Object -ComObject WScript.Shell",
-        "$Shortcut = $WshShell.CreateShortcut($shortcutPath)",
-        "$Shortcut.TargetPath = $targetPath",
-        "$Shortcut.WorkingDirectory = $dir",
-        "$Shortcut.IconLocation = \"$dir\\res\\icon.ico\"",
-        "$Shortcut.Save()",
-        "$dirpath = $dir.Replace('\\', '\\\\')",
-        "'add-startup.reg', 'remove-startup.reg' | ForEach-Object {",
-        "    if (Test-Path \"$bucketsdir\\shovel\\scripts\\$app\\$_\") {",
-        "        $content = Get-Content \"$bucketsdir\\shovel\\scripts\\$app\\$_\"",
-        "        $content = $content.Replace('$dir', $dirpath)",
-        "        if ($global) { $content = $content.Replace('HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE') }",
-        "        $content | Set-Content -Path \"$dir\\$_\"",
-        "    }",
-        "}"
-    ],
+    "version": "1.9",
+    "description": "Quickly switch file dialogs to folders open in your file manager or saved as favourites.",
+    "homepage": "https://github.com/JoyHak/QuickSwitch",
+    "license": "GPL-3.0-only",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/JoyHak/QuickSwitch/releases/download/1.9/QuickSwitch-1.9-x64.zip",
+            "hash": "116d5c75f3d6813d5c6a3ae323c14cb76488445cd1ec4f8c73a31fa4115c7858"
+        },
+        "32bit": {
+            "url": "https://github.com/JoyHak/QuickSwitch/releases/download/1.9/QuickSwitch-1.9-x32.zip",
+            "hash": "1d98ebcc417f7b126310f3b13fd0d6e96f5abf2134eb0699cd4ee0d91f7566f7"
+        }
+    },
+    "pre_install": "if (!(Test-Path \"$persist_dir\\QuickSwitch.ini\")) { Set-Content \"$dir\\QuickSwitch.ini\" '[Global]' -Encoding utf8 }",
     "post_uninstall": [
-        "Remove-Item \"$env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs\\Scoop Apps\\QuickSwitch.lnk\" -ErrorAction SilentlyContinue",
-        "if (Test-Path \"$dir\\remove-startup.reg\") { reg import \"$dir\\remove-startup.reg\" }"
+        "if ($cmd -ne 'uninstall') { return }",
+        "$startupLink = Join-Path ([Environment]::GetFolderPath('Startup')) 'QuickSwitch.lnk'",
+        "if (Test-Path -LiteralPath $startupLink -PathType Leaf) {",
+        "    Remove-Item -LiteralPath $startupLink -Force -ErrorAction Stop",
+        "}",
+        "$tabsDir = Join-Path ([IO.Path]::GetTempPath()) 'TotalTabs'",
+        "$tabsFile = Join-Path $tabsDir 'TotalTabs.tab'",
+        "if (Test-Path -LiteralPath $tabsFile -PathType Leaf) { Remove-Item -LiteralPath $tabsFile -Force -ErrorAction Stop }",
+        "if ((Test-Path -LiteralPath $tabsDir -PathType Container) -and !(Get-ChildItem -LiteralPath $tabsDir -Force)) { Remove-Item -LiteralPath $tabsDir -ErrorAction Stop }"
+    ],
+    "shortcuts": [
+        [
+            "QuickSwitch.exe",
+            "QuickSwitch"
+        ]
+    ],
+    "persist": [
+        "QuickSwitch.ini",
+        "Favorites",
+        "Icons"
+    ],
+    "notes": [
+        "QuickSwitch enables startup automatically on first launch. Change this in its settings if desired.",
+        "Total Commander integration may add [EM_ScriptCommand_QuickSwitch_SaveAllTabs2] to its usercmd.ini. Remove that section manually after uninstalling if no longer needed.",
+        "Changing the menu font affects Windows system menus. To reset it before uninstalling, clear the menu font field and set its size to 0 in QuickSwitch settings.",
+        "Configuration, favourites and icons are retained on uninstall. Use 'scoop uninstall -p quickswitch' to remove persisted data. Custom external directories are managed by the user."
     ],
     "checkver": {
-        "url": "https://api.github.com/repos/fenchai23/QuickSwitch/commits?per_page=1",
-        "jsonpath": "$[0].commit.author.date",
-        "regex": "(\\d{4})-(\\d{2})-(\\d{2}).*",
-        "replace": "$1$2$3"
+        "github": "https://github.com/JoyHak/QuickSwitch"
     },
     "autoupdate": {
-        "url": "https://github.com/fenchai23/QuickSwitch/archive/refs/heads/main.zip"
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/JoyHak/QuickSwitch/releases/download/$version/QuickSwitch-$version-x64.zip"
+            },
+            "32bit": {
+                "url": "https://github.com/JoyHak/QuickSwitch/releases/download/$version/QuickSwitch-$version-x32.zip"
+            }
+        }
     }
 }
