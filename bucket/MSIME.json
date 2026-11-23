@@ -1,35 +1,51 @@
 {
     "version": "0.14.1",
-    "description": "水杉输入法 - 开源的 Windows TSF 输入法 (Metasequoia IME)。安装包为全局安装，程序文件写入 C:\\Program Files\\metasequoiaime，需要管理员权限",
+    "description": "Metasequoia IME, an open-source Chinese IME for Windows 10/11 built on TSF, supporting full pinyin / double pinyin / Wubi, auxiliary codes, and AI-powered suggestions",
     "homepage": "https://github.com/metasequoiaime/MSIME-Windows",
     "license": "GPL-3.0-only",
-    "url": "https://github.com/metasequoiaime/MSIME-Windows/releases/download/v0.14.1/MetasequoiaIME_Setup_v0.14.1.exe",
+    "notes": [
+        "Install and uninstall pop a UAC elevation prompt (the official Inno Setup installer requires admin privileges).",
+        "Requires Visual C++ 2015-2022 Redistributable (x64) 14.40 or later (install nonportable/vcredist2022); without it the IME process silently crashes on startup.",
+        "The program installs to Program Files\\metasequoiaime and the TSF DLL to System32\\IME\\MetasequoiaIME (hard requirements for uiAccess and game Trusted Mode); dictionaries, config, and skin data persist in persist\\msime\\data.",
+        "After install, switch to 'Metasequoia IME' with Win+Space; settings are reachable from the Start Menu entry 'Metasequoia IME'.",
+        "scoop uninstall removes the data directory along with the official uninstaller; back up persist\\msime\\data first if you want to keep it."
+    ],
+    "url": "https://github.com/metasequoiaime/msime-windows/releases/download/v0.14.1/MetasequoiaIME_Setup_v0.14.1.exe",
     "hash": "df094fd41f838d457f3461d231cd7dbc1a75de29dad535a809c28cd2121aa20f",
     "installer": {
         "script": [
-            "if (-not (is_admin)) { error 'Administrator privileges are required to install the IME (TSF DLL must be registered in System32/SysWOW64).'; break }",
-            "Start-Process -FilePath \"$dir\\MetasequoiaIME_Setup_v$version.exe\" -ArgumentList '/VERYSILENT' -Wait -NoNewWindow"
+            "if (-not (Test-Path \"$persist_dir\\data\")) { New-Item -ItemType Directory -Path \"$persist_dir\\data\" -Force | Out-Null }",
+            "Write-Host 'Running MetasequoiaIME installer (confirm the UAC prompt)...' -f Cyan",
+            "$proc = Start-Process -FilePath \"$dir\\$fname\" -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', \"/DATADIR=`\"$persist_dir\\data`\"\") -Wait -PassThru",
+            "if ($proc.ExitCode -notin @(0, 1641, 3010)) { throw \"Installer exited with code $($proc.ExitCode).\" }",
+            "$gone = -not (Test-Path \"$dir\\$fname\")",
+            "for ($i = 0; $i -lt 3 -and -not $gone; $i++) {",
+            "    Remove-Item \"$dir\\$fname\" -Force -ErrorAction SilentlyContinue",
+            "    $gone = -not (Test-Path \"$dir\\$fname\")",
+            "    if (-not $gone) { Start-Sleep 2 }",
+            "}",
+            "if (-not $gone) { Write-Host \"Could not delete installer '$fname' (locked by antivirus?); it will be removed with this version directory on cleanup.\" -f Yellow }"
         ]
     },
+    "post_install": [
+        "try { Start-Process \"$env:ProgramFiles\\metasequoiaime\\server\\MetasequoiaImeServer.exe\" } catch { }",
+        "try { Start-Process \"$env:ProgramFiles\\metasequoiaime\\server\\MetasequoiaImeWatchdog.exe\" } catch { }"
+    ],
+    "pre_uninstall": "Remove-Item \"$dir\\MetasequoiaIME_Setup_*.exe\" -Force -ErrorAction SilentlyContinue",
     "uninstaller": {
         "script": [
-            "# scoop update also runs the uninstaller hook, but it must not uninstall: the new setup.exe upgrades in place, and the Inno uninstaller deletes the whole data dir.",
-            "# If the call-stack check ever stops matching, this becomes a no-op (manual cleanup), which is safer than deleting user data.",
-            "if (((Get-PSCallStack).ScriptName -join ' ') -match 'scoop-uninstall\\.ps1') {",
-            "    $unins = Join-Path ${env:ProgramFiles} 'metasequoiaime\\unins000.exe'",
-            "    if (Test-Path $unins) { Invoke-ExternalCommand $unins -ArgumentList '/VERYSILENT' -RunAs | Out-Null }",
+            "$uninst = Get-ChildItem \"$env:ProgramFiles\\metasequoiaime\" -Filter 'unins*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1",
+            "if ($uninst) {",
+            "    Write-Host 'Running MetasequoiaIME uninstaller (confirm the UAC prompt)...' -f Cyan",
+            "    $proc = Start-Process -FilePath $uninst.FullName -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') -Wait -PassThru",
+            "    if ($proc.ExitCode -notin @(0, 1641, 3010)) { throw \"Uninstaller exited with code $($proc.ExitCode).\" }",
+            "} else {",
+            "    Write-Host 'Official uninstaller not found (already uninstalled?), skipping.'",
             "}"
         ]
     },
-    "notes": [
-        "This is a global install: program files go to C:\\Program Files\\metasequoiaime; Scoop only keeps the installer.",
-        "Upgrades run the official setup.exe in place (no uninstall), which preserves config.toml, user dictionaries and skins.",
-        "'scoop uninstall msime' runs the Inno uninstaller automatically. If it does not, run C:\\Program Files\\metasequoiaime\\unins000.exe manually."
-    ],
-    "checkver": {
-        "github": "https://github.com/metasequoiaime/MSIME-Windows"
-    },
+    "checkver": "github",
     "autoupdate": {
-        "url": "https://github.com/metasequoiaime/MSIME-Windows/releases/download/v$version/MetasequoiaIME_Setup_v$version.exe"
+        "url": "https://github.com/metasequoiaime/msime-windows/releases/download/v$version/MetasequoiaIME_Setup_v$version.exe"
     }
 }

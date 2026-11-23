@@ -1,0 +1,59 @@
+{
+    "version": "0.2.12",
+    "description": "Pomme: Minecraft: Java Edition client written from scratch in Rust and Vulkan. Joins vanilla servers 1.20 to 26.3; singleplayer runs on the built-in SteelMC server.",
+    "homepage": "https://github.com/PommeMC/Client",
+    "license": {
+        "identifier": "GPL-3.0-or-later",
+        "url": "https://github.com/PommeMC/Client/blob/HEAD/LICENSE"
+    },
+    "notes": [
+        "Needs a Microsoft account that owns Minecraft: Java Edition, and a GPU with Vulkan.",
+        "On first start Pomme downloads Minecraft's assets from Mojang into %LOCALAPPDATA%\\Pomme.",
+        "",
+        "The 'Pomme' shortcut in Scoop Apps starts it with --no-update, so it does not replace itself:",
+        "update with 'scoop update Pomme'. Started any other way, Pomme updates its own files in the Scoop folder.",
+        "",
+        "Worlds, profiles, options and the Minecraft assets live in %LOCALAPPDATA%\\Pomme, outside the Scoop folder:",
+        "they survive updates, and 'scoop uninstall -p' does not delete them. The sign-in is kept in Windows Credential Manager."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/PommeMC/Client/releases/download/client-v0.2.12+26.2/pomme-client-windows-x64.zip",
+            "hash": "dc97163d5a52a7d7b2644c342590b4043ddfde2b851dd73f6518df7497e9827d"
+        }
+    },
+    "pre_install": [
+        "if ($cmd -ne 'install') { return }",
+        "# Upstream's Inno Setup installer (per user, %LOCALAPPDATA%\\Programs\\Pomme) updates itself and shares %LOCALAPPDATA%\\Pomme with this copy.",
+        "$roots = 'HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall'",
+        "$innoCopy = $roots | ForEach-Object { Get-ItemProperty \"$_\\{22F91093-7D94-4FA4-9045-1F5CBA3D82D5}_is1\" -ErrorAction SilentlyContinue } | Select-Object -First 1",
+        "if (!$innoCopy) { return }",
+        "$where = \"$($innoCopy.InstallLocation)\" -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%'",
+        "if ($env:GESU_ALLOW_EXISTING -ne '1') {",
+        "  error \"Pomme $($innoCopy.DisplayVersion) is already installed with upstream's installer ($where). Uninstall it first in Settings > Apps (worlds, profiles and assets in %LOCALAPPDATA%\\Pomme stay), or run `$env:GESU_ALLOW_EXISTING = '1' and install again to keep both copies. Scoop has already downloaded and unpacked ${app}: run 'scoop uninstall $app' or simply install again, which cleans that up.\"",
+        "  break",
+        "}",
+        "warn \"Pomme from upstream's installer stays installed too ($where). Both copies use the same data in %LOCALAPPDATA%\\Pomme; do not run them at the same time.\""
+    ],
+    "shortcuts": [
+        [
+            "pomme-client.exe",
+            "Pomme",
+            "--no-update"
+        ]
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/PommeMC/Client/releases",
+        "regex": "\"tag_name\":\\s*\"client-v([\\d.]+)\\+(?<mc>[\\d.]+)\""
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/PommeMC/Client/releases/download/client-v$version+$matchMc/pomme-client-windows-x64.zip"
+            }
+        },
+        "hash": {
+            "url": "$baseurl/sha256sums.txt"
+        }
+    }
+}

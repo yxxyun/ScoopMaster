@@ -39,22 +39,24 @@
         "    New-Item -ItemType Junction -Path $path -Target $target | Out-Null",
         "}"
     ],
-    "pre_uninstall": [
-        "$junctions = @(",
-        "    @{ Path = (Join-Path $env:APPDATA 'dev.commandpad.app'); Target = (Join-Path $persist_dir 'data') },",
-        "    @{ Path = (Join-Path $env:LOCALAPPDATA 'dev.commandpad.app'); Target = (Join-Path $persist_dir 'local-data') }",
-        ")",
-        "foreach ($junction in $junctions) {",
-        "    $path = [string]$junction.Path",
-        "    $target = [string]$junction.Target",
-        "    $existing = Get-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue",
-        "    if ($null -ne $existing -and",
-        "        ($existing.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -and",
-        "        $existing.LinkType -eq 'Junction' -and",
-        "        [IO.Path]::GetFullPath([string]$existing.Target) -ieq [IO.Path]::GetFullPath($target)) {",
-        "        $removeCommand = 'rmdir \"' + $path + '\"'",
-        "        & $env:ComSpec /d /c $removeCommand",
-        "        if ($LASTEXITCODE -ne 0) { throw ('Failed to remove the Termemo junction at ' + $path + '; cmd exit code: ' + $LASTEXITCODE) }",
+    "post_uninstall": [
+        "if ($cmd -eq 'uninstall') {",
+        "    $junctions = @(",
+        "        @{ Path = (Join-Path $env:APPDATA 'dev.commandpad.app'); Target = (Join-Path $persist_dir 'data') },",
+        "        @{ Path = (Join-Path $env:LOCALAPPDATA 'dev.commandpad.app'); Target = (Join-Path $persist_dir 'local-data') }",
+        "    )",
+        "    foreach ($junction in $junctions) {",
+        "        $path = [string]$junction.Path",
+        "        $target = [string]$junction.Target",
+        "        $existing = Get-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue",
+        "        if ($null -ne $existing -and",
+        "            ($existing.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -and",
+        "            $existing.LinkType -eq 'Junction' -and",
+        "            [IO.Path]::GetFullPath([string]$existing.Target) -ieq [IO.Path]::GetFullPath($target)) {",
+        "            $removeCommand = 'rmdir \"' + $path + '\"'",
+        "            & $env:ComSpec /d /c $removeCommand",
+        "            if ($LASTEXITCODE -ne 0) { throw ('Failed to remove the Termemo junction at ' + $path + '; cmd exit code: ' + $LASTEXITCODE) }",
+        "        }",
         "    }",
         "}"
     ],
@@ -76,6 +78,7 @@
     },
     "notes": [
         "Termemo's default workspace and application data under %APPDATA%\\dev.commandpad.app, and its WebView2 profile and localStorage under %LOCALAPPDATA%\\dev.commandpad.app, are linked to Scoop persist.",
+        "The external junctions are retained during 'scoop update' and removed only during 'scoop uninstall'. Persisted data remains after uninstall unless Scoop is run with --purge.",
         "Workspaces explicitly created in another location remain there. Scoop extracts the MSI payload without running the vendor's Windows Installer registration routine."
     ]
 }

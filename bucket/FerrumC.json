@@ -1,0 +1,96 @@
+{
+    "version": "0.1.0-rc2",
+    "description": "FerrumC: Minecraft 1.21.8 server written from scratch in Rust, fully multithreaded, low memory use. Imports vanilla worlds. Release candidate.",
+    "homepage": "https://www.ferrumc.com/",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/ferrumc-rs/ferrumc/blob/HEAD/LICENSE"
+    },
+    "notes": [
+        "Start it from 'Scoop Apps' > 'FerrumC (Minecraft server)', or with the command 'ferrumc' in a console.",
+        "FerrumC keeps its files next to its exe; the manifest persists them (configs, world, import, logs, whitelist.txt)",
+        "in %USERPROFILE%\\scoop\\persist\\FerrumC: they survive updates, and only 'scoop uninstall -p' deletes them.",
+        "Stop the server with Ctrl+C before 'scoop update' or 'scoop uninstall'.",
+        "",
+        "To import a vanilla world, copy its folder (with region, playerdata, ...) into %USERPROFILE%\\scoop\\persist\\FerrumC\\import",
+        "and run: ferrumc import --import-path import",
+        "'ferrumc clear' deletes the folders Scoop linked: run 'scoop reset FerrumC' after it.",
+        "",
+        "Windows Firewall asks on the first start, and again after each update (the exe moves to a new folder).",
+        "Every server listens on port 25565 by default: run one at a time, or change the port in its config.",
+        "Clients must be Minecraft 1.21.8. Upstream ships no Windows ARM64 build."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/ferrumc-rs/ferrumc/releases/download/v0.1.0-rc2/ferrumc-v0.1.0-rc2-x86_64-pc-windows-msvc.zip",
+            "hash": "78cec47b2a691f040017db7ea10fef8b360d76ef17032968ca062c4d8b693413"
+        }
+    },
+    "pre_install": [
+        "# 'persist' would make a folder named whitelist.txt if the file existed nowhere; FerrumC reads an empty file as an empty whitelist.",
+        "if (!(Test-Path \"$persist_dir\\whitelist.txt\")) { New-Item -ItemType File -Path \"$dir\\whitelist.txt\" -Force | Out-Null }"
+    ],
+    "installer": {
+        "script": [
+            "$lines = @(",
+            "  '@ECHO OFF',",
+            "  ':: FerrumC: starts the server; /PAUSE (used by the Scoop Apps shortcut) keeps the window open when it stops.',",
+            "  ':: Written by the gesu Scoop bucket at install time.',",
+            "  'SETLOCAL',",
+            "  'SET \"WAIT_AT_END=\"',",
+            "  'IF /I \"%~1\"==\"/PAUSE\" SET \"WAIT_AT_END=1\"',",
+            "  ':: Only the shortcut''s own window gets a title; a console that runs the command keeps its title.',",
+            "  'IF DEFINED WAIT_AT_END TITLE FerrumC',",
+            "  'ECHO FerrumC: Minecraft 1.21.8 server written in Rust.',",
+            "  'ECHO Settings, worlds and logs: persist\\FerrumC in your Scoop folder (linked next to ferrumc.exe).',",
+            "  'ECHO Players connect to this computer on port 25565 unless the server config says otherwise.',",
+            "  'ECHO Press Ctrl+C to stop the server.',",
+            "  'ECHO.',",
+            "  'IF DEFINED WAIT_AT_END (',",
+            "  '  \"%~dp0ferrumc.exe\"',",
+            "  ') ELSE (',",
+            "  '  \"%~dp0ferrumc.exe\" %*',",
+            "  ')',",
+            "  'SET \"EXIT_CODE=%ERRORLEVEL%\"',",
+            "  'IF DEFINED WAIT_AT_END PAUSE',",
+            "  'EXIT /B %EXIT_CODE%',",
+            "  ''",
+            ")",
+            "[IO.File]::WriteAllText(\"$dir\\FerrumC.cmd\", ($lines -join \"`r`n\") + \"`r`n\")"
+        ]
+    },
+    "bin": [
+        [
+            "FerrumC.cmd",
+            "ferrumc"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "FerrumC.cmd",
+            "FerrumC (Minecraft server)",
+            "/PAUSE"
+        ]
+    ],
+    "persist": [
+        "configs",
+        "world",
+        "import",
+        "logs",
+        "whitelist.txt"
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/ferrumc-rs/ferrumc/releases/latest",
+        "regex": "\"tag_name\":\\s*\"v([\\w.-]+)\""
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/ferrumc-rs/ferrumc/releases/download/v$version/ferrumc-v$version-x86_64-pc-windows-msvc.zip",
+                "hash": {
+                    "url": "$url.sha256"
+                }
+            }
+        }
+    }
+}

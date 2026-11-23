@@ -1,61 +1,69 @@
 {
-  "version": "1.29.3",
-  "description": "Zed Editor (Localized / 汉化版)",
-  "homepage": "https://github.com/zhtshan/zed-globalization",
-  "license": "GPL-3.0-only",
-  "architecture": {
-    "64bit": {
-      "url": "https://github.com/zhtshan/zed-globalization/releases/download/v1.29.3/zedg-zh-cn-windows-x86_64-v1.29.3.zip",
-      "hash": "4a075311ee52d8159205cbcf6ab6c3e973046defd80eb8af694c76d83108e0b7"
-    },
-    "arm64": {
-      "url": "https://github.com/zhtshan/zed-globalization/releases/download/v1.29.3/zedg-zh-cn-windows-aarch64-v1.29.3.zip",
-      "hash": "b1aaeb903512d22d06b25ebeada4c718b0bd9daf4c25d14c7817a25a59648fbd"
-    }
-  },
-  "bin": [
-    [
-      "bin\\ZedG.exe",
-      "zedg"
-    ]
-  ],
-  "shortcuts": [
-    [
-      "ZedG.exe",
-      "ZedG"
-    ]
-  ],
-  "post_install": [
-    "$desktop = [Environment]::GetFolderPath(\"Desktop\")",
-    "$ws = New-Object -ComObject WScript.Shell",
-    "$lnk = $ws.CreateShortcut(\"$desktop\\ZedG.lnk\")",
-    "$lnk.TargetPath = \"$dir\\ZedG.exe\"",
-    "$lnk.WorkingDirectory = \"$dir\"",
-    "$lnk.Save()"
-  ],
-  "pre_uninstall": [
-    "$desktop = [Environment]::GetFolderPath(\"Desktop\")",
-    "Remove-Item \"$desktop\\ZedG.lnk\" -ErrorAction SilentlyContinue"
-  ],
-  "checkver": {
-    "github": "https://github.com/zhtshan/zed-globalization"
-  },
-  "autoupdate": {
+    "##": "Upstream moved from x6nux/zed-globalization to the x6nux-oss org, and the old owner now 404s, so homepage, checkver and every URL use the new owner. autoupdate.hash.regex must keep $version unescaped: Scoop substitutes it with [Regex]::Escape(version), so a backslash written before it turns the version into a regex backreference that never matches and every update falls back to downloading the whole ~130 MB zip just to compute the hash.",
+    "version": "1.29.3",
+    "description": "Zed Editor (Localized / 汉化版)",
+    "homepage": "https://github.com/x6nux-oss/zed-globalization",
+    "license": "GPL-3.0-only",
     "architecture": {
-      "64bit": {
-        "url": "https://github.com/zhtshan/zed-globalization/releases/download/v$version/zedg-zh-cn-windows-x86_64-v$version.zip",
-        "hash": {
-          "url": "https://github.com/zhtshan/zed-globalization/releases/download/v$version/sha256sums.txt",
-          "regex": "([a-f0-9]{64})\\s+zedg-zh-cn-windows-x86_64-v\\$version\\.zip"
+        "64bit": {
+            "url": "https://github.com/x6nux-oss/zed-globalization/releases/download/v1.29.3/zedg-zh-cn-windows-x86_64-v1.29.3.zip",
+            "hash": "8e2bb466b84f8e94b67b254856751dc8790e30d40cd80eb9cd9898f592d3095b"
+        },
+        "arm64": {
+            "url": "https://github.com/x6nux-oss/zed-globalization/releases/download/v1.29.3/zedg-zh-cn-windows-aarch64-v1.29.3.zip",
+            "hash": "e9155b0f6ac319eda4d59ce6aca007c5c0566dcfcd1a526a2e50ad035eef9b46"
         }
-      },
-      "arm64": {
-        "url": "https://github.com/zhtshan/zed-globalization/releases/download/v$version/zedg-zh-cn-windows-aarch64-v$version.zip",
-        "hash": {
-          "url": "https://github.com/zhtshan/zed-globalization/releases/download/v$version/sha256sums.txt",
-          "regex": "([a-f0-9]{64})\\s+zedg-zh-cn-windows-aarch64-v\\$version\\.zip"
+    },
+    "pre_install": [
+        ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+        "New-PersistDirectory \"$env:APPDATA\\Zed\" \"$persist_dir\\AppData\" -Migrate",
+        "New-PersistDirectory \"$env:LOCALAPPDATA\\Zed\" \"$persist_dir\\LocalAppData\" -Migrate",
+        "if (!(Test-Path \"$persist_dir\\AppData\\settings.json\") -or !(Get-Item \"$persist_dir\\AppData\\settings.json\").Length) {",
+        "    New-Item \"$persist_dir\\AppData\\settings.json\" -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null",
+        "    Set-Content -Path \"$persist_dir\\AppData\\settings.json\" -Value '{\"auto_update\":false,\"telemetry\":{\"diagnostics\":false,\"metrics\":false}}'",
+        "}"
+    ],
+    "bin": [
+        [
+            "bin\\ZedG.exe",
+            "zedg"
+        ],
+        [
+            "bin\\ZedG.exe",
+            "zed"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "ZedG.exe",
+            "ZedG"
+        ]
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\scripts\\utils.ps1\"",
+        "Remove-Junction \"$env:APPDATA\\Zed\"",
+        "Remove-Junction \"$env:LOCALAPPDATA\\Zed\""
+    ],
+    "checkver": {
+        "github": "https://github.com/x6nux-oss/zed-globalization"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/x6nux-oss/zed-globalization/releases/download/v$version/zedg-zh-cn-windows-x86_64-v$version.zip",
+                "hash": {
+                    "url": "https://github.com/x6nux-oss/zed-globalization/releases/download/v$version/sha256sums.txt",
+                    "regex": "([a-f0-9]{64})\\s+zedg-zh-cn-windows-x86_64-v$version\\.zip"
+                }
+            },
+            "arm64": {
+                "url": "https://github.com/x6nux-oss/zed-globalization/releases/download/v$version/zedg-zh-cn-windows-aarch64-v$version.zip",
+                "hash": {
+                    "url": "https://github.com/x6nux-oss/zed-globalization/releases/download/v$version/sha256sums.txt",
+                    "regex": "([a-f0-9]{64})\\s+zedg-zh-cn-windows-aarch64-v$version\\.zip"
+                }
+            }
         }
-      }
     }
-  }
 }

@@ -1,0 +1,68 @@
+{
+    "version": "1.0.0",
+    "description": "Native local-network file and clipboard transfer from iPhone and iPad to Windows and Linux, using an Apple Shortcut.",
+    "homepage": "https://github.com/jorjanion/AirDrop-Bridge",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://opensource.org/license/mit"
+    },
+    "url": "https://github.com/jorjanion/AirDrop-Bridge/releases/download/v1.0.0/airdrop-bridge-windows-x64.exe",
+    "hash": "3e268f0794c6a1a04f61fa84b5dcf3d5709fdb5be3aa82a0b232ac5e0b2670c0",
+    "pre_install": [
+        "$roamingRoot = Join-Path $persist_dir 'Roaming'",
+        "$configDir = Join-Path $roamingRoot 'jorjanion\\AirDropBridge\\config'",
+        "$configFile = Join-Path $configDir 'config.json'",
+        "New-Item -ItemType Directory -Path $configDir -Force | Out-Null",
+        "if (-not (Test-Path -LiteralPath $configFile)) {",
+        "    $bytes = New-Object byte[] 32",
+        "    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()",
+        "    try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }",
+        "    $token = -join ($bytes | ForEach-Object { $_.ToString('x2') })",
+        "    $deviceName = if ($env:COMPUTERNAME) { $env:COMPUTERNAME } else { 'Windows PC' }",
+        "    $appConfig = [ordered]@{",
+        "        device_name = $deviceName",
+        "        port = 53317",
+        "        token = $token",
+        "        download_dir = Join-Path $env:USERPROFILE 'Downloads\\AirDropBridge'",
+        "        auto_update = $false",
+        "        autostart = $false",
+        "        notifications_enabled = $true",
+        "        play_sound = $true",
+        "        open_folder_on_receive = $false",
+        "        clipboard_sync = $true",
+        "    }",
+        "    [IO.File]::WriteAllText($configFile, ($appConfig | ConvertTo-Json), [Text.UTF8Encoding]::new($false))",
+        "}",
+        "$launcher = Join-Path $dir 'AirDrop-Bridge.cmd'",
+        "@('@echo off', 'set \"APPDATA=%~dp0Roaming\"', 'start \"\" \"%~dp0airdrop-bridge-windows-x64.exe\" %*') | Set-Content -LiteralPath $launcher -Encoding Ascii"
+    ],
+    "bin": [
+        [
+            "AirDrop-Bridge.cmd",
+            "airdrop-bridge"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "AirDrop-Bridge.cmd",
+            "AirDrop Bridge"
+        ]
+    ],
+    "persist": "Roaming",
+    "notes": [
+        "Scoop manages updates. The manifest disables AirDrop Bridge's built-in updater and automatic startup so the application does not replace its Scoop-managed executable. Configuration is stored under persist\\Roaming; received files remain in the user's Downloads\\AirDropBridge folder.",
+        "Pair the Windows app with the official Apple Shortcut from the iPhone or iPad setup page shown by the application."
+    ],
+    "checkver": {
+        "github": "https://github.com/jorjanion/AirDrop-Bridge",
+        "regex": "v([\\d.]+)"
+    },
+    "autoupdate": {
+        "url": "https://github.com/jorjanion/AirDrop-Bridge/releases/download/v$version/airdrop-bridge-windows-x64.exe",
+        "hash": {
+            "url": "https://api.github.com/repos/jorjanion/AirDrop-Bridge/releases/latest",
+            "jsonpath": "$.assets[?(@.name == 'airdrop-bridge-windows-x64.exe')].digest",
+            "regex": "sha256:([a-fA-F0-9]{64})"
+        }
+    }
+}

@@ -1,18 +1,18 @@
 {
     "version": "4.8.1",
-    "description": "Microsoft .NET Framework 4.8.1 runtime: the newest .NET Framework, an in-place update of 4.x for apps built for it (such as CKAN-NetFx). Installs only if Windows does not have it yet.",
-    "homepage": "https://dotnet.microsoft.com/download/dotnet-framework/net481",
+    "description": "Microsoft .NET Framework 4.x runtime at its newest version (4.8.1): an in-place update of every 4.x, for apps built for it (such as CKAN-NetFx). Installs only if Windows does not have it yet.",
+    "homepage": "https://dotnet.microsoft.com/download/dotnet-framework",
     "license": {
         "identifier": "Proprietary",
         "url": "https://dotnet.microsoft.com/download/dotnet-framework/net481"
     },
     "notes": [
-        ".NET Framework 4.8.1 is part of Windows: Windows 11 22H2 and later include it, and Windows Update brings it",
-        "to Windows 10 21H2 and 22H2. If it is already there, Scoop installs nothing and only records the package.",
-        "Otherwise it runs Microsoft's offline installer silently. It needs Windows 10 20H2 or later,",
+        "The newest .NET Framework 4.x (now 4.8.1) is part of Windows: Windows 11 22H2 and later include 4.8.1, and",
+        "Windows Update brings it to Windows 10 21H2 and 22H2. If it is already there, Scoop installs nothing and only",
+        "records the package. Otherwise it runs Microsoft's offline installer silently. 4.8.1 needs Windows 10 20H2 or later,",
         "or Windows Server 2022 or later; restart Windows if Scoop asks you to.",
         "",
-        "Global install only, from an elevated shell: scoop install -g gesu/NetFx-4.8.1",
+        "Global install only, from an elevated shell: scoop install -g gesu/NetFx-4",
         "",
         "'scoop uninstall' leaves .NET Framework in place: Windows and other programs use it. On Windows 10 it can be",
         "removed in Control Panel > Programs > View installed updates (KB5011048 or the cumulative update for .NET Framework)."
@@ -25,45 +25,47 @@
     ],
     "installer": {
         "script": [
-            "# Release 533320 or higher means 4.8.1 or later (533325 on most systems, 533320 or 533509 on Windows 11).",
-            "$setup = \"$dir\\NDP481-x86-x64-AllOS-ENU.exe\"",
+            "# Release of the version this manifest installs: 533320 or higher means 4.8.1 or later (533325 on most systems,",
+            "# 533320 or 533509 on Windows 11). Update it together with 'version', 'url' and 'hash' (see the package page).",
+            "$minRelease = 533320",
+            "$setup = Join-Path $dir (Split-Path $manifest.url -Leaf)",
             "$ndp = 'HKLM:\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full'",
             "$release = (Get-ItemProperty $ndp -ErrorAction SilentlyContinue).Release",
-            "if ($release -ge 533320) {",
+            "if ($release -ge $minRelease) {",
             "  info \".NET Framework $((Get-ItemProperty $ndp).Version) is already installed (Release $release): nothing to do.\"",
             "} else {",
-            "  info 'Installing .NET Framework 4.8.1 silently; this takes a few minutes.'",
+            "  info \"Installing .NET Framework $version silently; this takes a few minutes.\"",
             "  $rc = (Start-Process -FilePath $setup -ArgumentList '/q', '/norestart' -Wait -PassThru).ExitCode",
             "  # 0: done; 3010 and 1641: done, a restart is needed; 5100: this Windows is not supported; 1602: cancelled.",
-            "  if ($rc -eq 5100) { error '.NET Framework 4.8.1 does not support this Windows: it needs Windows 10 20H2 or later, or Windows Server 2022 or later.'; break }",
+            "  if ($rc -eq 5100) { error \".NET Framework $version does not support this Windows; see the package page for the Windows versions it needs.\"; break }",
             "  if ($rc -notin 0, 1641, 3010) { error \".NET Framework setup failed with exit code $rc. Its logs are in %TEMP% (files named 'Microsoft .NET Framework*' and 'dd_*').\"; break }",
-            "  if ($rc -ne 0) { warn 'Restart Windows to finish installing .NET Framework 4.8.1.' }",
+            "  if ($rc -ne 0) { warn \"Restart Windows to finish installing .NET Framework $version.\" }",
             "}",
             "# The installer is not needed any more; Scoop's cache keeps a copy.",
             "Remove-Item -LiteralPath $setup -Force",
             "",
-            "# The 'NetFx 4.8.1' shortcut opens this micro-launcher, which shows the installed version.",
+            "# The 'NetFx 4' shortcut opens this micro-launcher, which shows the installed version.",
             "$lines = @(",
             "  '@ECHO OFF',",
-            "  ':: .NET Framework 4.8.1: shows which .NET Framework 4.x is installed, then waits for a key.',",
+            "  ':: .NET Framework 4: shows which .NET Framework 4.x is installed, then waits for a key.',",
             "  ':: Written by the gesu Scoop bucket at install time.',",
-            "  'ECHO .NET Framework 4.8.1 (gesu/NetFx-4.8.1) is part of Windows: programs built for it use it,',",
+            "  'ECHO .NET Framework 4 (gesu/NetFx-4) is part of Windows: programs built for it use it,',",
             "  'ECHO there is nothing to start. Installed .NET Framework 4.x:',",
             "  'ECHO.',",
             "  'REG QUERY \"HKLM\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full\" /v Version',",
             "  'REG QUERY \"HKLM\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full\" /v Release',",
-            "  'ECHO Release 0x82348 (533320) or higher is 4.8.1 or later.',",
+            "  ('ECHO Release 0x{0:x} ({0}) or higher is {1} or later.' -f $minRelease, $version),",
             "  'ECHO.',",
             "  'PAUSE',",
             "  ''",
             ")",
-            "[IO.File]::WriteAllText(\"$dir\\NetFx-4.8.1.cmd\", ($lines -join \"`r`n\") + \"`r`n\")"
+            "[IO.File]::WriteAllText(\"$dir\\NetFx-4.cmd\", ($lines -join \"`r`n\") + \"`r`n\")"
         ]
     },
     "shortcuts": [
         [
-            "NetFx-4.8.1.cmd",
-            "NetFx 4.8.1"
+            "NetFx-4.cmd",
+            "NetFx 4"
         ]
     ],
     "uninstaller": {
@@ -71,5 +73,9 @@
             "if ($cmd -ne 'uninstall') { return }",
             "info '.NET Framework stays installed: it is part of Windows, and other programs use it.'"
         ]
+    },
+    "checkver": {
+        "url": "https://dotnet.microsoft.com/en-us/download/dotnet-framework",
+        "regex": "\\.NET Framework (4\\.[\\d.]+)"
     }
 }

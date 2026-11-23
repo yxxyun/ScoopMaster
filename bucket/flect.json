@@ -1,0 +1,65 @@
+{
+    "version": "1.2",
+    "description": "Nonportable Windows Explorer extension for converting, compressing, resizing, previewing, and inspecting files from the context menu.",
+    "homepage": "https://github.com/Ko7ayuki/Flect",
+    "license": "Apache-2.0",
+    "url": "https://github.com/Ko7ayuki/Flect/releases/download/flect-1.2/Flect-Setup.exe",
+    "hash": "2f7ffca688d9ca086c8e7ba4d3d580cf8ac6094ffcba0c7ba7a90bccb9a3d82e",
+    "pre_install": [
+        "$runtimeRoot = Join-Path $env:ProgramW6432 'dotnet\\shared\\Microsoft.WindowsDesktop.App'",
+        "$runtime = if (Test-Path -LiteralPath $runtimeRoot) { Get-ChildItem -LiteralPath $runtimeRoot -Directory | Where-Object { $_.Name -match '^10\\.' } | Select-Object -First 1 }",
+        "if (-not $runtime) { throw 'Flect requires the .NET 10 Desktop Runtime (x64). Install it first, for example: scoop bucket add versions; scoop install versions/windowsdesktop-runtime-10.0' }",
+        "$flectHome = Join-Path $persist_dir 'Home'",
+        "New-Item -ItemType Directory -Path $flectHome -Force | Out-Null",
+        "$env:FLECT_HOME = $flectHome",
+        "$settingsFile = Join-Path $flectHome 'settings.json'",
+        "if (-not (Test-Path -LiteralPath $settingsFile)) {",
+        "    $settings = [ordered]@{ Version = 1; General = [ordered]@{ AutoUpdate = $false } }",
+        "    [IO.File]::WriteAllText($settingsFile, ($settings | ConvertTo-Json -Depth 5), [Text.UTF8Encoding]::new($false))",
+        "}"
+    ],
+    "installer": {
+        "script": [
+            "$setup = Join-Path $dir $fname",
+            "$arguments = '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- /DIR=\"' + $dir + '\"'",
+            "try {",
+            "    $process = Start-Process -FilePath $setup -ArgumentList $arguments -WindowStyle Hidden -Wait -PassThru",
+            "    if ($process.ExitCode -ne 0) { throw \"Flect Setup failed with exit code $($process.ExitCode).\" }",
+            "} finally {",
+            "    if (Test-Path -LiteralPath $setup) { Remove-Item -LiteralPath $setup -Force }",
+            "}"
+        ]
+    },
+    "uninstaller": {
+        "file": "unins000.exe",
+        "args": [
+            "/VERYSILENT",
+            "/SUPPRESSMSGBOXES",
+            "/NORESTART"
+        ]
+    },
+    "env_set": {
+        "FLECT_HOME": "$persist_dir\\Home"
+    },
+    "persist": "Home",
+    "suggest": {
+        ".NET 10 Desktop Runtime": "versions/windowsdesktop-runtime-10.0"
+    },
+    "notes": [
+        "Nonportable: the upstream Inno Setup installer registers Flect's Explorer context-menu and Preview COM handlers in HKCU. Scoop runs the matching upstream uninstaller during updates and removal to unregister them.",
+        "Requires the .NET 10 Desktop Runtime (x64) before installation. Flect's own automatic updater is disabled and its settings, Python environment, and downloaded models are redirected to persist\\Home; update it with 'scoop update flect'.",
+        "The published release includes the classic Explorer menu. On Windows 11 it appears under 'Show more options'; the optional modern context-menu extension is not included."
+    ],
+    "checkver": {
+        "github": "https://github.com/Ko7ayuki/Flect",
+        "regex": "flect-([\\d.]+)"
+    },
+    "autoupdate": {
+        "url": "https://github.com/Ko7ayuki/Flect/releases/download/flect-$version/Flect-Setup.exe",
+        "hash": {
+            "url": "https://api.github.com/repos/Ko7ayuki/Flect/releases/latest",
+            "jsonpath": "$.assets[?(@.name == 'Flect-Setup.exe')].digest",
+            "regex": "sha256:([a-fA-F0-9]{64})"
+        }
+    }
+}
