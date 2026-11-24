@@ -1,0 +1,57 @@
+{
+    "##": "LocModel: self-hosted local-LLM studio, NSIS installer (not on GitHub). Downloads official setup.exe and unpacks inner LocModel.exe flat into $dir without running NSIS. The llama.cpp engine is fully decoupled, self-updated by the app into %LOCALAPPDATA%\\LocModel\\engines (tag/variant from engine.json); scoop does not manage engine or app data.",
+    "version": "3.6.1",
+    "description": "LocModel —— 本地大模型与 AI 工作室（一键部署、画图/视频、Agent，Web UI 端口 8686）",
+    "homepage": "https://locmodel.com/",
+    "license": "Freeware",
+    "notes": [
+        "本体由 scoop 管：官网自托管 setup.exe，首页 meta softwareVersion 为版本权威；checkver 抓首页，autoupdate 用官网直链模板。",
+        "推理引擎（llama.cpp）与本体完全解耦：app 按硬件选 vulkan/cuda/cpu 变体下载官方 release 解压到 %LOCALAPPDATA%\\LocModel\\engines\\<tag>-<variant>\\，scoop 不接管。",
+        "NSIS 安装器用 7z 解出内层 LocModel.exe 平铺安装，不运行安装器；数据目录 %LOCALAPPDATA%\\LocModel 与 %APPDATA%\\LocModel 由 app 自有，scoop 不删除不接管。",
+        "存在会员增值体系（activation.locmodel.com 授权 / m1,m2.locmodel.com 模型下载加速），核心免费，属专有免费软件非开源许可。",
+        "官网另有 macOS universal.dmg 与 Linux deb/AppImage；本清单只收录 Windows x64。"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://locmodel.com/LocModel_3.6.1_x64-setup.exe",
+            "hash": "7740b1a3577a1c8412f043300da16f65a5c499b60f01c6d6b580beca4020d862"
+        }
+    },
+    "pre_install": [
+        "$seven = Get-HelperPath -Helper 7zip",
+        "if (!$seven) { $seven = '7z' }",
+        "$setup = Join-Path $dir $fname",
+        "& $seven x $setup \"-o$dir\" -y | Out-Null",
+        "Remove-Item $setup -Force -ErrorAction SilentlyContinue",
+        "if (!(Test-Path (Join-Path $dir 'LocModel.exe'))) { abort 'Failed to unpack LocModel payload.' }"
+    ],
+    "bin": [
+        [
+            "LocModel.exe",
+            "locmodel"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "LocModel.exe",
+            "LocModel"
+        ]
+    ],
+    "checkver": {
+        "script": [
+            "$ErrorActionPreference = 'Stop'",
+            "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12",
+            "$page = (Invoke-WebRequest -Uri 'https://locmodel.com/' -UseBasicParsing).Content",
+            "$m = [regex]::Match($page, '\"softwareVersion\"\\s*:\\s*\"([\\d.]+)\"')",
+            "if ($m.Success) { 'version=' + $m.Groups[1].Value }"
+        ],
+        "regex": "^version=(?<version>[\\d.]+)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://locmodel.com/LocModel_$version_x64-setup.exe"
+            }
+        }
+    }
+}

@@ -1,34 +1,61 @@
 {
     "version": "3.10.0",
-    "description": "OCS 浏览器自动化神器，一键浏览器多开，用户脚本环境一键配置。",
+    "description": "OCS桌面端 用户脚本一键启动器，用户管理器/开发者一键开启以及重新启用 electron + vue3 + typescript",
     "homepage": "https://docs.ocsjs.com/docs/app",
-    "license": "MIT",
+    "license": {
+        "identifier": "Unknown"
+    },
     "architecture": {
         "64bit": {
             "url": "https://github.com/ocsjs/ocs-desktop/releases/download/v3.10.0/ocs-3.10.0-setup-win-x64.exe#/dl.7z",
-            "hash": "8ad53cbe0ff023afc51093ed0cca954b2a18df45e8d0b971d139dad3bb763263",
+            "hash": "sha512:a2b2ce96540886b61153aef3a811bb2c740732f64a5f9749ee68af3b458dbeab21ca584d17b9ecae7f86c3d55dacb2f588606524f8318f948c12e9638d6ad358",
             "pre_install": [
                 "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
-                "Remove-Item \"$dir\\`$*\" -Recurse"
+                "Remove-Item \"$dir\\`$*\" -Force -Recurse"
             ]
         }
     },
+    "installer": {
+        "script": [
+            "# handle runtime cache",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:APPDATA\\OCS Desktop\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\OCS Desktop\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "bin": [
+        [
+            "OCS Desktop.exe",
+            "OCS-Desktop"
+        ]
+    ],
     "shortcuts": [
         [
             "OCS Desktop.exe",
-            "OCS Desktop",
-            "--user-data-dir=\"$dir\\User Data\""
+            "OCS Desktop"
         ]
     ],
-    "persist": "User Data",
     "checkver": {
-        "github": "https://github.com/ocsjs/ocs-desktop"
+        "github": "https://api.github.com/repos/ocsjs/ocs-desktop/releases",
+        "jp": "$[0].tag_name",
+        "regex": "v([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
                 "url": "https://github.com/ocsjs/ocs-desktop/releases/download/v$version/ocs-$version-setup-win-x64.exe#/dl.7z"
             }
+        },
+        "hash": {
+            "url": "$baseurl/latest.yml",
+            "regex": "(?sm)$basename.*?sha512:\\s+$base64"
         }
     }
 }

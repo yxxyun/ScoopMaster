@@ -1,0 +1,76 @@
+{
+    "version": "2.11.4",
+    "description": "PlayStation 4 and 5 Remote Play client based on Chiaki.",
+    "homepage": "https://github.com/ForWard-Technologies-LLC/Pylux",
+    "license": {
+        "identifier": "LicenseRef-AGPL-3.0-only-OpenSSL",
+        "url": "https://github.com/ForWard-Technologies-LLC/Pylux/blob/master/LICENSES/AGPL-3.0-only-OpenSSL.txt"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://dl.dropboxusercontent.com/scl/fi/153m9nvy9jluxcjvngmwb/pylux-latest.zip?rlkey=l3bxdp67hu2apfazjs27edxtw&dl=1#/pylux.zip",
+            "hash": "d3c0ea10ec4e46f696c1c926f2f9e1574539a60d38ccf0bb95d22e290895257a",
+            "extract_dir": "pylux"
+        }
+    },
+    "pre_install": [
+        "if ($global) { throw 'Pylux requires a per-user installation to keep AppData in persist.' }",
+        "$folders = @{",
+        "    roaming = [Environment]::GetFolderPath('ApplicationData')",
+        "    local = [Environment]::GetFolderPath('LocalApplicationData')",
+        "}",
+        "$created = @()",
+        "try {",
+        "    foreach ($name in $folders.Keys) {",
+        "        $link = Join-Path $folders[$name] 'pylux\\pylux'",
+        "        $target = Join-Path $persist_dir $name",
+        "        $existing = Get-Item -LiteralPath $link -Force -ErrorAction SilentlyContinue",
+        "        if ($existing) {",
+        "            if ($existing.LinkType -eq 'Junction' -and $existing.Target -eq $target) { continue }",
+        "            throw \"Existing Pylux data at $link. Back it up and move it before installing.\"",
+        "        }",
+        "        [IO.Directory]::CreateDirectory($target) | Out-Null",
+        "        [IO.Directory]::CreateDirectory((Split-Path $link)) | Out-Null",
+        "        New-Item -ItemType Junction -Path $link -Target $target -ErrorAction Stop | Out-Null",
+        "        $created += $link",
+        "    }",
+        "} catch {",
+        "    foreach ($link in $created) { [IO.Directory]::Delete($link) }",
+        "    throw",
+        "}"
+    ],
+    "persist": [
+        "roaming",
+        "local"
+    ],
+    "bin": "pylux.exe",
+    "shortcuts": [
+        [
+            "pylux.exe",
+            "Pylux"
+        ]
+    ],
+    "pre_uninstall": [
+        "$folders = @{",
+        "    roaming = [Environment]::GetFolderPath('ApplicationData')",
+        "    local = [Environment]::GetFolderPath('LocalApplicationData')",
+        "}",
+        "foreach ($name in $folders.Keys) {",
+        "    $link = Join-Path $folders[$name] 'pylux\\pylux'",
+        "    $existing = Get-Item -LiteralPath $link -Force -ErrorAction SilentlyContinue",
+        "    if ($existing -and $existing.LinkType -eq 'Junction' -and $existing.Target -eq (Join-Path $persist_dir $name)) {",
+        "        [IO.Directory]::Delete($link)",
+        "        $parent = Split-Path $link",
+        "        if (!(Get-ChildItem -LiteralPath $parent -Force)) { [IO.Directory]::Delete($parent) }",
+        "    }",
+        "}"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://dl.dropboxusercontent.com/scl/fi/153m9nvy9jluxcjvngmwb/pylux-latest.zip?rlkey=l3bxdp67hu2apfazjs27edxtw&dl=1#/pylux.zip"
+            }
+        }
+    }
+}

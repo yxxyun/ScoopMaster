@@ -1,8 +1,20 @@
 {
     "version": "0.5.2",
-    "description": "Open-source, clean-room download manager written in Rust — downloads, videos and torrents",
+    "description": "Fast, resumable download manager with browser integration, video/torrent support, and an MCP server",
     "homepage": "https://misterdownloadmanager.com",
     "license": "GPL-3.0-only",
+    "suggest": {
+        "FFmpeg": "ffmpeg",
+        "yt-dlp": "yt-dlp",
+        "gallery-dl": "gallery-dl"
+    },
+    "notes": [
+        "Install the browser extension to catch downloads automatically:",
+        "  Chrome / Edge / Brave: https://chromewebstore.google.com/detail/mister-download-manager/ejoleppdfgjdndddcjoehopknmlglojp",
+        "  Firefox: https://addons.mozilla.org/firefox/addon/mister-download-manager/",
+        "",
+        "Native messaging host has been automatically registered for your browsers."
+    ],
     "architecture": {
         "64bit": {
             "url": "https://github.com/anefzaoui/misterdownloadmanager/releases/download/v0.5.2/MisterDownloadManager-0.5.2-x64.zip",
@@ -10,37 +22,29 @@
             "extract_dir": "MisterDownloadManager-0.5.2-x64"
         }
     },
-    "bin": "misterdownloadmanager-cli.exe",
+    "bin": [
+        [
+            "misterdownloadmanager-cli.exe",
+            "mdm"
+        ],
+        "misterdownloadmanager-cli.exe",
+        "misterdownloadmanager-mcp.exe",
+        [
+            "misterdownloadmanager.exe",
+            "misterdownloadmanager"
+        ]
+    ],
     "shortcuts": [
         [
             "misterdownloadmanager.exe",
             "Mister Download Manager"
         ]
     ],
-    "post_install": [
-        "$nmhost = \"$dir\\misterdownloadmanager-nmhost.exe\"",
-        "if (Test-Path $nmhost) {",
-        "    Push-Location $dir",
-        "    try { & $nmhost --register | Out-Null } finally { Pop-Location }",
-        "    if ($LASTEXITCODE -ne 0) { warn 'Browser integration was not registered, see notes.' }",
+    "post_install": "& \"$dir\\misterdownloadmanager-nmhost.exe\" --register",
+    "pre_uninstall": [
+        "if (Test-Path \"$dir\\misterdownloadmanager-nmhost.exe\") {",
+        "    & \"$dir\\misterdownloadmanager-nmhost.exe\" --unregister",
         "}"
-    ],
-    "uninstaller": {
-        "script": [
-            "$nmhost = \"$dir\\misterdownloadmanager-nmhost.exe\"",
-            "if (Test-Path $nmhost) { Push-Location $dir; & $nmhost --unregister | Out-Null; Pop-Location }"
-        ]
-    },
-    "notes": [
-        "Browser integration is registered by this manifest for Chrome, Chromium, Edge, Brave and Firefox,",
-        "and removed again on uninstall. To finish the setup:",
-        "  1. Load the extension from '$dir\\extension\\chromium' via chrome://extensions (Developer mode -> Load unpacked),",
-        "     or install it from the browser's add-on store as 'Mister Download Manager'.",
-        "  2. In the app enable Options -> General -> 'Use advanced browser integration' and tick the browsers to capture from.",
-        "Undo the registration manually with: & \"$dir\\misterdownloadmanager-nmhost.exe\" --unregister",
-        "Settings are kept in %APPDATA%\\misterdownloadmanager. The portable zip is not used here: its 'data' folder",
-        "next to misterdownloadmanager.exe puts MDM in portable mode, which refuses to register browser integration.",
-        "Docs: https://misterdownloadmanager.com/zh-hans/help/portable.html"
     ],
     "checkver": {
         "github": "https://github.com/anefzaoui/misterdownloadmanager"

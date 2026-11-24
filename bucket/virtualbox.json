@@ -1,135 +1,65 @@
 {
     "version": "7.2.22",
-    "description": "Oracle VirtualBox for Windows on x64 or Windows 11 on ARM64 (experimental).",
-    "homepage": "https://www.virtualbox.org/",
-    "license": "GPL-2.0-only",
+    "description": "虚拟机: VirtualBox",
+    "homepage": "https://www.virtualbox.org",
+    "license": "Unknown",
+    "url": [
+        "https://download.virtualbox.org/virtualbox/7.2.22/VirtualBox-7.2.22-175245-Win.exe#/setup.exe",
+        "https://download.virtualbox.org/virtualbox/7.2.22/Oracle_VirtualBox_Extension_Pack-7.2.22.vbox-extpack"
+    ],
+    "hash": [
+        "afd0ff1656cbe04ed88ce619594ae021419d97cce89fa9bdc443e9a963f1713f",
+        "cd5fb32cac59157dc361c90be68ccef1404831aac48ec8377569620afbc9d207"
+    ],
+    "bin": [
+        "VBoxBalloonCtrl.exe",
+        "VBoxBugReport.exe",
+        "VBoxDTrace.exe",
+        "VBoxExtPackHelperApp.exe",
+        "VBoxHeadless.exe",
+        "VBoxManage.exe",
+        "VBoxNetDHCP.exe",
+        "VBoxNetNAT.exe",
+        "VBoxSDS.exe",
+        "VBoxSVC.exe",
+        "VBoxWebSrv.exe",
+        "VirtualBox.exe",
+        "VirtualBoxVM.exe"
+    ],
+    "shortcuts": [
+        [
+            "VirtualBox.exe",
+            "VirtualBox"
+        ]
+    ],
     "installer": {
         "script": [
-            "$inventory = Join-Path $dir \"vbox-msi-inventory.ps1\"",
-            "if (@(& $inventory).Count -ne 0) { throw \"Remove the existing Oracle VirtualBox installation through Windows Installed apps before installing through Scoop.\" }",
-            "$machine = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine, [Microsoft.Win32.RegistryView]::Registry64)",
-            "try {",
-            "    $windows = $machine.OpenSubKey(\"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\")",
-            "    if (-not $windows) { throw \"Cannot open the native Windows registry view.\" }",
-            "    try { $programFiles = $windows.GetValue(\"ProgramFilesDir\") } finally { $windows.Dispose() }",
-            "} finally { $machine.Dispose() }",
-            "if (-not $programFiles) { throw \"Cannot resolve the native Program Files directory.\" }",
-            "$oracleDir = Join-Path $programFiles \"Oracle\\VirtualBox\"",
-            "$cli = Join-Path $oracleDir \"VBoxManage.exe\"",
-            "$shimSource = get_shim_path",
-            "if (-not [IO.File]::Exists($shimSource)) { throw \"Cannot find Scoop's executable shim.\" }",
-            "$setup = Join-Path $dir \"VBoxSetup.exe\"",
-            "$arguments = '--msiparams \"VBOX_START=0 VBOX_INSTALLSTARTMENUENTRIES=1 REBOOT=ReallySuppress\" --silent'",
-            "$process = Start-Process -FilePath $setup -ArgumentList $arguments -Verb RunAs -Wait -PassThru -ErrorAction Stop",
-            "if ($process.ExitCode -notin 0, 3010) { throw \"VirtualBox installer failed with exit code $($process.ExitCode).\" }",
-            "$parsedCode = [guid]::Empty",
-            "$products = @(& $inventory -IncludeVersion)",
-            "if ($products.Count -ne 1 -or $products[0].Version -ne $version -or",
-            "    -not [guid]::TryParseExact($products[0].ProductCode, \"B\", [ref]$parsedCode) -or",
-            "    (Get-Item -LiteralPath $cli -ErrorAction Stop) -isnot [IO.FileInfo]) {",
-            "    throw \"Expected Oracle VirtualBox MSI registration and binaries in Program Files. Inspect Windows Installed apps before retrying.\"",
-            "}",
-            "Set-Content -LiteralPath (Join-Path $dir \"vbox-product-code.txt\") -Value $products[0].ProductCode -Encoding Ascii -ErrorAction Stop",
-            "# This app-local exe lets Scoop keep managing the public shim during install, reset and uninstall.",
-            "Copy-Item -LiteralPath $shimSource -Destination (Join-Path $dir \"VBoxManage.exe\") -Force -ErrorAction Stop",
-            "('path = \"{0}\"' -f $cli) | Out-UTF8File (Join-Path $dir \"VBoxManage.shim\")"
+            "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+            "Invoke-ExternalCommand \"$dir\\setup.exe\" -ArgumentList @('--extract', '-path', \"$dir\", '--silent') | Out-Null",
+            "Get-ChildItem \"$dir\\VirtualBox*amd64.msi\" | Rename-Item -NewName 'setup.msi'",
+            "Start-Process msiexec -ArgumentList @('/i', \"`\"$dir\\setup.msi`\"\", '/qn', '/norestart', \"INSTALLDIR=`\"$dir`\"\") -Wait -Verb RunAs | Out-Null",
+            "Start-Process icacls -ArgumentList @(\"`\"$dir`\"\", '/grant', 'Everyone:F', '/T') -Wait -Verb RunAs | Out-Null",
+            "Remove-Item \"$dir\\setup.exe\", \"$dir\\setup.msi\""
         ]
     },
-    "post_install": "Remove-Item -LiteralPath (Join-Path $dir \"VBoxSetup.exe\")",
     "uninstaller": {
         "script": [
-            "$inventory = Join-Path $dir \"vbox-msi-inventory.ps1\"",
-            "if (-not (Test-Path -LiteralPath $inventory -PathType Leaf -ErrorAction Stop)) {",
-            "    throw \"VirtualBox MSI inventory helper is missing. Check Windows Installed apps before repairing the Scoop entry.\"",
-            "}",
-            "$marker = Join-Path $dir \"vbox-product-code.txt\"",
-            "$productCode = [string](Get-Content -LiteralPath $marker -Raw -ErrorAction Stop)",
-            "$parsedCode = [guid]::Empty",
-            "if (-not [guid]::TryParseExact($productCode.Trim(), \"B\", [ref]$parsedCode)) { throw \"Invalid VirtualBox ProductCode record. Check Windows Installed apps before repairing the Scoop entry.\" }",
-            "if (& $inventory -ProductCode ($parsedCode.ToString(\"B\").ToUpperInvariant())) {",
-            "    abort \"Remove this Oracle VirtualBox installation through Windows Installed apps, then rerun the Scoop command.\"",
+            "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+            "$ids = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -like '*VirtualBox*' } | Select-Object IdentifyingNumber",
+            "if (!($ids)) { error \"Could not find product ID\"; break }",
+            "$ids | ForEach-Object {",
+            "    Start-Process msiexec -ArgumentList \"/x\", $_.IdentifyingNumber, \"/qn\", \"/norestart\" -NoNewWindow -Wait",
             "}"
         ]
     },
-    "bin": "VBoxManage.exe",
     "checkver": {
-        "url": "https://update.virtualbox.org/query.php?platform=WINDOWS_64BITS_GENERIC&version=0.0.0",
-        "regex": "VirtualBox-(?<version>[\\d.]+)-(?<revision>[\\d]+)-Win.exe"
+        "url": "https://www.virtualbox.org/wiki/Downloads",
+        "regex": "VirtualBox-(?<version>[\\d\\w.]+)-(?<revision>[\\d]+)-Win.exe"
     },
     "autoupdate": {
-        "hash": {
-            "url": "https://download.virtualbox.org/virtualbox/$version/SHA256SUMS"
-        },
-        "architecture": {
-            "64bit": {
-                "url": "https://download.virtualbox.org/virtualbox/$version/VirtualBox-$version-$matchRevision-Win.exe#/VBoxSetup.exe"
-            },
-            "arm64": {
-                "url": "https://download.virtualbox.org/virtualbox/$version/VirtualBox-$version-$matchRevision-Win.exe#/VBoxSetup.exe"
-            }
-        }
-    },
-    "notes": [
-        "Oracle installs the application and its Start menu entry in the system locations. Scoop provides the native VBoxManage.exe shim.",
-        "Remove the Oracle VirtualBox product installed by Scoop through Windows Installed apps before updating or uninstalling in Scoop.",
-        "Oracle describes support for Windows 11 ARM64 hosts as experimental."
-    ],
-    "architecture": {
-        "64bit": {
-            "url": "https://download.virtualbox.org/virtualbox/7.2.22/VirtualBox-7.2.22-175245-Win.exe#/VBoxSetup.exe",
-            "hash": "afd0ff1656cbe04ed88ce619594ae021419d97cce89fa9bdc443e9a963f1713f"
-        },
-        "arm64": {
-            "url": "https://download.virtualbox.org/virtualbox/7.2.22/VirtualBox-7.2.22-175245-Win.exe#/VBoxSetup.exe",
-            "hash": "afd0ff1656cbe04ed88ce619594ae021419d97cce89fa9bdc443e9a963f1713f"
-        }
-    },
-    "pre_install": [
-        "$inventory = Join-Path $dir \"vbox-msi-inventory.ps1\"",
-        "# Both native MSI payloads use the same Oracle VirtualBox UpgradeCode.",
-        "$source = @\"",
-        "[CmdletBinding()]",
-        "param(",
-        "    [switch]`$IncludeVersion,",
-        "    [string]`$UpgradeCode = '{C4BAD770-BFE8-4D2C-A592-693028A7215B}',",
-        "    [string]`$ProductCode",
-        ")",
-        "`$ErrorActionPreference = 'Stop'",
-        "if (-not ('ScoopBucket.VirtualBoxMsi' -as [type])) {",
-        "    Add-Type -Namespace ScoopBucket -Name VirtualBoxMsi -MemberDefinition @'",
-        "    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]",
-        "    [System.Runtime.InteropServices.DllImport(\"msi.dll\", CharSet = System.Runtime.InteropServices.CharSet.Unicode, ExactSpelling = true)]",
-        "    public static extern uint MsiEnumRelatedProductsW(string upgradeCode, uint reserved, uint index, System.Text.StringBuilder productCode);",
-        "",
-        "    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]",
-        "    [System.Runtime.InteropServices.DllImport(\"msi.dll\", CharSet = System.Runtime.InteropServices.CharSet.Unicode, ExactSpelling = true)]",
-        "    public static extern uint MsiGetProductInfoW(string productCode, string property, System.Text.StringBuilder value, ref uint size);",
-        "'@",
-        "}",
-        "if (`$ProductCode) {",
-        "    `$value = [Text.StringBuilder]::new(256)",
-        "    [uint32]`$size = `$value.Capacity",
-        "    `$result = [ScoopBucket.VirtualBoxMsi]::MsiGetProductInfoW(`$ProductCode, 'ProductName', `$value, [ref]`$size)",
-        "    if (`$result -eq 1605) { return `$false } # ERROR_UNKNOWN_PRODUCT",
-        "    if (`$result -in 0, 234) { return `$true } # A registered product can also return ERROR_MORE_DATA.",
-        "    throw \"Cannot check the Oracle VirtualBox ProductCode (error `$result).\"",
-        "}",
-        "`$productBuffer = [Text.StringBuilder]::new(39)",
-        "for ([uint32]`$index = 0; ; `$index++) {",
-        "    `$result = [ScoopBucket.VirtualBoxMsi]::MsiEnumRelatedProductsW(`$UpgradeCode, 0, `$index, `$productBuffer)",
-        "    if (`$result -eq 259) { break } # ERROR_NO_MORE_ITEMS",
-        "    if (`$result -ne 0) { throw \"Cannot enumerate Oracle VirtualBox MSI registrations (error `$result).\" }",
-        "    if (`$IncludeVersion) {",
-        "        `$value = [Text.StringBuilder]::new(256)",
-        "        [uint32]`$size = `$value.Capacity",
-        "        `$result = [ScoopBucket.VirtualBoxMsi]::MsiGetProductInfoW(`$productBuffer.ToString(), 'VersionString', `$value, [ref]`$size)",
-        "        if (`$result -ne 0) { throw \"Cannot read the installed Oracle VirtualBox MSI version (error `$result).\" }",
-        "        [pscustomobject]@{ ProductCode = `$productBuffer.ToString(); Version = `$value.ToString() }",
-        "    } else {",
-        "        `$productBuffer.ToString()",
-        "    }",
-        "}",
-        "\"@",
-        "Set-Content -LiteralPath $inventory -Value $source -Encoding UTF8 -ErrorAction Stop"
-    ]
+        "url": [
+            "https://download.virtualbox.org/virtualbox/$matchHead/VirtualBox-$version-$matchRevision-Win.exe#/setup.exe",
+            "https://download.virtualbox.org/virtualbox/$matchHead/Oracle_VirtualBox_Extension_Pack-$matchHead.vbox-extpack"
+        ]
+    }
 }
