@@ -1,0 +1,67 @@
+{
+    "version": "26.8.11",
+    "description": "Explorer thumbnails and a 'Save as PNG' context-menu verb for XNA/MonoGame .xnb texture files",
+    "homepage": "https://github.com/regulad/tinyxnb",
+    "license": "MIT,MS-PL",
+    "notes": [
+        "Explorer was restarted during install, so thumbnails work immediately.",
+        "",
+        "Requires the .NET 8 runtime: Microsoft.NETCore.App 8.x specifically. Roll-forward does",
+        "not cross major versions, so 9.x or 10.x will NOT work. Any one of these provides it:",
+        "    winget install Microsoft.DotNet.Runtime.8          (smallest, and all that is needed)",
+        "    winget install Microsoft.DotNet.DesktopRuntime.8   (superset, also fine)",
+        "    winget install Microsoft.DotNet.SDK.8              (superset, also fine)",
+        "Those need admin. To avoid elevation, install .NET into your profile with",
+        "dotnet-install.ps1 -Runtime dotnet -Channel 8.0 and set DOTNET_ROOT to point at it.",
+        "",
+        "64-bit only, by necessity -- 64-bit Explorer will never load a 32-bit shell extension.",
+        "The bundled xnb2png.exe is self-contained and needs no runtime at all.",
+        "",
+        "Only .xnb files whose root object is a Texture2D get a thumbnail. Anything else falls",
+        "back to the generic icon."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/regulad/tinyxnb/releases/download/v26.8.11/tinyxnb-26.8.11-win-x64.zip",
+            "hash": "6f4335769eaeae98844b0befb34adf2f19eafec9b7a725cb2210cc617f4bb2a4"
+        }
+    },
+    "pre_install": [
+        "# The thumbnail handler is a COM server whose runtime is started by hostfxr, which",
+        "# cannot roll forward across major versions -- only Microsoft.NETCore.App 8.x will do.",
+        "# Probe the same locations hostfxr does, so a per-user DOTNET_ROOT install counts.",
+        "$roots = @($env:DOTNET_ROOT)",
+        "$roots += (Get-ItemProperty 'HKLM:\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\x64' -ErrorAction SilentlyContinue).InstallLocation",
+        "$roots += @($env:ProgramW6432, $env:ProgramFiles) | Where-Object { $_ } | ForEach-Object { \"$_\\dotnet\" }",
+        "# String concatenation, not Join-Path: Join-Path resolves the drive qualifier and errors",
+        "# noisily if a stale DOTNET_ROOT points at a drive that no longer exists.",
+        "$net8 = $roots | Where-Object { $_ } | ForEach-Object { \"$_\\shared\\Microsoft.NETCore.App\" } | Where-Object { Test-Path $_ } | ForEach-Object { Get-ChildItem $_ -Directory } | Where-Object { $v = $_.Name -as [version]; $v -and $v.Major -eq 8 }",
+        "if (!$net8) { error \"$app requires the .NET 8 runtime (Microsoft.NETCore.App 8.x), which was not found. Install any one of: 'winget install Microsoft.DotNet.Runtime.8' (smallest), Microsoft.DotNet.DesktopRuntime.8, or Microsoft.DotNet.SDK.8 -- all three provide it. A 9.x or 10.x runtime will not work, because hostfxr does not roll forward across major versions.\"; break }"
+    ],
+    "post_install": [
+        "# Register against the stable 'current' junction, never the versioned directory, or",
+        "# the next update leaves a dangling InprocServer32 pointing at a deleted path. This",
+        "# expression yields the junction whether $dir is already 'current' or not.",
+        "$target = Join-Path (Split-Path $dir -Parent) 'current'",
+        "& \"$dir\\install.ps1\" -InPlace -SourceDir $target -RestartExplorer"
+    ],
+    "pre_uninstall": [
+        "# Must run BEFORE Scoop deletes the directory: Explorer holds the handler DLL open,",
+        "# so removal fails with a file lock unless it is unregistered and Explorer restarted.",
+        "& \"$dir\\uninstall.ps1\" -RestartExplorer"
+    ],
+    "bin": "xnb2png.exe",
+    "checkver": {
+        "github": "https://github.com/regulad/tinyxnb"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/regulad/tinyxnb/releases/download/v$version/tinyxnb-$version-win-x64.zip"
+            }
+        },
+        "hash": {
+            "url": "$url.sha256"
+        }
+    }
+}

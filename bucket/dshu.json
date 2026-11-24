@@ -1,0 +1,57 @@
+{
+    "##": "DSHU is an Electron desktop agent workbench forked from DeepSeek Harness. Upstream only ships a NSIS installer (allowToChangeInstallationDirectory:false, so /D= silent dir does not work); this manifest unpacks the inner app-64.7z flat into $dir, same technique as learnharness. Data uses the app default ~/.dsh-uncensored, isolated from the official DSH and from any existing .dsh dirs (nothing is deleted).",
+    "version": "2026.11.23.0",
+    "description": "DeepSeek Harness Uncensored（DSHU）—— 基于 DeepSeek Harness 的桌面智能体工作台，内置破甲提示词（缺省/网安/逆向/写作四模式）",
+    "homepage": "https://github.com/Water-Run/deepseek-harness-uncensored",
+    "license": {
+        "identifier": "GPL-3.0-or-later",
+        "url": "https://github.com/Water-Run/deepseek-harness-uncensored/blob/main/LICENSE"
+    },
+    "notes": [
+        "数据使用官方默认目录 ~/.dsh-uncensored（C:\\Users\\Administrator\\.dsh-uncensored），与官方 DSH 的 .dsh 完全隔离；现有的 .dsh 目录一律保留不动",
+        "本清单解出安装器内层 app-64.7z 平铺安装，不运行 NSIS 安装器（上游禁止改安装目录，/D= 无效）",
+        "安装包未经正式签名，首次启动 Windows SmartScreen 可能提示未知发布者",
+        "可与官方 DSH 并存，程序/配置/会话/更新渠道各自独立，互不共享",
+        "官方在线升级与自动回退尚在验收，数据目录更新前请自行备份"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Water-Run/deepseek-harness-uncensored/releases/download/v2026.11.23.0/DSHU-2026.11.23.0-win-x64.exe",
+            "hash": "8f54226cc0e43943d4b60c9c5539ee57959d23eb070eee38c2de504f3be66f1a"
+        }
+    },
+    "pre_install": [
+        "$seven = Get-HelperPath -Helper 7zip",
+        "if (!$seven) { $seven = '7z' }",
+        "$setup = Join-Path $dir $fname",
+        "$inner = Join-Path $dir '_nsis'",
+        "& $seven x $setup \"-o$inner\" -y | Out-Null",
+        "& $seven x (Join-Path $inner '$PLUGINSDIR\\app-64.7z') \"-o$dir\" -y | Out-Null",
+        "Remove-Item $inner -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item $setup -Force -ErrorAction SilentlyContinue",
+        "if (!(Test-Path (Join-Path $dir 'DeepSeek Harness Uncensored.exe'))) { abort 'Failed to unpack DSHU payload.' }"
+    ],
+    "bin": [
+        [
+            "DeepSeek Harness Uncensored.exe",
+            "dshu"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "DeepSeek Harness Uncensored.exe",
+            "DeepSeek Harness Uncensored"
+        ]
+    ],
+    "checkver": {
+        "url": "https://github.com/Water-Run/deepseek-harness-uncensored/releases.atom",
+        "regex": "releases/tag/v([\\d.]+)\""
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Water-Run/deepseek-harness-uncensored/releases/download/v$version/DSHU-$version-win-x64.exe"
+            }
+        }
+    }
+}

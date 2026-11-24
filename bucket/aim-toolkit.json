@@ -1,0 +1,87 @@
+{
+    "version": "20260420",
+    "description": "RAM disks that allocate memory on demand and free it on TRIM, and disk-image mounting, on the Arsenal Image Mounter driver (the successor to ImDisk Toolkit)",
+    "homepage": "https://sourceforge.net/projects/aim-toolkit/",
+    "license": {
+        "identifier": "AGPL-3.0-only",
+        "url": "https://github.com/ArsenalRecon/Arsenal-Image-Mounter/blob/master/LICENSE.md"
+    },
+    "notes": [
+        "Installed by upstream's own installer: in Program Files\\AIM Toolkit, unless an earlier",
+        "installation chose another folder (its Apps & features entry says which), with the",
+        "Arsenal Image Mounter driver, RamDyn, RamDiskUI and MountImg. It sets up no services",
+        "until RamDiskUI saves a RAM disk.",
+        "",
+        "RAM disks: RamDyn.exe in that folder prints its syntax when run without arguments. It",
+        "is the process that holds a disk's memory, so the disk lasts as long as it runs.",
+        "",
+        "scoop uninstall removes the driver, and with it every disk it serves. scoop update",
+        "installs over the old version instead, leaving the driver and its disks alone.",
+        "",
+        "x64 only: the driver has no ARM64 build."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://downloads.sourceforge.net/project/aim-toolkit/20260420/AIMtk.zip",
+            "hash": "83b88e533dd10917ee38e6b2de3181c7dabb830c9afc76cea366ddc662bbc400",
+            "extract_dir": "AIMtk20260420"
+        }
+    },
+    "pre_install": [
+        "# The zip holds files.cab and upstream's install.bat, which unpacks the cab with",
+        "# extrac32 and runs config.exe, the installer, from what it unpacked. The unpacking",
+        "# is done here with the same extrac32, into $dir, for the installer below.",
+        "# Start-Process -Wait, since extrac32 is a GUI program PowerShell would not wait for.",
+        "$cab = \"$dir\\files.cab\"",
+        "Start-Process -FilePath \"$env:SystemRoot\\System32\\extrac32.exe\" -ArgumentList \"/y /e /l `\"$dir`\" `\"$cab`\"\" -Wait -WindowStyle Hidden",
+        "if (!(Test-Path \"$dir\\config.exe\") -or !(Test-Path \"$dir\\driver\\Win10\\phdskmnt.inf\")) { error \"$app`: extrac32 did not unpack files.cab into $dir\"; break }",
+        "Remove-Item -LiteralPath $cab, \"$dir\\install.bat\" -Force"
+    ],
+    "installer": {
+        "script": [
+            "# config.exe always relaunches itself through the runas verb and waits for that",
+            "# copy, so this is one UAC prompt, and -Wait covers the whole installation.",
+            "# A fresh install selects every component and the desktop shortcuts; an upgrade",
+            "# keeps the earlier choices and folder. RamDiskUI's component, which also brings",
+            "# RamDyn, is forced on; Explorer's menu entries and desktop shortcuts are forced",
+            "# off. MountImg is left to the default: config.exe reads /mountimg:'s digit one",
+            "# character too far, so /mountimg:0 would not do what it says.",
+            "# A file in use, such as a RamDyn serving a RAM disk, is renamed aside and deleted",
+            "# at the next reboot, and the new one copied in: the running disk carries on.",
+            "Start-Process -FilePath \"$dir\\config.exe\" -ArgumentList '/fullsilent', '/ramdiskui:1', '/menu_entries:0', '/shortcuts_desktop:0' -Wait -Verb RunAs",
+            "# config.exe exits 0 whatever happened, a declined UAC prompt included, so what it",
+            "# left is checked: its uninstall entry at this version, and the driver's service.",
+            "$entry = Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\AIM-tk' -ErrorAction SilentlyContinue",
+            "if (!$entry -or $entry.DisplayVersion -ne $version -or !(Get-Service phdskmnt -ErrorAction SilentlyContinue)) { error \"$app`: config.exe did not install AIM Toolkit $version; was the UAC prompt declined?\"; break }"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "# scoop update runs the old version's uninstaller before the new version's",
+            "# installer. /silentuninstall removes the driver, and with it every disk it",
+            "# serves, a RAM disk holding %TEMP% included; config.exe upgrades in place without",
+            "# it. So only an uninstall runs it. $cmd is the scoop subcommand being run.",
+            "if ($cmd -eq 'update') { return }",
+            "$entry = Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\AIM-tk' -ErrorAction SilentlyContinue",
+            "if (!$entry -or !(Test-Path -LiteralPath $entry.DisplayIcon)) { warn \"$app`: no AIM Toolkit installation found to uninstall\"; return }",
+            "# The installed config.exe, as /silentuninstall requires; DisplayIcon names it.",
+            "Start-Process -FilePath $entry.DisplayIcon -ArgumentList '/silentuninstall' -Wait -Verb RunAs"
+        ]
+    },
+    "bin": [
+        "aim_ll.exe",
+        "aim_cli.exe"
+    ],
+    "checkver": {
+        "sourceforge": "aim-toolkit",
+        "regex": "(\\d{8})/AIMtk\\.zip"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://downloads.sourceforge.net/project/aim-toolkit/$version/AIMtk.zip",
+                "extract_dir": "AIMtk$version"
+            }
+        }
+    }
+}

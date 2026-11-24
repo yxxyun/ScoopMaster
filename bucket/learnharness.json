@@ -1,55 +1,110 @@
 {
-    "##": "Windows 版上游只提供 electron-builder 的 NSIS 安装包（无 portable zip）。本清单不走安装器：pre_install 用 scoop 自带的 7-Zip 先解出安装包内层的 app-64.7z 再平铺到 $dir，得到与安装器完全一致的可移植布局，不写注册表、不建开始菜单/桌面快捷方式。",
-    "version": "0.7.0",
-    "description": "LearnHarness（学习型 Agent Harness，Electron 桌面端 + 本地 Next.js 服务）",
-    "homepage": "https://learnharness.ai",
-    "license": {
-        "identifier": "AGPL-3.0-only",
-        "url": "https://github.com/amosblomqvist/learnharness/blob/main/LICENSE"
-    },
-    "notes": [
-        "上游只在 Windows 提供 NSIS 安装包，本清单解出内层 app-64.7z 平铺安装，不运行安装器",
-        "安装包未经数字签名，首次启动 Windows SmartScreen 可能提示未知发布者",
-        "程序数据写在 %APPDATA%\\LearnHarness，自动更新器目录在 %LOCALAPPDATA%\\learnharness-updater（应用自身行为，不受 scoop 管理）",
-        "0.7.0 的 server payload 缺 @shikijs/core（上游 issue #897）：桌面窗口可正常打开，但内置 Next.js 首页 GET / 返回 500；官方安装器安装后表现相同，与本清单的解包方式无关，等上游修复"
-    ],
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/amosblomqvist/learnharness/releases/download/v0.7.0/LearnHarness-0.7.0-x64-setup.exe",
-            "hash": "8d99bf2ecd5bc65ae0cba877130fcad28942d46f8c8703c1fd21ced13e02dd82"
-        }
-    },
-    "pre_install": [
-        "$seven = Get-HelperPath -Helper 7zip",
-        "if (!$seven) { $seven = '7z' }",
-        "$setup = Join-Path $dir $fname",
-        "$inner = Join-Path $dir '_nsis'",
-        "& $seven x $setup \"-o$inner\" -y | Out-Null",
-        "& $seven x (Join-Path $inner '$PLUGINSDIR\\app-64.7z') \"-o$dir\" -y | Out-Null",
-        "Remove-Item $inner -Recurse -Force -ErrorAction SilentlyContinue",
-        "Remove-Item $setup -Force -ErrorAction SilentlyContinue",
-        "if (!(Test-Path (Join-Path $dir 'LearnHarness.exe'))) { abort 'Failed to unpack LearnHarness payload.' }"
-    ],
-    "bin": [
-        [
-            "LearnHarness.exe",
-            "learnharness"
-        ]
-    ],
-    "shortcuts": [
-        [
-            "LearnHarness.exe",
-            "LearnHarness"
-        ]
-    ],
-    "checkver": {
-        "github": "https://github.com/amosblomqvist/learnharness"
-    },
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/amosblomqvist/learnharness/releases/download/v$version/LearnHarness-$version-x64-setup.exe"
-            }
-        }
+  "##": "Windows 版上游只提供 electron-builder 的 NSIS 安装包（无 portable zip）。本清单不走安装器：pre_install 用 scoop 自带的 7-Zip 先解出安装包内层的 app-64.7z 再平铺到 $dir，得到与安装器完全一致的可移植布局，不写注册表、不建开始菜单/桌面快捷方式。post_install 再从 npmmirror 补装 server payload 缺失的 @shikijs/* 包（上游 issue #897）：需要补哪些包与版本从 shiki 自身 package.json 的 dependencies 推导，用 tar --strip-components 1 展开（npm 包内层是 package/ 前缀），校验 exports['.'] 指向的入口文件确实存在，已完好则跳过，无网络只告警不中断。",
+  "version": "0.7.0",
+  "description": "LearnHarness（学习型 Agent Harness，Electron 桌面端 + 本地 Next.js 服务）",
+  "homepage": "https://learnharness.ai",
+  "license": {
+    "identifier": "AGPL-3.0-only",
+    "url": "https://github.com/amosblomqvist/learnharness/blob/main/LICENSE"
+  },
+  "notes": [
+    "上游只在 Windows 提供 NSIS 安装包，本清单解出内层 app-64.7z 平铺安装，不运行安装器",
+    "安装包未经数字签名，首次启动 Windows SmartScreen 可能提示未知发布者",
+    "程序数据写在 %APPDATA%\\LearnHarness，自动更新器目录在 %LOCALAPPDATA%\\learnharness-updater（应用自身行为，不受 scoop 管理）",
+    "0.7.0 的 server payload 缺 @shikijs/core（上游 issue #897）：post_install 会从 npmmirror 自动补装 @shikijs/*，补装后内置首页 GET / 正常返回；若安装时无网络，首页会 500 但桌面壳仍可打开，联网后重跑 scoop install learnharness --force 可补上"
+  ],
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/amosblomqvist/learnharness/releases/download/v0.7.0/LearnHarness-0.7.0-x64-setup.exe",
+      "hash": "8d99bf2ecd5bc65ae0cba877130fcad28942d46f8c8703c1fd21ced13e02dd82"
     }
+  },
+  "pre_install": [
+    "$seven = Get-HelperPath -Helper 7zip",
+    "if (!$seven) { $seven = '7z' }",
+    "$setup = Join-Path $dir $fname",
+    "$inner = Join-Path $dir '_nsis'",
+    "& $seven x $setup \"-o$inner\" -y | Out-Null",
+    "& $seven x (Join-Path $inner '$PLUGINSDIR\\app-64.7z') \"-o$dir\" -y | Out-Null",
+    "Remove-Item $inner -Recurse -Force -ErrorAction SilentlyContinue",
+    "Remove-Item $setup -Force -ErrorAction SilentlyContinue",
+    "if (!(Test-Path (Join-Path $dir 'LearnHarness.exe'))) { abort 'Failed to unpack LearnHarness payload.' }"
+  ],
+  "bin": [
+    [
+      "LearnHarness.exe",
+      "learnharness"
+    ]
+  ],
+  "shortcuts": [
+    [
+      "LearnHarness.exe",
+      "LearnHarness"
+    ]
+  ],
+  "checkver": {
+    "github": "https://github.com/amosblomqvist/learnharness"
+  },
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://github.com/amosblomqvist/learnharness/releases/download/v$version/LearnHarness-$version-x64-setup.exe"
+      }
+    }
+  },
+  "post_install": [
+    "$srv = Join-Path $dir 'resources\\server\\standalone'",
+    "$nm = Join-Path $srv '.next\\node_modules'",
+    "$shiki = Get-ChildItem -LiteralPath $nm -Filter 'shiki-*' -Directory -ErrorAction SilentlyContinue | Select-Object -First 1",
+    "if ($shiki) {",
+    "  try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor 3072 } catch { }",
+    "  $snm = Join-Path $srv 'node_modules\\@shikijs'",
+    "  $dep = $null",
+    "  try { $dep = (Get-Content -LiteralPath (Join-Path $shiki.FullName 'package.json') -Raw | ConvertFrom-Json).dependencies } catch { }",
+    "  $need = @()",
+    "  if ($dep) {",
+    "    foreach ($prop in $dep.PSObject.Properties) {",
+    "      if ($prop.Name -notlike '@shikijs/*') { continue }",
+    "      $leaf = $prop.Name.Substring(9)",
+    "      $pkgHome = Join-Path $snm $leaf",
+    "      $good = $false",
+    "      $pkgFile = Join-Path $pkgHome 'package.json'",
+    "      if (Test-Path -LiteralPath $pkgFile) {",
+    "        try {",
+    "          $pj = Get-Content -LiteralPath $pkgFile -Raw | ConvertFrom-Json",
+    "          $entryFile = $null",
+    "          $ex = $pj.exports.PSObject.Properties | Where-Object { $_.Name -eq '.' } | Select-Object -First 1",
+    "          if ($ex) {",
+    "            if ($ex.Value -is [string]) { $entryFile = $ex.Value } elseif ($ex.Value.default) { $entryFile = $ex.Value.default }",
+    "          }",
+    "          if (!$entryFile) { $good = $true } else { $good = Test-Path -LiteralPath (Join-Path $pkgHome ($entryFile -replace '^\\./', '')) }",
+    "        } catch { $good = $false }",
+    "      }",
+    "      $ver = ([string]$prop.Value) -replace '^[\\^~>=<v ]+', ''",
+    "      $ver = ($ver -split '\\s+')[0]",
+    "      if ($good) { continue }",
+    "      if (!$ver) { continue }",
+    "      $need += @{ name = $leaf; ver = $ver; dest = $pkgHome }",
+    "    }",
+    "  }",
+    "  $stage = Join-Path $env:TEMP ('lh-shikijs-' + [guid]::NewGuid().ToString('N'))",
+    "  New-Item -ItemType Directory -Force -Path $stage | Out-Null",
+    "  foreach ($item in $need) {",
+    "    $tgz = Join-Path $stage ($item.name + '.tgz')",
+    "    $hold = Join-Path $stage ('x-' + $item.name)",
+    "    try {",
+    "      $uri = 'https://registry.npmmirror.com/@shikijs/' + $item.name + '/-/' + $item.name + '-' + $item.ver + '.tgz'",
+    "      Invoke-WebRequest -UseBasicParsing -Uri $uri -OutFile $tgz -TimeoutSec 120",
+    "      New-Item -ItemType Directory -Force -Path $hold | Out-Null",
+    "      & (Join-Path $env:SystemRoot 'System32\\tar.exe') -xzf $tgz -C $hold --strip-components 1",
+    "      if (-not (Test-Path -LiteralPath (Join-Path $hold 'package.json'))) { throw 'tarball layout unexpected' }",
+    "      if (Test-Path -LiteralPath $item.dest) { Remove-Item -LiteralPath $item.dest -Recurse -Force }",
+    "      New-Item -ItemType Directory -Force -Path $item.dest | Out-Null",
+    "      Copy-Item -Path (Join-Path $hold '*') -Destination $item.dest -Recurse -Force",
+    "      Write-Host ('learnharness: added @shikijs/' + $item.name + ' ' + $item.ver)",
+    "    } catch { Write-Host ('learnharness: skipped @shikijs/' + $item.name + ' - ' + $_.Exception.Message) }",
+    "  }",
+    "  if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue }",
+    "}"
+  ]
 }

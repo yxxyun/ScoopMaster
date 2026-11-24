@@ -1,31 +1,46 @@
 {
-    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/refs/heads/master/schema.json",
     "version": "0.6.3",
-    "description": "Beautiful, shareable screen recordings",
-    "homepage": "https://cap.so/",
-    "license": {
-        "identifier": "AGPL-3.0-only|MIT"
+    "description": "Open-source screen recorder and Loom alternative",
+    "homepage": "https://cap.so",
+    "license": "AGPL-3.0-only|MIT",
+    "notes": "Run 'scoop update cap' rather than 'cap update' to keep the Scoop-managed install current.",
+    "architecture": {
+        "64bit": {
+            "url": "https://cdn.crabnebula.app/asset/01M76BCTEPV9EXZ6HTEV815B0P#/dl.7z",
+            "hash": "2b24ee786e65925138b141aff5b05fff3e375e92a91ab95be8d952e96d92f1ec"
+        }
     },
-    "url": "https://cap.so/download/windows#/dl.exe",
-    "hash": "2b24ee786e65925138b141aff5b05fff3e375e92a91ab95be8d952e96d92f1ec",
-    "installer": {
-        "script": [
-            "Expand-7zipArchive \"$dir\\dl.exe\" \"$dir\\cap\"",
-            "Remove-Item \"$dir\\dl.exe\" -Force",
-            "Move-Item \"$dir\\cap\\Cap.exe\" \"$dir\\cap\\cap.exe\""
+    "pre_install": [
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item \"$dir\\uninstall*\" -Force -ErrorAction SilentlyContinue"
+    ],
+    "bin": [
+        [
+            "cap-cli.exe",
+            "cap"
         ]
-    },
+    ],
     "shortcuts": [
         [
-            "cap\\cap.exe",
+            "Cap.exe",
             "Cap"
         ]
     ],
     "checkver": {
-        "url": "https://api.github.com/repos/CapSoftware/Cap/releases/latest",
-        "jsonpath": "$.name"
+        "script": [
+            "$ErrorActionPreference = 'Stop'",
+            "$release = Invoke-RestMethod 'https://api.github.com/repos/CapSoftware/Cap/releases/latest'",
+            "$downloads = [regex]::Match($release.body, 'DOWNLOADS_JSON (\\{.*?\\})').Groups[1].Value | ConvertFrom-Json",
+            "\"$($release.tag_name -replace '^cap-v', '') $(([uri]$downloads.windows).Segments[-1])\""
+        ],
+        "regex": "^(\\S+) (\\S+)$",
+        "replace": "$1"
     },
     "autoupdate": {
-        "url": "https://cap.so/download/windows#/dl.exe"
+        "architecture": {
+            "64bit": {
+                "url": "https://cdn.crabnebula.app/asset/$match2#/dl.7z"
+            }
+        }
     }
 }
