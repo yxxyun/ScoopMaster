@@ -1,0 +1,41 @@
+{
+    "version": "2026.11.17.61",
+    "description": "Milky protocol implementation for QQ bots, powered by Lagrange.Core V2",
+    "homepage": "https://github.com/LagrangeDev/Lagrange.Core",
+    "license": "Unknown",
+    "architecture": {
+        "64bit": {
+            "url": "https://nightly.link/LagrangeDev/Lagrange.Core/actions/runs/44009187615/Lagrange.Milky-win-x64.zip",
+            "hash": "4bacb22908b358c76593dacf52a687c78896b16b8f8f9d632328a014fc35cca3"
+        }
+    },
+    "pre_install": [
+        "New-Item -ItemType Directory -Force -Path \"$dir\\data\" | Out-Null",
+        "@('@echo off', 'pushd \"%~dp0data\"', '\"%~dp0Lagrange.Milky.exe\" %*', 'set \"exitcode=%errorlevel%\"', 'popd', 'exit /b %exitcode%') | Set-Content -Path \"$dir\\lagrange-milky.cmd\" -Encoding Ascii"
+    ],
+    "bin": [
+        [
+            "lagrange-milky.cmd",
+            "lagrange-milky"
+        ]
+    ],
+    "persist": "data",
+    "checkver": {
+        "script": [
+            "$runs = Invoke-RestMethod 'https://api.github.com/repos/LagrangeDev/Lagrange.Core/actions/workflows/milky-build.yaml/runs?branch=master&event=push&status=success&per_page=1'",
+            "$run = $runs.workflow_runs | Select-Object -First 1",
+            "if ($run) { \"$(([DateTimeOffset]::Parse($run.created_at)).ToString('yyyy.MM.dd')).$($run.run_number)|$($run.id)\" }"
+        ],
+        "regex": "(?<version>\\d{4}\\.\\d{2}\\.\\d{2}\\.\\d+)\\|(?<runid>\\d+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://nightly.link/LagrangeDev/Lagrange.Core/actions/runs/$matchRunid/Lagrange.Milky-win-x64.zip",
+                "hash": {
+                    "mode": "download"
+                }
+            }
+        }
+    }
+}

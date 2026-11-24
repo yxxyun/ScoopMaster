@@ -1,43 +1,104 @@
 {
     "version": "1.0.7",
-    "description": "A packet manipulator primarily designed to bypass resource blocks or protocol restrictions.",
+    "description": "zapret2 (bol-van): the next zapret, with DPI circumvention strategies written in Lua. On Windows this is winws2.exe through WinDivert, with the Lua library (zapret-lib, zapret-antidpi...) and fake packets.",
     "homepage": "https://github.com/bol-van/zapret2",
-    "license": "MIT",
-    "url": "https://github.com/bol-van/zapret2/releases/download/v1.0.7/zapret2-v1.0.7.zip",
-    "hash": "35e14e4e1f345b870c3b87269fa45353efd597241a25304d38375c46b9fd2967",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/bol-van/zapret2/blob/HEAD/docs/LICENSE.txt"
+    },
+    "notes": [
+        "Global install only, from an elevated (admin) shell: scoop install -g gesu/zapret2",
+        "winws2 needs administrator rights. Command: winws2. Scoop Apps: 'zapret2' prints the options.",
+        "Lua scripts: --lua-init=@%ProgramData%\\scoop\\apps\\zapret2\\current\\lua\\zapret-lib.lua (and zapret-antidpi.lua)",
+        "",
+        "cygwin1.dll and WinDivert come from gesu/Cygwin-Runtime and gesu/WinDivert (or gesu/WinDivert-hide): they are",
+        "copied here on install and whenever those packages update, unless winws2 is running then.",
+        "mdig and ip2net are left to gesu/zapret, whose commands have the same names. Docs: docs\\manual.en.md",
+        "Scoop refuses to update or uninstall zapret2 while winws2.exe from its folder runs: stop it first."
+    ],
+    "depends": [
+        "gesu/WinDivert",
+        "gesu/Cygwin-Runtime"
+    ],
+    "suggest": {
+        "Hide WinDivert from anti-cheats": "gesu/WinDivert-hide"
+    },
     "architecture": {
         "64bit": {
-            "extract_dir": "zapret2-v1.0.7\\binaries\\windows-x86_64"
-        },
-        "32bit": {
-            "extract_dir": "zapret2-v1.0.7\\binaries\\windows-x86"
+            "url": "https://github.com/bol-van/zapret2/releases/download/v1.0.7/zapret2-v1.0.7.zip",
+            "hash": "35e14e4e1f345b870c3b87269fa45353efd597241a25304d38375c46b9fd2967"
         }
     },
-    "bin": [
-        "winws2.exe",
+    "extract_dir": "zapret2-v1.0.7",
+    "pre_install": [
+        "if (!$global) { error \"$app puts a driver or a service on the system, which runs as SYSTEM: install it globally, so that only administrators can change its files: scoop install -g gesu/$app\"; break }",
+        "if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { error \"$app has no ARM64 build: the WinDivert driver is x64 only (ARM64 Windows would need test signing).\"; break }",
+        "",
+        "# Keep the Windows x64 programs (moved to the app folder) and the fake packets, docs and Lua scripts;",
+        "# the rest of the release is for Linux, BSD, macOS and OpenWrt.",
+        "Get-ChildItem \"$dir\\binaries\\windows-x86_64\" | Move-Item -Destination $dir -Force",
+        "$keep = 'files', 'docs', 'lua'",
+        "Get-ChildItem $dir -Directory | Where-Object { $_.Name -notin $keep } | Remove-Item -Recurse -Force",
+        "Get-ChildItem $dir -File | Where-Object { $_.Extension -notin '.exe', '.dll', '.sys' } | Remove-Item -Force",
+        "",
+        "# The 'zapret2' shortcut opens this micro-launcher: winws2.exe without arguments prints its options.",
+        "$lines = @(",
+        "  '@ECHO OFF',",
+        "  ':: zapret2: says what winws2.exe is and prints its options, then waits for a key.',",
+        "  ':: Written by the gesu Scoop bucket at install time.',",
+        "  ('ECHO zapret2 ' + $version + ' (bol-van): winws2.exe, DPI circumvention with Lua strategies.'),",
+        "  'ECHO It needs administrator rights; stop it with Ctrl+C. Load the Lua library with',",
+        "  'ECHO   --lua-init=@%~dp0lua\\zapret-lib.lua --lua-init=@%~dp0lua\\zapret-antidpi.lua',",
+        "  'ECHO Docs: %~dp0docs\\manual.en.md   Fake packets: %~dp0files\\fake',",
+        "  'ECHO.',",
+        "  'ECHO -------------------------------------------------------------------------------',",
+        "  '\"%~dp0winws2.exe\"',",
+        "  'ECHO.',",
+        "  'PAUSE',",
+        "  ''",
+        ")",
+        "[IO.File]::WriteAllText(\"$dir\\zapret2.cmd\", ($lines -join \"`r`n\") + \"`r`n\")"
+    ],
+    "post_install": [
+        "# cygwin1.dll and WinDivert from their own packages (scripts/zapret/Sync-ZapretComponents.ps1).",
+        "$sync = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\zapret\\Sync-ZapretComponents.ps1'",
+        "if (!(Test-Path -LiteralPath $sync)) { warn \"Sync-ZapretComponents.ps1 is missing from the bucket; $app keeps the cygwin1.dll and WinDivert of its release.\"; return }",
+        "try {",
+        "    & $sync -App $app -AppsDir (appsdir $global) -Strict | ForEach-Object { info $_ }",
+        "} catch {",
+        "    error $_.Exception.Message",
+        "    break",
+        "}"
+    ],
+    "pre_uninstall": [
+        "# A driver service registered from this app's folder (by windivertctl or the samples here) would keep",
+        "# pointing at deleted files: stop it, and on uninstall remove it. Services of other folders stay.",
+        "$appRoot = Split-Path $dir",
+        "foreach ($name in 'WinDivert', 'WinDivert14', 'Monkey') {",
+        "    $imagePath = (Get-ItemProperty \"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\$name\" -Name ImagePath -ErrorAction SilentlyContinue).ImagePath",
+        "    if (!$imagePath -or ($imagePath -replace '^\\\\\\?\\?\\\\', '') -notlike \"$appRoot\\*\") { continue }",
+        "    sc.exe stop $name 2>&1 | Out-Null",
+        "    if ($cmd -eq 'uninstall') { sc.exe delete $name | Out-Null; info \"Removed the '$name' driver service.\" }",
+        "}"
+    ],
+    "bin": "winws2.exe",
+    "shortcuts": [
         [
-            "ip2net.exe",
-            "zapret2-ip2net"
-        ],
-        [
-            "mdig.exe",
-            "zapret2-mdig"
-        ],
-        [
-            "killall.exe",
-            "zapret2-killall"
+            "zapret2.cmd",
+            "zapret2",
+            "",
+            "winws2.exe"
         ]
     ],
-    "checkver": "github",
+    "checkver": {
+        "github": "https://github.com/bol-van/zapret2"
+    },
     "autoupdate": {
-        "url": "https://github.com/bol-van/zapret2/releases/download/v$version/zapret2-v$version.zip",
         "architecture": {
             "64bit": {
-                "extract_dir": "zapret2-v$version\\binaries\\windows-x86_64"
-            },
-            "32bit": {
-                "extract_dir": "zapret2-v$version\\binaries\\windows-x86"
+                "url": "https://github.com/bol-van/zapret2/releases/download/v$version/zapret2-v$version.zip"
             }
-        }
+        },
+        "extract_dir": "zapret2-v$version"
     }
 }

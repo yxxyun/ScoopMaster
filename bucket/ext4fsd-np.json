@@ -1,0 +1,38 @@
+{
+    "##": "TODO: 安装后好像不生效",
+    "version": "0.71",
+    "description": "Ext4 file system driver for Windows",
+    "homepage": "https://github.com/bobranten/Ext4Fsd",
+    "license": "GPL-2.0-only",
+    "url": "https://github.com/bobranten/Ext4Fsd/releases/download/v0.71/Ext2Fsd-0.71-setup.exe#/dl.7z",
+    "hash": "3c127f8e70c6b056a0185850efb71b9c45d2ff493b7df6b7b648eb89ec84214d",
+    "notes": ["重启电脑后生效"],
+    "pre_install": [
+        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }"
+    ],
+    "post_install": [
+        "pnputil.exe /add-driver \"$dir\\Ext2Fsd.inf\" /install | Out-Null",
+        "if (!(Get-Service -Name 'Ext2Srv' -ErrorAction SilentlyContinue)) {",
+        "    New-Service -Name 'Ext2Srv' -BinaryPathName \"`\"$dir\\Ext2Srv.exe`\"\" -DisplayName 'Ext2Fsd Service' -StartupType Automatic | Out-Null",
+        "}",
+        "Start-Service -Name 'Ext2Srv' -ErrorAction SilentlyContinue"
+    ],
+    "bin": "Ext2Mgr.exe",
+    "shortcuts": [["Ext2Mgr.exe", "Ext2 Volume Manager"]],
+    "pre_uninstall": [
+        "if (!(is_admin)) { error \"$app requires admin rights to $cmd\"; break }",
+        "Stop-Service -Name 'Ext2Srv' -Force"
+    ],
+    "uninstaller": {
+        "script": [
+            "sc.exe delete Ext2Srv | Out-Null",
+            "$oemInf = (Get-WindowsDriver -Online | Where-Object { $_.OriginalFileName -like '*Ext2Fsd.inf' }).Driver",
+            "if ($oemInf) { pnputil.exe /delete-driver $oemInf /uninstall /force | Out-Null }",
+            "Write-Host 重启电脑后生效"
+        ]
+    },
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/bobranten/Ext4Fsd/releases/download/v$version/Ext2Fsd-$version-setup.exe#/dl.7z"
+    }
+}

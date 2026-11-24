@@ -1,108 +1,16 @@
 {
     "version": "0.2.3",
-    "description": "RealiTLScanner (XTLS): scans IP addresses, CIDR ranges or domains for TLS 1.3 servers with HTTP/2 that can serve as the camouflage target (dest and serverNames) of Xray's REALITY; saves them to a CSV file.",
+    "description": "A TLS server scanner for Reality",
     "homepage": "https://github.com/XTLS/RealiTLScanner",
-    "license": {
-        "identifier": "MPL-2.0",
-        "url": "https://github.com/XTLS/RealiTLScanner/blob/HEAD/LICENSE"
-    },
-    "notes": [
-        "Commands: realitlscanner (the scanner) and realitlscanner-scan (one range once, results kept across updates).",
-        "Scoop Apps: 'RealiTLScanner' shows examples; 'RealiTLScanner scan' asks for a range and scans it.",
-        "Results of realitlscanner-scan: ~\\scoop\\persist\\RealiTLScanner\\results (kept on update; 'scoop uninstall -p' deletes them).",
-        "Upstream recommends running it from home, not from a VPS: scanning from a server may get it flagged.",
-        "",
-        "Results go to out.csv in the CURRENT folder (overwritten on every run; change with -out).",
-        "GeoIP country codes: install gesu/Loyalsoldier-GeoIP and the realitlscanner command uses its Country.mmdb.",
-        "A Country.mmdb in the current folder takes precedence. $env:GESU_GEOIP_MMDB = 'Country-without-asn.mmdb'",
-        "gives plain country codes instead of CLOUDFLARE, GOOGLE, ...; 'none' turns GeoIP off.",
-        "",
-        "It ignores HTTP_PROXY, HTTPS_PROXY and ALL_PROXY: scans and -url downloads always go direct."
-    ],
-    "suggest": {
-        "GeoIP database": "gesu/Loyalsoldier-GeoIP"
-    },
+    "license": "MPL-2.0",
     "architecture": {
         "64bit": {
             "url": "https://github.com/XTLS/RealiTLScanner/releases/download/v0.2.3/RealiTLScanner-windows-64.exe#/RealiTLScanner.exe",
             "hash": "03d4b8fa92cbc23e92d1af70ca74f90f650f1f51d19a5d769016dd71964559e4"
         }
     },
-    "installer": {
-        "script": [
-            "# realitlscanner runs this wrapper: the scanner only reads Country.mmdb from its working folder,",
-            "# so the wrapper starts it next to a copy of the gesu/Loyalsoldier-GeoIP database (see the package page).",
-            "$wrapper = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\realitlscanner\\RealiTLScanner.ps1'",
-            "if (!(Test-Path $wrapper)) { error \"RealiTLScanner.ps1 is missing from the bucket: install with 'scoop install gesu/RealiTLScanner'.\"; break }",
-            "Copy-Item $wrapper \"$dir\\RealiTLScanner.ps1\" -Force",
-            "# 'RealiTLScanner scan': scans one range once, results in the persisted results folder.",
-            "Copy-Item (Join-Path (Split-Path $wrapper) 'RealiTLScanner-Scan.cmd') \"$dir\\RealiTLScanner-Scan.cmd\" -Force",
-            "",
-            "# RealiTLScanner.exe prints an error and its flags and exits at once, so the shortcut opens this micro-launcher instead.",
-            "$lines = @(",
-            "  '@ECHO OFF',",
-            "  ':: RealiTLScanner: shows what realitlscanner does and how to run it, then waits for a key.',",
-            "  ':: Written by the gesu Scoop bucket at install time.',",
-            "  'ECHO RealiTLScanner looks for TLS 1.3 servers with HTTP/2 (h2) and a certificate',",
-            "  'ECHO from a named issuer: candidates for the dest and serverNames of Xray REALITY.',",
-            "  'ECHO Run it from any console as realitlscanner. Upstream recommends scanning from',",
-            "  'ECHO home, not from a VPS: scanning from a server may get it flagged.',",
-            "  'ECHO.',",
-            "  'ECHO Usage: realitlscanner -addr TARGET ^| -in FILE ^| -url URL [options]',",
-            "  'ECHO.',",
-            "  'ECHO Examples:',",
-            "  'ECHO   realitlscanner -addr 203.0.113.0/24',",
-            "  'ECHO       Scans one range, then stops',",
-            "  'ECHO   realitlscanner -addr 203.0.113.10',",
-            "  'ECHO       Starts at one IP or domain and walks to the neighbouring IPs',",
-            "  'ECHO       in both directions until you press Ctrl+C',",
-            "  'ECHO   realitlscanner -in targets.txt -thread 10',",
-            "  'ECHO       IPs, ranges or domains from a file, one per line, 10 at a time',",
-            "  'ECHO   realitlscanner -url https://launchpad.net/ubuntu/+archivemirrors',",
-            "  'ECHO       Scans every domain linked from a web page',",
-            "  'ECHO   realitlscanner -addr 203.0.113.0/24 -port 8443 -timeout 5 -v',",
-            "  'ECHO       Another port, 5-second timeout, also shows failed targets',",
-            "  'ECHO.',",
-            "  'ECHO Results go to out.csv in the current folder (overwritten; change with -out).',",
-            "  'ECHO Country codes (GEO_CODE) come from gesu/Loyalsoldier-GeoIP when it is installed,',",
-            "  'ECHO or from a Country.mmdb in the current folder. SET GESU_GEOIP_MMDB=Country-without-asn.mmdb',",
-            "  'ECHO gives plain country codes instead of CLOUDFLARE, GOOGLE and so on; none turns GeoIP off.',",
-            "  'ECHO.',",
-            "  'ECHO The RealiTLScanner scan shortcut (command realitlscanner-scan) scans one range once',",
-            "  'ECHO and keeps the results in %USERPROFILE%\\scoop\\persist\\RealiTLScanner\\results.',",
-            "  'ECHO.',",
-            "  'ECHO Run realitlscanner -h for every option.',",
-            "  'ECHO.',",
-            "  'PAUSE',",
-            "  ''",
-            ")",
-            "[IO.File]::WriteAllText(\"$dir\\RealiTLScanner.cmd\", ($lines -join \"`r`n\") + \"`r`n\")"
-        ]
-    },
-    "bin": [
-        [
-            "RealiTLScanner.ps1",
-            "realitlscanner"
-        ],
-        [
-            "RealiTLScanner-Scan.cmd",
-            "realitlscanner-scan"
-        ]
-    ],
-    "shortcuts": [
-        [
-            "RealiTLScanner.cmd",
-            "RealiTLScanner"
-        ],
-        [
-            "RealiTLScanner-Scan.cmd",
-            "RealiTLScanner scan"
-        ]
-    ],
-    "persist": "results",
-    "checkver": {
-        "github": "https://github.com/XTLS/RealiTLScanner"
-    },
+    "bin": "RealiTLScanner.exe",
+    "checkver": "github",
     "autoupdate": {
         "architecture": {
             "64bit": {
