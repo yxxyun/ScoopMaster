@@ -1,62 +1,32 @@
 {
     "version": "0.5.2",
-    "description": "Open-source, clean-room download manager written from scratch in pure Rust with torrent support",
-    "homepage": "https://misterdownloadmanager.com",
-    "license": "GPL-3.0-or-later",
+    "description": "用 Rust 从零编写的开源下载管理器，支持多线程分段下载、浏览器扩展与 MCP 接口",
+    "homepage": "https://misterdownloadmanager.com/",
+    "license": "GPL-3.0-only",
     "notes": [
-        "The portable build includes a 'data' folder beside misterdownloadmanager.exe, which switches on Mister Download Manager's portable mode: the download list, settings, IPC state and crash logs live there, and nothing is written to the registry. Scoop junctions that folder to '$persist_dir\\data', so your data survives 'scoop update'.",
-        "If the MDM_DATA_DIR environment variable is set, Mister Download Manager uses that directory instead and this persist location is bypassed.",
-        "The first install copies an existing %APPDATA%\\misterdownloadmanager into the persist folder, and the pre-uninstall hook mirrors it back as a safety copy; that also runs on 'scoop update'.",
-        "'misterdownloadmanager-cli.exe' and 'misterdownloadmanager-mcp.exe' are exposed as shims.",
-        "Browser integration (native messaging host registration) requires the official installer; the portable build does not write to the registry.",
-        "Use 'scoop update misterdownloadmanager' instead of the built-in updater so the install and this manifest stay in sync."
+        "使用安装版：配置与下载记录位于 %APPDATA%\\misterdownloadmanager\\，本包通过 Junction 持久化到 Scoop persist",
+        "安装时会调用 misterdownloadmanager-nmhost.exe --register，注册 Chromium 与 Firefox 系列浏览器的本机消息宿主",
+        "浏览器扩展在安装目录的 extension\\ 下，需要时在浏览器里加载已解压的扩展即可联动",
+        "卸载时会调用 --unregister 移除该宿主注册",
+        "附带命令行工具 misterdownloadmanager-cli 与 MCP 服务 misterdownloadmanager-mcp",
+        "命令行可输入 misterdownloadmanager 启动"
     ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/anefzaoui/misterdownloadmanager/releases/download/v0.5.2/MisterDownloadManager-0.5.2-portable.zip",
-            "hash": "0907a6c6aed5c4967e89549e883147d2b33b073e6f8b0d914dff84d32f3b7cf7",
-            "installer": {
-                "script": [
-                    "$stage = \"$dir\\MisterDownloadManager-$version-portable\"",
-                    "Move-Item \"$stage\\*\" $dir -ErrorAction Stop",
-                    "Remove-Item $stage -ErrorAction Stop"
-                ]
-            }
+            "url": "https://github.com/anefzaoui/misterdownloadmanager/releases/download/v0.5.2/MisterDownloadManager-0.5.2-setup.exe",
+            "hash": "a8c9586fd6e9c6385e3b85242bb658e029be1b9d81ed0911200e272c380ec31d"
         }
     },
-    "pre_install": [
-        "$target = \"$persist_dir\\data\"",
-        "$legacy = \"$env:APPDATA\\misterdownloadmanager\"",
-        "if (!(Test-Path $target) -and (Test-Path $legacy)) {",
-        "    if (Get-Process -Name 'misterdownloadmanager*' -ErrorAction SilentlyContinue) {",
-        "        abort 'Mister Download Manager is running, so %APPDATA%\\misterdownloadmanager cannot be copied into Scoop persist safely. Quit it, then run the install again.'",
-        "    }",
-        "    $previous = $ErrorActionPreference",
-        "    $ErrorActionPreference = 'Continue'",
-        "    $null = robocopy $legacy $target /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
-        "    $code = $LASTEXITCODE",
-        "    $ErrorActionPreference = $previous",
-        "    if ($code -ge 8) { warn \"robocopy exit $code while copying '$legacy' to '$target'; compare the two directories before relying on the new location.\" } else { info \"Copied '$legacy' to '$target'.\" }",
-        "}"
-    ],
-    "pre_uninstall": [
-        "$legacy = \"$env:APPDATA\\misterdownloadmanager\"",
-        "$data = \"$persist_dir\\data\"",
-        "if (!(Test-Path $data) -or @(Get-ChildItem $data -Force).Count -eq 0) { return }",
-        "if (Get-Process -Name 'misterdownloadmanager*' -ErrorAction SilentlyContinue) {",
-        "    warn 'Mister Download Manager is running, so the state was not mirrored back to %APPDATA%\\misterdownloadmanager. Quit it and uninstall again if you want that safety copy.'",
-        "    return",
-        "}",
-        "$previous = $ErrorActionPreference",
-        "$ErrorActionPreference = 'Continue'",
-        "$null = robocopy $data $legacy /E /XO /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /NC 2>&1",
-        "$code = $LASTEXITCODE",
-        "$ErrorActionPreference = $previous",
-        "if ($code -ge 8) { warn \"robocopy exit $code while mirroring '$data' back to '$legacy'.\" } else { info \"Mirrored '$data' back to '$legacy'.\" }"
-    ],
+    "innosetup": true,
     "bin": [
-        "misterdownloadmanager-cli.exe",
-        "misterdownloadmanager-mcp.exe"
+        [
+            "misterdownloadmanager.exe",
+            "misterdownloadmanager"
+        ],
+        [
+            "misterdownloadmanager-cli.exe",
+            "misterdownloadmanager-cli"
+        ]
     ],
     "shortcuts": [
         [
@@ -64,14 +34,31 @@
             "Mister Download Manager"
         ]
     ],
-    "persist": "data",
+    "installer": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name mqbucket) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:APPDATA\\misterdownloadmanager\"",
+            "Remove-Module -Name AppsUtils",
+            "& \"$dir\\misterdownloadmanager-nmhost.exe\" --register | Out-Null"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "if (Test-Path \"$dir\\misterdownloadmanager-nmhost.exe\") { & \"$dir\\misterdownloadmanager-nmhost.exe\" --unregister | Out-Null }",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name mqbucket) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\misterdownloadmanager\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
     "checkver": {
-        "github": "https://github.com/anefzaoui/misterdownloadmanager"
+        "github": "https://api.github.com/repos/anefzaoui/misterdownloadmanager/releases",
+        "jsonpath": "$[0].tag_name",
+        "regex": "v([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/anefzaoui/misterdownloadmanager/releases/download/v$version/MisterDownloadManager-$version-portable.zip"
+                "url": "https://github.com/anefzaoui/misterdownloadmanager/releases/download/v$version/MisterDownloadManager-$version-setup.exe"
             }
         },
         "hash": {

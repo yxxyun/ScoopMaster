@@ -1,68 +1,49 @@
 {
-  "version": "0.50.3",
-  "description": "A native music streaming client, built with Rust and GPUI.",
-  "homepage": "https://sonorahq.org/",
-  "license": "GPL-3.0-or-later",
-  "architecture": {
-    "64bit": {
-      "url": "https://github.com/sonorahq/sonora/releases/download/v0.50.3/sonora-v0.50.3-x86_64-pc-windows-msvc.exe#/sonora.exe",
-      "hash": "f40b420d2a77a631dfcae255a697cc1b1a21accf2395a4ad77ddfd1c5d2d6645"
+    "version": "0.50.3",
+    "description": "A native music streaming client, built with Rust and GPUI",
+    "homepage": "https://sonorahq.org/",
+    "license": {
+        "identifier": "GPL-3.0-or-later",
+        "url": "https://github.com/sonorahq/sonora/blob/main/COPYING"
     },
-    "arm64": {
-      "url": "https://github.com/sonorahq/sonora/releases/download/v0.50.3/sonora-v0.50.3-aarch64-pc-windows-msvc.exe#/sonora.exe",
-      "hash": "9ac4509808cc834b2b072ebd85249918d43fce2ff89f1ba6cfda504a75edb885"
-    }
-  },
-  "bin": "sonora.exe",
-  "shortcuts": [
-    [
-      "sonora.exe",
-      "Sonora"
-    ]
-  ],
-  "persist_external": [
-    [
-      "$env:AppData\\sonora",
-      "config",
-      "directory"
+    "url": "https://github.com/sonorahq/sonora/releases/download/v0.50.3/sonora-v0.50.3-x86_64-pc-windows-msvc.exe",
+    "hash": "f40b420d2a77a631dfcae255a697cc1b1a21accf2395a4ad77ddfd1c5d2d6645",
+    "pre_install": "Get-ChildItem \"$dir\" -Filter \"sonora-*.exe\" | Rename-Item -NewName \"sonora.exe\"",
+    "post_install": [
+        "$links = @{ \"$env:LOCALAPPDATA\\sonora\" = \"$persist_dir\\data\"; \"$env:APPDATA\\sonora\" = \"$persist_dir\\config\" }",
+        "foreach ($link in $links.Keys) {",
+        "    $target = $links[$link]",
+        "    New-Item -ItemType Directory -Path $target -Force | Out-Null",
+        "    $item = Get-Item $link -Force -ErrorAction SilentlyContinue",
+        "    if ($item -and $item.LinkType) { [System.IO.Directory]::Delete($link) }",
+        "    elseif ($item) {",
+        "        Copy-Item -Path \"$link\\*\" -Destination $target -Force -Recurse -ErrorAction SilentlyContinue",
+        "        Remove-Item $link -Force -Recurse",
+        "    }",
+        "    New-Item -ItemType Junction -Path $link -Target $target | Out-Null",
+        "}"
     ],
-    [
-      "$env:LocalAppData\\sonora",
-      "data",
-      "directory"
-    ]
-  ],
-  "post_install": [
-    "$helper = (Resolve-Path \"$bucketsdir/*/scripts/persist-external.ps1\" -ErrorAction SilentlyContinue | Select-Object -First 1).Path",
-    "if (!$helper) { throw 'persist_external: persist-external.ps1 not found under scripts/ in any bucket' }",
-    ". $helper",
-    "Invoke-PersistExternalInstall"
-  ],
-  "pre_uninstall": [
-    "$helper = (Resolve-Path \"$bucketsdir/*/scripts/persist-external.ps1\" -ErrorAction SilentlyContinue | Select-Object -First 1).Path",
-    "if (!$helper) { throw 'persist_external: persist-external.ps1 not found under scripts/ in any bucket' }",
-    ". $helper",
-    "Invoke-PersistExternalUninstall"
-  ],
-  "checkver": {
-    "github": "https://github.com/sonorahq/sonora"
-  },
-  "autoupdate": {
-    "architecture": {
-      "64bit": {
-        "url": "https://github.com/sonorahq/sonora/releases/download/v$version/sonora-v$version-x86_64-pc-windows-msvc.exe#/sonora.exe",
-        "hash": {
-          "url": "$baseurl/SHA256SUMS",
-          "regex": "$sha256\\s+$basename"
-        }
-      },
-      "arm64": {
-        "url": "https://github.com/sonorahq/sonora/releases/download/v$version/sonora-v$version-aarch64-pc-windows-msvc.exe#/sonora.exe",
-        "hash": {
-          "url": "$baseurl/SHA256SUMS",
-          "regex": "$sha256\\s+$basename"
-        }
-      }
+    "uninstaller": {
+        "script": [
+            "foreach ($link in \"$env:LOCALAPPDATA\\sonora\", \"$env:APPDATA\\sonora\") {",
+            "    $item = Get-Item $link -Force -ErrorAction SilentlyContinue",
+            "    if ($item -and $item.LinkType) { [System.IO.Directory]::Delete($link) }",
+            "}"
+        ]
+    },
+    "bin": "sonora.exe",
+    "shortcuts": [
+        [
+            "sonora.exe",
+            "Sonora"
+        ]
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/sonorahq/sonora/releases",
+        "jsonpath": "$[0].tag_name",
+        "regex": "v?([\\d.]+)"
+    },
+    "autoupdate": {
+        "url": "https://github.com/sonorahq/sonora/releases/download/v$version/sonora-v$version-x86_64-pc-windows-msvc.exe"
     }
-  }
 }

@@ -1,0 +1,40 @@
+{
+    "version": "1.14.0",
+    "description": "Drop-in python-semantic-release fork with built-in release-safety guards",
+    "homepage": "https://github.com/n24q02m/better-semantic-release",
+    "license": "Apache-2.0",
+    "depends": "uv",
+    "url": [
+        "https://files.pythonhosted.org/packages/9e/b5/61000ffe48be26095593ec5ae961990050c360a8ac6fad50be26c2462cc3/better_semantic_release-1.14.0-py3-none-any.whl#/better_semantic_release-1.14.0-py3-none-any.whl",
+        "https://raw.githubusercontent.com/n24q02m/scoop-bucket/main/locks/bsr-1.14.0.txt#/requirements.txt",
+        "https://raw.githubusercontent.com/n24q02m/scoop-bucket/main/locks/bsr-1.14.0.build.txt#/build-requirements.txt"
+    ],
+    "hash": [
+        "a868dac0c302461930001da77aaf545c3c11c734ae05ed4500d49a8bd807b94e",
+        "c220ab319c867b8fd29fee4d40f02e40835f3966a00851724c8dc05d5eccc131",
+        "f193f64dc4de7e5fcc03abe7574164bea635b6dc6e29276978c5767ff45d7f4d"
+    ],
+    "installer": {
+        "script": [
+            "# Every dependency is pinned by hash: requirements.txt is the release tag's uv.lock exported",
+            "# by bump.py, build-requirements.txt the build backends of dependencies that ship only an sdist.",
+            "# The lock is the release's resolved environment, uv overrides included, so there is no `uv pip check`.",
+            "$py = \"$dir\\venv\\Scripts\\python.exe\"",
+            "$pinned = @('--python', $py, '--require-hashes', '--only-binary', ':all:', '--no-deps', '--quiet')",
+            "uv venv \"$dir\\venv\" --python 3.13 --quiet",
+            "if ($LASTEXITCODE) { throw 'uv venv failed' }",
+            "uv pip install @pinned -r \"$dir\\build-requirements.txt\"",
+            "if ($LASTEXITCODE) { throw 'uv pip install (build backends) failed' }",
+            "uv pip install @pinned --no-build-isolation -r \"$dir\\requirements.txt\"",
+            "if ($LASTEXITCODE) { throw 'uv pip install (dependencies) failed' }",
+            "uv pip install --python $py --no-deps --quiet (Get-ChildItem \"$dir\\*.whl\").FullName",
+            "if ($LASTEXITCODE) { throw 'uv pip install (wheel) failed' }"
+        ]
+    },
+    "bin": [
+        [
+            "venv\\Scripts\\bsr.exe",
+            "bsr"
+        ]
+    ]
+}
