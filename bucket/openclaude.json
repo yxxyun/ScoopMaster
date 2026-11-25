@@ -1,0 +1,59 @@
+{
+    "##": "OpenClaude is published only as an npm package (@twigpine/openclaude); upstream ships no standalone Windows binary. This manifest downloads the npm tarball, installs the three runtime deps with npm, and shims the bundled bin/openclaude node launcher. Requires Node >=24.22.1 (Node 26 recommended).",
+    "version": "0.37.0",
+    "description": "OpenClaude —— 接入任意 LLM 的 Claude Code 桌面/命令行 agent（@npx 包，需 Node.js 26）",
+    "homepage": "https://github.com/Twigpine/openclaude",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/Twigpine/openclaude/blob/main/LICENSE"
+    },
+    "notes": [
+        "上游只发布 npm 包 @twigpine/openclaude，无独立 Windows 二进制；本清单下载 npm tgz、用 npm 安装 3 个运行时依赖（@orama/orama、@orama/plugin-data-persistence、@vscode/ripgrep），并 shim 包内自带的 bin/openclaude。",
+        "依赖 Node.js >=24.22.1（推荐 26）；先 scoop install main/nodejs 或用 scoop 自带的 node。若 node/npm 不在 PATH，安装会中止并提示。",
+        "从旧包 @gitlawb/openclaude 迁移的用户：本清单与全局 npm 包互不影响； PowerShell profile 里若有加载 @gitlawb/openclaude 的 aliases 行，需手动删除（见包内 docs/windows-aliases-and-launchers.md）。",
+        "配置与会话数据由程序自己写入用户目录，Scoop 不接管；请关闭程序自带自动更新，改用 scoop update openclaude。"
+    ],
+    "suggest": {
+        "Node.js (current)": "main/nodejs",
+        "Node.js 26": "versions/nodejs26"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://registry.npmjs.org/@twigpine/openclaude/-/openclaude-0.37.0.tgz",
+            "hash": "sha512:b458182d88e4555613efbaa1889230077d45089b21c52cfc837b2f757aca5daafe5faee55b5941644c8b960d761ecae2833cf917b5d0bf056c410034d54e2d32"
+        }
+    },
+    "extract_dir": "package",
+    "installer": {
+        "script": [
+            "$node = Get-Command node -ErrorAction SilentlyContinue",
+            "$npm = Get-Command npm -ErrorAction SilentlyContinue",
+            "if (!$node -or !$npm) { throw 'OpenClaude requires Node.js >=24.22.1 and npm. Install main/nodejs first, then retry.' }",
+            "$nv = (& node --version).Trim()",
+            "if ($nv -notmatch '^v?(?<major>\\d+)\\.(?<minor>\\d+)\\.') { throw \"Cannot parse Node version: $nv\" }",
+            "if ([int]$Matches.major -lt 24 -or ([int]$Matches.major -eq 24 -and [int]$Matches.minor -lt 22)) { throw \"OpenClaude requires Node.js >=24.22.1; found $nv.\" }",
+            "Push-Location $dir",
+            "try {",
+            "    npm install --omit=dev --no-fund --no-audit --loglevel=error --progress=false",
+            "    if ($LASTEXITCODE -ne 0) { throw 'npm dependency installation failed for OpenClaude' }",
+            "} finally { Pop-Location }",
+            "Set-Content -Path \"$dir\\openclaude.cmd\" -Encoding ASCII -Value '@echo off', 'node \"%~dp0bin\\openclaude\" %*'"
+        ]
+    },
+    "bin": "openclaude.cmd",
+    "checkver": {
+        "url": "https://registry.npmjs.org/@twigpine%2fopenclaude/latest",
+        "regex": "\"version\"\\s*:\\s*\"(?<version>[\\d.]+)\""
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://registry.npmjs.org/@twigpine/openclaude/-/openclaude-$version.tgz",
+                "hash": {
+                    "url": "https://registry.npmjs.org/@twigpine%2fopenclaude/$version",
+                    "regex": "\"integrity\"\\s*:\\s*\"sha512-(?<hash>[A-Za-z0-9+/=]+)\""
+                }
+            }
+        }
+    }
+}
