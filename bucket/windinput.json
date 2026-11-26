@@ -1,48 +1,121 @@
 {
-    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
     "version": "0.133.0",
-    "description": "清风输入法 | 轻量、快速、可定制的开源中文输入法，专为五笔和码表输入方案设计（Windows / macOS）",
+    "description": "WindInput, an open-source Chinese IME for Windows built on Rust + TSF, supporting Wubi 86 / full pinyin / double pinyin, auxiliary codes, and emoji",
     "homepage": "https://github.com/huanfeng/WindInput",
-    "license": "MIT",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/huanfeng/WindInput/releases/download/v0.133.0/WindInput-Portable-0.133.0.zip",
-            "hash": "61489d613ed98cf431879bad5288fd938828dd8122eff412a6c66498f27012c7",
-            "extract_dir": "WindInput-0.133.0"
-        }
-    },
-    "bin": [
-        "wind_input.exe",
-        "wind_cli.bat"
-    ],
+    "license": "GPL-3.0-or-later",
+    "url": "https://github.com/huanfeng/WindInput/releases/download/v0.133.0/WindInput-Portable-0.133.0.zip",
+    "hash": "61489d613ed98cf431879bad5288fd938828dd8122eff412a6c66498f27012c7",
+    "extract_dir": "WindInput-0.133.0",
+    "bin": "wind_portable.exe",
     "shortcuts": [
         [
             "wind_portable.exe",
             "WindInput"
-        ],
-        [
-            "wind_setting.exe",
-            "WindInput Settings"
-        ],
-        [
-            "wind_portable.exe",
-            "清风输入法"
-        ],
-        [
-            "wind_setting.exe",
-            "清风输入法 设置"
         ]
     ],
     "persist": "userdata",
-    "checkver": {
-        "github": "https://github.com/huanfeng/WindInput"
+    "post_install": [
+        "# A TSF in-proc DLL is mapped into every process that has used the IME, and a mapped image can",
+        "# never be deleted (elevation does not help), only renamed. That is what keeps scoop from removing",
+        "# old version directories. Same-volume move (= rename) the stale wind_tsf*.dll copies from other",
+        "# version directories out of the app dir, so 'scoop cleanup' works while those apps are open.",
+        "# NB: in post_install scoop has already run $dir = link_current, so $dir is '<appdir>\\current';",
+        "# the live version directory must be resolved from that link, or this would move the NEW files.",
+        "$appDir = Split-Path $dir -Parent",
+        "$curLink = Get-Item $dir -ErrorAction SilentlyContinue",
+        "$keepDir = if ($curLink -and $curLink.Target) { \"$($curLink.Target)\".TrimEnd('\\') } else { $dir }",
+        "if ((Split-Path $keepDir -Leaf) -eq 'current') {",
+        "    Write-Host 'WARNING: could not resolve the current version directory; skipping stale DLL relocation.' -f Yellow",
+        "    $keepDir = $null",
+        "}",
+        "$staleRoot = Join-Path $cachedir 'windinput-stale'",
+        "# prune previously relocated copies whose processes have exited since (e.g. after a reboot)",
+        "if (Test-Path $staleRoot) {",
+        "    Get-ChildItem $staleRoot -Directory -ErrorAction SilentlyContinue | ForEach-Object {",
+        "        try { Remove-Item $_.FullName -Recurse -Force -ErrorAction Stop } catch { }",
+        "    }",
+        "}",
+        "if ($keepDir) {",
+        "    foreach ($old in @(Get-ChildItem $appDir -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike 'current*' -and $_.FullName -ne $keepDir })) {",
+        "        foreach ($f in @(Get-ChildItem $old.FullName -File -Filter 'wind_tsf*.dll' -ErrorAction SilentlyContinue)) {",
+        "            try {",
+        "                $staleDir = Join-Path $staleRoot $old.Name",
+        "                New-Item -ItemType Directory -Path $staleDir -Force | Out-Null",
+        "                Move-Item -LiteralPath $f.FullName -Destination $staleDir -ErrorAction Stop",
+        "                Write-Host \"Relocated stale $($f.Name) from $($old.Name) so scoop cleanup can remove it.\" -f Cyan",
+        "            } catch {",
+        "                Write-Host \"WARNING: could not relocate $($f.Name) from $($old.Name) ($($_.Exception.Message)); scoop cleanup may report it in use until a reboot.\" -f Yellow",
+        "            }",
+        "        }",
+        "    }",
+        "}",
+        "$link = \"$env:LOCALAPPDATA\\WindInput\"",
+        "$target = Join-Path (Split-Path $dir) 'current'",
+        "$li = Get-Item $link -ErrorAction SilentlyContinue",
+        "if ($li.Target -notlike \"$target*\") {",
+        "    if ($li -and $li.LinkType) { $li.Delete() }",
+        "    elseif ($li) { Write-Host \"ERROR: $link exists and is not a junction; remove it manually.\" -f Red }",
+        "    if (-not (Test-Path $link)) { New-Item -ItemType Junction -Path $link -Target $target | Out-Null }",
+        "}",
+        "$tip = 'HKLM:\\SOFTWARE\\Microsoft\\CTF\\TIP\\{99C2EE30-5C57-45A2-9C63-FB54B34FD90A}'",
+        "$ino = (Get-ItemProperty 'HKLM:\\SOFTWARE\\Classes\\CLSID\\{99C2EE30-5C57-45A2-9C63-FB54B34FD90A}\\InprocServer32' -ErrorAction SilentlyContinue).'(default)'",
+        "Get-Process wind_input -ErrorAction SilentlyContinue | Stop-Process -Force",
+        "if (-not (Test-Path $tip)) {",
+        "    Write-Host 'Registering WindInput TSF via junction (confirm the UAC prompt)...' -f Cyan",
+        "    Start-Process -FilePath \"$link\\wind_portable.exe\" -ArgumentList '-start'",
+        "} elseif ($ino -like \"$link*\") {",
+        "    Write-Host 'TSF already junction-registered, starting engine directly...' -f Cyan",
+        "    Set-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name WindInput -Value ('\"' + \"$link\\wind_input.exe\" + '\"')",
+        "    Start-Process -FilePath \"$link\\wind_input.exe\"",
+        "} else {",
+        "    Write-Host 'Migrating TSF registration to junction (confirm TWO UAC prompts)...' -f Cyan",
+        "    $p = Start-Process -FilePath \"$dir\\wind_portable.exe\" -ArgumentList '-stop' -Wait -PassThru",
+        "    if ($p.ExitCode -ne 0) { Write-Host 'wind_portable.exe -stop failed; continuing anyway.' -f Yellow }",
+        "    $p = Start-Process -FilePath \"$link\\wind_portable.exe\" -ArgumentList '-start' -Wait -PassThru",
+        "    if ($p.ExitCode -ne 0) { Write-Host \"wind_portable.exe -start failed; run '$link\\wind_portable.exe -start' manually.\" -f Yellow }",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$procs = Get-Process wind_input, wind_setting, wind_portable -ErrorAction SilentlyContinue",
+        "if ($procs) { Write-Host 'Stopping WindInput processes...' -f Cyan; $procs | Stop-Process -Force -ErrorAction SilentlyContinue }"
+    ],
+    "uninstaller": {
+        "script": [
+            "$tip = 'HKLM:\\SOFTWARE\\Microsoft\\CTF\\TIP\\{99C2EE30-5C57-45A2-9C63-FB54B34FD90A}'",
+            "$link = \"$env:LOCALAPPDATA\\WindInput\"",
+            "if ($old_version) {",
+            "    # $old_version only exists on scoop-update's uninstall path (scoop-update.ps1:262);",
+            "    # keep TSF registration and junction across updates, new post_install restarts the engine.",
+            "    # (post_install also relocates this directory's mapped TSF DLLs so scoop cleanup can run.)",
+            "    Write-Host 'Update detected, keeping TSF registration and junction.' -f Cyan",
+            "} else {",
+            "    if ((Test-Path \"$dir\\wind_portable.exe\") -and (Test-Path $tip)) {",
+            "        Write-Host 'Unregistering WindInput TSF (confirm the UAC prompt)...' -f Cyan",
+            "        $proc = Start-Process -FilePath \"$dir\\wind_portable.exe\" -ArgumentList '-stop' -Wait -PassThru",
+            "        if ($proc.ExitCode -ne 0) { Write-Host \"wind_portable.exe -stop exited with code $($proc.ExitCode); TSF registration may remain (run 'wind_portable.exe -stop' manually).\" -f Yellow }",
+            "    } else {",
+            "        Write-Host 'WindInput TSF not registered (or launcher missing), skipping unregister.'",
+            "    }",
+            "    if ((Get-Item $link -ErrorAction SilentlyContinue).LinkType -eq 'Junction') { (Get-Item $link).Delete(); Write-Host 'Removed portable junction.' }",
+            "}"
+        ]
     },
+    "checkver": "github",
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/huanfeng/WindInput/releases/download/v$version/WindInput-Portable-$version.zip",
-                "extract_dir": "WindInput-$version"
-            }
+        "extract_dir": "WindInput-$version",
+        "url": "https://github.com/huanfeng/WindInput/releases/download/v$version/WindInput-Portable-$version.zip",
+        "hash": {
+            "url": "$url.sha256"
         }
-    }
+    },
+    "notes": [
+        "Install/update are fully automatic: post_install registers and starts the engine via %LOCALAPPDATA%\\WindInput (a junction pointing to this app's current directory, created and cleaned up by the manifest — do not delete it manually); fresh registration requires one UAC confirmation, while already-registered installs (including updates) start the engine directly with zero UAC.",
+        "After install, switch to 'WindInput' with Win+Space; open settings via wind_setting.exe or the launcher tray menu.",
+        "Updates: the resident engine process runs from the junction path, outside the scoop app directory, so it does not trigger scoop's busy check — just run scoop update windinput (it stops the process, keeps the registration, restarts the engine, zero UAC). Close the wind_setting window and the launcher tray before updating — if launched from the scoop directory they are still caught by the busy check. If the registration path fell back after running -start manually from the scoop directory, the next install/update migrates it back to the junction (requires two UAC confirmations).",
+        "Cleanup after updates: the previous version's wind_tsf*.dll stays mapped in every process that has used the IME, and a mapped image cannot be deleted (elevation does not help) - only renamed. Each install/update therefore relocates those stale copies from the other version directories into scoop's cache (cache\\windinput-stale\\<version>) instead of leaving an old directory locked, so 'scoop cleanup windinput' works immediately while those apps are still open (it also clears leftovers left by earlier versions); the relocated copies are pruned on a later install/update once their processes have exited (or after a reboot).",
+        "Uninstall: just run scoop uninstall windinput; pre_uninstall stops the related processes, then the uninstaller pops a UAC prompt to unregister the TSF and remove autostart, and also removes the %LOCALAPPDATA%\\WindInput junction.",
+        "Portable user data lives in-place in the userdata directory (config.toml settings, custom words and word frequency in userdata\\data, custom themes in userdata\\themes) and is persisted; the data directory holds read-only dictionary/theme resources shipped with each release, is not persisted, and dictionaries are updated automatically on scoop upgrade.",
+        "Trusted Mode games (e.g. CS2) only load signed DLLs from the system directory: follow the official wind-portable instructions and create an empty file named system_deploy in the program root to switch to system deployment mode (rare cases; takes effect after -stop then -start).",
+        "Report IME engine issues upstream: https://github.com/huanfeng/WindInput"
+    ]
 }

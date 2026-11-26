@@ -1,27 +1,69 @@
 {
-    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
     "version": "1.9.6",
-    "description": "PDF editor for Windows. Install or run portable. GPLv3. No account, no subscription, no telemetry",
-    "homepage": "https://github.com/SteveTheKiller/KillerPDF",
-    "license": "GPL-3.0-or-later",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/SteveTheKiller/KillerPDF/releases/download/v1.9.6/KillerPDF.exe",
-            "hash": "8a513a5b22765322f5ff747e80abfa5a7a4fd65e435361e4e6c9255c85c31198"
-        }
+    "description": "Free and open-source Windows PDF editor installed with the official KillerPDF setup package, including OCR, annotation, text editing, redaction, signing, forms, comparison and conversion.",
+    "homepage": "https://killerpdf.net/",
+    "license": "GPL-3.0-only",
+    "url": "https://github.com/SteveTheKiller/KillerPDF/releases/download/v1.9.6/KillerPDF.exe",
+    "hash": "8a513a5b22765322f5ff747e80abfa5a7a4fd65e435361e4e6c9255c85c31198",
+    "pre_install": [
+        "$ErrorActionPreference = 'Stop'",
+        "$runtimeRoot = Join-Path $env:ProgramFiles 'dotnet'",
+        "if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { $runtimeRoot = Join-Path $runtimeRoot 'x64' }",
+        "$desktopRuntimePath = Join-Path $runtimeRoot 'shared\\Microsoft.WindowsDesktop.App'",
+        "$desktopRuntime = Get-ChildItem -LiteralPath $desktopRuntimePath -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '^10\\.' } | Select-Object -First 1",
+        "if ($null -eq $desktopRuntime) { throw 'KillerPDF requires the .NET 10 Desktop Runtime (x64). Install it with: winget install --id Microsoft.DotNet.DesktopRuntime.10 --exact' }",
+        "if (-not (Test-Path -LiteralPath (Join-Path $dir 'KillerPDF.exe') -PathType Leaf)) { throw 'The official KillerPDF setup executable is missing.' }"
+    ],
+    "installer": {
+        "script": [
+            "$ErrorActionPreference = 'Stop'",
+            "$setupSource = Join-Path $dir 'KillerPDF.exe'",
+            "$setupPath = Join-Path $env:TEMP ('KillerPDF-Setup-' + [guid]::NewGuid().ToString('N') + '.exe')",
+            "Move-Item -LiteralPath $setupSource -Destination $setupPath -Force",
+            "$installPath = [System.IO.Path]::GetFullPath($dir)",
+            "$installDirArg = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($installPath))",
+            "$previousSkipRegistration = [Environment]::GetEnvironmentVariable('KILLERPDF_SKIP_REGISTRATION', 'Process')",
+            "$env:KILLERPDF_SKIP_REGISTRATION = '1'",
+            "try {",
+            "$setupProcess = Start-Process -FilePath $setupPath -ArgumentList @('/install-user', \"/install-dir64:$installDirArg\") -PassThru -Wait -WindowStyle Hidden",
+            "$installExitCode = $setupProcess.ExitCode",
+            "} finally {",
+            "if ($null -eq $previousSkipRegistration) { Remove-Item Env:KILLERPDF_SKIP_REGISTRATION -ErrorAction SilentlyContinue } else { $env:KILLERPDF_SKIP_REGISTRATION = $previousSkipRegistration }",
+            "if (Test-Path -LiteralPath $setupPath) { Remove-Item -LiteralPath $setupPath -Force -ErrorAction SilentlyContinue }",
+            "}",
+            "if ($installExitCode -ne 0) { throw \"KillerPDF installer failed with exit code $installExitCode.\" }",
+            "$appExe = Join-Path $dir 'KillerPDF.App.exe'",
+            "$payloadManifest = Join-Path $dir 'payload.manifest'",
+            "if (-not (Test-Path -LiteralPath $appExe -PathType Leaf) -or -not (Test-Path -LiteralPath $payloadManifest -PathType Leaf)) { throw 'The KillerPDF installer did not produce a complete application payload.' }",
+            "$wrapper = '@\"%~dp0KillerPDF.App.exe\" %*' + [Environment]::NewLine + '@exit /b %ERRORLEVEL%' + [Environment]::NewLine",
+            "[System.IO.File]::WriteAllText((Join-Path $dir 'KillerPDF.cmd'), $wrapper, [System.Text.Encoding]::ASCII)"
+        ]
     },
+    "bin": [
+        [
+            "KillerPDF.cmd",
+            "killerpdf"
+        ]
+    ],
     "shortcuts": [
         [
-            "KillerPDF.exe",
+            "KillerPDF.cmd",
             "KillerPDF"
         ]
     ],
-    "checkver": "github",
+    "checkver": {
+        "github": "https://github.com/SteveTheKiller/KillerPDF",
+        "regex": "v([\\d.]+)"
+    },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://github.com/SteveTheKiller/KillerPDF/releases/download/v$version/KillerPDF.exe"
-            }
+        "url": "https://github.com/SteveTheKiller/KillerPDF/releases/download/v$version/KillerPDF.exe",
+        "hash": {
+            "url": "https://github.com/SteveTheKiller/KillerPDF/releases/download/v$version/SHA256SUMS.txt",
+            "find": "(?im)^KillerPDF\\.exe\\s+($sha256)\\s*$"
         }
-    }
+    },
+    "notes": [
+        "The official KillerPDF.exe installer is run with /install-user and /install-dir64 so the verified application payload is placed inside the Scoop-managed version directory. Installer registration is skipped to prevent stale registry entries and shortcuts across Scoop updates.",
+        "The .NET 10 Desktop Runtime (x64) must already be installed system-wide. Install it with 'winget install --id Microsoft.DotNet.DesktopRuntime.10 --exact' if it is missing."
+    ]
 }

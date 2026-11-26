@@ -1,60 +1,54 @@
 {
-    "##": "Inno Setup 6.7 installer, silent install straight into the Scoop version dir (/DIR=$dir). The installer honours /NOICONS only partially: it still drops 'Ghost Downloader.lnk' into the user Programs folder, so that leftover is removed afterwards and the Scoop-managed shortcut (Scoop Apps) is the single entry point. Removal delegates to the bundled unins000.exe.",
     "version": "4.6",
-    "description": "Ghost Downloader 3 — 多线程/多任务下载器（Python + PySide6/Qt 6 图形界面），支持 HTTP/磁力/BT、浏览器扩展接管、多协议下载与插件式功能包",
-    "homepage": "https://github.com/XiaoYouChR/Ghost-Downloader-3",
-    "license": {
-        "identifier": "GPL-3.0",
-        "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/blob/main/LICENSE"
-    },
-    "notes": [
-        "安装版（Inno Setup 静默安装到 Scoop 目录），卸载走包内 unins000.exe",
-        "启动：Ghost-Downloader（Scoop shim）或开始菜单「Scoop Apps → Ghost Downloader 3」",
-        "配置与下载记录在 %APPDATA%\\GhostDownloader，Scoop 不接管",
-        "免安装/便携版请装 Ghost-Downloader-portable 包"
-    ],
+    "description": "A cross-platform fluent-design AI-boost multi-threaded downloader built with Python.",
+    "homepage": "https://gd3.top/",
+    "license": "GPL-3.0-or-later",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v4.6/Ghost-Downloader-v4.6-Windows-x86_64-Setup.exe",
-            "hash": "e3c745cecb56668afafddd9183ceeff618aae3d0a45df36821ef61523ccd101e"
+            "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v4.6/Ghost-Downloader-v4.6-Windows-x86_64.zip",
+            "hash": "f4152ef5fac5fc6cd16fdade8cb134609b84e0c71a124bf63a3445c0888e1adc"
+        },
+        "arm64": {
+            "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v4.6/Ghost-Downloader-v4.6-Windows-arm64.zip",
+            "hash": "e94959755dd4f883717c6e1e5eecb1b49e7187a7fef2568b32c16600c5bb79bd"
         }
     },
-    "installer": {
-        "script": [
-            "$installer = Join-Path $dir $fname",
-            "Start-Process -FilePath $installer -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/NOICONS', \"/MERGETASKS=!desktopicon\", \"/DIR=$dir\" -Wait",
-            "Remove-Item $installer -Force -ErrorAction SilentlyContinue",
-            "# the installer ignores /NOICONS for the application group link - drop it so only the Scoop shortcut remains",
-            "$programs = [Environment]::GetFolderPath('Programs')",
-            "Get-ChildItem -LiteralPath $programs -Filter 'Ghost Downloader*.lnk' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue"
+    "extract_dir": "dist\\Ghost-Downloader-3.dist",
+    "shortcuts": [
+        [
+            "Ghost-Downloader-3.exe",
+            "Ghost Downloader"
         ]
-    },
-    "uninstaller": {
-        "script": [
-            "$u = Join-Path $dir 'unins000.exe'",
-            "if (Test-Path -LiteralPath $u) { Start-Process -FilePath $u -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait }"
-        ]
-    },
+    ],
+    "pre_install": [
+        "if (!(Test-Path \"$persist_dir\\Ghost Downloader 配置文件.json\") -or !(Get-Item \"$persist_dir\\Ghost Downloader 配置文件.json\").Length) {",
+        "    New-Item \"$persist_dir\\Ghost Downloader 配置文件.json\" -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null",
+        "    Set-Content -Path \"$persist_dir\\Ghost Downloader 配置文件.json\" -Value '{\"Software\":{\"CheckUpdateAtStartUp\":false}}'",
+        "}",
+        "if (!(Test-Path \"$persist_dir\\Ghost Downloader 记录文件\") -or !(Get-Item \"$persist_dir\\Ghost Downloader 记录文件\").Length) {",
+        "    New-Item \"$persist_dir\\Ghost Downloader 记录文件\" -ItemType File -Force -ErrorAction SilentlyContinue | Out-Null",
+        "}"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App"
+    ],
+    "persist": [
+        "Ghost Downloader 配置文件.json",
+        "Ghost Downloader 记录文件"
+    ],
     "checkver": {
         "github": "https://github.com/XiaoYouChR/Ghost-Downloader-3"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v$version/Ghost-Downloader-v$version-Windows-x86_64-Setup.exe"
+                "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v$version/Ghost-Downloader-v$version-Windows-x86_64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v$version/Ghost-Downloader-v$version-Windows-arm64.zip"
             }
         }
-    },
-    "bin": [
-        [
-            "Ghost-Downloader-3.exe",
-            "Ghost-Downloader"
-        ]
-    ],
-    "shortcuts": [
-        [
-            "Ghost-Downloader-3.exe",
-            "Ghost Downloader 3"
-        ]
-    ]
+    }
 }

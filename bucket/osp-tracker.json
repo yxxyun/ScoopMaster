@@ -1,0 +1,50 @@
+{
+    "version": "6.3.5",
+    "description": "Video analysis and modeling tool for physics (Open Source Physics)",
+    "homepage": "https://opensourcephysics.github.io/tracker-website/",
+    "license": "GPL-3.0-or-later",
+    "notes": "Tracker's built-in upgrade notification should be ignored; update with 'scoop update osp-tracker' instead.",
+    "architecture": {
+        "64bit": {
+            "url": "https://physlets.org/tracker/installers/Tracker-6.3.5-windows-x64-installer.exe#/setup.exe",
+            "hash": "c03f220c6550e5090cf8f9e072057ca871fe8a9e0eebbae78deebe7b20358ef8"
+        }
+    },
+    "installer": {
+        "script": [
+            "if (!(is_admin)) { abort 'The Tracker installer requires administrator rights. Run from an elevated shell, e.g. ''sudo scoop install -g osp-tracker''.' }",
+            "$ok = Invoke-ExternalCommand \"$dir\\setup.exe\" -ArgumentList @('--mode', 'unattended', '--unattendedmodeui', 'none', '--disable-components', 'Experiments', '--tracker-home', \"$dir\") -Activity 'Running installer...'",
+            "if (!$ok) { abort 'Tracker installer failed.' }",
+            "Remove-Item \"$dir\\setup.exe\" -Force"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "$uninst = \"$dir\\uninstall_Tracker.exe\"",
+            "if (Test-Path $uninst) {",
+            "    if (!(is_admin)) { abort 'Uninstalling Tracker requires administrator rights. Run from an elevated shell.' }",
+            "    Start-Process $uninst -ArgumentList '--mode', 'unattended', '--unattendedmodeui', 'none' -Wait",
+            "    # InstallBuilder uninstallers relaunch from %TEMP% and return early; wait for them to finish",
+            "    $deadline = (Get-Date).AddMinutes(2)",
+            "    while ((Test-Path $uninst) -and ((Get-Date) -lt $deadline)) { Start-Sleep -Milliseconds 500 }",
+            "}"
+        ]
+    },
+    "shortcuts": [
+        [
+            "Tracker.exe",
+            "Tracker"
+        ]
+    ],
+    "checkver": {
+        "url": "https://opensourcephysics.github.io/tracker-website/",
+        "regex": "Tracker-([\\d.]+)-windows-x64-installer\\.exe"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://physlets.org/tracker/installers/Tracker-$version-windows-x64-installer.exe#/setup.exe"
+            }
+        }
+    }
+}

@@ -1,37 +1,52 @@
 {
     "version": "1.4.7.3",
-    "description": "Game voice platform",
+    "description": "Oopz致力于打造一个足够好用的游戏语音软件，让玩家可以享受纯粹流畅的开黑环境。",
     "homepage": "https://oopz.cn/",
-    "license": {
-        "identifier": "Proprietary",
-        "url": "https://help.oopz.cn/agreement/service"
-    },
+    "license": "Proprietary",
     "url": "https://downloadcdn.oopz.cn/release/147/oopz_setup_v1.4.7.3.exe#/dl.7z",
     "hash": "347b1329d1c0b5725ad9ba0a8577ccd36e24e634047c1818dd682c40786af071",
-    "installer": {
-        "script": [
-            "Move-Item \"$dir\\`$TEMP\\oopz_nsis\\app.7z\" \"$dir\\app.7z\"",
-            "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$TEMP\" -Force -Recurse",
-            "Expand-7zipArchive \"$dir\\app.7z\" \"$dir\\app\"",
-            "Remove-Item \"$dir\\app.7z\" -Force"
-        ]
-    },
     "shortcuts": [
         [
-            "app/oopz.exe",
+            "oopz.exe",
             "Oopz"
         ]
     ],
+    "bin": [
+        [
+            "oopz.exe",
+            "oopz"
+        ]
+    ],
+    "installer": {
+        "script": [
+            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "Write-Host (\"`nPersisting $env:APPDATA\\oopz ... \") -NoNewline",
+            "New-PersistDirectory \"$env:APPDATA\\oopz\" \"$persist_dir\\AppData\" -Migrate",
+            "Expand-7zipArchive \"$dir\\`$TEMP\\oopz_nsis\\app.7z\" \"$dir\" -Removal",
+            "Remove-Item \"$dir\\`$*\", \"$dir\\uninstaller\" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null"
+        ]
+    },
+    "persist": "sandbox",
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Require-Admin",
+        "Stop-App"
+    ],
+    "post_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        ". \"$bucketsdir\\$bucket\\scripts\\oopz\\uninstall.ps1\""
+    ],
     "checkver": {
         "script": [
-            "$url = 'https://www.oopz.cn/download/xx?v=' + $([DateTimeOffset]::Now.ToUnixTimeMilliseconds() / 1e3 -bor 0)",
-            "$resp = Invoke-WebRequest -Uri $url -Method Head",
-            "$resp.Baseresponse.RequestMessage.RequestUri.AbsoluteUri"
+            ". \"$pwd\\bin\\utils.ps1\"",
+            "Get-RedirectedUrl1st 'https://www.oopz.cn/download/xx'"
         ],
-        "regex": "/([\\d]+)/oopz_([\\w]+)_v([\\d\\.]+)\\.exe",
-        "replace": "$3"
+        "regex": "/release/(?<build>\\d+)/oopz_setup_v([\\d.]+)\\.exe"
     },
     "autoupdate": {
-        "url": "https://downloadcdn.oopz.cn/release/$match1/oopz_$match2_v$match3.exe#/dl.7z"
-    }
+        "url": "https://downloadcdn.oopz.cn/release/$matchBuild/oopz_setup_v$version.exe#/dl.7z"
+    },
+    "notes": "User data is persisted in \"$persist_dir\"."
 }

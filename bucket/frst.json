@@ -1,0 +1,67 @@
+{
+    "version": "20.11.2026.1",
+    "description": "Portable Windows malware-diagnosis and recovery scan tool from Farbar.",
+    "homepage": "https://www.bleepingcomputer.com/download/farbar-recovery-scan-tool/",
+    "architecture": {
+        "64bit": {
+            "url": "https://download.bleepingcomputer.com/dl/6b8737e0c0b8a9e42408385465a344d0afcb7928c3514dba6a186a01c6be6858/6b078de2/windows/security/security-utilities/f/farbar-recovery-scan-tool/FRST64.exe",
+            "hash": "128ed69bdc74cfcbb33ec5406b62fd2625642a91e76cf4c23eab0b34f3b10e15",
+            "shortcuts": [
+                [
+                    "FRST64.exe",
+                    "Farbar Recovery Scan Tool"
+                ]
+            ]
+        },
+        "32bit": {
+            "url": "https://download.bleepingcomputer.com/dl/d49e1f6b5da2bb6c3615b28efab79baef4cd98e823f3b62ff4c9f561ae2bb85b/6b078de1/windows/security/security-utilities/f/farbar-recovery-scan-tool/FRST.exe",
+            "hash": "b6719fcd0c6023ffb59ff36ebeb6a4984d47f9a8b25d75cb9d03bd85022b2f34",
+            "shortcuts": [
+                [
+                    "FRST.exe",
+                    "Farbar Recovery Scan Tool"
+                ]
+            ]
+        }
+    },
+    "notes": [
+        "Portable executable. The official download page does not publish a version number; checkver reads the PE file version from the current official 64-bit download.",
+        "The official 32-bit and 64-bit executables are not Authenticode-signed."
+    ],
+    "checkver": {
+        "url": "https://www.bleepingcomputer.com/download/farbar-recovery-scan-tool/",
+        "script": [
+            "$base = 'https://www.bleepingcomputer.com/download/farbar-recovery-scan-tool/'",
+            "$page32 = (Invoke-WebRequest -Uri ($base + 'dl/81/') -UseBasicParsing -ErrorAction Stop).Content",
+            "$page64 = (Invoke-WebRequest -Uri ($base + 'dl/82/') -UseBasicParsing -ErrorAction Stop).Content",
+            "$url32 = [regex]::Match($page32, 'https?://download\\.bleepingcomputer\\.com/dl/[^\"''\\s<>]+/FRST\\.exe').Value",
+            "$url64 = [regex]::Match($page64, 'https?://download\\.bleepingcomputer\\.com/dl/[^\"''\\s<>]+/FRST64\\.exe').Value",
+            "if ([string]::IsNullOrWhiteSpace($url32) -or [string]::IsNullOrWhiteSpace($url64)) { throw 'Could not extract both current official FRST download URLs.' }",
+            "$temp = Join-Path ([System.IO.Path]::GetTempPath()) ('frst-checkver-' + [guid]::NewGuid().ToString('N') + '.exe')",
+            "try {",
+            "  Invoke-WebRequest -Uri $url64 -OutFile $temp -UseBasicParsing -ErrorAction Stop",
+            "  $version = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($temp).FileVersion",
+            "} finally {",
+            "  Remove-Item -LiteralPath $temp -Force -ErrorAction SilentlyContinue",
+            "}",
+            "if ([string]::IsNullOrWhiteSpace($version) -or $version -notmatch '^[0-9]+(\\.[0-9]+)+$') { throw \"Could not read a valid FRST file version: $version\" }",
+            "\"version=$version`nurl32=$url32`nurl64=$url64\""
+        ],
+        "regex": "version=(?<version>[0-9.]+)\\s+url32=(?<url32>https://download\\.bleepingcomputer\\.com/dl/[^\"'\\s<>]+/FRST\\.exe)\\s+url64=(?<url64>https://download\\.bleepingcomputer\\.com/dl/[^\"'\\s<>]+/FRST64\\.exe)",
+        "replace": "${version}"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "$matchUrl64"
+            },
+            "32bit": {
+                "url": "$matchUrl32"
+            }
+        },
+        "hash": {
+            "mode": "download"
+        }
+    },
+    "license": "Freeware"
+}
