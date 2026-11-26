@@ -1,40 +1,89 @@
 {
     "version": "1.12.0",
-    "description": "Local MTProto proxy for Telegram.",
+    "description": "TG WS Proxy (Flowseal): local MTProto proxy for Telegram Desktop that carries its traffic over WebSocket (and Cloudflare) to Telegram's servers, which helps where Telegram is slowed down or blocked. Tray app with a settings window.",
     "homepage": "https://github.com/Flowseal/tg-ws-proxy",
-    "license": "MIT",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/Flowseal/tg-ws-proxy/blob/HEAD/LICENSE"
+    },
+    "notes": [
+        "Scoop Apps: 'TG WS Proxy' starts it in the tray. Right-click the tray icon, 'Open in Telegram' sets up",
+        "Telegram Desktop (or add an MTProto proxy 127.0.0.1:1443 with the secret from Settings by hand).",
+        "",
+        "Settings, secret and log are kept in %USERPROFILE%\\scoop\\persist\\TG-WS-Proxy\\TgWsProxy_data (portable mode).",
+        "A first start moves an existing %APPDATA%\\TgWsProxy there.",
+        "Its own update check is off in a new config, because Scoop updates it ('scoop update TG-WS-Proxy').",
+        "Start with Windows (Settings) runs ...\\apps\\TG-WS-Proxy\\current\\TgWsProxy.exe, so it survives updates.",
+        "",
+        "x64 and ARM64 builds need Windows 10 or newer; 32-bit Windows gets upstream's Windows 7 build."
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/Flowseal/tg-ws-proxy/releases/download/v1.12.0/TgWsProxy_windows.exe#/tg-ws-proxy.exe",
+            "url": "https://github.com/Flowseal/tg-ws-proxy/releases/download/v1.12.0/TgWsProxy_windows.exe#/TgWsProxy.exe",
             "hash": "859575ced24c65fadfa189bef8c75611f3f0a149633e553320434625fa84d67a"
         },
         "32bit": {
-            "url": "https://github.com/Flowseal/tg-ws-proxy/releases/download/v1.12.0/TgWsProxy_windows_7_32bit.exe#/tg-ws-proxy.exe",
+            "url": "https://github.com/Flowseal/tg-ws-proxy/releases/download/v1.12.0/TgWsProxy_windows_7_32bit.exe#/TgWsProxy.exe",
             "hash": "8b48206b9276e0ad1611300a05de09c034bd1c8be81f8408b8bef3b50e48bf38"
         },
         "arm64": {
-            "url": "https://github.com/Flowseal/tg-ws-proxy/releases/download/v1.12.0/TgWsProxy_windows_arm64.exe#/tg-ws-proxy.exe",
+            "url": "https://github.com/Flowseal/tg-ws-proxy/releases/download/v1.12.0/TgWsProxy_windows_arm64.exe#/TgWsProxy.exe",
             "hash": "45f9641694572463f4d399e8080b31b9a0f6c2e5927a8cc54eef4eeae2cb8101"
         }
     },
-    "bin": "tg-ws-proxy.exe",
+    "pre_install": [
+        "# A copy running anywhere else holds port 1443 and its data folder (scripts/common/Test-AppBusy.ps1).",
+        "$bucketDir = Find-BucketDirectory -Name $bucket -Root",
+        "if ($cmd -eq 'install') {",
+        "    $busyCheck = Join-Path $bucketDir 'scripts\\common\\Test-AppBusy.ps1'",
+        "    if (!(Test-Path -LiteralPath $busyCheck)) { error \"Cannot check whether $app is in use: '$($busyCheck -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%')' is missing.\"; break }",
+        "    $busy = @(& $busyCheck -ProcessName 'TgWsProxy', 'TgWsProxy_windows', 'TgWsProxy_windows_arm64', 'TgWsProxy_windows_7_32bit', 'TgWsProxy_windows_7_64bit')",
+        "    if ($busy) { error \"$app is running. Exit it from its tray menu, then install again:`n  $($busy -join \"`n  \")`nScoop has already put $app into its app folder: run 'scoop uninstall $app' or simply install again, which cleans that up.\"; break }",
+        "}",
+        "",
+        "# TgWsProxy_data next to the exe turns on portable mode. A new config only turns off the self-update check;",
+        "# the proxy fills in the rest (port, secret...) and saves it on its first start.",
+        "if (!(Test-Path \"$persist_dir\\TgWsProxy_data\")) {",
+        "    New-Item -ItemType Directory -Path \"$dir\\TgWsProxy_data\" -Force | Out-Null",
+        "    [IO.File]::WriteAllText(\"$dir\\TgWsProxy_data\\config.json\", \"{`n  `\"check_updates`\": false`n}`n\")",
+        "}"
+    ],
+    "pre_uninstall": [
+        "# Scoop only sees a copy that runs from its own folder; the tray app keeps its data files open.",
+        "$busyCheck = Join-Path (Find-BucketDirectory -Name $bucket -Root) 'scripts\\common\\Test-AppBusy.ps1'",
+        "if (!(Test-Path -LiteralPath $busyCheck)) { warn \"Cannot check whether $app is in use: '$($busyCheck -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%')' is missing.\"; return }",
+        "$busy = @(& $busyCheck -ProcessName 'TgWsProxy' -Path \"$persist_dir\\TgWsProxy_data\")",
+        "if ($busy) { error \"$app is running. Exit it from its tray menu and try again:`n  $($busy -join \"`n  \")\"; break }"
+    ],
+    "uninstaller": {
+        "script": [
+            "# 'Start with Windows' leaves a Run entry pointing into the app folder; remove it with the app.",
+            "if ($cmd -ne 'uninstall') { return }",
+            "$run = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+            "$value = (Get-ItemProperty $run -Name 'TgWsProxy' -ErrorAction SilentlyContinue).TgWsProxy",
+            "if ($value -and $value.Trim('\"') -like \"$(Split-Path $dir)\\*\") { Remove-ItemProperty $run -Name 'TgWsProxy' }"
+        ]
+    },
     "shortcuts": [
         [
-            "tg-ws-proxy.exe",
+            "TgWsProxy.exe",
             "TG WS Proxy"
         ]
     ],
-    "checkver": "github",
+    "persist": "TgWsProxy_data",
+    "checkver": {
+        "github": "https://github.com/Flowseal/tg-ws-proxy"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/Flowseal/tg-ws-proxy/releases/download/v$version/TgWsProxy_windows.exe#/tg-ws-proxy.exe"
+                "url": "https://github.com/Flowseal/tg-ws-proxy/releases/download/v$version/TgWsProxy_windows.exe#/TgWsProxy.exe"
             },
             "32bit": {
-                "url": "https://github.com/Flowseal/tg-ws-proxy/releases/download/v$version/TgWsProxy_windows_7_32bit.exe#/tg-ws-proxy.exe"
+                "url": "https://github.com/Flowseal/tg-ws-proxy/releases/download/v$version/TgWsProxy_windows_7_32bit.exe#/TgWsProxy.exe"
             },
             "arm64": {
-                "url": "https://github.com/Flowseal/tg-ws-proxy/releases/download/v$version/TgWsProxy_windows_arm64.exe#/tg-ws-proxy.exe"
+                "url": "https://github.com/Flowseal/tg-ws-proxy/releases/download/v$version/TgWsProxy_windows_arm64.exe#/TgWsProxy.exe"
             }
         }
     }

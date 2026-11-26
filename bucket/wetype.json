@@ -1,12 +1,8 @@
 {
     "version": "3.0.3.11_3",
-    "description": "微信输入法",
+    "description": "WeChat Input Method (微信输入法), a Chinese input method by Tencent.",
     "homepage": "https://z.weixin.qq.com/",
     "license": "Freeware",
-    "notes": [
-        "这是系统安装器，不是绿色便携版。",
-        "安装器会安装到系统目录，可能触发 UAC。"
-    ],
     "architecture": {
         "64bit": {
             "url": "https://download.z.weixin.qq.com/app/win/WeTypeSetup_3.0.3.11_3.exe#/WeTypeSetup.exe",
@@ -19,37 +15,56 @@
     },
     "installer": {
         "script": [
+            "# WeType is a system-wide input method: the installer elevates itself (UAC) and installs",
+            "# outside the Scoop directory, so only the setup file lands in $dir.",
             "$installer = \"$dir\\WeTypeSetup.exe\"",
-            "$arguments = '/s'",
-            "",
-            "$identity = [Security.Principal.WindowsIdentity]::GetCurrent()",
-            "$principal = [Security.Principal.WindowsPrincipal]::new($identity)",
-            "$isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
-            "",
-            "if (-not $isAdmin) {",
-            "    error '微信输入法是系统级输入法安装器，需要管理员权限。请右键以管理员身份打开 PowerShell / Windows Terminal 后重新执行：scoop install wetype'",
-            "    exit 1",
+            "if (-not (Test-Path $installer)) { abort 'WeTypeSetup.exe is missing.' }",
+            "try {",
+            "    $process = Start-Process -FilePath $installer -ArgumentList '/s' -Wait -PassThru -ErrorAction Stop",
+            "} catch {",
+            "    abort \"微信输入法安装失败：$($_.Exception.Message)。安装器需要管理员授权（UAC），请在可交互的桌面会话中重试。\"",
             "}",
-            "",
-            "$process = Start-Process -FilePath $installer -ArgumentList $arguments -Wait -PassThru",
-            "",
             "if ($null -ne $process.ExitCode -and $process.ExitCode -ne 0) {",
-            "    error \"微信输入法安装失败，退出码：$($process.ExitCode)\"",
-            "    exit $process.ExitCode",
-            "}"
+            "    abort \"微信输入法安装失败，退出码：$($process.ExitCode)\"",
+            "}",
+            "Remove-Item $installer -Force -ErrorAction SilentlyContinue"
         ]
     },
+    "notes": [
+        "微信输入法是系统级输入法，安装到系统目录并注册输入法框架(TSF)，不在 Scoop 目录内；安装时会弹出 UAC 授权。",
+        "Scoop 只负责下载安装包并调用官方安装器；升级时 scoop update 会先调用官方卸载器再安装新版本。",
+        "官方建议优先使用输入法自带的更新功能；静默覆盖安装可能需重启后才能生效。",
+        "用户词库等数据不在 Scoop 目录内，scoop uninstall 只卸载程序。"
+    ],
     "uninstaller": {
         "script": [
-            "$app = Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -eq '微信输入法' } | Select-Object -First 1",
-            "if (-not $app) { error '没有找到微信输入法卸载信息。'; exit 1 }",
-            "$uninstaller = $app.UninstallString.Trim('\"')",
-            "Start-Process -FilePath $uninstaller -Wait"
+            "$arp = Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue |",
+            "    Where-Object { $_.DisplayName -eq '微信输入法' } | Select-Object -First 1",
+            "if (-not $arp) {",
+            "    warn '微信输入法未注册卸载信息，可能已经卸载。'",
+            "} else {",
+            "    $command = if ($arp.QuietUninstallString) { $arp.QuietUninstallString } else { $arp.UninstallString }",
+            "    if ($command -match '^\\s*\"([^\"]+)\"\\s*(.*)$') {",
+            "        $exe = $matches[1]",
+            "        $arguments = $matches[2]",
+            "    } elseif ($command -match '^\\s*(\\S+\\.exe)\\s*(.*)$') {",
+            "        $exe = $matches[1]",
+            "        $arguments = $matches[2]",
+            "    } else {",
+            "        $exe = $command",
+            "        $arguments = ''",
+            "    }",
+            "    if ($arguments) {",
+            "        Start-Process -FilePath $exe -ArgumentList $arguments -Wait",
+            "    } else {",
+            "        Start-Process -FilePath $exe -Wait",
+            "    }",
+            "}"
         ]
     },
     "checkver": {
         "url": "https://z.weixin.qq.com/",
-        "regex": "latest\":\"https:\\/\\/download\\.z\\.weixin\\.qq\\.com\\/app\\/win\\/WeTypeSetup_([\\d\\._]+)\\.exe"
+        "regex": "\"latest\":\"https://download\\.z\\.weixin\\.qq\\.com/app/win/WeTypeSetup_([\\d\\._]+)\\.exe\""
     },
     "autoupdate": {
         "architecture": {

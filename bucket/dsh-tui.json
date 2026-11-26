@@ -1,0 +1,45 @@
+{
+    "version": "0.20.2",
+    "description": "Terminal UI for DeepSeek Harness (dsh) with multi-kernel support.",
+    "homepage": "https://github.com/ccch1mneyyy/dsh-TUI",
+    "license": "MIT",
+    "depends": "pnpm",
+    "url": "https://github.com/ccch1mneyyy/dsh-TUI/releases/download/v0.20.2/dsh-tui-setup.zip",
+    "hash": "73304fe16e747e53dbaa4c0e78e15fdaa8edf1e013cfc724dc0b692596df7929",
+    "extract_dir": "dsh-tui-setup",
+    "pre_install": [
+        "# Upstream standalone bundle ships broken (missing cordis-plugin-group peer dep, symlink extraction needs admin). Install via npm instead, which resolves dependencies correctly.",
+        "# Refresh PATH from machine+user so npm from a freshly installed Node/nvm is visible even in an old terminal session.",
+        "$env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + $env:Path",
+        "# Prefer nvm's shim dir (Node >=24.9) over any stale Node earlier in PATH, since dsh engine requires >=24.9.",
+        "$nvmShims = ($env:Path -split ';') | Where-Object { $_ -match 'nvm[\\\\/]\\.nodejs' -and (Test-Path $_) }",
+        "if ($nvmShims) { $env:Path = \"$($nvmShims -join ';');$env:Path\" }",
+        "if (-not (Get-Command npm -ErrorAction SilentlyContinue)) { throw 'npm not found. Install Node.js >=24.9 via nvm (nvm install 26; nvm use 26) or scoop install nodejs, then reopen your terminal and retry.' }",
+        "$ver = Split-Path $dir -Leaf",
+        "# nvm's npm.exe shim injects npm_mirror (a download URL, not a registry) as registry -> force official registry via CLI (highest precedence).",
+        "npm install --prefix \"$dir\" \"@deepseek-ai/dsh@0.2.2-rc.5\" \"@deepseek-harness-tui/dsh-tui@$ver\" --registry=https://registry.npmjs.org/ --fetch-timeout=60000 --fetch-retries=1 --no-audit --no-fund",
+        "if ($LASTEXITCODE -ne 0) { throw 'npm install failed; ensure Node.js >=24.9 is active on PATH.' }",
+        "Remove-Item \"$dir\\dsh-tui-setup\" -Recurse -Force -ErrorAction SilentlyContinue"
+    ],
+    "bin": [
+        "node_modules\\.bin\\dsh-tui.cmd",
+        "node_modules\\.bin\\dst.cmd",
+        "node_modules\\.bin\\dsh.cmd"
+    ],
+    "checkver": {
+        "github": "ccch1mneyyy/dsh-TUI"
+    },
+    "autoupdate": {
+        "url": "https://github.com/ccch1mneyyy/dsh-TUI/releases/download/v$version/dsh-tui-setup.zip",
+        "hash": {
+            "url": "https://github.com/ccch1mneyyy/dsh-TUI/releases/download/v$version/SHA256SUMS",
+            "regex": "([a-f0-9]{64})\\s+dsh-tui-setup\\.zip"
+        }
+    },
+    "notes": [
+        "Requires Node.js >=24.9 on PATH (dsh engine requirement) and pnpm (first-run profile bootstrap). Node via nvm or 'scoop install nodejs'; pnpm is installed automatically as a dependency.",
+        "If nvm created a dead 'pnpm.exe' shim (Node 25+ removed corepack) ahead of Scoop's shims on PATH, rename it to 'pnpm.exe.disabled' in the nvm shim dir, or 'dsh-tui' first-run bootstrap will fail.",
+        "Set DEEPSEEK_API_KEY before first launch (from https://platform.deepseek.com).",
+        "Config lives in ~/.dsh-tui/ and ~/.dsh/; installing via npm resolves all peer dependencies correctly."
+    ]
+}

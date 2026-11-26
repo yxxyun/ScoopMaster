@@ -1,56 +1,39 @@
 {
-    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
     "version": "0.1.925-beta",
-    "description": "Desktop app for running, fine-tuning, and serving local LLMs and diffusion models, including GGUF and MLX.",
+    "description": "Local UI to run and train LLMs and diffusion models",
     "homepage": "https://unsloth.ai/",
     "license": "AGPL-3.0-only",
+    "notes": "First launch sets up the Unsloth environment (Python, uv, PyTorch, models) under $env:USERPROFILE\\.unsloth\\studio and may download several GB.",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/unslothai/unsloth/releases/download/v0.1.925-beta/Unsloth-Desktop-Windows.exe",
-            "hash": "6d8be9711b78c0df9b6d53a9c6600f2fb45f5c914d4c0eea5c4ed5a6062a006f"
+            "url": "https://github.com/unslothai/unsloth/releases/download/v0.1.925-beta/Unsloth-Desktop-Windows-x64.exe#/dl.7z",
+            "hash": "df0415e0098e9fb5c83456274ff4d34fc613bd6da4dfe7ddb2ea5eebf82a896f"
         },
         "arm64": {
-            "url": "https://github.com/unslothai/unsloth/releases/download/v0.1.925-beta/Unsloth-Desktop-Windows-ARM64.exe",
+            "url": "https://github.com/unslothai/unsloth/releases/download/v0.1.925-beta/Unsloth-Desktop-Windows-ARM64.exe#/dl.7z",
             "hash": "eec158e9dc4ae9bfe486d625240918150fb233be33f6922044cc1d4ed5bf606f"
         }
     },
-    "installer": {
-        "args": [
-            "/S",
-            "/D=$dir"
+    "post_install": "Remove-Item \"$dir\\`$PLUGINSDIR\", \"$dir\\`$TEMP\", \"$dir\\uninstall.exe\" -Force -Recurse -ErrorAction SilentlyContinue",
+    "bin": "unsloth-studio.exe",
+    "shortcuts": [
+        [
+            "unsloth-studio.exe",
+            "Unsloth Studio"
         ]
-    },
-    "uninstaller": {
-        "script": [
-            "$uninstaller = Join-Path $dir 'uninstall.exe'",
-            "if (-not (Test-Path -LiteralPath $uninstaller -PathType Leaf)) { throw 'Unsloth Tauri NSIS uninstaller was not found in the Scoop version directory.' }",
-            "$process = Start-Process -FilePath $uninstaller -ArgumentList '/S' -WorkingDirectory $dir -Wait -PassThru",
-            "if ($process.ExitCode -ne 0) { throw ('Unsloth uninstaller exited with code {0}.' -f $process.ExitCode) }"
-        ]
-    },
+    ],
     "checkver": {
-        "url": "https://api.github.com/repos/unslothai/unsloth/releases/latest",
-        "jsonpath": "$.tag_name",
-        "regex": "^v(?<version>[\\d.]+(?:-[A-Za-z0-9.]+)?)$"
+        "url": "https://api.github.com/repos/unslothai/unsloth/releases?per_page=10",
+        "regex": "\"tag_name\"\\s*:\\s*\"v(\\d+(?:\\.\\d+)*(?:-[\\w.]+)?)\""
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/unslothai/unsloth/releases/download/v$version/Unsloth-Desktop-Windows.exe"
+                "url": "https://github.com/unslothai/unsloth/releases/download/v$version/Unsloth-Desktop-Windows-x64.exe#/dl.7z"
             },
             "arm64": {
-                "url": "https://github.com/unslothai/unsloth/releases/download/v$version/Unsloth-Desktop-Windows-ARM64.exe"
+                "url": "https://github.com/unslothai/unsloth/releases/download/v$version/Unsloth-Desktop-Windows-ARM64.exe#/dl.7z"
             }
-        },
-        "hash": {
-            "mode": "json",
-            "url": "https://api.github.com/repos/unslothai/unsloth/releases/tags/v$version",
-            "jp": "$.assets[?(@.name == '$basename')].digest"
         }
-    },
-    "##": "Installer Type: NSIS",
-    "notes": [
-        "Nonportable: runs the official Tauri NSIS current-user installer silently, registers the unsloth:// protocol and Windows shortcuts, and silently bootstraps Microsoft Edge WebView2 Runtime when it is missing.",
-        "The official uninstaller preserves shared models, environments, outputs, and settings under %USERPROFILE%\\.unsloth."
-    ]
+    }
 }

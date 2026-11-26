@@ -1,0 +1,85 @@
+{
+    "version": "2.0.24-next",
+    "description": "Desktop client for DeepSeek Harness (DSH) by Anywhere Labs",
+    "homepage": "https://github.com/anywhere-labs/dsh-desktop",
+    "license": "MIT",
+    "notes": "DSH data is redirected to persist. Run 'dsh-clean' to clear runtime cache, or 'dsh-clean -All' to include logs.",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/anywhere-labs/dsh-desktop/releases/download/v2.0.24-next/DSH-NEXT-2.0.24-next-x64-Portable.zip",
+            "hash": "20a8ed209fa181e76bf39d05937ba3a689cd1fc4ad1fdc4fa7d9a6b79fe86b19"
+        }
+    },
+    "persist": "data",
+    "pre_install": [
+        "# 1. 预先确保物理持久化目录存在，防止 privateDirectory 抛出异常",
+        "New-Item -ItemType Directory -Path \"$persist_dir\\data\" -Force | Out-Null",
+        "[Environment]::SetEnvironmentVariable('DSH_DESKTOP_NEXT_HOME', \"$persist_dir\\data\", 'User')",
+        "$env:DSH_DESKTOP_NEXT_HOME = \"$persist_dir\\data\"",
+        "",
+        "# 2. 在创建 shim 之前写入 dsh-clean.ps1 脚本",
+        "$scriptContent = @'",
+        "param([switch]$All)",
+        "$proc = Get-Process -Name 'DSH NEXT', 'DSH-NEXT' -ErrorAction SilentlyContinue",
+        "if ($proc) { Write-Warning 'DSH NEXT 正在运行，请先退出程序再清理缓存。'; exit 1 }",
+        "$dshHome = $env:DSH_DESKTOP_NEXT_HOME",
+        "if (-not $dshHome) { $dshHome = [Environment]::GetEnvironmentVariable('DSH_DESKTOP_NEXT_HOME', 'User') }",
+        "if (-not $dshHome -or -not (Test-Path $dshHome)) { $dshHome = \"$PSScriptRoot\\data\" }",
+        "if (-not (Test-Path $dshHome)) { $dshHome = \"$HOME\\.dsh\" }",
+        "$targets = [System.Collections.Generic.List[string]]::new()",
+        "foreach ($sub in @('cache', 'tmp', 'temp')) { $targets.Add(\"$dshHome\\$sub\") }",
+        "foreach ($appName in @('DSH NEXT', 'DSH-NEXT')) {",
+        "  foreach ($sub in @('Cache', 'Code Cache', 'GPUCache')) {",
+        "    $targets.Add(\"$env:APPDATA\\$appName\\$sub\")",
+        "  }",
+        "}",
+        "$targets.Add(\"$env:LOCALAPPDATA\\dsh-desktop-updater\")",
+        "if ($All) { $targets.Add(\"$dshHome\\logs\") }",
+        "foreach ($target in $targets) {",
+        "  if (Test-Path $target) {",
+        "    Remove-Item -Path $target -Recurse -Force -ErrorAction SilentlyContinue",
+        "    Write-Host \"[Cleaned] $target\" -ForegroundColor Green",
+        "  }",
+        "}",
+        "Write-Host 'DSH 缓存清理完成。' -ForegroundColor Cyan",
+        "'@",
+        "Set-Content -Path \"$dir\\dsh-clean.ps1\" -Value $scriptContent -Encoding utf8"
+    ],
+    "bin": [
+        [
+            "DSH NEXT.exe",
+            "dsh-next"
+        ],
+        [
+            "dsh-clean.ps1",
+            "dsh-clean"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "DSH NEXT.exe",
+            "DSH NEXT"
+        ]
+    ],
+    "pre_uninstall": [
+        "$proc = Get-Process -Name 'DSH NEXT', 'DSH-NEXT' -ErrorAction SilentlyContinue",
+        "if ($proc) {",
+        "  Write-Warning 'DSH NEXT 正在运行，正在关闭进程以释放文件锁...'",
+        "  $proc | Stop-Process -Force",
+        "}"
+    ],
+    "checkver": {
+        "github": "https://github.com/anywhere-labs/dsh-desktop",
+        "regex": "v?([\\d.]+-next(?:[.-]\\d+)?)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/anywhere-labs/dsh-desktop/releases/download/v$version/DSH-NEXT-$version-x64-Portable.zip"
+            }
+        },
+        "hash": {
+            "url": "$baseurl/SHA256SUMS.txt"
+        }
+    }
+}

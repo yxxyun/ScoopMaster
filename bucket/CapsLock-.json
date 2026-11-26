@@ -1,0 +1,88 @@
+{
+    "version": "1.13.3",
+    "description": "A lightweight Windows utility that turns CapsLock into a second control layer for text navigation, clipboard workflows, window management, and more.",
+    "homepage": "https://github.com/CYoJkoY/CapsLock-",
+    "license": {
+        "identifier": "GPL-3.0-only",
+        "url": "https://github.com/CYoJkoY/CapsLock-/blob/main/LICENSE"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/CYoJkoY/CapsLock-/releases/download/v1.13.3/CapsLock-.exe",
+            "hash": "9f4eaea5c945467ec15f600563dd99ab3c166df20c94cd227b5d29e63678aacb"
+        },
+        "32bit": {
+            "url": "https://github.com/CYoJkoY/CapsLock-/releases/download/v1.13.3/CapsLock-_x86.exe#/CapsLock-.exe",
+            "hash": "decf357240c38fbb519f854422f29825e9192f436c99974bb03f3635102282e6"
+        }
+    },
+    "pre_install": [
+        "$process = 'CapsLock-'",
+        "Get-Process -Name $process -ErrorAction SilentlyContinue | Stop-Process -Force"
+    ],
+    "post_install": [
+        "$appRoot = (Get-Item $dir).Parent.FullName",
+        "$currentExe = Join-Path $appRoot 'current\\CapsLock-.exe'",
+        "$quotedExe = '\"' + $currentExe + '\"'",
+        "# 1. 自动适配并固化注册表开机自启路径",
+        "$runKey = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'",
+        "@('CapsLock-', 'CapsLock Extended') | ForEach-Object {",
+        "    if (Get-ItemProperty -Path $runKey -Name $_ -ErrorAction SilentlyContinue) {",
+        "        Set-ItemProperty -Path $runKey -Name $_ -Value $quotedExe",
+        "    }",
+        "}",
+        "# 2. 自动适配 Startup 目录快捷方式目标",
+        "$startupDir = [Environment]::GetFolderPath('Startup')",
+        "@('CapsLock-.lnk', 'CapsLock Extended.lnk') | ForEach-Object {",
+        "    $lnkPath = Join-Path $startupDir $_",
+        "    if (Test-Path $lnkPath) {",
+        "        $ws = New-Object -ComObject WScript.Shell",
+        "        $sc = $ws.CreateShortcut($lnkPath)",
+        "        $sc.TargetPath = $currentExe",
+        "        $sc.WorkingDirectory = Join-Path $appRoot 'current'",
+        "        $sc.Save()",
+        "    }",
+        "}",
+        "# 3. 清理 Windows 11 通知区域 (NotifyIconSettings) 旧版本残留项",
+        "$notifyPath = 'HKCU:\\Control Panel\\NotifyIconSettings'",
+        "if (Test-Path $notifyPath) {",
+        "    Get-ChildItem -Path $notifyPath | ForEach-Object {",
+        "        $exec = (Get-ItemProperty -Path $_.PSPath -Name ExecutablePath -ErrorAction SilentlyContinue).ExecutablePath",
+        "        if ($exec -and $exec -like '*\\CapsLock-\\*' -and $exec -notlike '*\\current\\*') {",
+        "            Remove-Item -Path $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue",
+        "        }",
+        "    }",
+        "}"
+    ],
+    "bin": "CapsLock-.exe",
+    "shortcuts": [
+        [
+            "../current/CapsLock-.exe",
+            "CapsLock Extended"
+        ]
+    ],
+    "persist": "configs",
+    "pre_uninstall": [
+        "$process = 'CapsLock-'",
+        "Get-Process -Name $process -ErrorAction SilentlyContinue | Stop-Process -Force"
+    ],
+    "checkver": {
+        "github": "https://github.com/CYoJkoY/CapsLock-"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/CYoJkoY/CapsLock-/releases/download/v$version/CapsLock-.exe",
+                "hash": {
+                    "mode": "download"
+                }
+            },
+            "32bit": {
+                "url": "https://github.com/CYoJkoY/CapsLock-/releases/download/v$version/CapsLock-_x86.exe#/CapsLock-.exe",
+                "hash": {
+                    "mode": "download"
+                }
+            }
+        }
+    }
+}
