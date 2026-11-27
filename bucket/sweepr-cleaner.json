@@ -1,37 +1,58 @@
 {
-    "version": "0.1.0",
-    "description": "Fast native Rust PC & SSD storage cleaner for Windows 10 and 11 with a 7-day undo safety net.",
-    "homepage": "https://sweeprcleaner.com",
-    "license": {
-        "identifier": "Freemium",
-        "url": "https://sweeprcleaner.com/terms"
-    },
-    "architecture": {
-        "64bit": {
-            "url": "https://sweeprcleaner.com/SWEEPRCleaner.exe",
-            "hash": "feae464ca121cf897d27916c632f4db8f84a87d4b79642403ad1b0e0f2bb706a",
-            "installer": {
-                "args": [
-                    "/S"
-                ]
-            },
-            "uninstaller": {
-                "file": "$env:LOCALAPPDATA\\Programs\\sweepr\\uninstall.exe",
-                "args": [
-                    "/S"
-                ]
-            }
-        }
-    },
-    "checkver": {
-        "url": "https://sweeprcleaner.com/pad.xml",
-        "regex": "<Program_Version>([\\d.]+)</Program_Version>"
-    },
-    "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "https://sweeprcleaner.com/SWEEPRCleaner.exe"
-            }
-        }
+  "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+  "version": "0.1.0",
+  "description": "Native Rust PC & SSD storage cleaner for Windows 10/11: unlimited free Temp & Browser Cache clean (to OS Recycle Bin) and 7-Day Undo Quarantine (2-10 GB budget, 5 GB default).",
+  "homepage": "https://sweeprcleaner.com",
+  "license": {
+    "identifier": "Proprietary",
+    "url": "https://sweeprcleaner.com/terms"
+  },
+  "architecture": {
+    "64bit": {
+      "url": "https://sweeprcleaner.com/SWEEPRCleaner.exe",
+      "hash": "feae464ca121cf897d27916c632f4db8f84a87d4b79642403ad1b0e0f2bb706a"
     }
+  },
+  "installer": {
+    "script": [
+      "$setup = Join-Path $dir 'SWEEPRCleaner-setup.exe'",
+      "Move-Item -Path (Join-Path $dir 'SWEEPRCleaner.exe') -Destination $setup -Force",
+      "$proc = Start-Process -FilePath $setup -ArgumentList '/S', '/NS', \"/D=$dir\" -Wait -PassThru",
+      "Remove-Item -Path $setup -Force -ErrorAction SilentlyContinue",
+      "if ($proc.ExitCode -ne 0) { throw \"SWEEPR Cleaner NSIS silent install failed with exit code $($proc.ExitCode)\" }"
+    ]
+  },
+  "uninstaller": {
+    "script": [
+      "$uninst = Join-Path $dir 'uninstall.exe'",
+      "if (Test-Path $uninst) { $p = Start-Process -FilePath $uninst -ArgumentList '/S', \"_?=$dir\" -Wait -PassThru; if ($p.ExitCode -ne 0) { throw \"SWEEPR Cleaner NSIS uninstall failed with exit code $($p.ExitCode)\" } }"
+    ]
+  },
+  "bin": [
+    [
+      "sweepr.exe",
+      "SWEEPRCleaner"
+    ]
+  ],
+  "shortcuts": [
+    [
+      "sweepr.exe",
+      "SWEEPR Cleaner"
+    ]
+  ],
+  "checkver": {
+    "url": "https://sweeprcleaner.com/release-manifest.json",
+    "jsonpath": "$.version"
+  },
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://sweeprcleaner.com/SWEEPRCleaner.exe"
+      }
+    },
+    "hash": {
+      "url": "https://sweeprcleaner.com/release-manifest.json",
+      "jsonpath": "$.exe.sha256"
+    }
+  }
 }
