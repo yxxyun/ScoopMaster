@@ -1,6 +1,6 @@
 {
     "version": "11.3.3.2",
-    "description": "雷神加速器 - 游戏网络加速客户端",
+    "description": "雷神加速器-专线加速游戏，按分钟计费可暂停",
     "homepage": "https://www.leigod.com/",
     "license": "Proprietary",
     "architecture": {
@@ -9,113 +9,36 @@
             "hash": "a849b2839344e7827f93a13b4b425d7b15f1b67babac6d1fb68a63190ab84820"
         }
     },
-    "extract_to": "installer",
-    "pre_install": [
-        "Get-Process | Where-Object {",
-        "    try { $_.Path -and $_.Path.StartsWith($dir, [System.StringComparison]::OrdinalIgnoreCase) } catch { $false }",
-        "} | Stop-Process -Force -ErrorAction SilentlyContinue",
-        "Get-Process -Name 'leigod' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue",
-        "if (-not (Test-Path -LiteralPath \"$dir\\installer\\.rdata\" -PathType Leaf)) { throw 'LeiGod payload archive .rdata is missing; the upstream installer layout may have changed.' }",
-        "Expand-7zipArchive -Path \"$dir\\installer\\.rdata\" -DestinationPath \"$dir\"",
-        "if (-not (Test-Path -LiteralPath \"$dir\\leigod.exe\" -PathType Leaf)) { throw 'LeiGod payload extraction completed, but leigod.exe was not found.' }",
-        "Remove-Item -LiteralPath \"$dir\\installer\" -Recurse -Force -ErrorAction SilentlyContinue",
-        "function New-LeiGodPersistJunction {",
-        "    param([Parameter(Mandatory = $true)][string]$Source, [Parameter(Mandatory = $true)][string]$Destination)",
-        "    if (-not (Test-Path -LiteralPath $Destination -PathType Container)) {",
-        "        New-Item -ItemType Directory -Path $Destination -Force -ErrorAction Stop | Out-Null",
-        "    }",
-        "    if (Test-Path -LiteralPath $Source) {",
-        "        $sourceItem = Get-Item -LiteralPath $Source -Force -ErrorAction Stop",
-        "        if (($sourceItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) { return }",
-        "        if ($sourceItem.PSIsContainer) {",
-        "            $sourceRoot = [System.IO.Path]::GetFullPath($Source).TrimEnd('\\') + '\\'",
-        "            $dirs = @(Get-ChildItem -LiteralPath $Source -Recurse -Directory -Force -ErrorAction SilentlyContinue)",
-        "            foreach ($d in $dirs) {",
-        "                $relDir = $d.FullName.Substring($sourceRoot.Length)",
-        "                $targetDir = Join-Path $Destination $relDir",
-        "                if (-not (Test-Path -LiteralPath $targetDir)) { New-Item -ItemType Directory -Path $targetDir -Force | Out-Null }",
-        "            }",
-        "            $sourceFiles = @(Get-ChildItem -LiteralPath $Source -Recurse -File -Force -ErrorAction SilentlyContinue)",
-        "            foreach ($file in $sourceFiles) {",
-        "                $relPath = $file.FullName.Substring($sourceRoot.Length)",
-        "                $targetPath = Join-Path $Destination $relPath",
-        "                if (-not (Test-Path -LiteralPath $targetPath)) {",
-        "                    $parent = Split-Path -Parent $targetPath",
-        "                    if (-not (Test-Path -LiteralPath $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }",
-        "                    Copy-Item -LiteralPath $file.FullName -Destination $targetPath -Force -ErrorAction SilentlyContinue",
-        "                }",
-        "            }",
-        "            Remove-Item -LiteralPath $Source -Recurse -Force -ErrorAction SilentlyContinue",
-        "            if (Test-Path -LiteralPath $Source) { throw \"Failed to clean up '$Source'. Ensure no background LeiGod processes are locking files.\" }",
-        "        }",
-        "    }",
-        "    $sourceParent = Split-Path -Parent $Source",
-        "    if (-not (Test-Path -LiteralPath $sourceParent)) { New-Item -ItemType Directory -Path $sourceParent -Force | Out-Null }",
-        "    New-Item -ItemType Junction -Path $Source -Target $Destination -Force -ErrorAction Stop | Out-Null",
-        "}",
-        "New-LeiGodPersistJunction -Source \"$env:APPDATA\\leigod\" -Destination \"$persist_dir\\APPDATA\"",
-        "New-LeiGodPersistJunction -Source \"$env:USERPROFILE\\.leigod\" -Destination \"$persist_dir\\.leigod\""
-    ],
-    "pre_uninstall": [
-        "Get-Process | Where-Object {",
-        "    try { $_.Path -and $_.Path.StartsWith($dir, [System.StringComparison]::OrdinalIgnoreCase) } catch { $false }",
-        "} | Stop-Process -Force -ErrorAction SilentlyContinue",
-        "Get-Process -Name 'leigod' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue",
-        "$appRoot = Split-Path -Parent $dir",
-        "$isUpgrade = (Get-ChildItem -LiteralPath $appRoot -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne (Split-Path -Leaf $dir) -and $_.Name -ne 'current' }).Count -gt 0",
-        "if ($isUpgrade) { return }",
-        "function Remove-LeiGodPersistJunction {",
-        "    param([Parameter(Mandatory = $true)][string]$Path, [Parameter(Mandatory = $true)][string]$ExpectedTarget)",
-        "    if (-not (Test-Path -LiteralPath $Path)) { return }",
-        "    $item = Get-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue",
-        "    if (-not $item -or (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq 0)) { return }",
-        "    $expectedFullPath = [System.IO.Path]::GetFullPath($ExpectedTarget).TrimEnd('\\')",
-        "    $targetMatches = $false",
-        "    $rawTarget = $null",
-        "    if ($item.LinkTarget) {",
-        "        $rawTarget = $item.LinkTarget",
-        "    } elseif ($item.Target) {",
-        "        $rawTarget = @($item.Target)[0]",
-        "    }",
-        "    if ($rawTarget) {",
-        "        $cleanTarget = [string]$rawTarget.TrimStart('\\').TrimStart('?').TrimStart('\\')",
-        "        try { $targetMatches = [System.IO.Path]::GetFullPath($cleanTarget).TrimEnd('\\') -ieq $expectedFullPath } catch { }",
-        "    }",
-        "    if (-not $targetMatches) {",
-        "        $fsutil = Join-Path $env:SystemRoot 'System32\\fsutil.exe'",
-        "        if (Test-Path -LiteralPath $fsutil) {",
-        "            $info = (& $fsutil reparsepoint query $Path 2>$null | Out-String)",
-        "            $targetMatches = -not [string]::IsNullOrWhiteSpace($info) -and $info.IndexOf($expectedFullPath, [System.StringComparison]::OrdinalIgnoreCase) -ge 0",
-        "        }",
-        "    }",
-        "    if ($targetMatches) {",
-        "        try { (Get-Item -LiteralPath $Path -Force).Delete() } catch { }",
-        "        if (Test-Path -LiteralPath $Path) { cmd.exe /c \"rmdir `\"$Path`\"\" 2>$null | Out-Null }",
-        "    }",
-        "}",
-        "Remove-LeiGodPersistJunction -Path \"$env:APPDATA\\leigod\" -ExpectedTarget \"$persist_dir\\APPDATA\"",
-        "Remove-LeiGodPersistJunction -Path \"$env:USERPROFILE\\.leigod\" -ExpectedTarget \"$persist_dir\\.leigod\""
-    ],
     "shortcuts": [
         [
             "leigod.exe",
             "雷神加速器"
         ]
     ],
-    "notes": "This manifest extracts the client payload from the official installer instead of running the vendor setup program. If a LeiGod release requires a separate system driver/service installation, that step is not performed by this portable extraction.",
+    "extract_to": "installer",
+    "pre_install": [
+        "Expand-7zipArchive \"$dir\\installer\\.rdata\" \"$dir\"",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Remove-Item \"$dir\\installer\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
+        "New-PersistDirectory \"$env:APPDATA\\leigod\" \"$persist_dir\\APPDATA\" -Migrate",
+        "New-PersistDirectory \"$env:USERPROFILE\\.leigod\" \"$persist_dir\\.leigod\" -Migrate"
+    ],
+    "pre_uninstall": [
+        "$bucket = $install.bucket",
+        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+        "Stop-App",
+        "Remove-Junction \"$env:APPDATA\\leigod\"",
+        "Remove-Junction \"$env:USERPROFILE\\.leigod\""
+    ],
     "checkver": {
         "url": "https://www.leigod.com/configs.json",
         "jsonpath": "$.windows.download_url",
-        "regex": "//update\\.leigod\\.com/soft/leigod/win/(?<build>[\\d.]+)/LeiGodSetup\\.(?<ver>[\\d.]+)\\.exe",
-        "replace": "${ver}"
+        "regex": "(?<path>.*LeiGodSetup.(.*).exe)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://update.leigod.com/soft/leigod/win/$matchBuild/LeiGodSetup.$matchVer.exe#/dl.7z",
-                "hash": {
-                    "mode": "download"
-                }
+                "url": "https:$matchPath#/dl.7z"
             }
         }
     }

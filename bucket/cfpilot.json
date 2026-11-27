@@ -1,0 +1,88 @@
+{
+    "version": "0.60.0-beta.2",
+    "description": "Cloudflare Workers/Pages 代理微内核部署与优选面板（Go 桌面版，含真连接优选、盲中继、云监测台）",
+    "homepage": "https://github.com/xmwengxing/CFPilot",
+    "license": "AGPL-3.0",
+    "notes": [
+        "CFPilot 桌面版把凭据 / 配置 / 内核缓存写在 %USERPROFILE%\\.cfpilot-gui（secrets.json、desktop.json、bin、updates、cfpilot.log 等），与安装目录无关。",
+        "本清单在安装时把该目录接到 persist\\cfpilot\\userdata（目录 junction），所以 scoop update 与 scoop uninstall（不带 -p）都不会丢数据；加 -p 才会连数据一起删。",
+        "开始菜单快捷方式、cfpilot shim、直接运行 apps\\cfpilot\\current\\cfpilot.exe 都读同一份数据 —— 靠的是 %USERPROFILE%\\.cfpilot-gui 那个 junction，与启动参数无关。",
+        "首次安装时如果 %USERPROFILE%\\.cfpilot-gui 已存在真实数据（官网 zip / setup 版留下的），安装脚本会把整份目录搬进 persist 再用链接接上；如果 persist 里已有数据，旧目录会改名为 .cfpilot-gui.old-<时间戳> 保留，由你决定是否合并。",
+        "面板窗口依赖 WebView2Loader.dll —— 单文件 exe 会在首次打开面板窗口时把官方组件释放到 %USERPROFILE%\\.cfpilot-gui\\bin\\ 再从磁盘加载，无需手工准备。",
+        "Windows 产物未购买商业代码签名证书，首次运行可能弹出「Windows 已保护你的电脑」：点「更多信息」→「仍要运行」即可。",
+        "服务只监听 127.0.0.1，凭据存在本机 persist\\cfpilot\\userdata\\secrets.json；「允许局域网访问」默认关闭。"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/xmwengxing/CFPilot/releases/download/v0.60.0-beta.2/cfpilot-0.60.0-beta.2-windows-amd64.exe#/cfpilot.exe",
+            "hash": "e5db0d53be51f3cb2d90656d26194acccdda96ec1bbed503cc51585b7876e40f"
+        }
+    },
+    "bin": "cfpilot.exe",
+    "shortcuts": [
+        [
+            "cfpilot.exe",
+            "CFPilot"
+        ]
+    ],
+    "post_install": [
+        "$ErrorActionPreference = 'Stop'",
+        "# CFPilot 把凭据、设置、内核缓存、日志写在 %USERPROFILE%\\.cfpilot-gui；接到 persist 后升级/卸载（不带 -p）不丢数据",
+        "# 链接与安装目录、启动入口无关，快捷方式/shim/直接运行 exe 三种入口读的是同一份数据；每次升级重跑本脚本，已接好则跳过",
+        "$target = \"$persist_dir\\userdata\"",
+        "$link = Join-Path $env:USERPROFILE '.cfpilot-gui'",
+        "if (-not (Test-Path $target)) { New-Item $target -ItemType Directory -Force | Out-Null }",
+        "$item = Get-Item -LiteralPath $link -Force -ErrorAction SilentlyContinue",
+        "$linked = $null",
+        "if ($item -and $item.LinkType) { $linked = (Resolve-Path -Path @($item.Target)[0] -ErrorAction SilentlyContinue).Path }",
+        "if ($linked -eq (Resolve-Path -Path $target).Path) {",
+        "    info '[Link]: %USERPROFILE%\\.cfpilot-gui 已接到 persist\\cfpilot\\userdata，跳过'",
+        "} elseif ($linked) {",
+        "    warn \"[Link]: %USERPROFILE%\\.cfpilot-gui 已是指向 $linked 的链接，保持不动（数据不落在 persist，本清单的持久化对它不生效）\"",
+        "} else {",
+        "    if ($item -and $item.LinkType) {",
+        "        # 断链：链接本身不是数据，摘掉重建",
+        "        Remove-Item -LiteralPath $link -Recurse -Force",
+        "    } elseif ($item) {",
+        "        # 真实的旧数据目录（官网 zip / setup 版留下的）",
+        "        if (Get-ChildItem $target -Force) {",
+        "            Move-Item -LiteralPath $link -Destination \"$link.old-$(Get-Date -Format yyyyMMddHHmmss)\" -Force",
+        "            warn '[Link]: %USERPROFILE%\\.cfpilot-gui 里有旧数据而 persist 中已有数据，旧目录已改名保留，需要的话请手工合并'",
+        "        } else {",
+        "            Remove-Item -LiteralPath $target -Recurse -Force",
+        "            Move-Item -LiteralPath $link -Destination $target -Force",
+        "        }",
+        "    }",
+        "    New-Item -Path $link -ItemType Junction -Value $target | Out-Null",
+        "    info \"[Link]: %USERPROFILE%\\.cfpilot-gui -> $target\"",
+        "}"
+    ],
+    "uninstaller": {
+        "script": [
+            "# 只摘掉指向本清单 persist 的链接（数据本身留在 persist\\cfpilot\\userdata，重装会重新接上）；指向别处的链接不动",
+            "$target = \"$persist_dir\\userdata\"",
+            "$link = Join-Path $env:USERPROFILE '.cfpilot-gui'",
+            "$item = Get-Item -LiteralPath $link -Force -ErrorAction SilentlyContinue",
+            "if ($item -and $item.LinkType) {",
+            "    $linked = (Resolve-Path -Path @($item.Target)[0] -ErrorAction SilentlyContinue).Path",
+            "    if ($linked -eq (Resolve-Path -Path $target -ErrorAction SilentlyContinue).Path) {",
+            "        Remove-Item -LiteralPath $link -Force -Recurse",
+            "        info '[Unlink]: 已摘掉 %USERPROFILE%\\.cfpilot-gui 的链接，数据保留在 persist\\cfpilot\\userdata'",
+            "    }",
+            "}"
+        ]
+    },
+    "persist": "userdata",
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/xmwengxing/CFPilot/releases/download/v$version/cfpilot-$version-windows-amd64.exe#/cfpilot.exe"
+            }
+        },
+        "hash": {
+            "url": "https://github.com/xmwengxing/CFPilot/releases/download/v$version/cfpilot-desktop-SHA256SUMS",
+            "regex": "$sha256\\s+cfpilot-$version-windows-amd64\\.exe"
+        }
+    }
+}

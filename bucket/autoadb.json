@@ -1,57 +1,31 @@
 {
-    "version": "1.1",
-    "description": "自动发现局域网中开启无线调试的 Android 设备并通过 ADB 连接，可选在连接后执行脚本（如启动 scrcpy）",
-    "homepage": "https://github.com/nchietala/AutoADB",
-    "license": "MIT",
+    "version": "1.0",
+    "description": "Execute a command whenever a device is adb-connected (rom1v/autoadb, Rust implementation)",
+    "homepage": "https://github.com/rom1v/autoadb",
+    "license": "Apache-2.0",
     "notes": [
-        "需要 adb 在 PATH 中（Android SDK platform-tools），检测到设备后连接会调用 adb。",
-        "首次运行 `autoadb` 会启动配置向导：选择设备、可选配对、选择是否开机自动连接，以及连接后执行的命令。",
-        "向导会把开机启动快捷方式写到 %APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\AutoADB.lnk，并指向创建时的 exe。升级时本清单会把它重新指向 current 目录，避免版本目录被清理后失效。",
-        "卸载时会删除该快捷方式（仅当它指向本应用），重装后需要重新运行向导。",
-        "AutoADB 由 PyInstaller 打包，Windows Defender 可能误报或直接拦截，需要自行放行。"
+        "与本 bucket 的 autoadb-wireless（nchietala/AutoADB）是两个不同的项目，只是同名。",
+        "本工具（rom1v/autoadb）监听本地 adb server：设备一旦连接就执行给定命令， `{}` 会被替换为设备序列号。",
+        "典型用法1：autoadb scrcpy -s '{}'    —— 插入设备即自动启动 scrcpy。",
+        "典型用法2：autoadb adb -s '{}' reverse tcp:17890 tcp:7890    —— 插入设备即自动建立 reverse 端口转发（设备访问 PC 7890 代理）。",
+        "注意：PowerShell 下 '{}' 必须加引号，否则 {} 会被当作 script block 执行，adb 会报 unknown command。",
+        "需要 adb 在 PATH 中（Android SDK platform-tools）。",
+        "二进制为非官方构建（huxiaoning/autoadb fork 发布），源码 commit 7f84029，cargo x86_64-pc-windows-gnu 编译。"
     ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/nchietala/AutoADB/releases/download/1.1/AutoADB.exe",
-            "hash": "fb7ba83b1268f4dabfe1e3daa0ebece4af60eb0b67368bbd8e3f42e6bb9c5fce"
+            "url": "https://github.com/huxiaoning/autoadb/releases/download/v1.0/autoadb.exe",
+            "hash": "48eec2665e5b2bf69436a6f1c73543287eae74fc3acd5bcb3276e7eaff15bbdc"
         }
     },
-    "bin": "AutoADB.exe",
-    "post_install": [
-        "# 向导创建的开机启动快捷方式指向创建时的 exe（版本目录），升级清理后会失效；统一改指 current，幂等",
-        "$appDir = Split-Path $dir -Parent",
-        "$lnk = Join-Path ([Environment]::GetFolderPath('Startup')) 'AutoADB.lnk'",
-        "if (Test-Path $lnk) {",
-        "    $shell = New-Object -ComObject WScript.Shell",
-        "    $shortcut = $shell.CreateShortcut($lnk)",
-        "    if ($shortcut.TargetPath -like \"$appDir\\*\") {",
-        "        $shortcut.TargetPath = \"$dir\\AutoADB.exe\"",
-        "        $shortcut.WorkingDirectory = $dir",
-        "        $shortcut.Save()",
-        "        info '[AutoADB] 开机启动快捷方式已指向 current'",
-        "    }",
-        "}"
-    ],
-    "post_uninstall": [
-        "# scoop update 也会执行 post_uninstall（此时 $old_version 有值），只有真正卸载才清理，避免升级丢配置",
-        "if (-not $old_version) {",
-        "    $appDir = Split-Path $dir -Parent",
-        "    $lnk = Join-Path ([Environment]::GetFolderPath('Startup')) 'AutoADB.lnk'",
-        "    if (Test-Path $lnk) {",
-        "        $shell = New-Object -ComObject WScript.Shell",
-        "        $target = $shell.CreateShortcut($lnk).TargetPath",
-        "        if ($target -like \"$appDir\\*\") {",
-        "            Remove-Item $lnk -Force",
-        "            info '[AutoADB] 已删除开机启动快捷方式'",
-        "        }",
-        "    }",
-        "}"
-    ],
-    "checkver": "github",
+    "bin": "autoadb.exe",
+    "checkver": {
+        "github": "https://github.com/huxiaoning/autoadb"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/nchietala/AutoADB/releases/download/$version/AutoADB.exe"
+                "url": "https://github.com/huxiaoning/autoadb/releases/download/v$version/autoadb.exe"
             }
         }
     }
