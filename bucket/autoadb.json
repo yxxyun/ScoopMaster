@@ -10,7 +10,20 @@
         "典型用法2：autoadb adb -s '{}' reverse tcp:17890 tcp:7890    —— 插入设备即自动建立 reverse 端口转发（设备访问 PC 7890 代理）。",
         "注意：PowerShell 下 '{}' 必须加引号，否则 {} 会被当作 script block 执行，adb 会报 unknown command。",
         "需要 adb 在 PATH 中（Android SDK platform-tools）。",
-        "二进制为非官方构建（huxiaoning/autoadb fork 发布），源码 commit 7f84029，cargo x86_64-pc-windows-gnu 编译。"
+        "二进制为非官方构建（huxiaoning/autoadb fork 发布），源码 commit 7f84029，cargo x86_64-pc-windows-gnu 编译。",
+        "",
+        "常驻后台运行（开机自启 + 无窗口）：用任务计划程序 + conhost --headless（Win11 22H2+）。在管理员 PowerShell 执行：",
+        "  $action = New-ScheduledTaskAction -Execute 'C:\\Windows\\System32\\conhost.exe' -Argument '--headless \"F:\\Scoop\\.scoop\\apps\\autoadb\\current\\autoadb.exe\" \"F:\\Scoop\\.scoop\\apps\\adb\\current\\platform-tools\\adb.exe\" -s {} reverse tcp:17890 tcp:7890'",
+        "  $trigger = New-ScheduledTaskTrigger -AtLogOn -User \"$env:USERDOMAIN\\$env:USERNAME\"",
+        "  $principal = New-ScheduledTaskPrincipal -UserId \"$env:USERDOMAIN\\$env:USERNAME\" -LogonType Interactive -RunLevel Limited",
+        "  $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit (New-TimeSpan -Hours 0)",
+        "  Register-ScheduledTask -TaskName 'autoadb-reverse' -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force",
+        "  Start-ScheduledTask -TaskName 'autoadb-reverse'",
+        "要点：",
+        "  - 必须用 conhost --headless 而不是直接调 autoadb.exe，否则 console 应用会弹出可见 cmd 窗口。",
+        "  - LogonType 必须是 Interactive（不能用 S4U）：服务需访问你用户态的 adb server (127.0.0.1:5037)；S4U 在域信任异常的机器上还会登录失败。",
+        "  - 路径用 current 软链接，scoop update 之后不需要重新注册任务。",
+        "  - 卸载任务：Unregister-ScheduledTask -TaskName 'autoadb-reverse' -Confirm:$false"
     ],
     "architecture": {
         "64bit": {

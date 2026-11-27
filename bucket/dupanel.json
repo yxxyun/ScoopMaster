@@ -1,0 +1,51 @@
+{
+    "##": [
+        "Each OS has its own version line (Windows 1.xx, Android 2.xx, Linux 3.xx, macOS 4.xx), and a release for another OS may re-host older Windows zips.",
+        "checkver therefore takes the first non-prerelease release in the GitHub list (newest first) whose tag is v1.<n> (or v1.<n>.<n>) and which contains DuPanel-Windows.zip; the latest release is not used.",
+        "DuPanel saves DuPanel.json next to DuPanel.exe by writing a temp file and renaming it, which breaks a 'persist' hard link.",
+        "So the file is copied to $persist_dir before uninstall or update and copied back on install instead of using 'persist'."
+    ],
+    "version": "1.13",
+    "description": "Dual-pane file manager with F3-F8 keyboard shortcuts",
+    "homepage": "https://dupanel.dev",
+    "license": "Freeware",
+    "notes": "Settings (DuPanel.json) are copied to $persist_dir on update and uninstall and restored on install. 'scoop uninstall -p dupanel' deletes them.",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/U-Said/DuPanel-releases/releases/download/v1.13/DuPanel-Windows.zip",
+            "hash": "01c060ddc8c3931205787e67c79ed498fc649a0cc0cc1501d9bdedd2565e3db6"
+        },
+        "arm64": {
+            "url": "https://github.com/U-Said/DuPanel-releases/releases/download/v1.13/DuPanel-Windows-arm64.zip",
+            "hash": "62aaa6aec19c3c07b2c3cd13bfa8c89308f178a7650d6b74b54391573885880e"
+        }
+    },
+    "pre_install": "if (Test-Path -LiteralPath \"$persist_dir\\DuPanel.json\") { Copy-Item -LiteralPath \"$persist_dir\\DuPanel.json\" -Destination \"$dir\\DuPanel.json\" -Force }",
+    "shortcuts": [
+        [
+            "DuPanel.exe",
+            "DuPanel"
+        ]
+    ],
+    "pre_uninstall": [
+        "if (Test-Path -LiteralPath \"$dir\\DuPanel.json\") {",
+        "    New-Item -Path $persist_dir -ItemType Directory -Force | Out-Null",
+        "    Copy-Item -LiteralPath \"$dir\\DuPanel.json\" -Destination \"$persist_dir\\DuPanel.json\" -Force",
+        "}"
+    ],
+    "checkver": {
+        "github": "https://api.github.com/repos/U-Said/DuPanel-releases/releases?per_page=100",
+        "jsonpath": "$[?(@.prerelease == false)].assets[*].browser_download_url",
+        "regex": "/releases/download/v(1(?:\\.\\d+)+)/DuPanel-Windows\\.zip(?:\"|$)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/U-Said/DuPanel-releases/releases/download/v$version/DuPanel-Windows.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/U-Said/DuPanel-releases/releases/download/v$version/DuPanel-Windows-arm64.zip"
+            }
+        }
+    }
+}

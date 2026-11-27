@@ -1,0 +1,44 @@
+{
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+    "version": "1.1.99",
+    "description": "Official native Qoder CN terminal coding agent",
+    "homepage": "https://docs.qoder.cn/cli/installation",
+    "license": "Proprietary",
+    "architecture": {
+        "64bit": {
+            "url": "https://static.qoder.com.cn/qoder-cli-cn/releases/1.1.99/qoderclicn-windows-x64.zip",
+            "hash": "d2f7ee60b9ad906a28809d09fcce5b544153a95d3cb0d1d135de6a803ee132c6"
+        }
+    },
+    "persist": "qodercn-config",
+    "bin": [
+        ["qodercn.cmd", "qodercn"],
+        ["qodercn.cmd", "qoderclicn"]
+    ],
+    "pre_install": [
+        "$wrapper = \"@echo off`r`nsetlocal`r`nset `\"QODERCN_CONFIG_DIR=%~dp0qodercn-config`\"`r`n`\"%~dp0qoderclicn.exe`\" %*`r`nexit /b %ERRORLEVEL%`r`n\"",
+        "[IO.File]::WriteAllText((Join-Path $dir 'qodercn.cmd'), $wrapper, [Text.Encoding]::ASCII)"
+    ],
+    "post_install": [
+        "$configDir = Join-Path $dir 'qodercn-config'",
+        "New-Item -ItemType Directory -Path $configDir -Force | Out-Null",
+        "$settingsPath = Join-Path $configDir 'settings.json'",
+        "if (-not (Test-Path -LiteralPath $settingsPath)) { [IO.File]::WriteAllText($settingsPath, '{\"general\":{\"enableAutoUpdate\":false}}' + [Environment]::NewLine, [Text.UTF8Encoding]::new($false)) }"
+    ],
+    "checkver": {
+        "url": "https://static.qoder.com.cn/qoder-cli-cn/channels/manifest.json",
+        "jsonpath": "$.latest"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://static.qoder.com.cn/qoder-cli-cn/releases/$version/qoderclicn-windows-x64.zip"
+            }
+        },
+        "hash": {
+            "mode": "json",
+            "url": "https://static.qoder.com.cn/qoder-cli-cn/channels/$version/manifest.json",
+            "jsonpath": "$.files[?(@.url == '$url')].sha256"
+        }
+    }
+}

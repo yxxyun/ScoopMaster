@@ -2,15 +2,42 @@
     "version": "2.3.5",
     "description": "A full-featured download manager.",
     "homepage": "https://imfile.io/",
+    "license": {
+        "identifier": "MIT license",
+        "url": "https://github.com/imfile-io/imfile-desktop#MIT-1-ov-file"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/imfile-io/imfile-desktop/releases/download/v2.3.5/imFile-2.3.5-x64.zip",
-            "hash": "d311251d81a20f697c9b66e120ac8a5bcc3da0104862970b329c3c682dfc7b28"
+            "url": "https://github.com/imfile-io/imfile-desktop/releases/download/v2.3.5/imFile-Setup-2.3.5.exe#/dl.7z",
+            "hash": "sha512:cca4d84040aaa26458cd071ff420bc18a1120188726ceb55882dc86026bdd7d9c2edb7884f2edceb1e1c66ea66b9d1720eb8041bd055a5edcc3ea2d1dd8557e2",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\" -Force -Recurse"
+            ]
         },
         "arm64": {
-            "url": "https://github.com/imfile-io/imfile-desktop/releases/download/v2.3.5/imFile-2.3.5-arm64.zip",
-            "hash": "bc6b848f66442c2c4597b27890778e705dcdff910aff95d036033641506e18e3"
+            "url": "https://github.com/imfile-io/imfile-desktop/releases/download/v2.3.5/imFile-Setup-2.3.5-arm64.exe#/dl.7z",
+            "hash": "sha512:cca4d84040aaa26458cd071ff420bc18a1120188726ceb55882dc86026bdd7d9c2edb7884f2edceb1e1c66ea66b9d1720eb8041bd055a5edcc3ea2d1dd8557e2",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\" -Force -Recurse"
+            ]
         }
+    },
+    "installer": {
+        "script": [
+            "# handle runtime cache",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\" -Target \"$env:APPDATA\\imFile\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\imFile\"",
+            "Remove-Module -Name AppsUtils"
+        ]
     },
     "shortcuts": [
         [
@@ -19,16 +46,22 @@
         ]
     ],
     "checkver": {
-        "github": "https://github.com/imfile-io/imfile-desktop"
+        "github": "https://api.github.com/repos/imfile-io/imfile-desktop/releases",
+        "jp": "$[*].assets[*].browser_download_url",
+        "regex": "releases/download/v([\\d.]+)/imFile-Setup"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/imfile-io/imfile-desktop/releases/download/v$version/imFile-$version-x64.zip"
+                "url": "https://github.com/imfile-io/imfile-desktop/releases/download/v$version/imFile-Setup-$version.exe#/dl.7z"
             },
             "arm64": {
-                "url": "https://github.com/imfile-io/imfile-desktop/releases/download/v$version/imFile-$version-arm64.zip"
+                "url": "https://github.com/imfile-io/imfile-desktop/releases/download/v$version/imFile-Setup-$version-arm64.exe#/dl.7z"
             }
+        },
+        "hash": {
+            "url": "$baseurl/latest.yml",
+            "regex": "sha512:\\s+$base64"
         }
     }
 }

@@ -1,28 +1,55 @@
 {
-    "version": "1.0.0-alpha.4",
-    "description": "Native desktop video downloader for Bilibili, Douyin, and YouTube.",
+    "##": "Upstream Go native desktop downloader (Bilibili / Douyin / YouTube). The Windows asset videodown-windows-amd64.zip has a top-level videodown/ folder containing videodown.exe plus a standalone updater. By default the app writes config.toml / history.sqlite / download next to the exe, which Scoop would wipe on version bumps, so post_install generates a videodown.cmd launcher that pins data to %LOCALAPPDATA%\\videodown via -data and disables the in-app auto updater. checkver reads tag_name from the GitHub API; autoupdate takes sha256 from the API digest.",
+    "version": "1.0.0-alpha.6",
+    "description": "哔哩哔哩 / 抖音 / YouTube 视频下载器（Go 原生桌面 GUI）",
     "homepage": "https://github.com/kamiertop/videodown",
-    "license": "GPL-3.0",
-    "url": "https://github.com/kamiertop/videodown/releases/download/v1.0.0-alpha.4/videodown-windows-amd64.zip",
-    "hash": "b2bd64e55fc692a58c143a5518fa3b32527e51de9ab35dd182a4ef28b61b347b",
-    "extract_dir": "videodown",
-    "bin": "videodown.exe",
+    "license": {
+        "identifier": "SEE LICENSE IN LICENSE",
+        "url": "https://github.com/kamiertop/videodown/blob/main/LICENSE"
+    },
+    "notes": [
+        "绿色版：zip 内 videodown/videodown.exe 为 Go 原生 GUI；运行 videodown 启动，无需 Node/CGO",
+        "数据目录固定在 %LOCALAPPDATA%\\videodown（config.toml / history.sqlite / download），Scoop 升级不会丢登录 Cookie 与下载历史；首次安装会写入默认配置并关闭应用内自动更新，避免与 Scoop 升级冲突",
+        "下载哔哩哔哩与 YouTube 视频需另装 FFmpeg，并在设置中指定路径或加入 PATH",
+        "许可证为 PolyForm Strict 1.0.0：允许个人/非商业使用，禁止商业分发与二次修改；详情见包内 LICENSE",
+        "卸载：scoop uninstall videodown（数据目录需手动删除）"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/kamiertop/videodown/releases/download/v1.0.0-alpha.6/videodown-windows-amd64.zip",
+            "hash": "42463bc5386caf0e44e11bfb38141bb099ead875d5960085465f1042cf72c638"
+        }
+    },
+    "pre_install": [
+        "$d = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'videodown'",
+        "New-Item -ItemType Directory -Path $d -Force | Out-Null",
+        "$exe = Join-Path (Split-Path $dir -Parent) 'current/videodown/videodown.exe'",
+        "$w = Join-Path $dir 'videodown.cmd'",
+        "$lines = @('@echo off', ('start \"\" \"' + $exe + '\" -data \"' + $d + '\" %*'))",
+        "Set-Content -LiteralPath $w -Value $lines -Encoding ASCII",
+        "$cfg = Join-Path $d 'config.toml'",
+        "if (!(Test-Path $cfg)) { Set-Content -LiteralPath $cfg -Value @('[app]', 'auto_update = false', '', '[download]', 'directory = \"./download\"') -Encoding ASCII }"
+    ],
+    "bin": "videodown.cmd",
     "shortcuts": [
         [
-            "videodown.exe",
+            "videodown.cmd",
             "VideoDown"
         ]
     ],
-    "persist": [
-        "config.toml",
-        "history.sqlite",
-        "download"
-    ],
     "checkver": {
-        "github": "https://github.com/kamiertop/videodown"
+        "url": "https://api.github.com/repos/kamiertop/videodown/releases/latest",
+        "regex": "\"tag_name\"\\s*:\\s*\"v([^\"]+)\""
     },
     "autoupdate": {
-        "url": "https://github.com/kamiertop/videodown/releases/download/v$version/videodown-windows-amd64.zip"
-    },
-    "notes": "VideoDown has an in-app updater. Use Scoop as the update authority to avoid concurrent updates."
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/kamiertop/videodown/releases/download/v$version/videodown-windows-amd64.zip"
+            }
+        },
+        "hash": {
+            "url": "https://api.github.com/repos/kamiertop/videodown/releases/tags/v$version",
+            "regex": "\"name\"\\s*:\\s*\"videodown-windows-amd64\\.zip\".*?\"digest\"\\s*:\\s*\"sha256:([0-9a-f]{64})\""
+        }
+    }
 }
