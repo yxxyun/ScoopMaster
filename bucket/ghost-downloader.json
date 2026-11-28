@@ -1,45 +1,60 @@
 {
-    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+    "##": "Inno Setup 6.7 installer, silent install straight into the Scoop version dir (/DIR=$dir). The installer honours /NOICONS only partially: it still drops 'Ghost Downloader.lnk' into the user Programs folder, so that leftover is removed afterwards and the Scoop-managed shortcut (Scoop Apps) is the single entry point. Removal delegates to the bundled unins000.exe.",
     "version": "4.6.1",
-    "description": "Modern downloader supporting HTTP, BitTorrent/Magnet, FTP, M3U8, MPEG-DASH, eD2k, plus YouTube/Bilibili/GitHub/HuggingFace.",
-    "homepage": "https://gd.xychr.com/",
-    "license": "GPL-3.0-only",
+    "description": "Ghost Downloader 3 — 多线程/多任务下载器（Python + PySide6/Qt 6 图形界面），支持 HTTP/磁力/BT、浏览器扩展接管、多协议下载与插件式功能包",
+    "homepage": "https://github.com/XiaoYouChR/Ghost-Downloader-3",
+    "license": {
+        "identifier": "GPL-3.0",
+        "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/blob/main/LICENSE"
+    },
     "notes": [
-        "便携模式：应用程序数据（配置、日志、功能包、运行时包）位于exe文件旁边的GhostDownloader文件夹中，该文件夹会保留在Scoop的持久目录中。",
-        "CLI: ghd --help (installed as the 'ghd' shim)."
+        "安装版（Inno Setup 静默安装到 Scoop 目录），卸载走包内 unins000.exe",
+        "启动：Ghost-Downloader（Scoop shim）或开始菜单「Scoop Apps → Ghost Downloader 3」",
+        "配置与下载记录在 %APPDATA%\\GhostDownloader，Scoop 不接管",
+        "免安装/便携版请装 Ghost-Downloader-portable 包"
     ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v4.6.1/Ghost-Downloader-v4.6.1-Windows-x86_64.zip",
-            "hash": "8c863be230891e45e6b54dc741ae3f38ae7540f4aca1fecbe327d7016986e469"
+            "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v4.6.1/Ghost-Downloader-v4.6.1-Windows-x86_64-Setup.exe",
+            "hash": "6c6d637df0f748df6d67c1c75fbc614a454a9491e007a9665cf2b769b3044c7c"
         }
     },
-    "pre_install": "New-Item -ItemType Directory -Force -Path \"$dir\\GhostDownloader\" | Out-Null",
-    "bin": [
-        [
-            "Ghost-Downloader-3.exe",
-            "ghost-downloader"
-        ],
-        [
-            "bin\\ghd.exe",
-            "ghd"
+    "installer": {
+        "script": [
+            "$installer = Join-Path $dir $fname",
+            "Start-Process -FilePath $installer -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/NOICONS', \"/MERGETASKS=!desktopicon\", \"/DIR=$dir\" -Wait",
+            "Remove-Item $installer -Force -ErrorAction SilentlyContinue",
+            "# the installer ignores /NOICONS for the application group link - drop it so only the Scoop shortcut remains",
+            "$programs = [Environment]::GetFolderPath('Programs')",
+            "Get-ChildItem -LiteralPath $programs -Filter 'Ghost Downloader*.lnk' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue"
         ]
-    ],
-    "shortcuts": [
-        [
-            "Ghost-Downloader-3.exe",
-            "Ghost Downloader"
+    },
+    "uninstaller": {
+        "script": [
+            "$u = Join-Path $dir 'unins000.exe'",
+            "if (Test-Path -LiteralPath $u) { Start-Process -FilePath $u -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait }"
         ]
-    ],
-    "persist": "GhostDownloader",
+    },
     "checkver": {
         "github": "https://github.com/XiaoYouChR/Ghost-Downloader-3"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v$version/Ghost-Downloader-v$version-Windows-x86_64.zip"
+                "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v$version/Ghost-Downloader-v$version-Windows-x86_64-Setup.exe"
             }
         }
-    }
+    },
+    "bin": [
+        [
+            "Ghost-Downloader-3.exe",
+            "Ghost-Downloader"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "Ghost-Downloader-3.exe",
+            "Ghost Downloader 3"
+        ]
+    ]
 }

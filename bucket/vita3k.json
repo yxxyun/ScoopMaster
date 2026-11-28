@@ -1,26 +1,26 @@
 {
-    "version": "4460-fd8a0bb2",
-    "description": "Sony PlayStation Vita emulator",
+    "version": "4467-c7a3caf",
+    "description": "Experimental PlayStation Vita emulator",
     "homepage": "https://vita3k.org",
     "license": "GPL-2.0-only",
+    "suggest": {
+        "vcredist": "extras/vcredist2022",
+        "PS Vita Firmware": "games/psv-system-software"
+    },
     "notes": [
         "ATTENTION: Vita3K requires official PS Vita firmware to function.",
         "Install the psv-system-software package.",
         "You must still manually load PSVUPDAT.PUP and PSP2UPDAT.PUP through Vita3K",
         "See the quickstart guide for further instructions: https://vita3k.org/quickstart"
     ],
-    "suggest": {
-        "vcredist": "extras/vcredist2022",
-        "PS Vita Firmware": "emulators/psv-system-software"
-    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/Vita3K/Vita3K-builds/releases/download/4460/vita3k-4460-fd8a0bb2-windows-x86_64.7z",
-            "hash": "40402e8545eb80eab4beb4e265d3b861ad89c1c387866544581202934a67c151"
+            "url": "https://github.com/Vita3K/Vita3K/releases/download/continuous/windows-latest.zip",
+            "hash": "119c19796f4dc72b0b06c047efeac5446f1f20ca4ba851152c384969b9fcbf81"
         },
         "arm64": {
-            "url": "https://github.com/Vita3K/Vita3K-builds/releases/download/4460/vita3k-4460-fd8a0bb2-windows-arm64.7z",
-            "hash": "5af4b0a2f7dc81b4a1d3def76e157fdc2f12f48f20350665365dd37d466db0b2"
+            "url": "https://github.com/Vita3K/Vita3K/releases/download/continuous/windows-arm64-latest.zip",
+            "hash": "4491120a52dd94932ac1401eb1eeacdc97773198d82ef544f136ddea85c33445"
         }
     },
     "pre_install": [
@@ -28,10 +28,11 @@
         "   New-Item \"$dir\\config.yml\" | Out-Null",
         "}"
     ],
+    "bin": "Vita3K.exe",
     "shortcuts": [
         [
             "Vita3K.exe",
-            "Sony PlayStation Vita [vita][vita3k]"
+            "Vita3K"
         ]
     ],
     "persist": [
@@ -39,17 +40,30 @@
         "config.yml"
     ],
     "checkver": {
-        "url": "https://api.github.com/repos/Vita3K/Vita3K-builds/releases/latest",
-        "jsonpath": "$.assets[?(@.name =~ /vita3k-[\\d]+-[a-f\\d]+-windows-x86_64\\.7z$/)].browser_download_url",
-        "regex": "releases/download/(?<build>\\d+)/vita3k-(?<version>\\d+-[a-f\\d]{8})-windows-x86_64\\.7z"
+        "script": [
+            "$url = 'https://github.com/Vita3K/Vita3K/releases/tag/continuous'",
+            "$build_regex = 'Vita3K Build: (\\d+)'",
+            "$commit_regex = 'Corresponding commit: ([a-f0-9]{7})'",
+            "",
+            "$cont = (Invoke-WebRequest $url -UseBasicParsing).Content",
+            "",
+            "if(!($cont -match $build_regex)) { error \"Could match '$build_regex' on '$url'\"; break }",
+            "$build_number = $matches[1]",
+            "if(!($cont -match $commit_regex)) { error \"Could match '$commit_regex' on '$url'\"; break }",
+            "$commit_sha = $matches[1]",
+            "",
+            "$script_ver = \"$build_number-$commit_sha\"",
+            "Write-Output $script_ver"
+        ],
+        "regex": "(\\d+-[a-f0-9]{7})"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/Vita3K/Vita3K-builds/releases/download/$matchBuild/vita3k-$version-windows-x86_64.7z"
+                "url": "https://github.com/Vita3K/Vita3K/releases/download/continuous/windows-latest.zip"
             },
             "arm64": {
-                "url": "https://github.com/Vita3K/Vita3K-builds/releases/download/$matchBuild/vita3k-$version-windows-arm64.7z"
+                "url": "https://github.com/Vita3K/Vita3K/releases/download/continuous/windows-arm64-latest.zip"
             }
         }
     }

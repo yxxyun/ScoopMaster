@@ -1,0 +1,132 @@
+{
+    "version": "0.4.1",
+    "description": "CLI, local daemon, and MCP server for ScriptCat userscripts and the sctl Browser extension: tabs, browsing data, page automation, debugging, and raw CDP",
+    "homepage": "https://github.com/scriptscat/sctl",
+    "license": {
+        "identifier": "GPL-3.0-only",
+        "url": "https://github.com/scriptscat/sctl/blob/main/LICENSE"
+    },
+    "architecture": {
+        "64bit": {
+            "url": [
+                "https://github.com/scriptscat/sctl/releases/download/v0.4.1/sctl-0.4.1-windows-x86_64.zip",
+                "https://github.com/scriptscat/sctl/releases/download/v0.4.1/sctl-browser-extension-0.4.1.zip"
+            ],
+            "hash": [
+                "663e271ae6d3c3e0fcee9d42e534542d2710c961692ea9ab7a411d5c1e9cebc7",
+                "264b1cdf147f140362ea72e709bab3f7863f3f3f42ede3e18e2d2f8ac8c13fbe"
+            ],
+            "extract_dir": [
+                "sctl-0.4.1-windows-x86_64",
+                "sctl-browser-extension-0.4.1"
+            ]
+        },
+        "arm64": {
+            "url": [
+                "https://github.com/scriptscat/sctl/releases/download/v0.4.1/sctl-0.4.1-windows-arm64.zip",
+                "https://github.com/scriptscat/sctl/releases/download/v0.4.1/sctl-browser-extension-0.4.1.zip"
+            ],
+            "hash": [
+                "5527968055018e2c72e2f120c69409db630d887a3f4473bdfbfa1507bbaf37d6",
+                "264b1cdf147f140362ea72e709bab3f7863f3f3f42ede3e18e2d2f8ac8c13fbe"
+            ],
+            "extract_dir": [
+                "sctl-0.4.1-windows-arm64",
+                "sctl-browser-extension-0.4.1"
+            ]
+        }
+    },
+    "extract_to": [
+        "",
+        "browser-extension"
+    ],
+    "bin": "sctl.exe",
+    "post_install": [
+        "$appRoot = [IO.Path]::GetFullPath((Split-Path -Parent $dir)).TrimEnd('\\')",
+        "try {",
+        "    $task = Get-ScheduledTask -TaskName 'sctl' -ErrorAction Stop",
+        "    $action = @($task.Actions)[0]",
+        "    $execPath = ([string]$action.Execute).Trim('\\\"')",
+        "    if ($action -and $task.State -ne 'Disabled' -and $execPath.StartsWith($appRoot + '\\', [StringComparison]::OrdinalIgnoreCase)) {",
+        "        $serviceArgs = @()",
+        "        foreach ($flag in @('--listen-address', '--data-dir', '--log-level')) {",
+        "            $match = [regex]::Match([string]$action.Arguments, '(?:^|\\s)' + [regex]::Escape($flag) + '\\s+(\"([^\"]*)\"|(\\S+))')",
+        "            if ($match.Success) {",
+        "                $serviceArgs += $flag",
+        "                $serviceArgs += $(if ($match.Groups[2].Success) { $match.Groups[2].Value } else { $match.Groups[3].Value })",
+        "            }",
+        "        }",
+        "        & (Join-Path $dir 'sctl.exe') @serviceArgs service install",
+        "        if ($LASTEXITCODE -ne 0) { Write-Host 'sctl service re-registration failed; run sctl service install manually.' -ForegroundColor Yellow }",
+        "    }",
+        "} catch { }"
+    ],
+    "pre_uninstall": [
+        "$appRoot = [IO.Path]::GetFullPath((Split-Path -Parent $dir)).TrimEnd('\\')",
+        "Get-Process -Name 'sctl' -ErrorAction SilentlyContinue | Where-Object {",
+        "    $processPath = $null",
+        "    try { $processPath = $_.Path } catch { }",
+        "    $processPath -and $processPath.StartsWith($appRoot + '\\', [StringComparison]::OrdinalIgnoreCase)",
+        "} | Stop-Process -Force -ErrorAction SilentlyContinue",
+        "Start-Sleep -Milliseconds 500",
+        "$isUpgrade = $false",
+        "try { $isUpgrade = [bool]@(Get-PSCallStack | Where-Object { $_.ScriptName -match 'scoop-update\\.ps1$' }).Count } catch { }",
+        "if (-not $isUpgrade) {",
+        "    try {",
+        "        $commandLine = (Get-CimInstance Win32_Process -Filter ('ProcessId = ' + $PID) -ErrorAction Stop).CommandLine",
+        "        $isUpgrade = $commandLine -match 'scoop-update|scoop\\.ps1.*\\bupdate\\b'",
+        "    } catch { }",
+        "}",
+        "if (-not $isUpgrade) {",
+        "    try {",
+        "        $task = Get-ScheduledTask -TaskName 'sctl' -ErrorAction Stop",
+        "        $action = @($task.Actions)[0]",
+        "        $execPath = ([string]$action.Execute).Trim('\\\"')",
+        "        if ($action -and $execPath.StartsWith($appRoot + '\\', [StringComparison]::OrdinalIgnoreCase) -and (Test-Path -LiteralPath (Join-Path $dir 'sctl.exe'))) {",
+        "            & (Join-Path $dir 'sctl.exe') service uninstall",
+        "        }",
+        "    } catch { }",
+        "}"
+    ],
+    "notes": [
+        "Every sctl process must use the same data directory and listener address. Pass the same --data-dir and --listen-address options to the daemon, the CLI, and 'sctl service install' when you change them.",
+        "The sctl Browser extension ships in $dir\\browser-extension. Enable developer mode on the browser's extensions page, choose Load unpacked, and select that folder. Chrome or another Chromium browser 125 or newer is required.",
+        "Run 'sctl service install' to start the daemon at login through the current user's Task Scheduler task, then 'sctl connect' once for each ScriptCat or sctl Browser extension you want to pair.",
+        "Before 'scoop update sctl', run 'sctl service stop'; Scoop will not update an app whose binaries are running. A service registered to this Scoop copy is re-registered by the update, and 'scoop uninstall sctl' stops and removes it.",
+        "If sctl was installed outside Scoop, for example by the official install script under %LOCALAPPDATA%\\sctl, run 'sctl service uninstall' with that copy first; Scoop leaves it and its 'sctl' task untouched, and both copies share the default data directory and task name.",
+        "For MCP clients, configure the absolute path to '$dir\\sctl.exe mcp --name <client-name>'."
+    ],
+    "checkver": {
+        "github": "https://github.com/scriptscat/sctl"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": [
+                    "https://github.com/scriptscat/sctl/releases/download/v$version/sctl-$version-windows-x86_64.zip",
+                    "https://github.com/scriptscat/sctl/releases/download/v$version/sctl-browser-extension-$version.zip"
+                ],
+                "hash": {
+                    "url": "https://github.com/scriptscat/sctl/releases/download/v$version/checksums.txt"
+                },
+                "extract_dir": [
+                    "sctl-$version-windows-x86_64",
+                    "sctl-browser-extension-$version"
+                ]
+            },
+            "arm64": {
+                "url": [
+                    "https://github.com/scriptscat/sctl/releases/download/v$version/sctl-$version-windows-arm64.zip",
+                    "https://github.com/scriptscat/sctl/releases/download/v$version/sctl-browser-extension-$version.zip"
+                ],
+                "hash": {
+                    "url": "https://github.com/scriptscat/sctl/releases/download/v$version/checksums.txt"
+                },
+                "extract_dir": [
+                    "sctl-$version-windows-arm64",
+                    "sctl-browser-extension-$version"
+                ]
+            }
+        }
+    }
+}
