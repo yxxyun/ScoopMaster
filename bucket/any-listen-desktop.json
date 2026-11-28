@@ -1,46 +1,72 @@
 {
-    "version": "0.10.1-beta.6",
-    "description": "Any Listen - A cross-platform private music playback service.",
-    "homepage": "https://github.com/any-listen/any-listen-desktop",
-    "license": "GPL-3.0-only",
+    "version": "0.10.1",
+    "description": "A cross-platform private music playback service",
+    "homepage": "https://github.com/any-listen/any-listen",
+    "license": {
+        "identifier": "Custom License based on AGPL v3.0",
+        "url": "https://github.com/any-listen/any-listen#License-1-ov-file"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v0.10.1-beta.6/any-listen-0.10.1-beta.6-win_x64-green.7z",
-            "hash": "eae8bb0b1361c5b08649e6ef1d79a55e64620d4b647d308b19c263917db1206b"
+            "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v0.10.1/any-listen-0.10.1-x64-Setup.exe#/dl.7z",
+            "hash": "bee45796372d4d5c0179990bc3a8f58d4c90a2c68048f362397875c86b114785",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\" -Force -Recurse"
+            ]
         },
         "arm64": {
-            "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v0.10.1-beta.6/any-listen-0.10.1-beta.6-win_arm64-green.7z",
-            "hash": "43115c21bcdc711b34b28773d95645646cd09e9b895e169950356da703376bfd"
+            "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v0.10.1/any-listen-0.10.1-arm64-Setup.exe#/dl.7z",
+            "hash": "fd1f642d1444bb3b7ef3323dfbf2e8165ae26bc69fc943513c7b37f2c680aaad",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\" -Force -Recurse"
+            ]
         }
     },
-    "bin": "any-listen.exe",
+    "installer": {
+        "script": [
+            "# handle runtime cache",
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Mount-ExternalRuntimeData -Source \"$persist_dir\\appdata\" -Target \"$env:APPDATA\\any-listen\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Import-Module $(Join-Path $(Find-BucketDirectory -Root -Name apps) scripts/AppsUtils.psm1)",
+            "Dismount-ExternalRuntimeData -Target \"$env:APPDATA\\any-listen\"",
+            "Remove-Module -Name AppsUtils"
+        ]
+    },
+    "bin": [
+        [
+            "any-listen.exe",
+            "AnyListen"
+        ]
+    ],
     "shortcuts": [
         [
             "any-listen.exe",
-            "Any Listen"
+            "AnyListen"
         ]
     ],
     "checkver": {
-        "url": "https://api.github.com/repos/any-listen/any-listen-desktop/releases",
-        "jsonpath": "$[0].tag_name",
-        "regex": "v([\\d.]+-beta\\.\\d+)"
+        "github": "https://api.github.com/repos/any-listen/any-listen-desktop/releases/latest",
+        "jp": "$.assets[*].browser_download_url",
+        "regex": "any-listen-([\\d.]+)-x64-Setup\\.exe"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v$version/any-listen-$version-win_x64-green.7z",
-                "hash": {
-                    "url": "$baseurl/SHA256SUMS.txt",
-                    "regex": "$sha256\\s+any-listen-$version-win_x64-green\\.7z"
-                }
+                "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v$version/any-listen-$version-x64-Setup.exe#/dl.7z"
             },
             "arm64": {
-                "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v$version/any-listen-$version-win_arm64-green.7z",
-                "hash": {
-                    "url": "$baseurl/SHA256SUMS.txt",
-                    "regex": "$sha256\\s+any-listen-$version-win_arm64-green\\.7z"
-                }
+                "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v$version/any-listen-$version-arm64-Setup.exe#/dl.7z"
             }
+        },
+        "hash": {
+            "url": "$baseurl/SHA256SUMS.txt"
         }
     }
 }

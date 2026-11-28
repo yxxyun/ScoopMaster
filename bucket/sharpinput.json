@@ -1,0 +1,63 @@
+{
+    "version": "3.2.8",
+    "description": "Portable Chinese chorded typing platform (速录宝) with customizable input schemes",
+    "homepage": "https://srbbj.cn/",
+    "license": "Unknown",
+    "url": "http://srbbj.cn/public/files/soft.7z",
+    "hash": "cb58486de18849fde0bdb19d128bf3d9fcc73475c1157ffaf207a869109243ab",
+    "pre_install": [
+        "$entries = @(Get-ChildItem -LiteralPath $dir -Force)",
+        "if ($entries.Count -eq 1 -and $entries[0].PSIsContainer) {",
+        "    $nested = $entries[0].FullName",
+        "    Get-ChildItem -LiteralPath $nested -Force | Move-Item -Destination $dir -Force",
+        "    Remove-Item -LiteralPath $nested -Force",
+        "}",
+        "$source = Join-Path $dir \"速录宝.exe\"",
+        "$target = Join-Path $dir \"SharpInput.exe\"",
+        "if ((Test-Path -LiteralPath $source) -and !(Test-Path -LiteralPath $target)) {",
+        "    Rename-Item -LiteralPath $source -NewName \"SharpInput.exe\"",
+        "}",
+        "if (!(Test-Path -LiteralPath $target)) { throw \"Main executable not found: SharpInput.exe\" }"
+    ],
+    "bin": [
+        [
+            "SharpInput.exe",
+            "SharpInput"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "SharpInput.exe",
+            "速录宝"
+        ]
+    ],
+    "persist": [
+        "Setting.shp",
+        "dict",
+        "prodict",
+        "skin",
+        "testdata.txt",
+        "testini.txt"
+    ],
+    "post_install": [
+        "$appRoot = Split-Path -Path $dir -Parent",
+        "$currentDir = Join-Path $appRoot \"current\"",
+        "$target = Join-Path $currentDir \"SharpInput.exe\"",
+        "$startup = [Environment]::GetFolderPath(\"Startup\")",
+        "$linkPath = Join-Path $startup \"SharpInput (Scoop).lnk\"",
+        "$shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($linkPath)",
+        "$shortcut.TargetPath = $target",
+        "$shortcut.WorkingDirectory = $currentDir",
+        "$shortcut.Description = \"速录宝 (Scoop)\"",
+        "$shortcut.Save()"
+    ],
+    "pre_uninstall": [
+        "$linkPath = Join-Path ([Environment]::GetFolderPath(\"Startup\")) \"SharpInput (Scoop).lnk\"",
+        "if (Test-Path -LiteralPath $linkPath) {",
+        "    $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($linkPath)",
+        "    if ($shortcut.TargetPath -match \"(?i)[\\\\/]apps[\\\\/]sharpinput[\\\\/]current[\\\\/]SharpInput\\.exe$\") {",
+        "        Remove-Item -LiteralPath $linkPath -Force",
+        "    }",
+        "}"
+    ]
+}

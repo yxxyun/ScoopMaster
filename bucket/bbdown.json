@@ -1,8 +1,18 @@
 {
+    "##": "Active fork of nilaoda/BBDown (the main bucket still tracks the archived upstream). pre_install seeds the persisted data files (Scoop would create a directory for a missing persist entry, and BBDown treats an empty subscription or history JSON file as corrupt), and pre_uninstall copies the live data back before upgrades because BBDown replaces the subscription JSONs atomically, which breaks Scoop's file hard links.",
     "version": "1.7.9",
-    "description": "(Active Fork) A command-line downloader for Bilibili.",
+    "description": "Command-line Bilibili downloader for videos, bangumi, courses and live streams, with 8K/HDR/Dolby Vision support and built-in Widevine DRM decryption (maintained fork of nilaoda/BBDown)",
     "homepage": "https://github.com/AliverAnme/BBDown",
     "license": "MIT",
+    "notes": [
+        "FFmpeg (or MP4Box) is required to mux the downloaded audio and video: 'scoop install main/ffmpeg' (or 'scoop install main/gpac').",
+        "Login credentials, configuration, archive history and subscription state live in the app directory and are persisted across updates.",
+        "Downloads are stored in '$persist_dir\\Download' by default and are kept across updates; pass '--work-dir <directory>' to store them elsewhere.",
+        "The bundled 'device.wvd' and 'mp4decrypt.exe' provide Widevine DRM decryption out of the box; override them with '--wvd-path' / '--mp4decrypt-path'."
+    ],
+    "suggest": {
+        "FFmpeg": "main/ffmpeg"
+    },
     "architecture": {
         "64bit": {
             "url": "https://github.com/AliverAnme/BBDown/releases/download/v1.7.9/BBDown_v1.7.9_win-x64.zip",
@@ -13,10 +23,51 @@
             "hash": "3b453135dd98d357c0d287e1e58b8b055d2cebb19b2352228f64266266048ca5"
         }
     },
+    "pre_install": [
+        "$files = [ordered]@{",
+        "    'BBDown.archives' = ''",
+        "    'BBDown.config' = ''",
+        "    'BBDown.data' = ''",
+        "    'BBDownApp.data' = ''",
+        "    'BBDownTV.data' = ''",
+        "    'BBDownSubscriptions.json' = '[]'",
+        "    'BBDownSubscriptions.history.json' = '{}'",
+        "    'BBDownSubscriptions.directories.json' = '{}'",
+        "}",
+        "foreach ($name in $files.Keys) {",
+        "    if (!(Test-Path -LiteralPath \"$persist_dir\\$name\")) {",
+        "        $path = Join-Path $dir $name",
+        "        if ($files[$name]) {",
+        "            [System.IO.File]::WriteAllText($path, $files[$name])",
+        "        } else {",
+        "            New-Item -Path $path -ItemType File -Force | Out-Null",
+        "        }",
+        "    }",
+        "}"
+    ],
     "bin": "BBDown.exe",
-    "suggest": {
-        "ffmpeg": "ffmpeg"
-    },
+    "pre_uninstall": [
+        "if (!(Test-Path -LiteralPath $persist_dir)) {",
+        "    New-Item -ItemType Directory -Path $persist_dir -Force | Out-Null",
+        "}",
+        "foreach ($name in 'BBDown.archives', 'BBDown.config', 'BBDown.data', 'BBDownApp.data', 'BBDownTV.data', 'BBDownSubscriptions.json', 'BBDownSubscriptions.history.json', 'BBDownSubscriptions.directories.json') {",
+        "    $source = Join-Path $dir $name",
+        "    if (Test-Path -LiteralPath $source -PathType Leaf) {",
+        "        [System.IO.File]::WriteAllBytes((Join-Path $persist_dir $name), [System.IO.File]::ReadAllBytes($source))",
+        "    }",
+        "}"
+    ],
+    "persist": [
+        "BBDown.archives",
+        "BBDown.config",
+        "BBDown.data",
+        "BBDownApp.data",
+        "BBDownTV.data",
+        "BBDownSubscriptions.json",
+        "BBDownSubscriptions.history.json",
+        "BBDownSubscriptions.directories.json",
+        "Download"
+    ],
     "checkver": "github",
     "autoupdate": {
         "architecture": {
