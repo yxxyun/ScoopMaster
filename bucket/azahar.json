@@ -1,37 +1,53 @@
 {
+    "homepage": "https://azahar-emu.org/",
     "version": "2127.0.1",
     "description": "Nintendo 3DS Emulator",
-    "homepage": "https://github.com/azahar-emu/azahar",
-    "license": "GPL-2.0",
+    "license": {
+        "identifier": "GPL-2.0-only",
+        "url": "https://github.com/azahar-emu/azahar/blob/master/license.txt"
+    },
+    "pre_install": [
+        "function create($path, $type, $content) {",
+        "   if (-not (Test-Path \"$path\")) {",
+        "       New-Item \"$path\" -ItemType $type -Value $content | Out-Null",
+        "       Write-Output \"Creating $path...\"",
+        "   }",
+        "}",
+        "create $dir/user Directory"
+    ],
+    "persist": "user",
     "architecture": {
         "64bit": {
             "url": "https://github.com/azahar-emu/azahar/releases/download/2127.0.1/azahar-windows-msvc-2127.0.1.zip",
-            "hash": "0ea6107f54d0a16390bd520a3626b5bb89f1b07ab6d2e9c1d1e8d95e484c837e"
+            "hash": "0ea6107f54d0a16390bd520a3626b5bb89f1b07ab6d2e9c1d1e8d95e484c837e",
+            "extract_dir": "azahar-windows-msvc-2127.0.1",
+            "bin": [
+                "azahar.exe",
+                "azahar-room.exe"
+            ],
+            "shortcuts": [
+                [
+                    "azahar.exe",
+                    "3DS"
+                ]
+            ]
         }
     },
-    "extract_dir": "azahar-windows-msvc-2127.0.1",
-    "pre_install": [
-        "if (!(Test-Path \"$persist_dir\\user\")) {",
-        "   New-Item -Path \"$persist_dir\" -Name \"user\" -ItemType \"directory\" | Out-Null",
-        "   if (Test-Path \"$env:APPDATA\\Citra\") {",
-        "       Write-host \"Migrating AppData...\" -ForegroundColor yellow",
-        "       Copy-Item -Path \"$env:APPDATA\\Citra\\*\" -Destination \"$persist_dir\\user\" -Recurse",
-        "       Remove-Item -Path \"$env:APPDATA\\Citra\" -Recurse",
-        "   }",
-        "}"
-    ],
-    "shortcuts": [
-        [
-            "azahar.exe",
-            "Nintendo 3DS [3ds][azahar]"
-        ]
-    ],
-    "persist": "user",
     "checkver": {
-        "github": "https://github.com/azahar-emu/azahar"
+        "url": "https://api.github.com/repos/azahar-emu/azahar/releases/latest",
+        "jsonpath": {
+            "version": "$.tag_name",
+            "download": "$.assets[?(@.name =~ /azahar-windows-msvc.+\\.zip/i)].browser_download_url",
+            "hash": "$.assets[?(@.name =~ /azahar-windows-msvc/i)].digest"
+        }
     },
     "autoupdate": {
-        "url": "https://github.com/azahar-emu/azahar/releases/download/$version/azahar-windows-msvc-$version.zip",
-        "extract_dir": "azahar-windows-msvc-$version"
+        "architecture": {
+            "64bit": {
+                "url": "$matchDownload",
+                "hash": "$matchHash",
+                "extract_dir": "azahar-windows-msvc-$version"
+            }
+        }
     }
 }

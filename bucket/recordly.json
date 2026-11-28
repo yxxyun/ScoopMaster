@@ -1,40 +1,50 @@
 {
-    "version": "1.4.0",
-    "description": "Open-source screen recorder and editor for walkthroughs, demos, product videos, and more.",
-    "homepage": "https://recordly.dev",
-    "license": "AGPL-3.0-only",
+    "version": "2.0.0-beta.1",
+    "description": "Open-source screen recorder and editor for polished demo videos.",
+    "homepage": "https://github.com/webadderallorg/Recordly",
+    "license": "AGPL-3.0",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/webadderallorg/Recordly/releases/download/v1.4.0/Recordly-windows-x64.exe#/dl.7z",
-            "hash": "08f20bafb0d6cf82399b6e4d8d12f58cbf1821a1d93abdd1e944bb9727b66b20",
-            "pre_install": "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\""
+            "url": "https://github.com/webadderallorg/Recordly/releases/download/v2.0.0-beta.1/Recordly-windows-x64.zip",
+            "hash": "fcdab742e8d3b402c7b2cf28d87f566c3e96e316eaae99fc4beaf588ea87b84f"
         }
     },
-    "post_install": [
-        "Remove-Item \"$dir\\`$*\" -Force -Recurse",
-        "# Disable built-in update mechanism to prevent conflicts with Scoop-managed updates",
-        "$yaml = \"$dir\\resources\\app-update.yml\"",
-        "(Get-Content $yaml -Encoding ASCII).replace('publishAutoUpdate: true', 'publishAutoUpdate: false') | Set-Content $yaml -Encoding ASCII"
+    "pre_install": [
+        "$bootstrap = @'\n$ErrorActionPreference = 'Stop'\n\n$originalAppData = [string]$env:RECORDLY_ORIGINAL_APPDATA\n$persistAppData = [string]$env:RECORDLY_PERSIST_APPDATA\n\nif ([string]::IsNullOrWhiteSpace($originalAppData)) {\n  throw 'The original Windows APPDATA path was not supplied by Recordly.cmd.'\n}\nif ([string]::IsNullOrWhiteSpace($persistAppData)) {\n  throw 'The Scoop persist AppData path was not supplied by Recordly.cmd.'\n}\n\n$originalAppData = [System.IO.Path]::GetFullPath($originalAppData).TrimEnd([char]92)\n$persistAppData = [System.IO.Path]::GetFullPath($persistAppData).TrimEnd([char]92)\n$systemUserData = Join-Path $originalAppData 'Recordly'\n$persistUserData = Join-Path $persistAppData 'Recordly'\n\nNew-Item -ItemType Directory -Path $persistAppData -Force | Out-Null\n\nif (Test-Path -LiteralPath $systemUserData) {\n  $existing = Get-Item -LiteralPath $systemUserData -Force\n\n  if ($existing.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) {\n    $existingTarget = [string]$existing.Target\n    if ([string]::IsNullOrWhiteSpace($existingTarget)) {\n      throw \"Existing Recordly userData is a reparse point with no readable target: $systemUserData\"\n    }\n\n    $existingTarget = [System.IO.Path]::GetFullPath($existingTarget).TrimEnd([char]92)\n    if (-not [string]::Equals($existingTarget, $persistUserData, [System.StringComparison]::OrdinalIgnoreCase)) {\n      throw \"Refusing to replace an existing Recordly userData link. Current target: $existingTarget; expected: $persistUserData\"\n    }\n\n    if (-not (Test-Path -LiteralPath $persistUserData -PathType Container)) {\n      throw \"Existing Recordly userData Junction points to a missing persist directory: $persistUserData\"\n    }\n\n    Write-Host \"Recordly userData Junction already points to Scoop persist: $existingTarget\"\n    exit 0\n  }\n\n  if (-not $existing.PSIsContainer) {\n    throw \"The existing Recordly userData path is not a directory: $systemUserData\"\n  }\n\n  New-Item -ItemType Directory -Path $persistUserData -Force | Out-Null\n  $sourceItems = @(Get-ChildItem -LiteralPath $systemUserData -Force -ErrorAction Stop)\n\n  if ($sourceItems.Count -gt 0) {\n    Write-Host \"Migrating existing Recordly userData to Scoop persist without overwriting files already there.\"\n    & robocopy.exe $systemUserData $persistUserData /E /XC /XN /XO /COPY:DAT /DCOPY:DAT /XJ /R:1 /W:1 /NP\n    $robocopyExitCode = $LASTEXITCODE\n    if ($robocopyExitCode -ge 8) {\n      throw \"Robocopy could not migrate Recordly userData (exit code $robocopyExitCode). The original profile was left in place.\"\n    }\n\n    $backupPath = \"$systemUserData.kirobucket-backup\"\n    if (Test-Path -LiteralPath $backupPath) {\n      $backupPath = \"$backupPath-$(Get-Date -Format 'yyyyMMdd-HHmmss')\"\n    }\n    Move-Item -LiteralPath $systemUserData -Destination $backupPath\n    Write-Warning \"Original Recordly profile retained as a migration backup: $backupPath\"\n  }\n  else {\n    Remove-Item -LiteralPath $systemUserData -Force\n  }\n}\nelse {\n  New-Item -ItemType Directory -Path $persistUserData -Force | Out-Null\n}\n\nNew-Item -ItemType Junction -Path $systemUserData -Target $persistUserData | Out-Null\n\n$junction = Get-Item -LiteralPath $systemUserData -Force\nif (-not $junction.Attributes.HasFlag([System.IO.FileAttributes]::ReparsePoint)) {\n  throw 'Recordly userData Junction was not created.'\n}\n$junctionTarget = [string]$junction.Target\nif ([string]::IsNullOrWhiteSpace($junctionTarget)) {\n  throw 'Recordly userData Junction has no readable target.'\n}\n$junctionTarget = [System.IO.Path]::GetFullPath($junctionTarget).TrimEnd([char]92)\nif (-not [string]::Equals($junctionTarget, $persistUserData, [System.StringComparison]::OrdinalIgnoreCase)) {\n  throw \"Recordly userData Junction points to '$junctionTarget' instead of '$persistUserData'.\"\n}\n\nWrite-Host \"Recordly userData now resolves through Scoop persist: $junctionTarget\"\n'@\nSet-Content -LiteralPath (Join-Path $dir 'Prepare-RecordlyPersist.ps1') -Value $bootstrap -Encoding UTF8",
+        "$launcher = @(\n  '@echo off',\n  'setlocal',\n  'set \"RECORDLY_ORIGINAL_APPDATA=%APPDATA%\"',\n  'for %%I in (\"%~dp0..\\..\\..\\persist\\recordly\\AppData\") do set \"RECORDLY_PERSIST_APPDATA=%%~fI\"',\n  'set \"APPDATA=%RECORDLY_PERSIST_APPDATA%\"',\n  'powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"%~dp0Prepare-RecordlyPersist.ps1\"',\n  'if errorlevel 1 exit /b %errorlevel%',\n  '\"%~dp0Recordly.exe\" %*'\n)\nSet-Content -LiteralPath (Join-Path $dir 'Recordly.cmd') -Value $launcher -Encoding ASCII"
     ],
-    "bin": "Recordly.exe",
+    "post_install": [
+        "$yaml = Join-Path $dir 'resources\\app-update.yml'",
+        "if (Test-Path $yaml) { (Get-Content $yaml -Raw -Encoding ASCII).Replace('publishAutoUpdate: true', 'publishAutoUpdate: false') | Set-Content $yaml -Encoding ASCII }"
+    ],
+    "persist": "AppData",
+    "bin": "Recordly.cmd",
     "shortcuts": [
         [
-            "Recordly.exe",
+            "Recordly.cmd",
             "Recordly"
         ]
     ],
     "checkver": {
-        "github": "https://github.com/webadderallorg/Recordly"
+        "url": "https://api.github.com/repos/webadderallorg/Recordly/releases?per_page=100",
+        "script": [
+            "$releases = $page | ConvertFrom-Json",
+            "$release = $releases | Where-Object { $_.assets.name -contains 'Recordly-windows-x64.zip' } | Select-Object -First 1",
+            "if (-not $release) { throw 'No Windows ZIP asset found in GitHub releases.' }",
+            "$release.tag_name"
+        ],
+        "regex": "^v(?<version>[\\d.]+(?:-[\\w.]+)?)$"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/webadderallorg/Recordly/releases/download/v$version/Recordly-windows-x64.exe#/dl.7z"
+                "url": "https://github.com/webadderallorg/Recordly/releases/download/v$version/Recordly-windows-x64.zip",
+                "hash": {
+                    "mode": "json",
+                    "url": "https://api.github.com/repos/webadderallorg/Recordly/releases/tags/v$version",
+                    "jsonpath": "$.assets[?(@.name == '$basename')].digest"
+                }
             }
-        },
-        "hash": {
-            "url": "$baseurl/SHA256SUMS.txt",
-            "regex": "$sha256\\s+$basename"
         }
     }
 }

@@ -6,38 +6,78 @@
         "identifier": "Proprietary",
         "url": "https://uuyc.163.com/"
     },
-    "url": "https://a56.gdl.netease.com/UURemote_Setup_4.49.0.6162_1126083648_gwqd.exe?key1=d3531afb584e277450acf4ee9f606cfd&key2=6b0950a2&n=uuyc_4.49.0.exe",
+    "url": "https://a56.gdl.netease.com/UURemote_Setup_4.49.0.6162_1126083648_gwqd.exe?key1=08a4c1fcf74707b27134fa56645b7919&key2=6b08e44c&n=uuyc_4.49.0.exe",
     "hash": "6466c6b00a7bff54bed8ff25486e5e120f80f741c9f8070d566a14c713325d3f",
     "installer": {
         "script": [
-            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
+            "$src = \"$env:LOCALAPPDATA\\GameViewer\"",
+            "$dst = \"$persist_dir\\AppData\"",
+            "if (!(Test-Path $dst)) { New-Item -ItemType Directory -Path $dst -Force | Out-Null }",
+            "if (Test-Path $src) {",
+            "    $item = Get-Item $src",
+            "    if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq 0) {",
+            "        Copy-Item -Path \"$src\\*\" -Destination $dst -Recurse -Force -ErrorAction SilentlyContinue",
+            "        Remove-Item -Path $src -Recurse -Force -ErrorAction SilentlyContinue",
+            "        cmd /c mklink /j \"$src\" \"$dst\" | Out-Null",
+            "    }",
+            "} else {",
+            "    cmd /c mklink /j \"$src\" \"$dst\" | Out-Null",
+            "}",
             "$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
             "if (-not $isAdmin) { Write-Warning \"`nuuyc installation requires administrator privileges.`nPlease rerun Scoop in an elevated PowerShell.`n\"; exit 1 }",
-            "Stop-App -ProcessNames @('GameViewer', 'GameViewerService')",
-            "Stop-Service -Name 'GameViewerService' -Force -ErrorAction SilentlyContinue",
-            "Write-Host (\"`nPersisting $env:LOCALAPPDATA\\GameViewer ... \") -NoNewline",
-            "New-PersistDirectory \"$env:LOCALAPPDATA\\GameViewer\" \"$persist_dir\\AppData\" -Migrate",
-            "Write-Host (\"`nPersisting $env:ProgramData\\Netease\\GameViewer ... \") -NoNewline",
-            "New-PersistDirectory \"$env:ProgramData\\Netease\\GameViewer\" \"$persist_dir\\ProgramData\" -Migrate",
             "$installer = Get-ChildItem \"$dir\\*.exe\" | Select-Object -First 1",
             "Start-Process -FilePath $installer.FullName -ArgumentList \"/S /D=$dir\" -Wait",
             "Remove-Item 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\GameViewer' -Force -Recurse -ErrorAction SilentlyContinue | Out-Null",
             "Remove-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'GameViewer' -ErrorAction SilentlyContinue",
-            "Get-ChildItem \"$env:USERPROFILE\\Desktop\", \"$env:PUBLIC\\Desktop\", \"$env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs\", \"$env:ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\" -Filter '*UU*.lnk' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue",
-            "Start-Service -Name 'GameViewerService' -ErrorAction SilentlyContinue"
+            "Get-ChildItem \"$env:USERPROFILE\\Desktop\" -Filter '*UU*.lnk' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue",
+            "Get-ChildItem \"$env:PUBLIC\\Desktop\" -Filter '*UU*.lnk' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue",
+            "Get-ChildItem \"$env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs\" -Filter '*UU*.lnk' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue",
+            "Get-ChildItem \"$env:ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\" -Filter '*UU*.lnk' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue"
         ]
     },
     "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Require-Admin",
-        "Stop-App -ProcessNames @('GameViewer', 'GameViewerService')",
-        "Stop-Service -Name 'GameViewerService' -Force -ErrorAction SilentlyContinue"
+        "Get-ScheduledTask -TaskName '*GameViewer*' -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue",
+        "Get-ScheduledTask -TaskName '*UU*' -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue",
+        "if (Get-Service -Name 'GameViewerService' -ErrorAction SilentlyContinue) { Set-Service -Name 'GameViewerService' -StartupType Disabled -ErrorAction SilentlyContinue; Stop-Service -Name 'GameViewerService' -Force -ErrorAction SilentlyContinue; sc.exe delete GameViewerService | Out-Null }",
+        "@('GameViewerService', 'GameViewerServer', 'GameViewerHealthd', 'GameViewer', 'crashpad_handler') | ForEach-Object { Get-Process -Name $_ -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue }",
+        "Start-Sleep -Seconds 1"
     ],
+    "uninstaller": {
+        "script": [
+            "$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+            "if (-not $isAdmin) { Write-Warning \"`nuuyc uninstall cleanup requires administrator privileges.`nSkipping privileged cleanup.`n\"; return }",
+            "$nativeUninstaller = Get-ChildItem \"$dir\" -Filter 'unins*.exe' -File -ErrorAction SilentlyContinue | Select-Object -First 1",
+            "if ($nativeUninstaller) {",
+            "    Start-Process -FilePath $nativeUninstaller.FullName -ArgumentList '/S' -Wait -ErrorAction SilentlyContinue",
+            "}",
+            "Remove-Item 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\GameViewerService' -Force -Recurse -ErrorAction SilentlyContinue | Out-Null",
+            "Remove-Item 'HKLM:\\SOFTWARE\\Netease' -Force -Recurse -ErrorAction SilentlyContinue | Out-Null",
+            "Get-ScheduledTask -TaskName '*GameViewer*' -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false -ErrorAction SilentlyContinue",
+            "Get-ScheduledTask -TaskName '*UU*' -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false -ErrorAction SilentlyContinue"
+        ]
+    },
     "post_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        ". \"$bucketsdir\\$bucket\\scripts\\uuyc\\uninstall.ps1\""
+        "$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+        "if (-not $isAdmin) { Write-Warning \"`nuuyc post_uninstall cleanup requires administrator privileges.`nSkipping privileged cleanup.`n\"; return }",
+        "$sidRoots = Get-ChildItem Registry::HKEY_USERS | Where-Object { $_.PSChildName -match '^S-1-5-21-(\\d+-){3}\\d+$' } | ForEach-Object { $_.PSPath }",
+        "foreach ($sid in $sidRoots) {",
+        "    Remove-Item \"$sid\\SOFTWARE\\Netease\" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null",
+        "    Remove-Item \"$sid\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\GameViewer\" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null",
+        "    Remove-ItemProperty \"$sid\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\" -Name 'GameViewer' -ErrorAction SilentlyContinue",
+        "    Remove-ItemProperty \"$sid\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Compatibility Assistant\\Store\" -Name \"$dir\\GameViewer\\GameViewer.exe\" -ErrorAction SilentlyContinue",
+        "    Remove-ItemProperty \"$sid\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Compatibility Assistant\\Store\" -Name 'D:\\Apps\\Software-NP\\Netease\\Gameviewer\\GameViewer.exe' -ErrorAction SilentlyContinue",
+        "    $ua = \"$sid\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{CEBFF5CD-ACE2-4F4F-9178-9926F41749EA}\\Count\"",
+        "    Remove-ItemProperty $ua -Name 'Q:\\Nccf\\Fbsgjner-AC\\Argrnfr\\Tnzrivrjre\\ova\\TnzrIvrjre.rkr' -ErrorAction SilentlyContinue",
+        "    Remove-ItemProperty $ua -Name 'Q:\\Nccf\\Fbsgjner-AC\\Argrnfr\\Tnzrivrjre\\TnzrIvrjre.rkr' -ErrorAction SilentlyContinue",
+        "}",
+        "Remove-Item 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\GameViewer' -Force -Recurse -ErrorAction SilentlyContinue | Out-Null",
+        "Remove-Item 'HKCU:\\Software\\Netease\\GameViewer' -Force -Recurse -ErrorAction SilentlyContinue | Out-Null",
+        "Remove-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'GameViewer' -ErrorAction SilentlyContinue",
+        "Write-Host (\"`nDeleting $env:LOCALAPPDATA\\GameViewer ... \") -f DarkGray -NoNewline",
+        "Write-Host (\"`nDeleting $env:PROGRAMDATA\\Netease\\GameViewer ... \") -f DarkGray -NoNewline",
+        "Remove-Item \"$env:WINDIR\\system32\\config\\systemprofile\\AppData\\Local\\GameViewer\" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null",
+        "Remove-Item \"$env:LOCALAPPDATA\\GameViewer\" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null",
+        "Remove-Item \"$env:PROGRAMDATA\\Netease\\GameViewer\" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null"
     ],
     "bin": "GameViewer\\GameViewer.exe",
     "shortcuts": [
@@ -64,5 +104,5 @@
             "mode": "download"
         }
     },
-    "notes": "User data is persisted in \"$persist_dir\"."
+    "note": "This app does not persist user data, as there is no need to do so."
 }

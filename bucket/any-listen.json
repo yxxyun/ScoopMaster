@@ -2,41 +2,67 @@
     "version": "0.10.1",
     "description": "A cross-platform private music playback service",
     "homepage": "https://github.com/any-listen/any-listen",
-    "license": "AGPL-3.0-only",
+    "license": {
+        "identifier": "Custom License based on AGPL v3.0",
+        "url": "https://github.com/any-listen/any-listen#License-1-ov-file"
+    },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v0.10.1/any-listen-0.10.1-win_x64-green.7z",
-            "hash": "715d9407e3c507f4d47dbce6eb7037d0e2e9973ea3432a8767e3239ad58eba06"
-        },
-        "32bit": {
-            "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v0.10.1/any-listen-0.10.1-win_legacy_ia32-green.7z",
-            "hash": "4c412fd9909fe320b737e9e1b78c100e4257c2db5071c8a5545fda46a93fdae6"
+            "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v0.10.1/any-listen-0.10.1-x64-Setup.exe#/dl.7z",
+            "hash": "bee45796372d4d5c0179990bc3a8f58d4c90a2c68048f362397875c86b114785",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-64.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\" -Force -Recurse"
+            ]
         },
         "arm64": {
-            "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v0.10.1/any-listen-0.10.1-win_arm64-green.7z",
-            "hash": "86b2fa5b87c47b5b43e7a4723a960a684f7aae50154efd5f20ccb60aecf51c12"
+            "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v0.10.1/any-listen-0.10.1-arm64-Setup.exe#/dl.7z",
+            "hash": "fd1f642d1444bb3b7ef3323dfbf2e8165ae26bc69fc943513c7b37f2c680aaad",
+            "pre_install": [
+                "Expand-7zipArchive \"$dir\\`$PLUGINSDIR\\app-arm64.7z\" \"$dir\"",
+                "Remove-Item \"$dir\\`$*\" -Force -Recurse"
+            ]
         }
     },
+    "post_install": [
+        "if (Test-Path $env:APPDATA\\any-listen) {",
+        "    Copy-Item -Path $env:APPDATA\\any-listen\\* -Destination \"$persist_dir\\data\" -Force -Recurse",
+        "    Remove-Item $env:APPDATA\\any-listen -Force -Recurse",
+        "}",
+        "New-Item -ItemType Junction -Path $env:APPDATA\\any-listen -Target $persist_dir\\data | Out-Null"
+    ],
+    "uninstaller": {
+        "script": "Remove-Item $env:APPDATA\\any-listen -Force -Recurse"
+    },
+    "bin": [
+        [
+            "any-listen.exe",
+            "AnyListen"
+        ]
+    ],
+    "persist": "data",
     "shortcuts": [
         [
             "any-listen.exe",
-            "Any Listen"
+            "AnyListen"
         ]
     ],
     "checkver": {
-        "github": "https://github.com/any-listen/any-listen-desktop"
+        "url": "https://api.github.com/repos/any-listen/any-listen-desktop/releases/latest",
+        "jp": "$.assets[*].browser_download_url",
+        "regex": "any-listen-([\\d.]+)-x64-Setup\\.exe"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v$version/any-listen-$version-win_x64-green.7z"
-            },
-            "32bit": {
-                "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v$version/any-listen-$version-win_legacy_ia32-green.7z"
+                "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v$version/any-listen-$version-x64-Setup.exe#/dl.7z"
             },
             "arm64": {
-                "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v$version/any-listen-$version-win_arm64-green.7z"
+                "url": "https://github.com/any-listen/any-listen-desktop/releases/download/v$version/any-listen-$version-arm64-Setup.exe#/dl.7z"
             }
+        },
+        "hash": {
+            "url": "$baseurl/SHA256SUMS.txt"
         }
     }
 }

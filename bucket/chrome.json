@@ -1,27 +1,18 @@
 {
     "version": "158.0.8127.89",
-    "description": "Fast, secure, and free web browser, built for the modern web.",
-    "homepage": "https://www.google.com/chrome/",
-    "license": {
-        "identifier": "Freeware",
-        "url": "https://www.google.com/chrome/privacy/eula_text.html"
-    },
-    "architecture": {
-        "64bit": {
-            "url": "https://dl.google.com/release2/chrome/cegotz2vlsfimli3uv34l7ztzm_158.0.8127.89/158.0.8127.89_chrome_installer_uncompressed.exe#/dl.7z",
-            "hash": "e94768730a55bfe698d65899a9aa43d498a8816e7ce3b307bd9d07ac230a9371"
-        },
-        "32bit": {
-            "url": "https://dl.google.com/release2/chrome/ads3hjcdxv4d63a4tvmbe5agceea_158.0.8127.89/158.0.8127.89_chrome_installer_uncompressed.exe#/dl.7z",
-            "hash": "587aaf6bc0be6a2e481534537af43d591764b2704b2cf029a6f7535b7fa8e643"
-        },
-        "arm64": {
-            "url": "https://dl.google.com/release2/chrome/cgcjk4fxrbuisvbxh2kdzr7rg4_158.0.8127.89/158.0.8127.89_chrome_installer_uncompressed.exe#/dl.7z",
-            "hash": "4b6ec8876015a3dbe8fc54d0e2917f1967de18efb97278f386a4ff82f59406b1"
-        }
-    },
-    "extract_dir": "Chrome-bin",
-    "bin": "chrome.exe",
+    "description": "浏览器: Chrome",
+    "homepage": "https://google.com/chrome",
+    "license": "Unknown",
+    "notes": "AutoProxy: https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt",
+    "url": "https://dl.google.com/release2/chrome/cegotz2vlsfimli3uv34l7ztzm_158.0.8127.89/158.0.8127.89_chrome_installer_uncompressed.exe#/dl.7z",
+    "hash": "e94768730a55bfe698d65899a9aa43d498a8816e7ce3b307bd9d07ac230a9371",
+    "persist": "User Data",
+    "bin": [
+        [
+            "chrome.exe",
+            "chrome"
+        ]
+    ],
     "shortcuts": [
         [
             "chrome.exe",
@@ -31,59 +22,51 @@
     "env_set": {
         "CHROME_EXECUTABLE": "$dir\\chrome.exe"
     },
-    "installer": {
-        "script": [
-            ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-            "New-PersistDirectory \"$env:LocalAppData\\Google\\Chrome\\User Data\" \"$persist_dir\\User Data\" -Migrate"
-        ]
-    },
-    "pre_uninstall": [
-        "$bucket = $install.bucket",
-        ". \"$bucketsdir\\$bucket\\bin\\utils.ps1\"",
-        "Stop-App",
-        "Remove-Junction \"$env:LocalAppData\\Google\\Chrome\\User Data\""
+    "extract_dir": "Chrome-bin",
+    "post_install": [
+        "if(-not (Test-Path \"$env:ProgramFiles\\Google\\Chrome\\Application\")){New-Item -ItemType Junction -Path \"$env:ProgramFiles\\Google\\Chrome\\Application\" -Target $dir}",
+        "Invoke-WebRequest -UseBasicParsing -Uri \"https://raw.githubusercontent.com/rainte/chrome/refs/heads/main/crx/rainte.crx\" -OutFile \"$persist_dir\\rainte.crx\"",
+        "Expand-7zipArchive \"$persist_dir\\rainte.crx\" \"$persist_dir\\rainte\""
     ],
     "uninstaller": {
-        "script": [
-            "if ($cmd -eq 'uninstall') {",
-            "    Remove-Item -Path \"$env:LOCALAPPDATA\\Google\\Chrome\" -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
-            "    Remove-Item -Path HKCU:\\SOFTWARE\\Google\\Chrome -Recurse -Force -ErrorAction SilentlyContinue | Out-Null",
-            "}"
-        ]
+        "script": "[Environment]::SetEnvironmentVariable('CHROME_EXECUTABLE', '', 'User')"
     },
     "checkver": {
+        "url": "https://www.apple.com/library/test/success.html",
         "script": [
-            "$data = Invoke-RestMethod -Uri \"https://raw.githubusercontent.com/Bush2021/chrome_installer/refs/heads/main/data.json\"",
-            "\"=====version=====\" + $data.win_stable_x64.version +",
-            "\"=====x64=====\" + ($data.win_stable_x64.urls | Where-Object { $_ -match \"^https://dl.google.com\" } | Select-Object -First 1) +",
-            "\"=====x86=====\" + ($data.win_stable_x86.urls | Where-Object { $_ -match \"^https://dl.google.com\" } | Select-Object -First 1) +",
-            "\"=====arm64=====\" + ($data.win_stable_arm64.urls | Where-Object { $_ -match \"^https://dl.google.com\" } | Select-Object -First 1)"
+            "$AppID = '{8A69D345-D564-463C-AFF1-A69D9E530F96}'",
+            "$ArchParams  = @{",
+            "    'x64'   ='x64-stable'",
+            "    'x86'   ='x86-stable'",
+            "    'arm64' ='arm64-stable'",
+            "}",
+            "$BodyTemplate = @(",
+            "    '<?xml version=\"1.0\" encoding=\"utf-8\"?>',",
+            "    '<request protocol=\"3.0\">',",
+            "    '  <os platform=\"win\" version=\"10.0.22000\" arch=\"{0}\"/>',",
+            "    '  <app appid=\"{1}\" ap=\"{2}\" version=\"\">',",
+            "    '    <updatecheck/>',",
+            "    '  </app>',",
+            "    '</request>'",
+            ") -join \"`n\"",
+            "$ArchURLs = @{}",
+            "$Version = $null",
+            "forEach ($Arch in $ArchParams.Keys) {",
+            "    $Body = $BodyTemplate -f $Arch, $AppID, $ArchParams[$Arch]",
+            "    $Response = Invoke-RestMethod -Uri 'https://update.googleapis.com/service/update2' -Method Post -Body $Body",
+            "    if ($Arch -eq 'x64') {",
+            "        $Version = $Response.response.app.updatecheck.manifest.version",
+            "    }",
+            "    $BaseURL = $Response.SelectSingleNode(\"//url[starts-with(@codebase, 'https://dl.google.com/release2/chrome/')]\")",
+            "    $BaseURL.GetAttribute('codebase') -match '^https://dl\\.google\\.com/release2/chrome/(?<URL>[^/]+)/'",
+            "    $FileName = $Response.SelectSingleNode('//package').GetAttribute('name')",
+            "    $ArchURLs[$Arch] = \"$($Matches['URL'])/$FileName\"",
+            "}",
+            "Write-Output \"$Version,$($ArchURLs['x64']),$($ArchURLs['x86']),$($ArchURLs['arm64'])\""
         ],
-        "regex": "=====version=====(.+)=====x64=====(?<x64>.+)=====x86=====(?<x86>.+)=====arm64=====(?<arm64>.+)"
+        "regex": "(?<version>[\\d.]+),(?<archx64>[^,]+),(?<archx86>[^,]+),(?<archarm64>[^,]+)"
     },
     "autoupdate": {
-        "architecture": {
-            "64bit": {
-                "url": "$matchX64#/dl.7z",
-                "hash": {
-                    "url": "https://raw.githubusercontent.com/Bush2021/chrome_installer/refs/heads/main/data.json",
-                    "jsonpath": "$.win_stable_x64.sha256"
-                }
-            },
-            "32bit": {
-                "url": "$matchX86#/dl.7z",
-                "hash": {
-                    "url": "https://raw.githubusercontent.com/Bush2021/chrome_installer/refs/heads/main/data.json",
-                    "jsonpath": "$.win_stable_x86.sha256"
-                }
-            },
-            "arm64": {
-                "url": "$matchArm64#/dl.7z",
-                "hash": {
-                    "url": "https://raw.githubusercontent.com/Bush2021/chrome_installer/refs/heads/main/data.json",
-                    "jsonpath": "$.win_stable_arm64.sha256"
-                }
-            }
-        }
+        "url": "https://dl.google.com/release2/chrome/$matchArchx64#/dl.7z"
     }
 }
