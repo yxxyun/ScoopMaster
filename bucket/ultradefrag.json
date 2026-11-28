@@ -1,48 +1,74 @@
 {
-  "version": "7.1.4",
-  "description": "A quick GUI disk-defragmenting tool",
-  "homepage": "https://sourceforge.net/projects/ultradefrag/",
-  "checkver": {
-    "url": "https://sourceforge.net/projects/ultradefrag/files/stable-release/",
-    "regex": "/stable-release/([\\d.-]+)/ultradefrag-"
-  },
-  "license": "GPL-2.0-only",
-  "architecture": {
-    "64bit": {
-      "url": "https://downloads.sourceforge.net/project/ultradefrag/stable-release/7.1.4/ultradefrag-portable-7.1.4.bin.amd64.zip",
-      "hash": "sha1:d9c6dbf13b38d6b62ec5071b4e6361d944b1fbbd",
-      "extract_dir": "ultradefrag-portable-7.1.4.amd64",
-      "bin": "ultradefrag.exe",
-      "shortcuts": [
-        [
-          "ultradefrag.exe",
-          "UltraDefrag"
-        ]
-      ]
+    "version": "7.1.4",
+    "description": "Disk defragmenter: defragments files, folders, the MFT and other NTFS metafiles, and sorts files on the disk by path, size or date.",
+    "homepage": "https://sourceforge.net/projects/ultradefrag/",
+    "license": {
+        "identifier": "GPL-2.0-or-later",
+        "url": "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html"
     },
-    "32bit": {
-      "url": "https://downloads.sourceforge.net/project/ultradefrag/stable-release/7.1.4/ultradefrag-portable-7.1.4.bin.i386.zip",
-      "hash": "sha1:a77ed32e774963c5fb3ffdd77996cc61308da75f",
-      "extract_dir": "ultradefrag-portable-7.1.4.i386",
-      "bin": "ultradefrag.exe",
-      "shortcuts": [
-        [
-          "ultradefrag.exe",
-          "UltraDefrag"
-        ]
-      ]
-    }
-  },
-  "autoupdate": {
+    "notes": [
+        "This is the last open source release (7.1.4, 2020). UltraDefrag 8 and later are proprietary and paid, and are not packaged here.",
+        "Runs as administrator: Windows shows a UAC prompt on every start.",
+        "",
+        "Start the GUI from the 'UltraDefrag' shortcut in Scoop Apps, not from a terminal: it looks for gui.ini, conf\\options.lua",
+        "and logs in the current folder, and the shortcut starts it in its own folder.",
+        "The command-line tool is 'udefrag' (from an elevated terminal; see 'udefrag --help').",
+        "",
+        "conf\\options.lua is kept in %USERPROFILE%\\scoop\\persist\\UltraDefrag and survives updates; gui.ini (window, sorting, language) is copied there on update.",
+        "The update check on start is set to 'Never check' on the first install, because newer versions are paid;",
+        "turn it back on in Help > Upgrade.",
+        "The portable build has no boot-time defragmentation and no Explorer context menu; both need the regular installer."
+    ],
     "architecture": {
-      "64bit": {
-        "url": "https://downloads.sourceforge.net/project/ultradefrag/stable-release/$version/ultradefrag-portable-$version.bin.amd64.zip",
-        "extract_dir": "ultradefrag-portable-$version.amd64"
-      },
-      "32bit": {
-        "url": "https://downloads.sourceforge.net/project/ultradefrag/stable-release/$version/ultradefrag-portable-$version.bin.i386.zip",
-        "extract_dir": "ultradefrag-portable-$version.i386"
-      }
+        "64bit": {
+            "url": "https://downloads.sourceforge.net/project/ultradefrag/stable-release/7.1.4/ultradefrag-portable-7.1.4.bin.amd64.zip",
+            "hash": "2feef512b58a65ae777a281968741028fa071624ec337c85ef08e5a2ff16f3b4",
+            "extract_dir": "ultradefrag-portable-7.1.4.amd64"
+        },
+        "32bit": {
+            "url": "https://downloads.sourceforge.net/project/ultradefrag/stable-release/7.1.4/ultradefrag-portable-7.1.4.bin.i386.zip",
+            "hash": "2732879729f9bf94c04202cc2bd8de7626b5e2499b7434d577aaafdb8e1ebad5",
+            "extract_dir": "ultradefrag-portable-7.1.4.i386"
+        }
+    },
+    "pre_install": [
+        "# The GUI keeps its state in gui.ini through wxFileConfig, which saves through a temporary file and a rename,",
+        "# so a hardlink from 'persist' would break. It is copied in here and back out in pre_uninstall (which also runs on update).",
+        "# On the first install it is created with Help > Upgrade set to 'Never check' (Level=0; 1 = stable releases, 2 = all).",
+        "if (Test-Path \"$persist_dir\\gui.ini\") {",
+        "  Copy-Item \"$persist_dir\\gui.ini\" \"$dir\\gui.ini\" -Force",
+        "} else {",
+        "  Set-Content -Path \"$dir\\gui.ini\" -Value '[Upgrade]', 'Level=0' -Encoding Ascii",
+        "}"
+    ],
+    "bin": "udefrag.exe",
+    "shortcuts": [
+        [
+            "ultradefrag.exe",
+            "UltraDefrag"
+        ]
+    ],
+    "persist": "conf",
+    "pre_uninstall": [
+        "if (Test-Path \"$dir\\gui.ini\") {",
+        "  New-Item -ItemType Directory -Path $persist_dir -Force | Out-Null",
+        "  Copy-Item \"$dir\\gui.ini\" \"$persist_dir\\gui.ini\" -Force",
+        "}"
+    ],
+    "checkver": {
+        "sourceforge": "ultradefrag/stable-release",
+        "regex": "([\\d.]+)/ultradefrag-portable-[\\d.]+\\.bin\\.amd64\\.zip"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://downloads.sourceforge.net/project/ultradefrag/stable-release/$version/ultradefrag-portable-$version.bin.amd64.zip",
+                "extract_dir": "ultradefrag-portable-$version.amd64"
+            },
+            "32bit": {
+                "url": "https://downloads.sourceforge.net/project/ultradefrag/stable-release/$version/ultradefrag-portable-$version.bin.i386.zip",
+                "extract_dir": "ultradefrag-portable-$version.i386"
+            }
+        }
     }
-  }
 }

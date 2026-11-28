@@ -1,0 +1,47 @@
+{
+    "##": "Installer Type: NSIS; extracts the application payload without running the vendor installer.",
+    "version": "0.7.0-beta.3",
+    "description": "Local semantic search for files by their contents, including documents, images, audio, video, and code.",
+    "homepage": "https://github.com/ARahim3/DigUp",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/ARahim3/DigUp/releases/download/v0.7.0-beta.3/DigUp_0.7.0-beta.3_x64-setup.exe#/dl.7z",
+            "hash": "013ee9bdc08eb1256cb1b49b0ec11549ae7929f07536e18fbc14fe46d6059fe1",
+            "pre_install": [
+                "$nestedArchive = Join-Path $dir '$PLUGINSDIR\\app-64.7z'",
+                "if (Test-Path -LiteralPath $nestedArchive -PathType Leaf) { Expand-7zipArchive $nestedArchive $dir }",
+                "if (!(Test-Path -LiteralPath (Join-Path $dir 'DigUp.exe') -PathType Leaf)) { throw 'DigUp.exe was not extracted into the Scoop version directory.' }",
+                "if (!(Test-Path -LiteralPath (Join-Path $dir 'helper\\digup.exe') -PathType Leaf)) { throw 'helper\\digup.exe was not extracted into the Scoop version directory.' }",
+                "Remove-Item -LiteralPath (Join-Path $dir '$PLUGINSDIR') -Force -Recurse -ErrorAction SilentlyContinue",
+                "Remove-Item -Path (Join-Path $dir 'Uninstall*'), (Join-Path $dir 'uninstall*') -Force -Recurse -ErrorAction SilentlyContinue"
+            ]
+        }
+    },
+    "shortcuts": [
+        [
+            "DigUp.exe",
+            "DigUp"
+        ]
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/ARahim3/DigUp/releases",
+        "jsonpath": "$[0].tag_name",
+        "regex": "^v(?<version>[0-9]+\\.[0-9]+\\.[0-9]+(?:-beta\\.[0-9]+)?)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/ARahim3/DigUp/releases/download/v$version/DigUp_$version_x64-setup.exe#/dl.7z",
+                "hash": {
+                    "url": "https://api.github.com/repos/ARahim3/DigUp/releases/tags/v$version",
+                    "jsonpath": "$.assets[?(@.name == '$basename')].digest"
+                }
+            }
+        }
+    },
+    "notes": [
+        "The Windows build is beta and the installer is unsigned.",
+        "The first launch downloads an approximately 865 MB model. The model and index are stored under %LOCALAPPDATA%\\DigUp, outside the Scoop version directory."
+    ]
+}

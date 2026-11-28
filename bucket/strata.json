@@ -1,40 +1,63 @@
 {
-    "version": "0.2.22",
-    "description": "Local AI, tuned to one model. Runs open-weight models on your own GPU.",
+    "##": "Strata 桌面版官方 Windows 安装包（NSIS setup.exe，用户级安装）。release tag 为 v<version>，默认资产名 Strata-<version>-windows-x64-setup.exe；安装包不含推理引擎，首次启动时由应用按显卡下载。",
+    "version": "0.2.23",
+    "description": "Strata 桌面应用（本地 AI 聊天与编码预览，官方 Windows 安装包）",
     "homepage": "https://github.com/Niko1221/Strata",
-    "license": "MIT",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/Niko1221/Strata/blob/main/LICENSE"
+    },
+    "notes": [
+        "安装官方 setup.exe：用 NSIS 静默参数 /S /D=$dir 装进 Scoop 版本目录，无管理员权限",
+        "压缩包只含桌面应用；推理引擎和 GGUF 模型由应用在首次启动时下载，不随 Scoop 包分发",
+        "聊天与本机状态默认放在 ~/.strata，Scoop 不接管该目录",
+        "终端版与 AMD/CUDA 引擎包请装 strata-hip / strata-cuda；本包的 strata 命令启动 strata-desktop.exe 桌面 GUI",
+        "卸载：scoop uninstall strata"
+    ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/Niko1221/Strata/releases/download/v0.2.22/Strata-0.2.22-windows-x64-setup.exe",
-            "hash": "d978eed0e144ccfb1c286be7ef5c2b35e85eaf7bf2f56325979e61413e07b1ca"
+            "url": "https://github.com/Niko1221/Strata/releases/download/v0.2.23/Strata-0.2.23-windows-x64-setup.exe",
+            "hash": "5f620817dc4be0db6122697b2c1a0f08bbafcb52961cb17a5ba6634ca44d4240"
         }
     },
     "installer": {
         "script": [
-            "& \"$dir\\Strata-0.2.12-windows-x64-setup.exe\" /S",
-            "$strataApp = Join-Path $env:LOCALAPPDATA 'Programs\\Strata'; $strataExe = Join-Path $strataApp 'strata-desktop.exe'; $strataDeadline = (Get-Date).AddMinutes(5); do { Start-Sleep -Seconds 2 } while ((Get-Date) -lt $strataDeadline -and -not (Test-Path $strataExe)); if (-not (Test-Path $strataExe)) { throw 'Strata installer did not complete' }"
+            "$installer = Join-Path $dir $fname",
+            "Start-Process -FilePath $installer -ArgumentList '/S', \"/D=$dir\" -Wait",
+            "Remove-Item $installer -Force -ErrorAction SilentlyContinue"
         ]
     },
     "uninstaller": {
-        "script": "if (Test-Path \"$env:LOCALAPPDATA\\Programs\\Strata\") { Remove-Item -Recurse -Force \"$env:LOCALAPPDATA\\Programs\\Strata\" }"
+        "script": [
+            "$c=@((Join-Path $dir 'uninstall.exe'), (Join-Path $env:LOCALAPPDATA 'Programs\\Strata\\uninstall.exe'), (Join-Path $dir 'unins000.exe'))",
+            "foreach ($u in $c) { if (Test-Path -LiteralPath $u) { Start-Process -FilePath $u -ArgumentList '/S' -Wait; break } }"
+        ]
     },
+    "bin": [
+        [
+            "strata-desktop.exe",
+            "strata"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "strata-desktop.exe",
+            "Strata"
+        ]
+    ],
     "checkver": {
-        "github": "https://github.com/Niko1221/Strata"
+        "url": "https://github.com/Niko1221/Strata/releases/latest",
+        "regex": "releases/tag/v([\\d.]+)"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
                 "url": "https://github.com/Niko1221/Strata/releases/download/v$version/Strata-$version-windows-x64-setup.exe"
             }
+        },
+        "hash": {
+            "url": "https://api.github.com/repos/Niko1221/Strata/releases/tags/v$version",
+            "regex": "\"name\"\\s*:\\s*\"Strata-$version-windows-x64-setup\\.exe\".*?\"digest\"\\s*:\\s*\"sha256:([0-9a-f]{64})\""
         }
-    },
-    "notes": "ALL current Strata releases (0.2.12/0.2.13 tested) ship a strata-desktop.exe with a hardcoded build-machine path (C:\\w212app/.../host/server/index.mjs) and crash on start: 'the App Host entry is missing'. Upstream packaging bug, not fixable in this manifest. Manifest retained for when a fixed release ships; checkver will detect new versions.",
-    "post_install": [
-        "$strataExe = \"$env:LOCALAPPDATA\\Programs\\Strata\\strata-desktop.exe\"",
-        "$desktop = [Environment]::GetFolderPath('Desktop')",
-        "$smp = \"$env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs\"",
-        "$wsh = New-Object -ComObject WScript.Shell",
-        "$lnk = $wsh.CreateShortcut(\"$desktop\\Strata.lnk\"); $lnk.TargetPath = $strataExe; $lnk.Save()",
-        "$lnk2 = $wsh.CreateShortcut(\"$smp\\Strata.lnk\"); $lnk2.TargetPath = $strataExe; $lnk2.Save()"
-    ]
+    }
 }

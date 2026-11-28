@@ -1,0 +1,43 @@
+{
+    "version": "0.4.0",
+    "description": "Native YouTube Music desktop client with synchronized lyrics, downloads, and system media controls.",
+    "homepage": "https://github.com/grapedjuice/ytm-rs",
+    "license": "GPL-3.0-only",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/grapedjuice/ytm-rs/releases/download/v0.4.0/ytm-rs-portable-0.4.0.zip",
+            "hash": "a6d9c21730d088fd3283478290e9538866e30a6260209fe4ba3c28621a641107",
+            "shortcuts": [
+                [
+                    "ytm-rs.exe",
+                    "ytm-rs"
+                ]
+            ]
+        }
+    },
+    "persist": "data",
+    "checkver": {
+        "script": [
+            "$headers = @{ 'Accept' = 'application/vnd.github+json'; 'User-Agent' = 'Scoop-KiroBucket' }",
+            "if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) { $headers.Authorization = \"Bearer $env:GITHUB_TOKEN\" }",
+            "$releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/grapedjuice/ytm-rs/releases?per_page=100' -Headers $headers -TimeoutSec 30 -ErrorAction Stop",
+            "$stable = $releases | Where-Object { -not $_.draft -and -not $_.prerelease -and $_.tag_name -match '^v[0-9.]+$' } | Sort-Object { [datetime]$_.published_at } -Descending | Select-Object -First 1",
+            "if ($stable) { $stable.tag_name }"
+        ],
+        "regex": "^v(?<version>[\\d.]+)$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/grapedjuice/ytm-rs/releases/download/v$version/ytm-rs-portable-$version.zip",
+                "hash": {
+                    "mode": "json",
+                    "url": "https://api.github.com/repos/grapedjuice/ytm-rs/releases/tags/v$version",
+                    "jsonpath": "$.assets[?(@.name == 'ytm-rs-portable-$version.zip')].digest",
+                    "regex": "^sha256:([a-fA-F0-9]{64})$"
+                }
+            }
+        }
+    },
+    "notes": "Automatic updates are enabled by default in the app. Disable them in Settings > About > Updates to keep Scoop in control of application updates."
+}
